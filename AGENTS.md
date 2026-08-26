@@ -1,0 +1,223 @@
+# C4ML Agent Instructions
+
+## Project status
+
+C4ML is currently in specification and feasibility planning. There is no
+approved implementation scaffold yet.
+
+The runtime architecture is accepted: one browser-compatible TypeScript
+compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
+in a Web Worker. The MVP has no required Python or network service. Specific UI,
+parser, layout, and rendering dependencies remain draft decisions.
+
+The minimum completeness baseline is also accepted: all four static C4 views
+(System Context, Container, Component, Code), all three supporting C4 views
+(System Landscape, Dynamic, Deployment), their required model elements, and the
+official notation recommendations promoted to C4ML completeness requirements.
+
+Do not create application code, select permanent dependencies, initialize a
+package ecosystem, or freeze the DSL grammar until the user has reviewed and
+approved the corresponding decisions in `SPEC.md`.
+
+## Read first
+
+Before making project changes:
+
+1. confirm that the working directory is the intended C4ML checkout;
+2. read this file completely;
+3. read `SPEC.md` completely;
+4. read `TESTING.md` completely;
+5. inspect the current repository state; and
+6. distinguish draft decisions from accepted decisions.
+
+Within the repository, `SPEC.md` defines product behavior and architecture.
+`TESTING.md` defines the evidence required to validate it. This file defines the
+working process. An explicit current user instruction can change project scope;
+record material design changes in the relevant document.
+
+## Core product invariants
+
+Preserve these boundaries unless the user explicitly approves a specification
+change:
+
+- semantic model, views, layout, scene graph, and renderers are separate layers;
+- CLI and editor execute the same compiler core and compiler contracts;
+- the compiler core remains usable in both Node.js and a browser Web Worker;
+- layout-only constraints are never fake architecture relationships;
+- stable identity never depends on display names or declaration order;
+- automatic layout and local manual control can coexist in one view;
+- hard layout constraints fail visibly when they cannot be satisfied;
+- layout engines and renderers are replaceable adapters;
+- SVG is the canonical first render output;
+- PNG is derived without changing geometry or text layout;
+- identical effective input produces deterministic output;
+- the normal CLI workflow does not require network access or a browser;
+- the editor does not require a local or remote compiler service;
+- source text remains authoritative for future graphical editing;
+- all seven official C4 view types are minimum product scope;
+- Code, Dynamic, and Deployment support are not deferred extensions; and
+- exported release artifacts satisfy the complete C4 notation profile.
+
+## Originality rules
+
+C4ML must be an original system, not a clone or source-compatible dialect of an
+existing tool.
+
+Do not copy, translate, adapt, or closely paraphrase third-party:
+
+- source code;
+- grammar rules or characteristic keyword sets;
+- documentation;
+- examples or fixtures;
+- themes, icons, or other visual assets; or
+- interface layouts.
+
+When researching prior art:
+
+1. use public primary documentation and observable behavior;
+2. record the user problem or general capability, not foreign syntax;
+3. convert the observation into a tool-independent requirement;
+4. design C4ML behavior from `SPEC.md`; and
+5. cite the source used for the capability analysis.
+
+Do not inspect another project's implementation for the purpose of recreating
+its behavior. If a task genuinely requires implementation-level compatibility
+or source review, stop and ask the user to authorize that expanded scope.
+
+All sample architectures and golden images must be created specifically for
+C4ML. Do not reuse common demonstration systems from another diagramming tool.
+
+## Dependencies and licensing
+
+Before adding a dependency, report:
+
+- the capability it provides;
+- why that capability belongs outside the C4ML-owned core;
+- its license;
+- runtime and installation impact;
+- whether it works offline;
+- the adapter boundary that permits replacement; and
+- the test that will protect that boundary.
+
+Do not add a package merely to avoid a small, well-bounded implementation.
+Conversely, do not reproduce a mature third-party algorithm when a properly
+licensed, isolated dependency is the safer engineering choice.
+
+Fonts, icons, fixtures, and themes are dependencies or project assets too. Their
+origin and redistribution terms must be documented before inclusion.
+
+## Change workflow
+
+For analysis, review, or diagnosis:
+
+- inspect relevant files and report findings;
+- do not implement changes unless requested; and
+- separate confirmed facts, proposals, and open decisions.
+
+For an approved change:
+
+1. identify the authoritative specification section;
+2. present scope and representative impact before a broad systematic rewrite;
+3. make the smallest coherent change;
+4. add or update the evidence required by `TESTING.md`;
+5. run proportionate non-destructive validation;
+6. inspect generated visual output when rendering is affected; and
+7. report implementation, automated validation, visual validation, commit, and
+   push as separate statuses.
+
+Do not silently widen a task from documentation to implementation or from a
+technical spike to production architecture.
+
+## Source and architecture guidance
+
+When implementation is authorized:
+
+- keep the portable compiler core free of DOM, Node.js filesystem, process, and
+  network dependencies;
+- place Node.js, browser, filesystem, and UI behavior behind frontend adapters;
+- run editor compilation and language processing in a Web Worker;
+- attach source ranges and stable semantic IDs through the scene graph and SVG;
+- reject stale worker results and retain the last valid preview during invalid
+  edits;
+- keep the domain model independent of parser-generated AST types;
+- translate parser output into explicit validated domain types;
+- keep layout-adapter data out of the public semantic model;
+- normalize coordinates and units at adapter boundaries;
+- use an engine-neutral scene graph;
+- isolate filesystem, process, and environment access at the CLI boundary;
+- make randomness explicit and seeded, or eliminate it;
+- provide stable diagnostic codes; and
+- prefer pure transformations for stages that need deterministic tests.
+
+Implement the complete C4 semantic hierarchy and supporting models rather than
+generic boxes with labels. In particular:
+
+- distinguish runtime Containers from Components and organizational modules;
+- keep Code Elements owned by exactly one Component;
+- represent Dynamic Interactions as ordered occurrences over the static model;
+- represent deployment instances as references to static Software Systems and
+  Containers;
+- support nested Deployment Nodes and Infrastructure Nodes; and
+- enforce view-specific scope and allowed-element rules.
+
+Treat the official C4 notation recommendations as requirements in the complete
+profile: title, legend, description, explicit type, Container/Component
+technology, directed labelled relationships, Container protocols, glossary
+coverage, and explained visual encodings.
+
+Do not make renderer output the only representation of layout. Final geometry
+must be inspectable and testable before serialization.
+
+Do not introduce a Python service, duplicate compiler implementation, or
+frontend-specific semantic behavior without an explicit approved specification
+change. A future native, Wasm, or Python algorithm module must remain a
+replaceable adapter behind a tested compiler-core interface.
+
+## Testing and generated artifacts
+
+Follow `TESTING.md`. In particular:
+
+- assert semantic and geometric invariants before relying on snapshots;
+- use only original project fixtures;
+- control fonts, locale, timezone, and randomness;
+- never update visual goldens blindly;
+- visually inspect every intentional rendering change; and
+- keep generated output out of source directories unless the repository layout
+  explicitly designates committed fixtures.
+
+There are currently no approved build or test commands. Add them here only when
+the scaffold and toolchain have been accepted and the commands have been run
+successfully in this repository.
+
+## Documentation discipline
+
+Keep status explicit:
+
+- **Draft**: proposed and still open to design change.
+- **Accepted**: approved as the current project direction.
+- **Implemented**: present in source code.
+- **Automatically validated**: relevant automated checks pass.
+- **Visually validated**: rendered artifacts were inspected.
+
+Do not describe a draft as implemented or a passing unit test as visual
+validation.
+
+When a design choice changes, update the normative document and preserve useful
+historical reasoning as an explicitly superseded note rather than silently
+erasing it.
+
+## Git and repository hygiene
+
+- Preserve unrelated user changes.
+- Keep commits narrowly scoped to the requested work.
+- Do not commit, push, tag, publish, or initialize remote services unless asked.
+- Do not bulk-format unrelated files.
+- Do not delete drafts or prior design material without explicit approval.
+- Run whitespace and diff checks before handing off a completed change once the
+  repository is initialized.
+
+## Definition of done
+
+Do not say a task is complete until the requested artifact exists, relevant
+checks have passed, visual output has been inspected when applicable, and all
+remaining open decisions or limitations are reported clearly.
