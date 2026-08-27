@@ -78,10 +78,10 @@ repository.
 
 ## Development tools
 
-| Package | Phase 0 version | License | Purpose |
+| Package | Current pinned version | License | Purpose |
 | --- | ---: | --- | --- |
 | pnpm | 11.24.0 | MIT | pinned workspace package manager |
-| TypeScript | 7.0.2 | Apache-2.0 | strict type checking and ESM build |
+| TypeScript | 6.0.3 | Apache-2.0 | strict type checking and ESM build; compatible with the Angular 22 editor baseline |
 | Vitest | 4.1.11 | MIT | unit and adapter-contract tests |
 | `@types/node` | 24.13.3 | MIT | Node.js 24 LTS type surface |
 | esbuild | 0.28.2 | MIT | in-memory browser bundle compatibility check |
@@ -118,12 +118,17 @@ The 2026-08-27 spike produced the following evidence:
 - The production license inventory contained Apache-2.0, MIT, MPL-2.0, and
   `EPL-2.0 OR GPL-3.0-or-later`; no unknown license was reported.
 
-ELK.js 0.12.0's published declaration files are not fully compatible with
-TypeScript 7.0.2: one generic declaration fails and its browser `Worker` type is
-ambient. Phase 0 confines `skipLibCheck` and a local CommonJS-constructor cast
-to the ELK adapter. Permanent adoption requires either compatible upstream
-types or a reviewed adapter-local declaration boundary; this workaround MUST
-NOT spread into the compiler core.
+ELK.js 0.12.0's published declaration files are not fully compatible with the
+pinned TypeScript 6.0.3 toolchain: one generic declaration fails and its browser
+`Worker` type is ambient. Phase 0 confines `skipLibCheck` and a local
+CommonJS-constructor cast to the ELK adapter. Permanent adoption requires either
+compatible upstream types or a reviewed adapter-local declaration boundary;
+this workaround MUST NOT spread into the compiler core.
+
+The complete build, browser-bundle check, source and test type checking, test
+suite, and reference export were repeated successfully with TypeScript 6.0.3
+before it became the pinned workspace compiler. The compiler and configuration
+do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility, not permanent dependency
 acceptance. The product grammar, editor framework, production bundle strategy,
