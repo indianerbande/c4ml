@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.4
+Status: Draft 0.9
 
 Date: 2026-08-27
 
@@ -8,17 +8,33 @@ This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
 document defines the evidence required to claim that behavior works.
 
-Vitest is accepted for Phase 0 unit and adapter-contract tests. The verified
+Vitest is accepted for unit and adapter-contract tests. The verified
 commands are:
 
 - `pnpm run build` for generated-language and TypeScript build validation;
 - `pnpm run check:browser` for in-memory browser bundle validation;
 - `pnpm run typecheck` for source and test type checking;
-- `pnpm run test` for the Phase 0 test suite; and
-- `pnpm run check` for the complete Phase 0 gate.
+- `pnpm run test` for the current semantic, view, and adapter test suite; and
+- `pnpm run check` for the complete current gate; and
+- `pnpm run demo:render` for the ignored visual reference export.
 
 All commands run locally after dependency installation and require no compiler
 service or runtime network access.
+
+The Phase 1 semantic evidence uses the original `signal-garden` fixture in
+`packages/compiler-core/test`. The compiler-core suite currently verifies the
+complete static element family, source-located semantic failures, deployment
+reference failures, all seven view projections, cross-level selection errors,
+stable object identity, default view guidance, Dynamic ordering and parallel
+groups, collaboration/sequence equivalence, nested Deployment Nodes, relevant
+Infrastructure Nodes, and declaration-order independence. Rendering and visual
+evidence now also covers deterministic diagram preparation, semantic and Visual
+Group parentage, automatic/guided/fixed route policies, fixed-route rejection,
+explicit source/target Ports, scene-owned Arrowheads, safe custom-shape
+validation and assignment, renderer-neutral scene construction, semantic theme
+roles and presets, stable SVG, ELK absolute compound geometry, SVG-to-PNG
+rasterization, and a visually inspected Signal Garden Container View. This is
+not yet a golden suite or complete rendering evidence for all seven views.
 
 ## 1. Testing principles
 
@@ -104,6 +120,24 @@ Deployment View tests MUST cover multiple environments, nested Deployment
 Nodes, Infrastructure Nodes, repeated instances, environment-specific details,
 and preservation of static-model identity.
 
+Visual Group tests MUST prove that:
+
+- grouping does not change the view's elements, relationships, or C4 ownership;
+- only items already visible in the resolved view can become members;
+- static elements preserve object identity through resolved group membership;
+- Deployment Nodes, Infrastructure Nodes, and deployment instances can be
+  grouped in Deployment Views;
+- nested groups resolve deterministically;
+- empty IDs, duplicate IDs, empty titles, empty membership, invalid padding,
+  unknown members, repeated direct membership, and cycles produce stable
+  source-located diagnostics;
+- groups and members remain deterministic after declaration reordering; and
+- generated legends explain the Visual Group boundary.
+
+The first-release suite MUST reject overlapping sibling groups. Future support
+for explicitly overlapping visual regions requires a separate specification and
+must not weaken semantic containment rules.
+
 ### 2.4 Layout adapter contract
 
 Every automatic-layout adapter MUST pass the same contract suite. The suite MUST
@@ -147,7 +181,8 @@ behavior.
 
 Routing tests MUST cover:
 
-- automatic, direct, and orthogonal modes;
+- automatic, guided, and fixed authorship policies;
+- direct and orthogonal route styles;
 - all cardinal source and target ports;
 - self-relationships if supported;
 - parallel relationships;
@@ -156,18 +191,63 @@ Routing tests MUST cover:
 - automatic obstacle avoidance;
 - complete and partial waypoint lists;
 - relative and absolute waypoints;
-- intentional shared segments or junctions if supported;
-- label placement on every segment orientation; and
+- named horizontal and vertical corridors;
+- deterministic lane assignment and explicit lane selection;
+- locked segments combined with automatically completed segments;
+- hard and soft avoidance regions;
+- intentional shared segments and junctions only when explicitly authored;
+- label placement on every segment orientation and on an explicitly selected
+  segment;
+- preservation of guided routes after an unrelated graph change;
+- local rerouting after one related element or relationship changes;
+- dense connection fans entering and leaving both sides of a central boundary;
+- inspectable pre-SVG route controls and effective routes; and
 - failure when a hard manual route is geometrically impossible.
 
 Structural assertions MUST detect paths through element interiors, invalid port
 attachment, duplicate zero-length segments, unintended diagonal segments in an
-orthogonal route, and labels outside the canvas.
+orthogonal route, corridor-capacity violations, two relationships accidentally
+occupying the same exclusive lane, silently ignored hard guidance, and labels
+outside the canvas.
+
+Every effective route MUST expose exactly one source Port and one target Port.
+Tests MUST prove that each Port retains its relationship, endpoint owner,
+source/target role, compass side, and effective point, and that the Route refers
+to those Ports without becoming a second semantic Relationship.
 
 ### 2.7 Scene graph and SVG
 
 Scene-graph tests MUST verify stable ordering, IDs, bounds, text content,
 arrowheads, metadata, and style precedence.
+
+Scene tests MUST prove that Ports and Arrowheads are explicit objects before
+SVG serialization, that every Route references two existing Ports, and that
+every directed Route has exactly one Arrowhead whose tip overlaps its target
+Port by the documented amount. The SVG renderer MUST consume that geometry
+rather than calculate a second arrowhead independently.
+
+Shape tests MUST verify:
+
+- the built-in Person shape is distinct from the default box shape;
+- all definitions use a 100 x 100 normalized canvas;
+- content boxes and primitive geometry remain finite and inside that canvas;
+- all four cardinal Ports exist on their matching canvas sides;
+- only rectangles, ellipses, polygons, and lines enter the renderer contract;
+- shape paint uses semantic `surface`, `accent`, and `detail` roles;
+- duplicate IDs, empty primitives, malformed geometry, and invalid Ports fail
+  with stable diagnostics;
+- assigning a shape changes presentation and effective Port geometry without
+  changing C4 kind, ownership, identity, or view eligibility; and
+- SVG output contains no script, external asset, CSS, font, filter, or image
+  content sourced from a shape definition.
+
+Theme tests MUST verify:
+
+- every renderable semantic element role has internal and external tokens;
+- bundled preset text contrast is at least 4.5:1;
+- deep overrides change only the selected token and preserve their base preset;
+- unknown presets and malformed colors produce stable diagnostics; and
+- resolved theme, element-role, and element-state metadata reaches SVG.
 
 SVG tests MUST include:
 
@@ -268,7 +348,10 @@ The initial catalog SHOULD include:
 15. `signal-garden-deployment`: development and production environments with
     nested Deployment Nodes, infrastructure, and repeated instances; and
 16. `complete-notation-profile`: title, legend, descriptions, technologies,
-    protocol labels, glossary entries, and explained visual encodings.
+    protocol labels, glossary entries, and explained visual encodings; and
+17. `shape-gallery`: the original built-in Person and box shapes plus original
+    custom rectangle, ellipse, polygon, and line compositions with every
+    cardinal Port.
 
 Fixture names, domain stories, labels, and visual designs are original project
 assets and fall under the project's eventual license.

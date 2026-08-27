@@ -1,0 +1,67 @@
+c4ml draft-1
+
+// Documentation preview only. No C4ML parser exists yet.
+// This original fixture demonstrates presentation without changing C4 meaning.
+
+shape signal-marker {
+  canvas = (100, 100)
+  content = box(22, 22, 56, 56)
+
+  ports {
+    north = (50, 0)
+    east = (100, 50)
+    south = (50, 100)
+    west = (0, 50)
+  }
+
+  draw {
+    polygon surface = [(50, 0), (100, 50), (50, 100), (0, 50)]
+    line detail = [(25, 50), (75, 50)]
+  }
+}
+
+model {
+  system garden-signal {
+    name = "Garden Signal"
+    responsibility = "Shares current garden conditions with caretakers."
+    classification = internal
+  }
+
+  system sensor-post {
+    name = "Sensor Post"
+    responsibility = "Publishes moisture and temperature observations."
+    classification = external
+  }
+}
+
+relations {
+  relation sensor-publishes-observations {
+    from = sensor-post
+    to = garden-signal
+    intent = "Publishes current garden observations"
+  }
+}
+
+view garden-signal-context {
+  type = system-context
+  scope = garden-signal
+  title = "System Context — Garden Signal"
+  purpose = "Shows that custom shape assignment remains presentation-only."
+  audience = default
+  legend = generated
+
+  presentation {
+    shape sensor-post = signal-marker
+  }
+
+  layout {
+    flow = right
+
+    route sensor-publishes-observations {
+      policy = guided
+      style = orthogonal
+      source-port = east
+      target-port = west
+    }
+  }
+}

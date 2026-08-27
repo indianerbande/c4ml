@@ -2,10 +2,10 @@
 
 ## Project status
 
-C4ML has entered the approved Phase 0 feasibility implementation. The local Git
-repository and GitHub remote exist. An Apache-2.0 TypeScript/pnpm monorepo
-scaffold and isolated Langium, ELK.js, and resvg-js technical spikes are
-authorized.
+C4ML has completed its initial Phase 0 feasibility implementation and entered
+Phase 1 semantic-core work. The local Git repository and GitHub remote exist.
+An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium, ELK.js,
+and resvg-js technical spikes are authorized.
 
 The runtime architecture is accepted: one browser-compatible TypeScript
 compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
@@ -18,10 +18,45 @@ The minimum completeness baseline is also accepted: all four static C4 views
 (System Landscape, Dynamic, Deployment), their required model elements, and the
 official notation recommendations promoted to C4ML completeness requirements.
 
-Phase 0 scaffolding and candidate-adapter code are approved. Do not represent a
-spike dependency as permanent, start production editor UI work, or freeze the
-DSL grammar until the user has reviewed and approved the corresponding results
-in `SPEC.md`.
+Phase 0 scaffolding and candidate-adapter code are approved. The parser-neutral
+C4 semantic types, source-located diagnostics, validation, and deterministic
+resolution contracts for all seven view types are implemented and automatically
+validated in the portable compiler core. View-local Visual Groups are also
+implemented with deterministic nesting, scope protection, and deployment-item
+membership. They are an internal compiler contract, not a frozen public DSL
+grammar. Do not represent a spike dependency as permanent, start production
+editor UI work, or freeze the DSL grammar until the user has reviewed and
+approved the corresponding results in `SPEC.md`.
+
+The first Phase 1 rendering slice is also implemented. A resolved view can be
+prepared as an engine-neutral layout request, routed through inspectable
+automatic, guided, or fixed route contracts, converted into a renderer-neutral
+scene, serialized as standalone SVG, and rasterized as PNG through the existing
+resvg candidate adapter. The original Signal Garden Container View reference
+export exercises Visual Groups, cardinal ports, a named corridor, label
+placement, ELK compound geometry, SVG, and PNG. This is not yet a public CLI,
+does not accept `.c4ml` source, does not complete the full constraint/routing
+scope, and does not permanently accept the candidate adapters.
+
+The renderer also has an implemented semantic color-theme contract. The
+original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
+deployment roles, boundaries, relationship policies, and internal/external
+state. Deep color-token overrides are supported by the internal TypeScript
+contract. The future source grammar for theme declarations and
+geometry-affecting style tokens remains draft.
+
+The rendering pipeline now also keeps Relationship semantics, effective Ports,
+Routes, and Arrowheads as distinct inspectable objects. Port sides use the
+consistent compass vocabulary `north`, `east`, `south`, and `west`. A
+renderer-neutral custom-shape contract is implemented with a normalized 100 x
+100 canvas, content box, cardinal Port anchors, semantic paint roles, and a
+restricted primitive set. The original built-in Person and box shapes use that
+contract. Custom shapes remain presentation-only and cannot create new C4
+element kinds. Their future author-facing grammar is still draft.
+
+`DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
+preview. They are deliberately non-normative and non-executable. Treat them as
+review material, not as an accepted grammar or a compatibility commitment.
 
 ## Read first
 
@@ -193,7 +228,7 @@ Follow `TESTING.md`. In particular:
 - keep generated output out of source directories unless the repository layout
   explicitly designates committed fixtures.
 
-The following Phase 0 commands are approved and have run successfully in this
+The following project commands are approved and have run successfully in this
 repository:
 
 - `pnpm install` installs the pinned workspace dependency graph;
@@ -202,8 +237,11 @@ repository:
 - `pnpm run check:browser` bundles the portable core, Langium services, and ELK
   adapter for a browser without writing bundle artifacts;
 - `pnpm run typecheck` builds source and type-checks test code;
-- `pnpm run test` runs the Phase 0 unit and adapter tests; and
-- `pnpm run check` runs the complete Phase 0 build, browser, type, and test gate.
+- `pnpm run test` runs the semantic, view-resolution, and adapter tests;
+- `pnpm run check` runs the complete current build, browser, type, and test
+  gate; and
+- `pnpm run demo:render` regenerates the ignored Signal Garden SVG and PNG
+  reference output under `apps/reference-export/build/reference/`.
 
 Do not add a command here until it has succeeded in this checkout.
 

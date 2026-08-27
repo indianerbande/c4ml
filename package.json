@@ -11,6 +11,7 @@
   "scripts": {
     "build": "pnpm --recursive --sort --if-present run build",
     "check:browser": "node scripts/check-browser-bundles.mjs",
+    "demo:render": "pnpm run build && pnpm --filter @c4ml/reference-export render",
     "test": "pnpm --recursive --sort --if-present run test",
     "typecheck": "pnpm run build && pnpm run typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.tests.json",

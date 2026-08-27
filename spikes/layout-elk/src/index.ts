@@ -45,12 +45,38 @@ export class ElkLayoutAdapter implements LayoutAdapter {
 
 function createElkGraph(request: LayoutRequest): ElkNode {
   const elkNodes = new Map<string, ElkNode>();
+  const parentIds = new Set(
+    request.nodes.flatMap((node) =>
+      node.parentId === undefined ? [] : [node.parentId],
+    ),
+  );
   for (const node of stableById(request.nodes)) {
+    const compoundOptions = parentIds.has(node.id)
+      ? {
+          "elk.algorithm": "layered",
+          "elk.direction": directionMap[request.direction],
+          "elk.edgeRouting": "ORTHOGONAL",
+          "elk.layered.spacing.nodeNodeBetweenLayers": "140",
+          "elk.spacing.nodeNode": "70",
+        }
+      : {};
     elkNodes.set(node.id, {
       id: node.id,
       width: node.width,
       height: node.height,
       children: [],
+      ...(parentIds.has(node.id) || node.padding !== undefined
+        ? {
+            layoutOptions: {
+              ...compoundOptions,
+              ...(node.padding === undefined
+                ? {}
+                : {
+                    "elk.padding": `[top=${node.padding},left=${node.padding},bottom=${node.padding},right=${node.padding}]`,
+                  }),
+            },
+          }
+        : {}),
     });
   }
 
@@ -93,7 +119,9 @@ function normalizeResult(request: LayoutRequest, graph: ElkNode): LayoutResult {
   const nodes: LayoutNodeResult[] = [];
   const edges: LayoutEdgeResult[] = [];
 
-  visitGraph(graph, requestNodeById, nodes, edges);
+  visitNodes(graph, requestNodeById, nodes, { x: 0, y: 0 });
+  const layoutNodeById = new Map(nodes.map((node) => [node.id, node]));
+  visitEdges(graph, request, layoutNodeById, edges);
 
   if (nodes.length !== request.nodes.length) {
     throw new ContractError(
@@ -114,11 +142,11 @@ function normalizeResult(request: LayoutRequest, graph: ElkNode): LayoutResult {
   };
 }
 
-function visitGraph(
+function visitNodes(
   graph: ElkNode,
   requestNodeById: ReadonlyMap<string, LayoutNodeRequest>,
   nodes: LayoutNodeResult[],
-  edges: LayoutEdgeResult[],
+  offset: { readonly x: number; readonly y: number },
 ): void {
   for (const child of graph.children ?? []) {
     const requestNode = requestNodeById.get(child.id);
@@ -129,37 +157,103 @@ function visitGraph(
       );
     }
 
+    const childOffset = {
+      x: offset.x + requiredFinite(child.x, `${child.id}.x`),
+      y: offset.y + requiredFinite(child.y, `${child.id}.y`),
+    };
     nodes.push({
       ...requestNode,
-      x: requiredFinite(child.x, `${child.id}.x`),
-      y: requiredFinite(child.y, `${child.id}.y`),
+      x: childOffset.x,
+      y: childOffset.y,
       width: requiredFinite(child.width, `${child.id}.width`),
       height: requiredFinite(child.height, `${child.id}.height`),
     });
-    visitGraph(child, requestNodeById, nodes, edges);
-  }
-
-  for (const edge of graph.edges ?? []) {
-    edges.push({
-      id: edge.id,
-      sections: stableById(edge.sections ?? []).map(normalizeSection),
-    });
+    visitNodes(child, requestNodeById, nodes, childOffset);
   }
 }
 
-function normalizeSection(section: ElkEdgeSection) {
+function visitEdges(
+  graph: ElkNode,
+  request: LayoutRequest,
+  layoutNodeById: ReadonlyMap<string, LayoutNodeResult>,
+  edges: LayoutEdgeResult[],
+): void {
+  const requestEdgeById = new Map(request.edges.map((edge) => [edge.id, edge]));
+  const parentById = new Map(
+    request.nodes.flatMap((node) =>
+      node.parentId === undefined ? [] : [[node.id, node.parentId] as const],
+    ),
+  );
+  for (const edge of graph.edges ?? []) {
+    const requestEdge = requestEdgeById.get(edge.id);
+    if (requestEdge === undefined) {
+      throw new ContractError(
+        "C4ML-P0-ELK-004",
+        `ELK returned unknown edge ${edge.id}.`,
+      );
+    }
+    const commonAncestorId = lowestCommonAncestor(
+      requestEdge.sourceId,
+      requestEdge.targetId,
+      parentById,
+    );
+    const commonAncestor =
+      commonAncestorId === undefined
+        ? undefined
+        : layoutNodeById.get(commonAncestorId);
+    const offset =
+      commonAncestor === undefined
+        ? { x: 0, y: 0 }
+        : { x: commonAncestor.x, y: commonAncestor.y };
+    edges.push({
+      id: edge.id,
+      sections: stableById(edge.sections ?? []).map((section) =>
+        normalizeSection(section, offset),
+      ),
+    });
+  }
+  for (const child of graph.children ?? []) {
+    visitEdges(child, request, layoutNodeById, edges);
+  }
+}
+
+function lowestCommonAncestor(
+  sourceId: string,
+  targetId: string,
+  parentById: ReadonlyMap<string, string>,
+): string | undefined {
+  const targetAncestors = new Set<string>();
+  let target: string | undefined = targetId;
+  while (target !== undefined) {
+    targetAncestors.add(target);
+    target = parentById.get(target);
+  }
+  let source: string | undefined = sourceId;
+  while (source !== undefined) {
+    if (targetAncestors.has(source)) {
+      return source;
+    }
+    source = parentById.get(source);
+  }
+  return undefined;
+}
+
+function normalizeSection(
+  section: ElkEdgeSection,
+  offset: { readonly x: number; readonly y: number },
+) {
   return {
     start: {
-      x: requiredFinite(section.startPoint.x, `${section.id}.start.x`),
-      y: requiredFinite(section.startPoint.y, `${section.id}.start.y`),
+      x: offset.x + requiredFinite(section.startPoint.x, `${section.id}.start.x`),
+      y: offset.y + requiredFinite(section.startPoint.y, `${section.id}.start.y`),
     },
     bends: (section.bendPoints ?? []).map((point, index) => ({
-      x: requiredFinite(point.x, `${section.id}.bend[${index}].x`),
-      y: requiredFinite(point.y, `${section.id}.bend[${index}].y`),
+      x: offset.x + requiredFinite(point.x, `${section.id}.bend[${index}].x`),
+      y: offset.y + requiredFinite(point.y, `${section.id}.bend[${index}].y`),
     })),
     end: {
-      x: requiredFinite(section.endPoint.x, `${section.id}.end.x`),
-      y: requiredFinite(section.endPoint.y, `${section.id}.end.y`),
+      x: offset.x + requiredFinite(section.endPoint.x, `${section.id}.end.x`),
+      y: offset.y + requiredFinite(section.endPoint.y, `${section.id}.end.y`),
     },
   };
 }

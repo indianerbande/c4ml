@@ -1,0 +1,362 @@
+c4ml draft-1
+
+// Documentation preview only. No C4ML parser exists yet.
+// Signal Garden is an original C4ML example architecture.
+
+model {
+  person grower {
+    name = "Grower"
+    responsibility = "Plans and supervises cultivation cycles."
+    classification = external
+  }
+
+  system signal-garden {
+    name = "Signal Garden"
+    responsibility = "Coordinates cultivation plans from environmental signals."
+    classification = internal
+    tags = [core, cultivation]
+  }
+
+  system weather-beacon {
+    name = "Weather Beacon"
+    responsibility = "Publishes local weather observations."
+    classification = external
+  }
+
+  container studio-ui inside signal-garden {
+    name = "Cultivation Studio"
+    responsibility = "Presents plans and accepts cultivation changes."
+    technology = "TypeScript web application"
+  }
+
+  container cultivation-api inside signal-garden {
+    name = "Cultivation API"
+    responsibility = "Applies planning rules and coordinates observations."
+    technology = "TypeScript service"
+  }
+
+  container ledger-store inside signal-garden {
+    name = "Cultivation Ledger"
+    responsibility = "Stores plans, readings, and recommendations."
+    technology = "PostgreSQL"
+  }
+
+  container notify-worker inside signal-garden {
+    name = "Notification Worker"
+    responsibility = "Delivers time-sensitive cultivation notices."
+    technology = "TypeScript worker"
+  }
+
+  component plan-controller inside cultivation-api {
+    name = "Plan Controller"
+    responsibility = "Accepts and validates cultivation-plan requests."
+    technology = "HTTP controller"
+  }
+
+  component recommendation-engine inside cultivation-api {
+    name = "Recommendation Engine"
+    responsibility = "Calculates cultivation recommendations from observations."
+    technology = "Domain service"
+  }
+
+  code request-mapper inside plan-controller {
+    name = "Request Mapper"
+    responsibility = "Maps transport input to a cultivation-plan command."
+    code-kind = function
+    language = "TypeScript"
+  }
+
+  code zone-policy inside recommendation-engine {
+    name = "Zone Policy"
+    responsibility = "Combines zone constraints into a recommendation."
+    code-kind = module
+    language = "TypeScript"
+  }
+
+  code moisture-index inside recommendation-engine {
+    name = "Moisture Index"
+    responsibility = "Normalizes recent moisture observations."
+    code-kind = function
+    language = "TypeScript"
+  }
+}
+
+relations {
+  relation grower-plans-system {
+    from = grower
+    to = signal-garden
+    intent = "Plans and reviews cultivation cycles"
+  }
+
+  relation weather-feeds-system {
+    from = weather-beacon
+    to = signal-garden
+    intent = "Provides local environmental observations"
+  }
+
+  relation grower-edits-ui {
+    from = grower
+    to = studio-ui
+    intent = "Edits cultivation plans"
+  }
+
+  relation ui-calls-api {
+    from = studio-ui
+    to = cultivation-api
+    intent = "Submits cultivation commands"
+    technology = "HTTPS/JSON"
+  }
+
+  relation api-writes-ledger {
+    from = cultivation-api
+    to = ledger-store
+    intent = "Stores plans and recommendations"
+    protocol = "PostgreSQL wire protocol"
+  }
+
+  relation api-enqueues-notice {
+    from = cultivation-api
+    to = notify-worker
+    intent = "Enqueues cultivation notices"
+    protocol = "AMQP"
+  }
+
+  relation weather-feeds-api {
+    from = weather-beacon
+    to = cultivation-api
+    intent = "Supplies current environmental observations"
+  }
+
+  relation weather-feeds-engine {
+    from = weather-beacon
+    to = recommendation-engine
+    intent = "Supplies normalized observations"
+  }
+
+  relation ui-invokes-controller {
+    from = studio-ui
+    to = plan-controller
+    intent = "Sends validated planning input"
+  }
+
+  relation controller-requests-recommendation {
+    from = plan-controller
+    to = recommendation-engine
+    intent = "Requests a cultivation recommendation"
+  }
+
+  relation engine-reads-ledger {
+    from = recommendation-engine
+    to = ledger-store
+    intent = "Reads recent cultivation observations"
+  }
+
+  relation grower-revises-plan {
+    from = grower
+    to = plan-controller
+    intent = "Provides a revised cultivation plan"
+  }
+
+  relation policy-reads-index {
+    from = zone-policy
+    to = moisture-index
+    intent = "Reads the normalized moisture score"
+  }
+}
+
+deployments {
+  environment production {
+    name = "Production"
+    responsibility = "Runs the live cultivation service."
+
+    node prod-cloud {
+      name = "Production Cloud"
+      responsibility = "Hosts the live Signal Garden installation."
+      technology = "European cloud region"
+    }
+
+    node prod-cluster inside prod-cloud {
+      name = "Application Cluster"
+      responsibility = "Runs user-facing and background services."
+      technology = "Kubernetes"
+    }
+
+    node prod-data inside prod-cloud {
+      name = "Data Service"
+      responsibility = "Runs the managed cultivation ledger."
+      technology = "Managed PostgreSQL"
+    }
+
+    infrastructure prod-gateway on prod-cloud {
+      name = "Edge Gateway"
+      responsibility = "Terminates public HTTPS traffic."
+      technology = "Managed application gateway"
+    }
+
+    system-instance prod-system of signal-garden on prod-cloud
+    container-instance prod-ui of studio-ui on prod-cluster
+    container-instance prod-api of cultivation-api on prod-cluster
+    container-instance prod-ledger of ledger-store on prod-data
+    container-instance prod-worker of notify-worker on prod-cluster
+
+    deployment-relation prod-gateway-ui {
+      from = prod-gateway
+      to = prod-ui
+      intent = "Forwards browser requests"
+      technology = "HTTPS"
+    }
+
+    deployment-relation prod-ui-api {
+      from = prod-ui
+      to = prod-api
+      intent = "Submits cultivation commands"
+      relation = ui-calls-api
+      technology = "HTTPS/JSON"
+    }
+
+    deployment-relation prod-api-ledger {
+      from = prod-api
+      to = prod-ledger
+      intent = "Stores plans and recommendations"
+      relation = api-writes-ledger
+      technology = "PostgreSQL wire protocol"
+    }
+
+    deployment-relation prod-api-worker {
+      from = prod-api
+      to = prod-worker
+      intent = "Enqueues cultivation notices"
+      relation = api-enqueues-notice
+      technology = "AMQP"
+    }
+  }
+
+  environment staging {
+    name = "Staging"
+    responsibility = "Runs the pre-release verification installation."
+
+    node stage-host {
+      name = "Staging Host"
+      responsibility = "Runs a compact staging installation."
+      technology = "Virtual machine"
+    }
+
+    container-instance stage-api of cultivation-api on stage-host
+  }
+}
+
+view cultivation-portfolio {
+  type = system-landscape
+  scope = "Cultivation Operations"
+  title = "System Landscape — Cultivation Operations"
+  purpose = "Shows the people and systems exchanging cultivation signals."
+  audience = default
+  legend = generated
+
+  group cultivation-services {
+    title = "Cultivation Services"
+    description = "Systems participating in cultivation planning."
+    members = [signal-garden, weather-beacon]
+    keep-together = true
+    padding = 32
+  }
+}
+
+view signal-context {
+  type = system-context
+  scope = signal-garden
+  title = "System Context — Signal Garden"
+  purpose = "Explains who uses Signal Garden and which systems supply it."
+  audience = default
+  legend = generated
+
+  layout {
+    flow = right
+
+    constraint left-of(grower, signal-garden) {
+      strength = hard
+      gap = 120
+    }
+
+    constraint align-center-y(grower, signal-garden) {
+      strength = soft
+    }
+  }
+}
+
+view signal-containers {
+  type = container
+  scope = signal-garden
+  title = "Container View — Signal Garden"
+  purpose = "Explains the deployable responsibilities inside Signal Garden."
+  audience = default
+  legend = generated
+
+  presentation {
+    theme = c4ml-blue
+  }
+}
+
+view api-components {
+  type = component
+  scope = cultivation-api
+  title = "Component View — Cultivation API"
+  purpose = "Explains how the API validates plans and calculates advice."
+  audience = default
+  legend = generated
+}
+
+view engine-code {
+  type = code
+  scope = recommendation-engine
+  title = "Code View — Recommendation Engine"
+  purpose = "Explains the important policy and observation calculations."
+  audience = default
+  legend = generated
+}
+
+view revise-plan {
+  type = dynamic
+  scope = "Revise a cultivation plan"
+  title = "Dynamic View — Revise a Cultivation Plan"
+  purpose = "Explains the runtime collaboration for a plan revision."
+  audience = default
+  legend = generated
+  display = collaboration
+
+  interaction submit-plan {
+    order = 1
+    from = studio-ui
+    to = cultivation-api
+    intent = "Submits the revised cultivation plan"
+    relation = ui-calls-api
+  }
+
+  interaction store-plan {
+    order = 2
+    parallel = persist-and-notify
+    from = cultivation-api
+    to = ledger-store
+    intent = "Stores the revised plan"
+    relation = api-writes-ledger
+  }
+
+  interaction queue-notice {
+    order = 2
+    parallel = persist-and-notify
+    from = cultivation-api
+    to = notify-worker
+    intent = "Queues a plan-change notice"
+    relation = api-enqueues-notice
+  }
+}
+
+view production-deployment {
+  type = deployment
+  environment = production
+  systems = [signal-garden]
+  title = "Deployment View — Signal Garden Production"
+  purpose = "Explains where the live Signal Garden services execute."
+  audience = default
+  legend = generated
+}

@@ -32,7 +32,13 @@ export class ResvgPngRenderer implements PngRenderer {
           ? { mode: "original" }
           : { mode: "zoom", value: scale },
       font: {
-        loadSystemFonts: false,
+        loadSystemFonts: options.loadSystemFonts ?? false,
+        ...(options.fontFiles === undefined
+          ? {}
+          : { fontFiles: [...options.fontFiles] }),
+        ...(options.defaultFontFamily === undefined
+          ? {}
+          : { defaultFontFamily: options.defaultFontFamily }),
       },
       logLevel: "off",
       ...(options.background === undefined

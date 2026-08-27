@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.4
+Status: Draft 0.9
 
 Date: 2026-08-27
 
@@ -107,6 +107,8 @@ Graphviz, ELK, and Penrose.
 | Model-based projections avoid repeating the architecture for every diagram. | Views MUST select from a shared semantic model. |
 | Rank and alignment constraints improve automatic results but do not provide exact routing. | C4ML MUST support both relational placement constraints and explicit route controls. |
 | Generic graph engines expose useful ranks, ports, compound graphs, and routing modes, but engine-specific limitations leak into output. | The internal layout contract MUST normalize engine results and allow C4ML-owned post-processing. |
+| Graph-layout systems use ports as explicit edge attachment points, while vector formats separate paths from their markers or arrow geometry. | C4ML MUST keep relationship semantics, endpoint ports, route geometry, and arrowheads as separate inspectable compiler objects. |
+| Scalable vector formats map a stable local coordinate space onto varying output sizes. | Custom C4ML shapes MUST use a normalized renderer-neutral canvas with explicit content and port geometry. |
 | Constraint-based systems demonstrate the value of separating meaning from visual realization. | Semantic objects, view selection, visual style, and geometry MUST be separate compiler stages. |
 | Browser-screenshot PNG export adds a large and variable runtime dependency. | PNG SHOULD be derived directly from the canonical SVG without a headless browser. |
 
@@ -389,6 +391,42 @@ The default intended audiences are:
 - Deployment: technical people, including software and infrastructure
   architects, developers, and operations/support staff.
 
+### 6.9 Visual groups
+
+A Visual Group is a view-local boundary for organizing already visible diagram
+items. It MUST NOT change C4 ownership, containment, classification, identity,
+or view eligibility. Adding or removing a group around otherwise unchanged
+items MUST leave the resolved semantic elements and relationships unchanged.
+
+Every Visual Group MUST have:
+
+- an identifier unique within its view;
+- a human-readable title;
+- one or more direct members; and
+- deterministic member ordering after resolution.
+
+A group MAY contain visible static elements, Deployment Nodes, Infrastructure
+Nodes, deployment instances, or nested Visual Groups when those item kinds are
+valid for the containing view. Relationships are not group members; they cross
+group boundaries through the routing model.
+
+Groups MAY be nested but MUST form an acyclic, non-overlapping forest in the
+first release. A diagram item or nested group may have only one direct parent
+group within a view. A larger boundary MUST contain a smaller group rather than
+repeat that smaller group's members. A group reference MUST NOT import an item
+that the view's normal scope and selection rules did not already make visible.
+
+Group layout defaults to keeping its contents together with finite,
+non-negative padding. Layout and routing MUST treat the effective group boundary
+as an obstacle or port-bearing boundary where configured. The resolved group
+tree, membership, padding, and presentation metadata MUST remain inspectable
+before scene generation.
+
+A generated legend MUST explain the Visual Group boundary. An authored legend
+MUST explain any non-default group styling. A Visual Group remains presentation
+metadata even when its title represents a department, capability, suite, or
+other real-world classification.
+
 ## 7. Source-language design requirements
 
 The grammar is deliberately deferred. Any proposal MUST satisfy these rules:
@@ -464,13 +502,32 @@ Conflicting hard constraints MUST identify all relevant source locations.
 ### 8.4 Ports
 
 Relationships MUST be attachable to named or geometric ports. The initial port
-model MUST at least cover the four cardinal sides and an automatic choice.
+model MUST at least cover `north`, `east`, `south`, `west`, and an automatic
+choice. Public C4ML contracts MUST use these compass names consistently rather
+than mixing them with renderer-oriented top/right/bottom/left terminology.
 
 The author MUST be able to control source and target ports independently. Port
 selection MUST be view-specific unless the model explicitly defines a semantic
 interface in a future extension.
 
+A Port is the resolved attachment point of one relationship appearance on one
+diagram item. It MUST retain its owner, source/target role, cardinal side, and
+effective point. A Port is not a Relationship and MUST NOT carry architectural
+intent. The term "connector" MAY appear as an editor affordance, but it is not a
+core semantic type because it can ambiguously mean a port, a relationship, or a
+drawn line.
+
 ### 8.5 Routing
+
+Routing MUST support three authorship policies independently of the geometric
+route style:
+
+- `automatic`: the router chooses all ports and segments;
+- `guided`: the author fixes or prefers selected ports, corridors, lanes,
+  waypoints, avoidance regions, or segments while the router completes the
+  remaining path; and
+- `fixed`: the author supplies the complete route and the compiler validates it
+  without silently replacing it.
 
 The first release MUST support:
 
@@ -478,17 +535,46 @@ The first release MUST support:
 - orthogonal routes;
 - automatic routes;
 - author-supplied waypoints;
-- route corridors or partial waypoints that leave some segments automatic;
+- named route corridors with independently selectable lanes;
+- partial waypoints and locked segments that leave other segments automatic;
 - avoidance of element interiors and configured boundaries; and
-- independent placement of the relationship label.
+- hard and soft avoidance regions;
+- independent placement of the relationship label on a selected route segment;
+  and
+- view-local crossing and parallel-path preferences.
 
 A manually specified route MUST remain associated with stable relationship and
 view identifiers. Waypoints SHOULD be expressible relative to elements, ports,
 or the view canvas; raw canvas coordinates remain available when exact output
 is required.
 
+Symbolic and relative route guidance SHOULD be preferred over raw coordinates
+because it survives local diagram changes. A corridor MUST have stable identity,
+orientation, capacity or lane spacing, and a position derived from elements,
+boundaries, or explicit coordinates. Assigning relationships to different lanes
+within one corridor MUST prevent them from collapsing into an unreadable shared
+line.
+
+The router MUST treat author controls as input, not as suggestions inferred
+after routing. It MUST route hard-guided and fixed relationships before using
+their occupied space as an obstacle for remaining automatic relationships. A
+hard port, corridor, lane, waypoint, avoidance, or segment rule that cannot be
+satisfied MUST fail with source-located diagnostics. Soft guidance MAY be
+relaxed only with an explicit diagnostic when requested.
+
+Automatic rerouting after a model change MUST preserve unchanged hard controls
+and SHOULD keep unrelated guided segments stable. It MUST NOT reroute every
+relationship merely because one local edge or element changed.
+
 The route model MUST preserve the difference between intentional shared paths,
-parallel paths, crossings, and junctions.
+parallel paths, crossings, and junctions. Shared trunks and junctions MUST be
+explicit author decisions; the router MUST NOT merge semantic relationships
+solely to reduce visual crossings.
+
+Ports, corridors, lanes, waypoints, locked segments, and relaxed constraints
+MUST remain inspectable before SVG serialization. The editor SHOULD provide a
+debug overlay for these objects so an author can understand why a path was
+chosen.
 
 ### 8.6 Stability
 
@@ -561,6 +647,75 @@ browser independence, and the ability to override or replace each candidate.
 Passing a Phase 0 spike permits continued prototyping but does not make a
 candidate part of C4ML's public semantic model or freeze the source grammar.
 
+### 9.2 Phase 1 semantic and view contract
+
+The implemented Phase 1 compiler core owns parser-independent TypeScript
+contracts for static C4 elements, relationships, deployment data, Dynamic
+Interactions, and all seven view types. These contracts are the translation
+target for a future parser; they are not a proposal for concrete C4ML syntax.
+
+Semantic objects and diagnostics carry optional source references. When source
+information is available, diagnostics retain the originating file and range as
+well as related declaration locations. Stable diagnostic codes identify
+containment, reference, relationship, deployment, Dynamic, and view-selection
+failures independently of message wording.
+
+View resolution MUST:
+
+- reject a semantically invalid architecture model before creating projections;
+- preserve references to the original semantic objects rather than cloning or
+  redefining them per view;
+- apply the primary and supporting-element rules in Section 6;
+- order resolved collections deterministically by stable identifiers, with
+  Dynamic Interactions ordered first by occurrence order;
+- expose title, purpose, scope, legend, intended audience, and C4 usage guidance
+  to downstream compiler stages;
+- keep collaboration and sequence display choices separate from Dynamic
+  Interaction semantics; and
+- keep deployment instances linked to their static Software System or Container
+  identity.
+
+Authored include and exclude selections may narrow a valid projection, but MUST
+NOT admit elements or relationships from an illegal C4 level or remove a
+required focal element. Layout and presentation settings remain view-local and
+MUST NOT mutate the semantic model.
+
+### 9.3 Phase 1 rendering slice
+
+The first implemented rendering slice accepts the parser-neutral model and view
+contracts rather than `.c4ml` source. It resolves one view, creates an
+engine-neutral layout request, invokes a replaceable layout adapter, resolves
+effective routes, creates a renderer-neutral scene graph, and serializes a
+standalone SVG. A Node.js adapter can rasterize that exact SVG to PNG.
+
+The automatically and visually validated reference path currently covers one
+original Container View with a Software System boundary, a nested Visual Group,
+internal Containers, external supporting elements, labelled relationships,
+automatic routes, guided cardinal ports, one named corridor with lane
+selection, explicit label-segment selection, view-local label offsets, and an
+original semantic color theme. Fixed orthogonal routes are structurally
+validated in the compiler-core suite.
+
+The implemented internal contract represents every effective relationship
+appearance as two explicit Ports, one Route, and one Arrowhead. The Route owns
+the path and label placement; the Arrowhead owns its final geometry. The SVG
+renderer serializes those scene objects rather than reconstructing attachment
+or arrow geometry from semantic Relationships.
+
+The internal shape contract is also implemented for built-in and caller-supplied
+renderer-neutral vector shapes. It uses a normalized 100 x 100 canvas, an
+explicit text content box, four cardinal port anchors, semantic paint roles,
+and a restricted primitive set. The original `c4ml-person` and `c4ml-box`
+shapes exercise this contract. The author-facing shape grammar remains draft.
+
+These types are internal compiler contracts, not accepted `.c4ml` grammar. The
+current slice intentionally does not claim complete placement constraints,
+relative waypoints, avoidance regions, locked segments, route-junction
+authorship, complete all-view rendering evidence, a frozen author-facing theme
+grammar, geometry-affecting style tokens, or a bundled font. The ELK.js and
+resvg-js implementations remain candidate adapters behind the accepted
+engine-neutral boundaries.
+
 ## 10. Scene graph and rendering
 
 The scene graph MUST represent at least:
@@ -573,6 +728,17 @@ The scene graph MUST represent at least:
 - text and labels;
 - legend entries; and
 - accessibility metadata.
+
+The relationship rendering chain is:
+
+```text
+source element -> source Port -> Route -> target Port -> target element
+                                      -> Arrowhead
+```
+
+The semantic Relationship remains upstream of this chain. Ports, Routes, and
+Arrowheads describe one view-specific visual appearance and MUST NOT be written
+back as replacement semantic Relationships.
 
 SVG is the canonical first output. The SVG renderer MUST:
 
@@ -590,10 +756,65 @@ silently change layout, fonts, wrapping, or label positions.
 Fonts used for reproducible rendering MUST be explicitly configured. Test
 fixtures MUST not depend on whatever fonts happen to be installed on a machine.
 
-## 11. Styles and themes
+## 11. Shapes, styles, and themes
+
+### 11.1 Shape contract
+
+Person MUST have a dedicated built-in shape. Other C4 element roles MAY share a
+box shape by default while retaining distinct type labels and semantic theme
+tokens. Shape selection MUST NOT change the element's C4 kind, ownership,
+identity, validation, or view eligibility.
+
+C4ML MUST allow additional shapes to be defined without accepting arbitrary
+SVG or executable drawing code. A shape definition MUST contain:
+
+- a stable identifier;
+- a normalized 100 x 100 local canvas;
+- a content box reserved for title, type, technology, and description;
+- one explicit anchor for each `north`, `east`, `south`, and `west` Port; and
+- one or more renderer-neutral primitives using semantic paint roles.
+
+The initial safe primitive set consists of rectangles, ellipses, polygons, and
+lines. Shape definitions MUST NOT contain scripts, event handlers, CSS, fonts,
+filters, network references, embedded images, or renderer-specific markup.
+Every coordinate MUST be finite and inside the normalized canvas. Cardinal
+Port anchors MUST lie on their declared canvas side. Invalid shapes MUST fail
+with stable diagnostics before layout or rendering.
+
+Shape paint roles initially consist of `surface`, `accent`, and `detail`.
+Themes resolve their colors; custom shapes MUST NOT embed fixed colors. The
+resolved shape identifier, content box, primitives, and Ports MUST remain
+inspectable in the prepared diagram and scene graph.
+
+Custom shapes are presentation definitions, not custom C4 element kinds. A
+legend MUST continue to state the underlying C4 type, and strict C4 validation
+MUST behave identically before and after a shape assignment.
+
+### 11.2 Styles and themes
 
 The first release MUST include an original, accessible default theme. It MUST
 not imitate the distinctive defaults of another C4 tool.
+
+Themes MUST use semantic tokens rather than one undifferentiated internal
+element color. The first-release color model MUST distinguish at least Person,
+Software System, Container, Component, Code Element, Software System Instance,
+Container Instance, Infrastructure Node, scope boundary, Visual Group,
+Deployment Node, relationship policy, and internal/external element state.
+Those roles describe presentation targets; they MUST NOT replace or redefine
+the semantic model.
+
+C4ML MAY use a familiar dark-to-light color progression across C4 abstraction
+levels, but bundled palettes MUST be original project assets. No color palette
+is required for C4 conformance. Every bundled preset MUST preserve explicit
+type labels and an explanatory legend, and its normal-sized text MUST have a
+contrast ratio of at least 4.5:1 against its background.
+
+The compiler-core theme contract MUST support named built-in presets and deep,
+token-level overrides. Selecting a preset, changing one role, or changing one
+relationship color MUST leave all unspecified tokens inherited from the base
+theme. Unknown presets and malformed color values MUST fail with stable
+diagnostics. Resolved theme identifiers, element roles, and internal/external
+states MUST remain inspectable in the scene graph and SVG.
 
 Style precedence must be explicit. The proposed order, from weakest to strongest,
 is:
@@ -778,7 +999,10 @@ not source material for C4ML syntax or implementation.
   <https://graphviz.org/docs/outputs/svg/>
 - Eclipse Layout Kernel layered algorithm and routing options:
   <https://eclipse.dev/elk/reference/algorithms/org-eclipse-elk-layered.html>,
-  <https://eclipse.dev/elk/reference/options/org-eclipse-elk-edgeRouting.html>
+  <https://eclipse.dev/elk/reference/options/org-eclipse-elk-edgeRouting.html>,
+  <https://eclipse.dev/elk/reference/options/org-eclipse-elk-portConstraints.html>
+- SVG coordinate systems and the `viewBox` model:
+  <https://www.w3.org/TR/SVG/coords.html>
 - Penrose separation of domain, substance, and style:
   <https://penrose.cs.cmu.edu/docs/ref>,
   <https://penrose.cs.cmu.edu/docs/ref/substance/overview>,

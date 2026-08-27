@@ -1,0 +1,17 @@
+{
+  "name": "@c4ml/reference-export",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "render": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@c4ml/compiler-core": "workspace:*",
+    "@c4ml/spike-layout-elk": "workspace:*",
+    "@c4ml/spike-render-resvg": "workspace:*"
+  }
+}

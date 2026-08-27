@@ -1,6 +1,6 @@
 # C4ML Dependency Record
 
-Status: Phase 0
+Status: Phase 0 candidates used by the first Phase 1 render reference
 
 Date: 2026-08-27
 
@@ -128,6 +128,14 @@ NOT spread into the compiler core.
 These results establish technical feasibility, not permanent dependency
 acceptance. The product grammar, editor framework, production bundle strategy,
 font policy, and final layout/routing architecture remain open.
+
+The Phase 1 reference exporter now invokes the same candidate ELK.js and
+resvg-js adapters through the C4ML-owned contracts. ELK output is normalized to
+absolute geometry across nested compound nodes before later stages consume it.
+The reference PNG explicitly uses locally available system fonts when no font
+file is configured, so it is suitable for visual review but not a reproducible
+golden. A future accepted font asset must be documented before deterministic
+text-bearing PNG evidence can be claimed.
 
 The local checks ran on macOS arm64 with Node.js 26.4.0. Node.js 24 is the
 declared active-LTS minimum but still needs a clean CI or local Node.js 24 run
