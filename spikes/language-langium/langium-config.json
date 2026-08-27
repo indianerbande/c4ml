@@ -1,0 +1,11 @@
+{
+  "projectName": "PhaseZeroProbe",
+  "languages": [
+    {
+      "id": "phase-zero-probe",
+      "grammar": "src/phase-zero-probe.langium",
+      "fileExtensions": [".phase0"]
+    }
+  ],
+  "out": "src/generated"
+}

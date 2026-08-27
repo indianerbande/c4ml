@@ -2,22 +2,26 @@
 
 ## Project status
 
-C4ML is currently in specification and feasibility planning. There is no
-approved implementation scaffold yet.
+C4ML has entered the approved Phase 0 feasibility implementation. The local Git
+repository and GitHub remote exist. An Apache-2.0 TypeScript/pnpm monorepo
+scaffold and isolated Langium, ELK.js, and resvg-js technical spikes are
+authorized.
 
 The runtime architecture is accepted: one browser-compatible TypeScript
 compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
 in a Web Worker. The MVP has no required Python or network service. Specific UI,
-parser, layout, and rendering dependencies remain draft decisions.
+parser, layout, and rendering dependencies remain draft decisions unless a
+recorded spike result explicitly accepts them.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
 (System Landscape, Dynamic, Deployment), their required model elements, and the
 official notation recommendations promoted to C4ML completeness requirements.
 
-Do not create application code, select permanent dependencies, initialize a
-package ecosystem, or freeze the DSL grammar until the user has reviewed and
-approved the corresponding decisions in `SPEC.md`.
+Phase 0 scaffolding and candidate-adapter code are approved. Do not represent a
+spike dependency as permanent, start production editor UI work, or freeze the
+DSL grammar until the user has reviewed and approved the corresponding results
+in `SPEC.md`.
 
 ## Read first
 
@@ -98,6 +102,10 @@ Before adding a dependency, report:
 - whether it works offline;
 - the adapter boundary that permits replacement; and
 - the test that will protect that boundary.
+
+Record accepted dependencies and candidate-spike packages in
+`DEPENDENCIES.md`. Preserve the package's own license and notice obligations;
+the repository's Apache-2.0 license does not relicense third-party code.
 
 Do not add a package merely to avoid a small, well-bounded implementation.
 Conversely, do not reproduce a mature third-party algorithm when a properly
@@ -185,9 +193,19 @@ Follow `TESTING.md`. In particular:
 - keep generated output out of source directories unless the repository layout
   explicitly designates committed fixtures.
 
-There are currently no approved build or test commands. Add them here only when
-the scaffold and toolchain have been accepted and the commands have been run
-successfully in this repository.
+The following Phase 0 commands are approved and have run successfully in this
+repository:
+
+- `pnpm install` installs the pinned workspace dependency graph;
+- `pnpm run build` regenerates the disposable Langium probe and builds all
+  packages;
+- `pnpm run check:browser` bundles the portable core, Langium services, and ELK
+  adapter for a browser without writing bundle artifacts;
+- `pnpm run typecheck` builds source and type-checks test code;
+- `pnpm run test` runs the Phase 0 unit and adapter tests; and
+- `pnpm run check` runs the complete Phase 0 build, browser, type, and test gate.
+
+Do not add a command here until it has succeeded in this checkout.
 
 ## Documentation discipline
 

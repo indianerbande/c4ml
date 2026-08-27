@@ -1,7 +1,9 @@
 # C4ML Specification
 
-Status: Draft 0.3  
-Date: 2026-08-27  
+Status: Draft 0.4
+
+Date: 2026-08-27
+
 Working title: C4ML
 
 This document defines the intended product and architectural boundaries. It is
@@ -520,6 +522,17 @@ compiler core. The core MUST run directly under Node.js for the CLI and inside a
 Web Worker for the editor. CLI and editor MUST NOT have separate parser,
 semantic, layout, routing, or scene-generation implementations.
 
+The accepted Phase 0 toolchain is:
+
+- the active Node.js 24 LTS line as the minimum development and CLI baseline;
+- a pnpm workspace with the package-manager version pinned in the repository;
+- strict TypeScript using ECMAScript modules; and
+- Vitest for the initial unit and adapter-contract tests.
+
+C4ML is licensed under Apache License 2.0. Third-party dependencies retain
+their own licenses and MUST remain behind the boundaries recorded in
+`DEPENDENCIES.md`.
+
 The compiler core MUST NOT depend on the DOM, Node.js filesystem APIs, process
 state, or a network service. Environment-specific behavior belongs behind small
 adapters at the frontend boundary.
@@ -533,7 +546,7 @@ TypeScript application that invokes the same compiler API in a browser worker.
 Packaging the CLI as a standalone executable MAY be considered later without
 changing compiler semantics.
 
-Candidates to validate in a technical spike:
+Candidates accepted for validation in the Phase 0 technical spike:
 
 - Langium for grammar, typed AST, references, validation, and later language
   tooling;
@@ -545,6 +558,8 @@ Candidates to validate in a technical spike:
 Langium, ELK.js, and resvg-js are not yet permanent dependency decisions. The
 spike must verify license, installation footprint, deterministic behavior,
 browser independence, and the ability to override or replace each candidate.
+Passing a Phase 0 spike permits continued prototyping but does not make a
+candidate part of C4ML's public semantic model or freeze the source grammar.
 
 ## 10. Scene graph and rendering
 
@@ -718,8 +733,11 @@ The following decisions remain deliberately open:
 - whether C4ML owns the full orthogonal router in the MVP or initially wraps a
   replaceable routing engine;
 - bundled font choice and redistribution terms;
-- the accessibility target for generated SVG; and
-- licensing and distribution model for C4ML itself.
+- the accessibility target for generated SVG.
+
+The project license and initial distribution decision are accepted: C4ML is an
+open-source project under Apache License 2.0. Packaging formats and release
+channels remain open implementation decisions.
 
 ## 17. Sources consulted for capability analysis
 

@@ -1,15 +1,24 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.3  
+Status: Draft 0.4
+
 Date: 2026-08-27
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
 document defines the evidence required to claim that behavior works.
 
-No test commands are specified yet because the repository has no implementation
-or selected test runner. Commands must be added only after the technical baseline
-has been accepted and scaffolded.
+Vitest is accepted for Phase 0 unit and adapter-contract tests. The verified
+commands are:
+
+- `pnpm run build` for generated-language and TypeScript build validation;
+- `pnpm run check:browser` for in-memory browser bundle validation;
+- `pnpm run typecheck` for source and test type checking;
+- `pnpm run test` for the Phase 0 test suite; and
+- `pnpm run check` for the complete Phase 0 gate.
+
+All commands run locally after dependency installation and require no compiler
+service or runtime network access.
 
 ## 1. Testing principles
 

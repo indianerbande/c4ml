@@ -1,0 +1,16 @@
+{
+  "name": "@c4ml/spike-render-resvg",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --exclude 'dist/**'"
+  },
+  "dependencies": {
+    "@c4ml/compiler-core": "workspace:*",
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

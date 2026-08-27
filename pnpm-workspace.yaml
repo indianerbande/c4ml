@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - spikes/*
+  - apps/*
+
+allowBuilds:
+  'esbuild@0.28.2': true

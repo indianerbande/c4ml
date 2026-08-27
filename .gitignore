@@ -1,0 +1,7 @@
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+.DS_Store
+*.tsbuildinfo
+/spikes/language-langium/src/generated/
