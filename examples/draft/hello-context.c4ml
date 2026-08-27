@@ -1,6 +1,6 @@
 c4ml draft-1
 
-// Documentation preview only. No C4ML parser exists yet.
+// Experimental executable subset; not a public or frozen grammar.
 
 model {
   person caretaker {

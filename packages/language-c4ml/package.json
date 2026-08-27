@@ -1,0 +1,26 @@
+{
+  "name": "@c4ml/language-c4ml",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "generate": "langium generate",
+    "build": "pnpm run generate && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run generate && vitest run --exclude 'dist/**'"
+  },
+  "dependencies": {
+    "@c4ml/compiler-core": "workspace:*",
+    "langium": "4.3.1"
+  },
+  "devDependencies": {
+    "langium-cli": "4.3.0"
+  }
+}

@@ -9,9 +9,13 @@ and resvg-js technical spikes are authorized.
 
 The runtime architecture is accepted: one browser-compatible TypeScript
 compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
-in a Web Worker. The MVP has no required Python or network service. Specific UI,
-parser, layout, and rendering dependencies remain draft decisions unless a
-recorded spike result explicitly accepts them.
+in a Web Worker. Angular 22 with the pinned TypeScript 6.0.x toolchain is the
+accepted editor application baseline. Angular owns UI composition and
+interaction only; compiler and language processing remain in the worker behind
+C4ML-owned contracts. The concrete code-editor component is still an open,
+replaceable dependency decision. The MVP has no required Python or network
+service. Parser, layout, rendering, and remaining UI dependencies stay draft
+unless a recorded spike result explicitly accepts them.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
@@ -34,9 +38,11 @@ automatic, guided, or fixed route contracts, converted into a renderer-neutral
 scene, serialized as standalone SVG, and rasterized as PNG through the existing
 resvg candidate adapter. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
-placement, ELK compound geometry, SVG, and PNG. This is not yet a public CLI,
-does not accept `.c4ml` source, does not complete the full constraint/routing
-scope, and does not permanently accept the candidate adapters.
+placement, ELK compound geometry, SVG, and PNG. The separate experimental
+language package can parse and lower only the original `hello-context.c4ml`
+subset into these compiler contracts. There is no public `.c4ml` frontend or
+CLI yet, the complete constraint/routing scope is not implemented, and the
+candidate adapters are not permanently accepted.
 
 The renderer also has an implemented semantic color-theme contract. The
 original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
@@ -55,8 +61,10 @@ contract. Custom shapes remain presentation-only and cannot create new C4
 element kinds. Their future author-facing grammar is still draft.
 
 `DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
-preview. They are deliberately non-normative and non-executable. Treat them as
-review material, not as an accepted grammar or a compatibility commitment.
+preview. They are deliberately non-normative. Only the `hello-context.c4ml`
+subset is executable through the internal experimental language package; the
+remaining preview is not. Treat all of it as review material, not as an
+accepted grammar or a compatibility commitment.
 
 ## Read first
 

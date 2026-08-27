@@ -1,8 +1,8 @@
 # C4ML Dependency Record
 
-Status: Phase 0 candidates used by the first Phase 1 render reference
+Status: Phase 0 candidates with Phase 1 prototype evidence
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 This file records why each direct dependency exists, its license and runtime
 impact, the boundary that makes it replaceable, and the evidence required to
@@ -27,6 +27,11 @@ keep it. A Phase 0 candidate is not a permanent architecture decision.
 - **Phase 0 evidence:** generate and parse an original disposable probe grammar,
   resolve an original cross-reference, and report invalid input with a source
   range.
+- **Phase 1 evidence:** parse the original `hello-context.c4ml` subset, resolve
+  model references with source-located C4ML diagnostics, translate generated
+  AST nodes into compiler-owned domain types, produce deterministic SVG through
+  the shared compiler pipeline, and bundle the language package for a browser
+  without Node.js polyfills.
 
 `langium-cli` 4.3.0 is a build-time MIT-licensed companion used only to generate
 the disposable probe artifacts.
@@ -76,6 +81,33 @@ Redistribution must preserve MPL-2.0 notices and the source availability rights
 for covered resvg-js files. C4ML MUST NOT modify or copy resvg-js source into the
 repository.
 
+## Accepted editor framework direction
+
+Angular 22 is accepted as the future editor application framework but is not
+installed in the workspace yet.
+
+- **Capability:** structured browser application composition, dependency
+  injection, reactive UI state, routing, and testable editor-shell components.
+- **Why external:** a production browser application framework is mature
+  infrastructure outside C4ML's architecture-modeling and diagram-compilation
+  core.
+- **License:** MIT.
+- **Impact:** browser runtime and build-tool dependencies confined to the editor
+  application; no Angular package may enter the portable compiler core.
+- **Offline behavior:** the built editor and its compiler worker must operate
+  without runtime network access.
+- **Boundary:** `apps/editor` will depend on C4ML-owned worker messages and
+  compiler contracts. Angular components and services MUST NOT become compiler
+  APIs.
+- **Required evidence before installation becomes accepted:** an isolated
+  editor spike must build with the pinned TypeScript 6.0.x line, run compilation
+  in a Web Worker, reject stale results, retain the last valid preview, and
+  consume the portable compiler without Node.js polyfills.
+
+The source-editor component remains open. Monaco or another candidate requires
+a separate capability, license, bundle, worker, offline, accessibility, and
+replacement-boundary evaluation before installation.
+
 ## Development tools
 
 | Package | Current pinned version | License | Purpose |
@@ -96,11 +128,20 @@ approval; all unreviewed dependency build scripts remain blocked by pnpm.
 
 ## Phase 0 results
 
-The 2026-08-27 spike produced the following evidence:
+The 2026-08-27 spike and the 2026-08-28 experimental language slice produced
+the following evidence:
 
 - Langium generated the disposable original probe, parsed it, resolved a
   cross-reference, and returned a source-ranged unresolved-reference
   diagnostic.
+- The private language package parsed and lowered the original
+  `hello-context.c4ml` subset into compiler-owned model and view contracts. Its
+  tests cover source ranges, unresolved references, missing and duplicate
+  properties, formatting stability, and deterministic SVG through the shared
+  compiler pipeline.
+- The current browser check bundled the compiler core and experimental language
+  package at 136,109 and 1,020,563 unminified bytes respectively, without Node.js
+  polyfills. This is feasibility evidence, not a production size budget.
 - ELK.js returned finite, normalized, repeatable geometry for flat and compound
   graphs. Invalid engine-neutral input failed before ELK was invoked.
 - resvg-js produced a visually inspected 640 by 360 PNG from an original local
@@ -131,8 +172,10 @@ before it became the pinned workspace compiler. The compiler and configuration
 do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility, not permanent dependency
-acceptance. The product grammar, editor framework, production bundle strategy,
-font policy, and final layout/routing architecture remain open.
+acceptance. The complete product grammar, source-editor component, production
+bundle strategy, font policy, and final layout/routing architecture remain
+open. Angular 22 is the accepted editor framework direction recorded above; it
+has not yet been installed or validated in this workspace.
 
 The Phase 1 reference exporter now invokes the same candidate ELK.js and
 resvg-js adapters through the C4ML-owned contracts. ELK output is normalized to

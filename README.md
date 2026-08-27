@@ -42,12 +42,14 @@ Implemented and automatically validated:
 - a Node.js PNG adapter that rasterizes the canonical SVG;
 - original semantic `c4ml-blue` and `c4ml-garden` color presets with deep,
   role-specific overrides;
+- an experimental browser-compatible `draft-1` language slice that parses and
+  lowers the original `hello-context.c4ml` example into the shared compiler;
 - an original, executable Signal Garden Container View reference export; and
 - browser-compatible compiler-core contracts.
 
 Not implemented yet:
 
-- the public `.c4ml` parser and formatter;
+- the complete public `.c4ml` parser and formatter;
 - the production CLI;
 - relative placement constraints, pinning, avoidance regions, locked route
   segments, and the remaining full routing contract;
@@ -57,9 +59,10 @@ Not implemented yet:
 - the browser editor.
 
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
-[`examples/draft`](examples/draft) is therefore a **design preview**. It is not
-accepted by a compiler yet and remains open to review before the grammar is
-frozen.
+[`examples/draft`](examples/draft) remains a **design preview**. Only the
+minimal `hello-context.c4ml` subset is executable through an internal package;
+it is not a public or frozen grammar. The remaining syntax is not accepted by a
+compiler yet.
 
 ## C4 scope
 
@@ -126,7 +129,8 @@ a contributor reference path, not the future `.c4ml` command-line interface.
 - [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licensing, and
   replacement boundaries
 - [AGENTS.md](AGENTS.md) — repository workflow and project invariants
-- [`examples/draft`](examples/draft) — original, non-runnable syntax previews
+- [`examples/draft`](examples/draft) — original syntax previews; only the
+  minimal `hello-context.c4ml` subset is internally executable
 
 ## Relationship to the wider ecosystem
 

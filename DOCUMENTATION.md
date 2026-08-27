@@ -1,18 +1,19 @@
 # C4ML User Guide
 
-Status: Draft syntax preview with executable internal render reference
+Status: Draft syntax preview with one executable language slice
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
 can be reviewed through realistic examples rather than grammar fragments.
 
-> **Important:** the `.c4ml` parser, production CLI, and editor do not exist
-> yet. The syntax in this document is non-normative, is not executable, and may
-> change after review. The parser-independent C4 semantic model, all seven
-> view-resolution contracts, and a first internal model-to-SVG/PNG rendering
-> path are implemented today. The internal path now also carries explicit
+> **Important:** there is no complete public `.c4ml` parser, production CLI, or
+> editor yet. The syntax in this document is non-normative and may change after
+> review. An internal experimental package executes only the minimal
+> `hello-context.c4ml` subset. The parser-independent C4 semantic model, all
+> seven view-resolution contracts, and a first internal model-to-SVG/PNG
+> rendering path are implemented today. The internal path also carries explicit
 > Ports, Routes, Arrowheads, and restricted renderer-neutral shape definitions.
 
 `SPEC.md` remains the normative definition of product behavior. If this guide
@@ -61,6 +62,11 @@ The TypeScript compiler core can be built and tested:
 pnpm install
 pnpm run check
 ```
+
+That gate also generates and tests the experimental `draft-1` language slice.
+It parses `examples/draft/hello-context.c4ml`, translates its syntax tree into
+the compiler-owned model, and exercises the same compiler pipeline through
+deterministic SVG. This is an internal contributor path, not the production CLI.
 
 An original Container View can also be exported through the current internal
 TypeScript-fed reference path:
@@ -944,8 +950,10 @@ The repository contains three original syntax previews:
 - [`examples/draft/shape-marker.c4ml`](examples/draft/shape-marker.c4ml) — the
   restricted custom-shape contract and explicit cardinal Ports.
 
-These files are documentation artifacts. They are intentionally not part of the
-automated compiler gate until a grammar is accepted and implemented.
+The minimal `hello-context.c4ml` subset is part of the automated internal
+language gate. The other files, and every construct outside that subset, remain
+documentation artifacts. None of these previews defines an accepted grammar or
+compatibility commitment.
 
 ## 12. Design principles for reviewing the proposal
 

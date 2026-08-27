@@ -1,8 +1,8 @@
 # C4ML Specification
 
-Status: Draft 0.9
+Status: Draft 0.10
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 Working title: C4ML
 
@@ -615,6 +615,15 @@ The accepted Phase 0 toolchain is:
 - strict TypeScript using ECMAScript modules; and
 - Vitest for the initial unit and adapter-contract tests.
 
+The accepted editor application baseline is Angular 22 with the pinned
+TypeScript 6.0.x toolchain. The editor SHOULD use Angular standalone components
+and Signals for application-local state. Angular owns UI composition and
+interaction only; it MUST NOT introduce editor-specific semantic, layout,
+routing, scene, or rendering behavior. Compilation and language processing
+remain in a browser Web Worker behind the same C4ML-owned contracts used by the
+CLI. The concrete source-editor component remains a replaceable dependency and
+requires its own recorded evaluation before adoption.
+
 C4ML is licensed under Apache License 2.0. Third-party dependencies retain
 their own licenses and MUST remain behind the boundaries recorded in
 `DEPENDENCIES.md`.
@@ -715,6 +724,33 @@ authorship, complete all-view rendering evidence, a frozen author-facing theme
 grammar, geometry-affecting style tokens, or a bundled font. The ELK.js and
 resvg-js implementations remain candidate adapters behind the accepted
 engine-neutral boundaries.
+
+### 9.4 Experimental `draft-1` language slice
+
+An internal, browser-compatible language package implements the smallest
+executable `draft-1` slice needed by the original
+`examples/draft/hello-context.c4ml` document. The slice currently recognizes:
+
+- Person and Software System declarations with name, responsibility, and
+  internal or external classification;
+- directed relationships with source, target, and intent;
+- one or more System Context Views with scope, title, purpose, default
+  audience, generated legend, and optional flow direction; and
+- line comments and formatting-only whitespace changes.
+
+The Langium-generated syntax types remain private to the language package. An
+explicit lowering stage translates them into the parser-independent C4ML model
+and view contracts, preserves source locations, assigns stable C4ML diagnostic
+codes, and invokes the same semantic and view resolution used by TypeScript-fed
+inputs. Parsed source can therefore enter the existing layout, scene, and SVG
+pipeline without introducing a second compiler implementation.
+
+This slice is an implemented feasibility boundary, not an accepted public
+grammar or compatibility promise. It does not yet cover Containers, Components,
+Code Elements, Dynamic or Deployment declarations, Visual Groups, complete
+selection, styling, shapes, ports, route guidance, formatting, incremental
+documents, a CLI, or editor language services. The rest of the syntax in
+`DOCUMENTATION.md` and `examples/draft` remains non-executable review material.
 
 ## 10. Scene graph and rendering
 
@@ -945,7 +981,7 @@ The following decisions remain deliberately open:
 
 - final project name and source extension;
 - exact source grammar and formatting rules;
-- editor UI framework and code-editor component;
+- code-editor component;
 - single-file versus optional sidecar layout organization;
 - namespace and multi-file merge rules;
 - whether custom element kinds are allowed in strict C4 mode;

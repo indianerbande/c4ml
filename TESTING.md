@@ -1,8 +1,8 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.9
+Status: Draft 0.10
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
@@ -35,6 +35,14 @@ validation and assignment, renderer-neutral scene construction, semantic theme
 roles and presets, stable SVG, ELK absolute compound geometry, SVG-to-PNG
 rasterization, and a visually inspected Signal Garden Container View. This is
 not yet a golden suite or complete rendering evidence for all seven views.
+
+The experimental language package adds a narrow integration suite for the
+original `hello-context.c4ml` subset. It verifies parsing and explicit
+AST-to-domain lowering, exact source locations, stable diagnostics for
+unresolved references and invalid property cardinality, semantic stability
+across comments and whitespace, browser bundling without Node.js polyfills, and
+deterministic SVG through the shared compiler pipeline. This evidence does not
+claim coverage of the complete preview grammar.
 
 ## 1. Testing principles
 
