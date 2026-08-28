@@ -6,7 +6,7 @@ import type {
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
 
-export const compilerWorkerProtocolVersion = 6 as const;
+export const compilerWorkerProtocolVersion = 7 as const;
 
 export interface CompilerWorkerView {
   readonly id: string;
@@ -89,9 +89,49 @@ export interface CompilerWorkerRouteNavigationTarget
   readonly corridor: CompilerWorkerRouteCorridor | undefined;
 }
 
+interface CompilerWorkerRouteDetailNavigationTargetBase
+  extends CompilerWorkerNavigationTargetBase {
+  readonly routeSceneObjectId: string;
+}
+
+export interface CompilerWorkerPortNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "port";
+  readonly portRole: "source" | "target";
+  readonly side: "east" | "north" | "south" | "west";
+  readonly point: CompilerWorkerNavigationPoint;
+}
+
+export interface CompilerWorkerRouteLabelNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "route-label";
+  readonly point: CompilerWorkerNavigationPoint;
+  readonly bounds: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
+export interface CompilerWorkerCorridorNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "corridor";
+  readonly orientation: "horizontal" | "vertical";
+  readonly points: readonly [
+    CompilerWorkerNavigationPoint,
+    CompilerWorkerNavigationPoint,
+  ];
+  readonly lane: number;
+  readonly lanes: number;
+}
+
 export type CompilerWorkerNavigationTarget =
   | CompilerWorkerNodeNavigationTarget
-  | CompilerWorkerRouteNavigationTarget;
+  | CompilerWorkerRouteNavigationTarget
+  | CompilerWorkerPortNavigationTarget
+  | CompilerWorkerRouteLabelNavigationTarget
+  | CompilerWorkerCorridorNavigationTarget;
 
 export interface CompilerWorkerNavigation {
   readonly width: number;
@@ -457,6 +497,41 @@ function isCompilerWorkerNavigationTarget(
       isPositiveFinite(bounds.height)
     );
   }
+  if (candidate.kind === "port") {
+    const port = candidate as Partial<CompilerWorkerPortNavigationTarget>;
+    return (
+      typeof port.routeSceneObjectId === "string" &&
+      (port.portRole === "source" || port.portRole === "target") &&
+      (port.side === "east" ||
+        port.side === "north" ||
+        port.side === "south" ||
+        port.side === "west") &&
+      isNavigationPoint(port.point)
+    );
+  }
+  if (candidate.kind === "route-label") {
+    const label = candidate as Partial<CompilerWorkerRouteLabelNavigationTarget>;
+    return (
+      typeof label.routeSceneObjectId === "string" &&
+      isNavigationPoint(label.point) &&
+      isNavigationBounds(label.bounds)
+    );
+  }
+  if (candidate.kind === "corridor") {
+    const corridor = candidate as Partial<CompilerWorkerCorridorNavigationTarget>;
+    return (
+      typeof corridor.routeSceneObjectId === "string" &&
+      (corridor.orientation === "horizontal" ||
+        corridor.orientation === "vertical") &&
+      Array.isArray(corridor.points) &&
+      corridor.points.length === 2 &&
+      corridor.points.every(isNavigationPoint) &&
+      Number.isSafeInteger(corridor.lane) &&
+      (corridor.lane ?? -1) >= 0 &&
+      Number.isSafeInteger(corridor.lanes) &&
+      (corridor.lanes ?? 0) > (corridor.lane ?? Number.POSITIVE_INFINITY)
+    );
+  }
   if (candidate.kind !== "route") {
     return false;
   }
@@ -477,6 +552,24 @@ function isCompilerWorkerNavigationTarget(
     (route.labelSegment ?? -1) >= 0 &&
     (route.labelSegment ?? Number.POSITIVE_INFINITY) < route.points.length - 1 &&
     (route.corridor === undefined || isRouteCorridor(route.corridor))
+  );
+}
+
+function isNavigationBounds(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const bounds = value as {
+    readonly x?: unknown;
+    readonly y?: unknown;
+    readonly width?: unknown;
+    readonly height?: unknown;
+  };
+  return (
+    Number.isFinite(bounds.x) &&
+    Number.isFinite(bounds.y) &&
+    isPositiveFinite(bounds.width) &&
+    isPositiveFinite(bounds.height)
   );
 }
 
@@ -632,6 +725,8 @@ function isWizardAnswers(
   }
   const answers = value as Partial<C4mlSystemContextWizardAnswers>;
   return (
+    (answers.viewKind === "system-context" ||
+      answers.viewKind === "container") &&
     typeof answers.personId === "string" &&
     typeof answers.personName === "string" &&
     typeof answers.personResponsibility === "string" &&
@@ -644,6 +739,11 @@ function isWizardAnswers(
       answers.systemClassification === "internal") &&
     typeof answers.relationshipId === "string" &&
     typeof answers.relationshipIntent === "string" &&
+    typeof answers.entryPartId === "string" &&
+    Array.isArray(answers.parts) &&
+    answers.parts.every(isWizardPart) &&
+    Array.isArray(answers.connections) &&
+    answers.connections.every(isWizardConnection) &&
     typeof answers.viewId === "string" &&
     typeof answers.viewTitle === "string" &&
     typeof answers.viewPurpose === "string" &&
@@ -662,7 +762,8 @@ function isWizardIssue(value: unknown): value is C4mlWizardIssue {
   return (
     isWizardField(issue.field) &&
     (issue.code === "C4ML-WIZARD-001" ||
-      issue.code === "C4ML-WIZARD-002") &&
+      issue.code === "C4ML-WIZARD-002" ||
+      issue.code === "C4ML-WIZARD-003") &&
     typeof issue.message === "string"
   );
 }
@@ -671,6 +772,7 @@ function isWizardField(
   value: unknown,
 ): value is C4mlWizardIssue["field"] {
   return (
+    value === "viewKind" ||
     value === "personId" ||
     value === "personName" ||
     value === "personResponsibility" ||
@@ -681,9 +783,39 @@ function isWizardField(
     value === "systemClassification" ||
     value === "relationshipId" ||
     value === "relationshipIntent" ||
+    value === "entryPartId" ||
     value === "viewId" ||
     value === "viewTitle" ||
     value === "viewPurpose" ||
-    value === "flow"
+    value === "flow" ||
+    (typeof value === "string" &&
+      /^(?:parts|connections)\.\d+\.[A-Za-z][A-Za-z0-9]*$/u.test(value))
+  );
+}
+
+function isWizardPart(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const part = value as Record<string, unknown>;
+  return (
+    typeof part["id"] === "string" &&
+    typeof part["name"] === "string" &&
+    typeof part["responsibility"] === "string" &&
+    typeof part["technology"] === "string"
+  );
+}
+
+function isWizardConnection(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const connection = value as Record<string, unknown>;
+  return (
+    typeof connection["id"] === "string" &&
+    typeof connection["fromId"] === "string" &&
+    typeof connection["toId"] === "string" &&
+    typeof connection["intent"] === "string" &&
+    typeof connection["protocol"] === "string"
   );
 }

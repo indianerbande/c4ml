@@ -1200,6 +1200,43 @@ describe("C4ML draft-1 System Context wizard source", () => {
     expect(parsed.model?.elements[0]?.name).toBe('Observer "North"');
   });
 
+  it("generates an explicit Container starter with runnable parts and connections", async () => {
+    const generated = generateSystemContextDraft({
+      ...defaultSystemContextWizardAnswers,
+      viewKind: "container",
+      viewId: "field-notes-containers",
+      viewTitle: "Container View — Field Notes",
+      viewPurpose: "Show what runs inside Field Notes and how the parts communicate.",
+    });
+    const parsed = await parseC4mlDraft(generated.source!, {
+      file: "wizard.c4ml",
+    });
+
+    expect(generated.valid).toBe(true);
+    expect(parsed.valid).toBe(true);
+    expect(
+      parsed.model?.elements.filter(({ kind }) => kind === "container").map(({ id }) => id),
+    ).toEqual([
+      "field-notes-ui",
+      "field-notes-service",
+      "field-notes-store",
+    ]);
+    expect(parsed.model?.relationships).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceId: "field-notes-ui",
+          targetId: "field-notes-service",
+          protocol: "HTTPS/JSON",
+        }),
+      ]),
+    );
+    expect(parsed.views?.[0]).toMatchObject({
+      id: "field-notes-containers",
+      kind: "container",
+      softwareSystemId: "field-notes",
+    });
+  });
+
   it("reports invalid identifiers and empty required answers before generation", () => {
     const result = generateSystemContextDraft({
       ...defaultSystemContextWizardAnswers,

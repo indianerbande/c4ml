@@ -55,14 +55,18 @@ Implemented and automatically validated:
   static instances, and runtime relationships;
 - an experimental thin Node.js CLI for local validation, one/all-view SVG and
   PNG rendering, scaling, human or JSON diagnostics, and classified exits;
-- an Angular 22 desktop editor foundation with a two-pane source/preview layout,
-  local compiler Web Worker, live diagnostics, stale-result rejection, and
-  retention of the last valid SVG;
+- an Angular 22 desktop workbench with simultaneous source/preview tabs,
+  C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
+  panel, status bar, command palette, local compiler Web Worker, live
+  diagnostics, stale-result rejection, and retention of the last valid SVG;
 - an Electron 44 desktop shell with a narrow typed preload bridge, native
   Open/Save/Save As, normal desktop menus and shortcuts, document titles and
   dirty-state close protection;
-- an extensible local settings area with live System/Light/Dark workbench
-  schemes and persisted source-editor font family and size;
+- an extensible local settings area with live English/German interface copy,
+  synchronized C4ML-owned native controls, System/Light/Dark workbench schemes,
+  and persisted source-editor font family and size;
+- a bounded local workbench session that restores only presentation state and
+  never source, document handles, or filesystem paths;
 - hardened local-only application loading with renderer sandboxing, no Node.js
   integration, denied navigation/permissions, an application-owned protocol,
   ASAR integrity checks, and Electron production fuses;
@@ -80,6 +84,8 @@ Implemented and automatically validated:
 - selectable Relationships and effective Routes, including navigation from a
   view-local route-control block and an optional debug overlay for route
   points, endpoint Ports, label anchors, and corridor lanes;
+- distinct preview selection of Ports, route labels, and corridors, resolving
+  each detail back to its owning route-control source;
 - executable, view-local `draft-1` route controls for automatic, guided, and
   fixed policies, cardinal Ports, absolute waypoints, named corridors and
   exclusive lanes, complete fixed point lists, and label placement;
@@ -87,9 +93,11 @@ Implemented and automatically validated:
   browser-worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
   fonts, and controlled system-font-free PNG rendering;
-- selectable views, plus zoom, fit, scroll-pan, and local SVG export;
-- a bounded three-step wizard that previews and generates a new executable
-  System Context document with cancel and undo;
+- selectable views, plus zoom, fit, scroll-pan, local SVG export, and native
+  PNG export at 1x, 2x, or 3x;
+- a bounded plain-language wizard that previews and generates a new executable
+  System Context or Container document with explicit connections, cancel, and
+  undo;
 - an original, executable Signal Garden Container View reference export; and
 - browser-compatible compiler-core contracts.
 
@@ -103,13 +111,12 @@ Not implemented yet:
 - a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
 - the remaining production editor capabilities: independently selectable
-  Ports, labels, and corridors, PNG export, accessibility validation, and
-  graphical source editing;
+  Arrowheads, accessibility validation, and graphical source editing;
 - release identity and distribution work: a final product version and icon,
   Apple Developer ID signing/notarization, Windows code signing, and a Windows
   build-and-install validation run; and
-- the complete guided modeling wizard for Containers, Components, Code,
-  deployments, Visual Groups, and safe extension of existing documents.
+- the complete guided modeling wizard for Components, Code, deployments,
+  Visual Groups, and safe extension of existing documents.
 
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
 [`examples/draft`](examples/draft) remains a **design preview**. Bounded System
@@ -157,7 +164,7 @@ source
   -> PNG
 ```
 
-SVG is the canonical output. PNG will be derived from the same SVG geometry and
+SVG is the canonical output. PNG is derived from the same SVG geometry and
 text layout rather than from a browser screenshot.
 
 ## Development quick start

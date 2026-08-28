@@ -21,6 +21,7 @@ describe("workbench preferences", () => {
   it("round-trips a supported version without retaining unknown fields", () => {
     const serialized = JSON.stringify({
       version: 1,
+      uiLanguage: "de",
       colorScheme: "dark",
       editorFontFamily: "system-monospace",
       editorFontSize: 15.5,
@@ -31,6 +32,7 @@ describe("workbench preferences", () => {
 
     expect(parsed).toEqual({
       version: 1,
+      uiLanguage: "de",
       colorScheme: "dark",
       editorFontFamily: "system-monospace",
       editorFontSize: 15.5,
@@ -45,12 +47,32 @@ describe("workbench preferences", () => {
       parseWorkbenchPreferences(
         JSON.stringify({
           version: 1,
+          uiLanguage: "fr",
           colorScheme: "blue",
           editorFontFamily: 42,
           editorFontSize: "large",
         }),
       ),
     ).toEqual(defaultWorkbenchPreferences);
+  });
+
+  it("defaults existing version-one records to English without losing valid fields", () => {
+    expect(
+      parseWorkbenchPreferences(
+        JSON.stringify({
+          version: 1,
+          colorScheme: "dark",
+          editorFontFamily: "system-monospace",
+          editorFontSize: 14,
+        }),
+      ),
+    ).toEqual({
+      version: 1,
+      uiLanguage: "en",
+      colorScheme: "dark",
+      editorFontFamily: "system-monospace",
+      editorFontSize: 14,
+    });
   });
 
   it("ignores malformed JSON and unsupported schema versions", () => {

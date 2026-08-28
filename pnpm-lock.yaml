@@ -50,6 +50,12 @@ importers:
       '@c4ml/desktop-contract':
         specifier: workspace:*
         version: link:../../packages/desktop-contract
+      '@c4ml/font-ibm-plex':
+        specifier: workspace:*
+        version: link:../../packages/font-ibm-plex
+      '@c4ml/spike-render-resvg':
+        specifier: workspace:*
+        version: link:../../spikes/render-resvg
       '@electron-forge/cli':
         specifier: 7.11.2
         version: 7.11.2(bluebird@3.7.2)(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.26)(supports-color@8.1.1)

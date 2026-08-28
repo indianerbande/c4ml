@@ -338,8 +338,9 @@ function toWorkerNavigation(
         const controlSource = routing?.controls?.find(
           ({ relationshipId }) => relationshipId === route.relationshipId,
         )?.source;
-        return [
-          {
+        const relationshipSource = toWorkerSource(source);
+        const detailSource = toWorkerSource(controlSource ?? source);
+        const routeTarget = {
             kind: "route" as const,
             sceneObjectId: route.id,
             svgElementIds: [
@@ -348,7 +349,7 @@ function toWorkerNavigation(
             ],
             referenceId: route.relationshipId,
             label: route.label,
-            source: toWorkerSource(source),
+            source: relationshipSource,
             relatedSources:
               controlSource === undefined
                 ? []
@@ -372,8 +373,85 @@ function toWorkerNavigation(
                     lanes: route.corridor.lanes,
                     laneSpacing: route.corridor.laneSpacing,
                   },
+          };
+        const labelWidth = Math.max(
+          48,
+          Math.min(260, route.label.length * 6.6),
+        );
+        const commonDetail = {
+          referenceId: route.relationshipId,
+          source: detailSource,
+          relatedSources: [],
+          routeSceneObjectId: route.id,
+        };
+        const detailTargets = [
+          {
+            ...commonDetail,
+            kind: "port" as const,
+            sceneObjectId: sourcePort.id,
+            svgElementIds: [svgSceneObjectId(sourcePort.id)],
+            label: `Source port · ${sourcePort.side}`,
+            portRole: "source" as const,
+            side: sourcePort.side,
+            point: sourcePort.point,
+          },
+          {
+            ...commonDetail,
+            kind: "port" as const,
+            sceneObjectId: targetPort.id,
+            svgElementIds: [svgSceneObjectId(targetPort.id)],
+            label: `Target port · ${targetPort.side}`,
+            portRole: "target" as const,
+            side: targetPort.side,
+            point: targetPort.point,
+          },
+          {
+            ...commonDetail,
+            kind: "route-label" as const,
+            sceneObjectId: `${route.id}:label`,
+            svgElementIds: [svgSceneObjectId(`${route.id}:label`)],
+            label: route.label,
+            point: route.labelPoint,
+            bounds: {
+              x: route.labelPoint.x - labelWidth / 2,
+              y: route.labelPoint.y - 22,
+              width: labelWidth,
+              height: route.technology === undefined ? 22 : 38,
+            },
           },
         ];
+        const corridorTarget =
+          route.corridor === undefined
+            ? []
+            : [
+                {
+                  ...commonDetail,
+                  kind: "corridor" as const,
+                  sceneObjectId: `${route.id}:corridor:${route.corridor.corridorId}:${route.corridor.lane}`,
+                  svgElementIds: [svgSceneObjectId(route.id)],
+                  label: `Corridor ${route.corridor.corridorId} · lane ${route.corridor.lane + 1}`,
+                  orientation: route.corridor.orientation,
+                  points:
+                    route.corridor.orientation === "vertical"
+                      ? ([
+                          { x: route.corridor.laneCoordinate, y: 82 },
+                          {
+                            x: route.corridor.laneCoordinate,
+                            y: scene.height - 54,
+                          },
+                        ] as const)
+                      : ([
+                          { x: 24, y: route.corridor.laneCoordinate },
+                          {
+                            x: scene.width - 24,
+                            y: route.corridor.laneCoordinate,
+                          },
+                        ] as const),
+                  lane: route.corridor.lane,
+                  lanes: route.corridor.lanes,
+                },
+              ];
+        return [routeTarget, ...detailTargets, ...corridorTarget];
       }),
     ],
   };

@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -36,6 +37,16 @@ import type {
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
+import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import {
+  filterWorkbenchCommands,
+  type WorkbenchCommand,
+} from "./workbench-command.js";
+import { WorkbenchSessionService } from "./workbench-session.service.js";
+import type {
+  WorkbenchActivity,
+  WorkbenchPanel,
+} from "./workbench-session.js";
 
 @Component({
   selector: "c4ml-root",
@@ -61,16 +72,31 @@ export class AppComponent {
   readonly provideHighlights: SourceEditorHighlightProvider = (source) =>
     this.compiler.highlight(source);
   readonly previewUrl = signal<string | undefined>(undefined);
-  readonly previewZoom = signal(1);
+  readonly pngScale = signal(2);
   readonly selectedSceneObjectId = signal<string | undefined>(undefined);
-  readonly routingDebugEnabled = signal(true);
   readonly wizardOpen = signal(false);
   readonly settingsOpen = signal(false);
+  readonly commandPaletteOpen = signal(false);
+  readonly commandQuery = signal("");
   readonly canUndoWizard = signal(false);
   readonly settingsButton = viewChild<ElementRef<HTMLButtonElement>>(
     "settingsButton",
   );
+  readonly commandInput = viewChild<ElementRef<HTMLInputElement>>("commandInput");
   readonly preferences = inject(WorkbenchPreferencesService);
+  readonly i18n = inject(WorkbenchLocalizationService);
+  readonly session = inject(WorkbenchSessionService);
+  readonly previewZoom = computed(() => this.session.state().previewZoom);
+  readonly routingDebugEnabled = computed(
+    () => this.session.state().routingDebugEnabled,
+  );
+  readonly activeActivity = computed(
+    () => this.session.state().activeActivity,
+  );
+  readonly bottomPanelOpen = computed(
+    () => this.session.state().bottomPanelOpen,
+  );
+  readonly bottomPanel = computed(() => this.session.state().bottomPanel);
   readonly desktopAvailable: boolean;
   readonly documentName = signal("architecture.c4ml");
   readonly documentHandle = signal<string | undefined>(undefined);
@@ -91,10 +117,49 @@ export class AppComponent {
     CompilerWorkerRouteNavigationTarget | undefined
   >(() => {
     const target = this.selectedTarget();
-    return target?.kind === "route" ? target : undefined;
+    if (target?.kind === "route") {
+      return target;
+    }
+    if (target === undefined || target.kind === "node") {
+      return undefined;
+    }
+    return this.navigation()?.targets.find(
+      (candidate): candidate is CompilerWorkerRouteNavigationTarget =>
+        candidate.kind === "route" &&
+        candidate.referenceId === target.referenceId,
+    );
+  });
+  readonly selectedKindLabel = computed(() => {
+    switch (this.selectedTarget()?.kind) {
+      case "corridor":
+        return this.i18n.t("selection.corridor");
+      case "node":
+        return this.i18n.t("selection.node");
+      case "port":
+        return this.i18n.t("selection.port");
+      case "route":
+        return this.i18n.t("selection.route");
+      case "route-label":
+        return this.i18n.t("selection.routeLabel");
+      default:
+        return this.i18n.t("selection.object");
+    }
   });
   readonly selectedLabel = computed(
     () => this.selectedTarget()?.label,
+  );
+  readonly filteredCommands = computed(() =>
+    filterWorkbenchCommands(
+      this.commandQuery(),
+      this.desktopAvailable,
+      this.preferences.uiLanguage(),
+    ),
+  );
+  readonly activeViewTitle = computed(
+    () =>
+      this.compiler.state().views.find(
+        ({ id }) => id === this.compiler.state().activeViewId,
+      )?.title ?? this.i18n.t("view.none"),
   );
   readonly previewSvg = computed(() => {
     const svg = this.lastValidSvg();
@@ -122,15 +187,15 @@ export class AppComponent {
   readonly statusLabel = computed(() => {
     switch (this.compiler.state().phase) {
       case "compiling":
-        return "Compiling";
+        return this.i18n.t("status.compiling");
       case "failed":
-        return "Worker failed";
+        return this.i18n.t("status.failed");
       case "invalid":
-        return "Source has errors";
+        return this.i18n.t("status.invalid");
       case "valid":
-        return "Preview current";
+        return this.i18n.t("status.valid");
       default:
-        return "Waiting";
+        return this.i18n.t("status.waiting");
     }
   });
 
@@ -150,6 +215,9 @@ export class AppComponent {
     const destroyRef = inject(DestroyRef);
     const unsubscribeDesktopCommands = this.#desktop?.onCommand((command) => {
       switch (command) {
+        case "export-png":
+          void this.exportPng();
+          break;
         case "open-document":
           void this.openDocument();
           break;
@@ -190,7 +258,22 @@ export class AppComponent {
         ...(handle === undefined ? {} : { handle }),
       });
     });
+    effect(() => {
+      this.#desktop?.setUiLanguage(this.preferences.uiLanguage());
+    });
     this.compiler.compile(this.source(), undefined, this.documentName());
+  }
+
+  @HostListener("document:keydown", ["$event"])
+  onWorkbenchKeydown(event: KeyboardEvent): void {
+    const modifier = event.metaKey || event.ctrlKey;
+    if (modifier && event.shiftKey && event.key.toLocaleLowerCase() === "p") {
+      event.preventDefault();
+      this.openCommandPalette();
+    } else if (event.key === "Escape" && this.commandPaletteOpen()) {
+      event.preventDefault();
+      this.closeCommandPalette();
+    }
   }
 
   onSourceChange(source: string): void {
@@ -211,12 +294,12 @@ export class AppComponent {
     if (
       this.documentDirty() &&
       !window.confirm(
-        `Discard unsaved changes to ${this.documentName()} and open another source?`,
+        this.i18n.t("operation.discard", { name: this.documentName() }),
       )
     ) {
       return;
     }
-    this.fileOperationLabel.set("Opening source…");
+    this.fileOperationLabel.set(this.i18n.t("operation.opening"));
     try {
       const result = await desktop.openDocument();
       if (result.status === "opened") {
@@ -233,14 +316,18 @@ export class AppComponent {
           undefined,
           result.document.displayName,
         );
-        this.fileOperationLabel.set(`Opened ${result.document.displayName}`);
+        this.fileOperationLabel.set(
+          this.i18n.t("operation.opened", {
+            name: result.document.displayName,
+          }),
+        );
       } else if (result.status === "failed") {
         this.fileOperationLabel.set(`${result.code}: ${result.message}`);
       } else {
         this.fileOperationLabel.set(undefined);
       }
     } catch {
-      this.fileOperationLabel.set("The desktop file dialog failed unexpectedly.");
+      this.fileOperationLabel.set(this.i18n.t("operation.openFailed"));
     }
   }
 
@@ -250,7 +337,9 @@ export class AppComponent {
       return;
     }
     this.fileOperationLabel.set(
-      mode === "save-as" ? "Choosing save location…" : "Saving source…",
+      this.i18n.t(
+        mode === "save-as" ? "operation.choosingSave" : "operation.saving",
+      ),
     );
     try {
       const handle = this.documentHandle();
@@ -264,14 +353,16 @@ export class AppComponent {
         this.documentHandle.set(result.handle);
         this.documentName.set(result.displayName);
         this.documentDirty.set(false);
-        this.fileOperationLabel.set(`Saved ${result.displayName}`);
+        this.fileOperationLabel.set(
+          this.i18n.t("operation.saved", { name: result.displayName }),
+        );
       } else if (result.status === "failed") {
         this.fileOperationLabel.set(`${result.code}: ${result.message}`);
       } else {
         this.fileOperationLabel.set(undefined);
       }
     } catch {
-      this.fileOperationLabel.set("The desktop save operation failed unexpectedly.");
+      this.fileOperationLabel.set(this.i18n.t("operation.saveFailed"));
     }
   }
 
@@ -314,19 +405,19 @@ export class AppComponent {
   }
 
   zoomIn(): void {
-    this.previewZoom.update((zoom) => Math.min(2.5, zoom + 0.2));
+    this.session.setPreviewZoom(this.previewZoom() + 0.2);
   }
 
   zoomOut(): void {
-    this.previewZoom.update((zoom) => Math.max(0.4, zoom - 0.2));
+    this.session.setPreviewZoom(this.previewZoom() - 0.2);
   }
 
   fitPreview(): void {
-    this.previewZoom.set(1);
+    this.session.setPreviewZoom(1);
   }
 
   toggleRoutingDebug(): void {
-    this.routingDebugEnabled.update((enabled) => !enabled);
+    this.session.toggleRoutingDebug();
   }
 
   exportSvg(): void {
@@ -344,6 +435,54 @@ export class AppComponent {
     queueMicrotask(() => URL.revokeObjectURL(url));
   }
 
+  async exportPng(): Promise<void> {
+    const desktop = this.#desktop;
+    const svg = this.lastValidSvg();
+    if (
+      desktop === undefined ||
+      svg === undefined ||
+      this.compiler.state().phase !== "valid"
+    ) {
+      return;
+    }
+    this.fileOperationLabel.set(this.i18n.t("operation.renderingPng"));
+    try {
+      const result = await desktop.exportPng({
+        svg,
+        scale: this.pngScale(),
+        suggestedName: `${
+          this.compiler.state().activeViewId ?? "architecture"
+        }.png`,
+      });
+      if (result.status === "exported") {
+        this.fileOperationLabel.set(
+          this.i18n.t("operation.exportedPng", {
+            name: result.displayName,
+            width: result.width,
+            height: result.height,
+          }),
+        );
+      } else if (result.status === "failed") {
+        this.fileOperationLabel.set(`${result.code}: ${result.message}`);
+      } else {
+        this.fileOperationLabel.set(undefined);
+      }
+    } catch {
+      this.fileOperationLabel.set(this.i18n.t("operation.pngFailed"));
+    }
+  }
+
+  onPngScaleSelection(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+    const scale = Number(target.value);
+    if (Number.isFinite(scale) && scale >= 0.25 && scale <= 8) {
+      this.pngScale.set(scale);
+    }
+  }
+
   onViewSelection(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement) || target.value.length === 0) {
@@ -351,6 +490,88 @@ export class AppComponent {
     }
     this.selectedSceneObjectId.set(undefined);
     this.compiler.compile(this.source(), target.value, this.documentName());
+  }
+
+  selectView(viewId: string): void {
+    this.selectedSceneObjectId.set(undefined);
+    this.compiler.compile(this.source(), viewId, this.documentName());
+  }
+
+  selectActivity(activity: WorkbenchActivity): void {
+    this.session.setActivity(activity);
+  }
+
+  showBottomPanel(panel: WorkbenchPanel): void {
+    this.session.showPanel(panel);
+  }
+
+  toggleBottomPanel(): void {
+    this.session.togglePanel();
+  }
+
+  openCommandPalette(): void {
+    this.commandQuery.set("");
+    this.commandPaletteOpen.set(true);
+    queueMicrotask(() => this.commandInput()?.nativeElement.focus());
+  }
+
+  closeCommandPalette(): void {
+    this.commandPaletteOpen.set(false);
+    this.commandQuery.set("");
+  }
+
+  updateCommandQuery(event: Event): void {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      this.commandQuery.set(target.value);
+    }
+  }
+
+  onCommandInputKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Enter") {
+      return;
+    }
+    const first = this.filteredCommands().at(0);
+    if (first !== undefined) {
+      event.preventDefault();
+      this.executeCommand(first);
+    }
+  }
+
+  executeCommand(command: WorkbenchCommand): void {
+    this.closeCommandPalette();
+    switch (command.id) {
+      case "file.open":
+        void this.openDocument();
+        break;
+      case "file.save":
+        void this.saveDocument("save");
+        break;
+      case "file.save-as":
+        void this.saveDocument("save-as");
+        break;
+      case "diagram.export-svg":
+        this.exportSvg();
+        break;
+      case "diagram.export-png":
+        void this.exportPng();
+        break;
+      case "diagram.fit":
+        this.fitPreview();
+        break;
+      case "diagram.route-debug":
+        this.toggleRoutingDebug();
+        break;
+      case "panel.problems":
+        this.toggleBottomPanel();
+        break;
+      case "wizard.new":
+        this.startWizard();
+        break;
+      case "settings.open":
+        this.openSettings();
+        break;
+    }
   }
 
   startWizard(): void {
@@ -423,6 +644,9 @@ export class AppComponent {
     revealSource: boolean,
   ): void {
     this.selectedSceneObjectId.set(target?.sceneObjectId);
+    if (target !== undefined && target.kind !== "node") {
+      this.showBottomPanel("route");
+    }
     if (revealSource && target !== undefined) {
       this.sourceEditor()?.revealSource(target.source);
     }

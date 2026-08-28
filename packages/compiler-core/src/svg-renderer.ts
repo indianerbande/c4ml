@@ -300,7 +300,7 @@ function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string 
 }
 
 function renderRouteLabel(route: SceneRoute): string {
-  return `    <g data-c4ml-id="${escapeXml(route.relationshipId)}">
+  return `    <g id="${svgSceneObjectId(`${route.id}:label`)}" data-c4ml-id="${escapeXml(route.relationshipId)}">
       <text class="route-label" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y - 7)}">${escapeXml(route.label)}</text>
       ${route.technology === undefined ? "" : `<text class="route-technology" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y + 8)}">${escapeXml(route.technology)}</text>`}
     </g>`;

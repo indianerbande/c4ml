@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.20
+Status: Draft 0.22
 
 Date: 2026-08-28
 
@@ -665,9 +665,10 @@ At the time of Phase 0, Langium, ELK.js, and resvg-js were not permanent
 dependency decisions. The spike had to verify license, installation footprint,
 deterministic behavior, browser independence, and replacement boundaries.
 ELK.js was subsequently accepted for production automatic layout in Section
-9.5.2. Passing the other Phase 0 spikes still permits continued prototyping but
-does not make a candidate part of C4ML's public semantic model or freeze the
-source grammar.
+9.5.2, and resvg-js was accepted as the replaceable Node.js PNG adapter in
+Sections 9.7 and 10. Passing another Phase 0 spike still permits continued
+prototyping but does not make a candidate part of C4ML's public semantic model
+or freeze the source grammar.
 
 ### 9.2 Phase 1 semantic and view contract
 
@@ -734,9 +735,9 @@ These types are internal compiler contracts, not accepted `.c4ml` grammar. The
 current slice intentionally does not claim complete placement constraints,
 relative waypoints, avoidance regions, locked segments, route-junction
 authorship, complete all-view rendering evidence, a frozen author-facing theme
-grammar, or geometry-affecting style tokens. ELK.js is the
-accepted first automatic-layout adapter behind the engine-neutral boundary;
-resvg-js remains a candidate renderer adapter.
+grammar, or geometry-affecting style tokens. ELK.js is the accepted first
+automatic-layout adapter behind the engine-neutral boundary; resvg-js is the
+accepted replaceable Node.js PNG adapter behind `PngRenderer`.
 
 ### 9.4 Experimental `draft-1` language slices
 
@@ -869,10 +870,12 @@ A toggleable routing-debug overlay displays the selected Route's effective
 points, endpoint Ports, label anchor, and all lanes of its selected corridor.
 An adjacent inspector reports the same compiler-owned route facts. This is
 preview-only editor presentation; it does not recalculate geometry, mutate
-source, or enter SVG export. Individual Ports, labels, corridors, and
-Arrowheads are not separate navigation targets yet. Native source-file
-Open/Save/Save As is implemented by the desktop shell. PNG export, graphical
-editing, and those additional selection targets are not implemented.
+source, or enter SVG export. Ports, route labels, and corridors are distinct
+preview navigation targets. Selecting one identifies its owning Route and
+reveals the route-control source range; it does not invent a separate semantic
+relationship. Arrowheads are not separate navigation targets yet. Native
+source-file Open/Save/Save As and PNG export are implemented by the desktop
+shell. Graphical source editing remains unimplemented.
 The production preview uses the accepted ELK.js adapter described in Section
 9.5.2; the former deterministic linear preview remains test-only compatibility
 code.
@@ -968,14 +971,21 @@ cross-references by their semantic target type, including Software-System-only
 System Context and Container scopes, Container-only Component scopes, and
 Component-only Code scopes. Results are deterministically ordered.
 
-The first guided-modeling spike generates one new System Context document from
-explicit answers about one focal Software System, one Person, their directed
-relationship, and the view. The generated document uses the ordinary `draft-1`
-syntax and passes through the normal parser, semantic validator, compiler, and
-preview. The editor displays the proposed source before apply; cancel leaves the
-active source unchanged, and an applied generation has an explicit one-step
-undo. This spike does not extend or reformat existing documents and does not
-claim the future full wizard scope described in Section 14.4.
+The guided-modeling foundation generates either a new System Context document
+or a new Container document. The Context path asks about one focal application,
+one user role, and their directed intent. The Container path asks about parts
+that can be started, deployed, or operated separately, their responsibilities
+and technologies, and explicit directed connections with protocols. Both paths
+generate ordinary `draft-1` source and pass it through the normal parser,
+semantic validator, compiler, and preview.
+
+Wizard questions MUST lead with familiar architecture tasks and descriptions.
+C4 terms such as System Context and Container MUST be presented as optional
+translations or explanations, not as knowledge the user must already possess.
+The editor displays the proposed source before apply; cancel leaves the active
+source unchanged, and an applied generation has an explicit one-step undo. This
+foundation does not extend or reformat existing documents and does not claim
+the full wizard scope described in Section 14.4.
 
 ### 9.7 Electron desktop shell
 
@@ -995,6 +1005,14 @@ receives opaque document handles rather than filesystem paths. File operations
 are limited to validated C4ML source documents up to 8 MiB and report stable
 desktop diagnostic codes. Source remains authoritative and saving writes the
 current editor text, not hidden graphical state.
+
+The main process also owns native PNG export. The renderer sends only the
+canonical current SVG, a validated suggested name, and a scale of 1x, 2x, or
+3x through the versioned bridge. SVG input is bounded to 16 MiB. The main
+process rasterizes it locally through the replaceable `PngRenderer` adapter,
+loads the controlled IBM Plex Sans TTF faces, disables system-font discovery,
+and opens the native save dialog. PNG export MUST NOT run a second layout pass
+or alter source, scene geometry, or SVG text layout.
 
 The renderer MUST run sandboxed with context isolation enabled, Node.js
 integration disabled, web security enabled, external navigation and new
@@ -1021,9 +1039,15 @@ binary downloads are build/install-time concerns only.
 validated foundation.**
 
 The desktop editor has an extensible settings area with category navigation.
-Its first version owns local workbench color scheme plus source-editor font
-family and size. Settings apply live and persist locally as a validated,
-versioned record. The color scheme supports `system`, `light`, and `dark`;
+Its first version owns the local workbench interface language and color scheme
+plus source-editor font family and size. Settings apply live and persist locally
+as a validated, versioned record. Interface language supports `en` and `de`,
+with English as the default. It changes C4ML-owned interface copy, accessibility
+labels, command search, native menu commands, file-dialog labels, and
+unsaved-document warnings immediately. It MUST NOT translate authored names,
+descriptions, generated source, compiler diagnostics, or diagram content. The
+document root language attribute MUST reflect the current interface language.
+The color scheme supports `system`, `light`, and `dark`;
 `system` tracks operating-system changes while the application is running.
 Source font choice is bounded to the packaged IBM Plex Mono family or a local
 system monospace stack, and source font size is bounded to 11–24 px in 0.5 px
@@ -1038,11 +1062,33 @@ contract and MUST NOT be added silently to the local preference record.
 
 The version-one record MUST validate every value at the storage boundary and
 fall back safely when storage is unavailable, malformed, or from an unsupported
-version. Components MUST consume the preferences service rather than read local
-storage directly. The panel MUST support keyboard operation, contained modal
-focus, Escape dismissal, and return focus to its invoking toolbar control. The
-same panel is opened by the native `Cmd/Ctrl+,` application-menu command.
+version. A version-one record created before the language field existed MUST
+retain its other valid values and use English. Components MUST consume the
+preferences service rather than read local storage directly. The panel MUST
+support keyboard operation, contained modal focus, Escape dismissal, and return
+focus to its invoking toolbar control. The same panel is opened by the native
+`Cmd/Ctrl+,` application-menu command. The renderer-to-main language update MUST
+use the narrow validated desktop bridge and MUST NOT expose locale or filesystem
+capabilities to the renderer.
 `SETTINGS.md` records the current setting catalogue and extension rules.
+
+### 9.9 Workbench shell and local session
+
+**Status: Accepted, implemented, automatically validated, and visually
+validated foundation.**
+
+The editor uses an original C4ML workbench with C4ML-specific Files, Diagrams,
+and Output activity areas, simultaneous source and preview tabs, a bottom panel
+for Problems and Route details, a status bar, and a searchable command palette.
+These concepts provide familiar desktop navigation without adopting another
+product's branding, source, extensions, assets, or distinctive interface.
+
+A versioned session record may persist only installation-local presentation
+state: the active activity area, bottom-panel visibility and tab, preview zoom,
+and route-debug visibility. It MUST reject malformed or unsupported records and
+MUST NOT persist source text, document handles, filesystem paths, compilation
+results, diagram semantics, or uncommitted graphical state. Source files remain
+the only persistent architecture authority.
 
 ## 10. Scene graph and rendering
 
@@ -1274,10 +1320,17 @@ unrelated formatting.
 Direct manipulation is not an MVP acceptance requirement, but the compiler and
 source mapping MUST NOT preclude it.
 
-### 14.4 Future guided modeling wizard
+### 14.4 Guided modeling wizard
 
-A later editor version MAY provide a guided wizard as an additional way to
-create or extend a model. The wizard should ask context-sensitive questions
+A guided wizard provides an additional way to create or extend a model. It
+MUST be usable by people who recognize their architecture's parts and
+connections but do not have C4 vocabulary ready. Questions MUST therefore use
+plain task and domain language first. C4 names SHOULD appear as short optional
+translations that teach without blocking progress. For example, ask what runs,
+is deployed, or is operated separately before explaining that C4 calls such a
+unit a Container.
+
+The wizard should ask context-sensitive questions
 about the architecture, including:
 
 - people and software systems;
@@ -1311,9 +1364,10 @@ documents or can also extend existing source without disturbing comments and
 formatting remains an open interaction-design decision.
 
 The implemented experimental wizard currently chooses the conservative
-new-document-only behavior for its narrow System Context slice. This is spike
-evidence, not acceptance of the final wizard interaction model; safe extension
-of existing documents remains open and unimplemented.
+new-document-only behavior and supports bounded System Context and Container
+starters. This is foundation evidence, not acceptance of the final wizard
+interaction model; Components, Code, deployments, Visual Groups, and safe
+extension of existing documents remain open and unimplemented.
 
 ## 15. MVP acceptance criteria
 

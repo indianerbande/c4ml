@@ -9,12 +9,14 @@ The shell currently provides:
 
 - a sandboxed Electron renderer with context isolation and Node integration
   disabled;
-- a small typed preload bridge for Open, Save, Save As, menu commands, and
-  document state;
+- a small typed preload bridge for Open, Save, Save As, native PNG export, menu
+  commands, document state, and validated English/German UI-language selection;
 - opaque document handles, so renderer code never receives filesystem paths;
 - local-only editor assets served through the owned `c4ml://app` protocol;
 - native menus, shortcuts, dialogs, title updates, and unsaved-close
-  protection;
+  protection, with C4ML-owned copy synchronized to the workbench language;
+- local 1x/2x/3x rasterization of canonical SVG through the packaged resvg-js
+  native adapter, controlled IBM Plex Sans TTF files, and no system fonts;
 - packaged application resources in ASAR with integrity-oriented Electron
   fuses; and
 - macOS app/DMG/ZIP makers plus a configured Windows Squirrel maker.

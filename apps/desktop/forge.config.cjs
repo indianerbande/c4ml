@@ -10,13 +10,16 @@ module.exports = {
     appBundleId: "org.c4ml.desktop",
     appCategoryType: "public.app-category.developer-tools",
     appCopyright: "Copyright C4ML contributors",
-    asar: true,
+    asar: {
+      unpack: "dist/*.node",
+    },
     executableName: "C4ML",
     extraResource: [
       path.resolve(__dirname, "../../build/editor/browser"),
       path.resolve(__dirname, "../../build/editor/3rdpartylicenses.txt"),
       path.resolve(__dirname, "../../LICENSE"),
       path.resolve(__dirname, "THIRD_PARTY_NOTICES.txt"),
+      path.resolve(__dirname, "../../packages/font-ibm-plex/fonts/sans"),
     ],
     ignore: [
       /^\/src($|\/)/,

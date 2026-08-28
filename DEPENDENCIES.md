@@ -1,6 +1,6 @@
 # C4ML Dependency Record
 
-Status: Accepted desktop application, editor, and automatic-layout stack with remaining candidates
+Status: Accepted desktop application, editor, automatic-layout, and PNG stack with remaining candidates
 
 Date: 2026-08-28
 
@@ -81,20 +81,26 @@ Source: [ELK.js 0.12.0 README](https://github.com/kieler/elkjs/blob/0.12.0/READM
 
 ### resvg-js 2.6.2
 
+**Status: accepted and implemented as the replaceable Node.js PNG adapter for
+the CLI, reference exporter, and desktop main process.**
+
 - **Capability:** deterministic SVG-to-PNG rasterization without a browser.
 - **Why external:** correct SVG rasterization, font processing, and native image
   encoding are mature specialist capabilities.
 - **License:** MPL-2.0.
 - **Impact:** Node.js native package with platform-specific optional binaries.
-  A separate WebAssembly package exists for browser use, but it is not accepted
-  by this spike.
+  Desktop packaging resolves and copies only the current platform's reviewed
+  native binary outside ASAR together with the required MPL notice. A separate
+  WebAssembly package exists for browser use, but it is not accepted.
 - **Offline behavior:** rasterization runs locally after installation. External
   images and system-font discovery are disabled by the C4ML adapter.
 - **Boundary:** a `PngRenderer` contract accepts canonical SVG and returns PNG
   bytes plus dimensions. The Node.js native implementation remains outside the
   portable compiler core.
-- **Phase 0 evidence:** valid PNG signature and dimensions, repeated byte-stable
-  output for controlled SVG, disabled system fonts, and no external resources.
+- **Protecting evidence:** valid PNG signature and dimensions, repeated
+  byte-stable output for controlled SVG, disabled system fonts, no external
+  resources, bridge/request validation, packaged-native-resource checks, and a
+  packaged desktop smoke rasterization.
 
 Redistribution must preserve MPL-2.0 notices and the source availability rights
 for covered resvg-js files. C4ML MUST NOT modify or copy resvg-js source into the
@@ -341,8 +347,8 @@ Source: [pnpm managed runtime (`devEngines.runtime`)](https://pnpm.io/package_js
 ## Experimental CLI application
 
 `apps/cli` adds no external dependency. It depends only on the C4ML compiler and
-language workspaces plus the accepted ELK.js adapter and resvg-js candidate
-adapter. The app owns filesystem, process, argument, and exit-code behavior;
+language workspaces plus the accepted ELK.js and resvg-js adapters. The app owns
+filesystem, process, argument, and exit-code behavior;
 none of those Node.js concerns enter the portable compiler core. Its tests
 protect that boundary through real local files, invocation from an unrelated
 working directory, source validation, view selection, and SVG/PNG output.
@@ -423,8 +429,8 @@ do not rely on TypeScript 7-only language or configuration features.
 These results establish technical feasibility for the remaining candidates,
 not their permanent acceptance. The complete product grammar and final routing
 architecture remain open. Angular 22, Monaco 0.56.0, Electron 44.0.0, Electron
-Forge 7.11.2, ELK.js 0.12.0, and the controlled IBM Plex assets are accepted
-production dependencies behind the boundaries recorded above.
+Forge 7.11.2, ELK.js 0.12.0, resvg-js 2.6.2, and the controlled IBM Plex assets
+are accepted production dependencies behind the boundaries recorded above.
 
 Superseded evaluation note (2026-08-28): Direct use of ELK.js's bundled
 CommonJS entry inside the Angular compiler worker failed while constructing the
@@ -433,8 +439,8 @@ integration instead uses ELK's API-only entry with the published minified ELK
 worker as a real nested browser Worker. The local linear adapter is no longer
 the production preview path.
 
-The Phase 1 reference exporter now invokes the accepted ELK.js and candidate
-resvg-js adapters through the C4ML-owned contracts. ELK output is normalized to
+The Phase 1 reference exporter now invokes the accepted ELK.js and resvg-js
+adapters through the C4ML-owned contracts. ELK output is normalized to
 absolute geometry across nested compound nodes before later stages consume it.
 The reference SVG embeds IBM Plex Sans WOFF2 faces, and its PNG path explicitly
 loads the matching TTF faces with system fonts disabled. The current artifact

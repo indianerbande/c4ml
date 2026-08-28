@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -10,6 +10,9 @@ const repositoryRoot = resolve(
 );
 const desktopRoot = join(repositoryRoot, "apps", "desktop");
 const requireFromDesktop = createRequire(join(desktopRoot, "package.json"));
+const requireFromResvgAdapter = createRequire(
+  join(repositoryRoot, "spikes", "render-resvg", "package.json"),
+);
 
 const rootManifest = JSON.parse(readRequired("package.json"));
 assert.deepEqual(
@@ -23,6 +26,11 @@ assert.equal(
   desktopManifest.dependencies,
   undefined,
   "desktop runtime dependencies must be bundled rather than copied as node_modules",
+);
+assert.equal(
+  desktopManifest.devDependencies?.["@c4ml/spike-render-resvg"],
+  "workspace:*",
+  "desktop PNG export must use the replaceable C4ML renderer adapter",
 );
 
 const expectedPackages = [
@@ -54,6 +62,15 @@ for (const [packageName, version, license] of expectedPackages) {
     `${packageName} must retain the reviewed license`,
   );
 }
+
+const resvgManifest = JSON.parse(
+  readFileSync(
+    findPackageManifest("@resvg/resvg-js", requireFromResvgAdapter),
+    "utf8",
+  ),
+);
+assert.equal(resvgManifest.version, "2.6.2");
+assert.equal(resvgManifest.license, "MPL-2.0");
 
 const runtimeLicenseRoot = dirname(
   findPackageManifest("electron-squirrel-startup"),
@@ -104,6 +121,18 @@ assert.ok(
   preloadBundle.includes("c4mlDesktop"),
   "desktop preload must expose only the owned C4ML bridge",
 );
+assert.ok(
+  preloadBundle.includes("c4ml:desktop:export-png"),
+  "desktop preload must expose the owned PNG export channel",
+);
+assert.ok(
+  preloadBundle.includes("c4ml:desktop:set-ui-language"),
+  "desktop preload must expose the owned UI-language channel",
+);
+assert.ok(
+  mainBundle.includes("C4ML-DESKTOP-EXPORT-001"),
+  "desktop main bundle must validate PNG rendering failures",
+);
 assert.doesNotMatch(
   preloadBundle,
   /node:fs|require\(["']fs["']\)/,
@@ -130,6 +159,9 @@ assert.match(forgeConfig, /@electron-forge\/maker-dmg/);
 assert.match(forgeConfig, /@electron-forge\/maker-zip/);
 assert.match(desktopNotices, /electron-squirrel-startup 1\.0\.1/);
 assert.match(desktopNotices, /Apache License, Version 2\.0/);
+assert.match(desktopNotices, /resvg-js 2\.6\.2/);
+assert.match(desktopNotices, /Mozilla Public License 2\.0/);
+assert.match(forgeConfig, /font-ibm-plex\/fonts\/sans/);
 assert.match(packagedLauncher, /C4ML-\$\{process\.platform\}-\$\{process\.arch\}/);
 assert.match(packagedLauncher, /--c4ml-smoke/);
 
@@ -142,8 +174,21 @@ for (const relativePath of [
   assert.ok(existsSync(join(repositoryRoot, relativePath)), `${relativePath} missing`);
 }
 
+const nativeRenderers = readdirSync(join(desktopRoot, "dist")).filter((name) =>
+  /^resvgjs\..+\.node$/.test(name),
+);
+assert.equal(
+  nativeRenderers.length,
+  1,
+  "desktop build must contain exactly one current-platform resvg binary",
+);
+assert.ok(
+  existsSync(join(desktopRoot, "dist", "RESVG_LICENSE.txt")),
+  "desktop build must retain the resvg MPL-2.0 license",
+);
+
 console.log(
-  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, secure preload, local editor assets).",
+  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, secure preload, local editor assets, controlled resvg PNG export).",
 );
 
 function readRequired(relativePath) {
@@ -152,13 +197,13 @@ function readRequired(relativePath) {
   return readFileSync(path, "utf8");
 }
 
-function findPackageManifest(packageName) {
+function findPackageManifest(packageName, requester = requireFromDesktop) {
   try {
-    return requireFromDesktop.resolve(`${packageName}/package.json`);
+    return requester.resolve(`${packageName}/package.json`);
   } catch {
     // Some packages do not export package.json, so fall back to their entry.
   }
-  let current = dirname(requireFromDesktop.resolve(packageName));
+  let current = dirname(requester.resolve(packageName));
   while (current !== dirname(current)) {
     const candidate = join(current, "package.json");
     if (existsSync(candidate)) {

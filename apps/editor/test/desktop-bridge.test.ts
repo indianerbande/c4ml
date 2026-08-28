@@ -9,16 +9,18 @@ describe("editor desktop bridge", () => {
     const api = {
       protocolVersion: desktopBridgeProtocolVersion,
       platform: "win32",
+      exportPng: async () => ({ status: "canceled" as const }),
       openDocument: async () => ({ status: "canceled" as const }),
       saveDocument: async () => ({ status: "canceled" as const }),
       setDocumentState: () => undefined,
+      setUiLanguage: () => undefined,
       onCommand: () => () => undefined,
     };
 
     expect(resolveC4mlDesktopApi({ c4mlDesktop: api })).toBe(api);
     expect(
       resolveC4mlDesktopApi({
-        c4mlDesktop: { ...api, protocolVersion: 2 },
+        c4mlDesktop: { ...api, protocolVersion: 4 },
       }),
     ).toBeUndefined();
     expect(resolveC4mlDesktopApi({})).toBeUndefined();

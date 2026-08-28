@@ -2,7 +2,10 @@ import type {
   CompilerWorkerNavigation,
   CompilerWorkerNavigationPoint,
   CompilerWorkerNavigationTarget,
+  CompilerWorkerCorridorNavigationTarget,
   CompilerWorkerNodeNavigationTarget,
+  CompilerWorkerPortNavigationTarget,
+  CompilerWorkerRouteLabelNavigationTarget,
   CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
 
@@ -31,6 +34,7 @@ export function navigationTargetForOffset(
   offset: number,
 ): CompilerWorkerNavigationTarget | undefined {
   return targets
+    .filter((target) => target.kind === "node" || target.kind === "route")
     .flatMap((target) =>
       [target.source, ...target.relatedSources]
         .filter(
@@ -64,6 +68,28 @@ export function navigationTargetAtPoint(
     return element;
   }
 
+  const port = nearestPointTarget(
+    targets.filter(
+      (target): target is CompilerWorkerPortNavigationTarget =>
+        target.kind === "port",
+    ),
+    point,
+    12,
+  );
+  if (port !== undefined) {
+    return port;
+  }
+
+  const label = targets
+    .filter(
+      (target): target is CompilerWorkerRouteLabelNavigationTarget =>
+        target.kind === "route-label" && containsBounds(target.bounds, point),
+    )
+    .sort((left, right) => compareText(left.sceneObjectId, right.sceneObjectId))[0];
+  if (label !== undefined) {
+    return label;
+  }
+
   const route = targets
     .filter(
       (target): target is CompilerWorkerRouteNavigationTarget =>
@@ -76,7 +102,26 @@ export function navigationTargetAtPoint(
         left.distance - right.distance ||
         compareText(left.target.sceneObjectId, right.target.sceneObjectId),
     )[0]?.target;
-  return route ?? smallestNode(nodes);
+  if (route !== undefined) {
+    return route;
+  }
+
+  const corridor = targets
+    .filter(
+      (target): target is CompilerWorkerCorridorNavigationTarget =>
+        target.kind === "corridor",
+    )
+    .map((target) => ({
+      target,
+      distance: distanceToSegment(point, target.points[0], target.points[1]),
+    }))
+    .filter(({ distance }) => distance <= 8)
+    .sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        compareText(left.target.sceneObjectId, right.target.sceneObjectId),
+    )[0]?.target;
+  return corridor ?? smallestNode(nodes);
 }
 
 export function clientPointToScene(
@@ -114,16 +159,43 @@ export function svgWithNavigationHighlight(
   ) {
     return svg;
   }
-  const style =
-    target.kind === "node"
-      ? nodeSelectionStyle(target.svgElementIds[0]!)
-      : routeSelectionStyle(target.svgElementIds);
-  const debug =
-    target.kind === "route" && options?.showRouteDebug === true
-      ? routeDebugOverlay(target, options)
-      : "";
+  const style = selectionStyle(target);
+  const debug = selectionOverlay(target, options);
   const overlay = `<style id="c4ml-editor-selection">${style}</style>${debug}`;
   return svg.includes("</svg>") ? svg.replace("</svg>", `${overlay}</svg>`) : svg;
+}
+
+function nearestPointTarget(
+  targets: readonly CompilerWorkerPortNavigationTarget[],
+  point: PreviewClientPoint,
+  tolerance: number,
+): CompilerWorkerPortNavigationTarget | undefined {
+  return targets
+    .map((target) => ({
+      target,
+      distance: Math.hypot(
+        point.x - target.point.x,
+        point.y - target.point.y,
+      ),
+    }))
+    .filter(({ distance }) => distance <= tolerance)
+    .sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        compareText(left.target.sceneObjectId, right.target.sceneObjectId),
+    )[0]?.target;
+}
+
+function containsBounds(
+  bounds: CompilerWorkerRouteLabelNavigationTarget["bounds"],
+  point: PreviewClientPoint,
+): boolean {
+  return (
+    point.x >= bounds.x &&
+    point.x <= bounds.x + bounds.width &&
+    point.y >= bounds.y &&
+    point.y <= bounds.y + bounds.height
+  );
 }
 
 function contains(
@@ -196,6 +268,40 @@ function nodeSelectionStyle(svgElementId: string): string {
 function routeSelectionStyle(svgElementIds: readonly string[]): string {
   const [pathId, arrowheadId] = svgElementIds;
   return `#${pathId}{stroke:#F59E0B!important;stroke-width:5!important;}#${arrowheadId}{fill:#F59E0B!important;stroke:#F59E0B!important;}`;
+}
+
+function selectionStyle(target: CompilerWorkerNavigationTarget): string {
+  switch (target.kind) {
+    case "node":
+      return nodeSelectionStyle(target.svgElementIds[0]!);
+    case "route":
+      return routeSelectionStyle(target.svgElementIds);
+    case "route-label":
+      return `#${target.svgElementIds[0]} text{fill:#F59E0B!important;font-weight:700!important;}`;
+    case "port":
+    case "corridor":
+      return "";
+  }
+}
+
+function selectionOverlay(
+  target: CompilerWorkerNavigationTarget,
+  options: PreviewOverlayOptions | undefined,
+): string {
+  switch (target.kind) {
+    case "route":
+      return options?.showRouteDebug === true
+        ? routeDebugOverlay(target, options)
+        : "";
+    case "port":
+      return `<g id="c4ml-editor-detail-selection" aria-hidden="true" pointer-events="none"><circle cx="${number(target.point.x)}" cy="${number(target.point.y)}" r="9" fill="#FFF8E8" stroke="#F59E0B" stroke-width="3"/></g>`;
+    case "route-label":
+      return `<g id="c4ml-editor-detail-selection" aria-hidden="true" pointer-events="none"><rect x="${number(target.bounds.x)}" y="${number(target.bounds.y)}" width="${number(target.bounds.width)}" height="${number(target.bounds.height)}" rx="5" fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5 3"/></g>`;
+    case "corridor":
+      return `<g id="c4ml-editor-detail-selection" aria-hidden="true" pointer-events="none"><line x1="${number(target.points[0].x)}" y1="${number(target.points[0].y)}" x2="${number(target.points[1].x)}" y2="${number(target.points[1].y)}" stroke="#F59E0B" stroke-width="4" stroke-dasharray="9 5" opacity=".82"/></g>`;
+    case "node":
+      return "";
+  }
 }
 
 function routeDebugOverlay(

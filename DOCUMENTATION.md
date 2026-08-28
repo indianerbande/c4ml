@@ -87,20 +87,37 @@ The desktop workbench can be started locally:
 pnpm run desktop:start
 ```
 
-It opens as a normal desktop application and presents source on the left and a
-live SVG preview with diagnostics on the right. Use the toolbar or the native
-File menu to open and save `.c4ml` source. The standard shortcuts are
+It opens as a normal desktop application with simultaneous source and preview
+tabs. The activity bar opens C4ML-specific Files, Diagrams, and Output areas;
+Problems and selected Route details share the bottom panel. Use the command
+center or `Shift+Cmd/Ctrl+P` to search the local command palette. Use the
+toolbar or the native File menu to open and save `.c4ml` source. The standard shortcuts are
 `Cmd/Ctrl+O`, `Cmd/Ctrl+S`, and `Cmd/Ctrl+Shift+S`. The window title and source
 header mark unsaved changes, and closing a dirty document asks before discarding
 them. The renderer receives only an opaque document handle; native filesystem
 paths and Node.js APIs remain in the Electron main process.
 
+Use **Export PNG** in Output or the File menu to save the current canonical
+diagram at 1x, 2x, or 3x. Rasterization runs locally in the desktop main process
+from the same SVG shown by the preview, with the packaged IBM Plex Sans fonts;
+it does not take a browser screenshot or run layout again. Browser-only
+development keeps SVG download but has no native PNG dialog.
+
 Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
-choose System, Light, or Dark workbench colors and the source editor's
-monospace family and size. Changes apply immediately and are stored locally.
-They do not edit the open `.c4ml` document or alter exported diagram colors,
-fonts, or geometry. **Reset defaults** restores the version-one defaults. The
-settings catalogue and extension rules are documented in `SETTINGS.md`.
+choose English or German interface copy, System, Light, or Dark workbench
+colors, and the source editor's monospace family and size. Changes apply
+immediately and are stored locally. The language choice also updates C4ML-owned
+native menu commands and dialogs; names, descriptions, source, compiler
+diagnostics, and diagrams are never translated automatically. Preferences do
+not edit the open `.c4ml` document or alter exported diagram colors, fonts, or
+geometry. **Reset defaults** restores English and the remaining version-one
+defaults. The settings catalogue and extension rules are documented in
+`SETTINGS.md`.
+
+The workbench restores the active activity area, bottom-panel state, preview
+zoom, and Route Debug visibility after a relaunch. This local session record
+never stores source text, document handles, or filesystem paths; `.c4ml` files
+remain the architecture source of truth.
 
 Parsing, compilation, and SVG generation still run in the same browser Web
 Worker as the isolated Angular development path.
@@ -212,28 +229,38 @@ The optional Route Debug overlay shows effective route points, source and
 target Ports, the label anchor, and every lane of a selected corridor. Its
 adjacent inspector reports policy, style, Port sides, point count, selected
 label segment, and corridor lane. The overlay and selection styling exist only
-in the live preview. Individual Ports, labels, and corridors are not separate
-selection targets yet. The editor will retain this separation while filling
-the remaining export, accessibility, and graphical-editing gaps.
+in the live preview. Ports, route labels, and corridors can also be selected
+directly. Each reveals the source of its owning route control; none becomes a
+second architectural relationship. Arrowheads are not separate targets yet.
 
-### Guided modeling wizard spike
+### Guided modeling wizard
 
-The editor now includes the first bounded guided architecture interview. “New
-from wizard” asks for one focal Software System, one Person, their directed
-relationship, and the System Context View. Before applying anything, the final
-step shows the complete generated `draft-1` source. Cancel leaves the active
-document unchanged; apply replaces it explicitly, and “Undo wizard” restores
-the prior document once.
+The editor includes a bounded guided architecture interview. It starts with
+the question the diagram should answer, not with a test of C4 vocabulary:
+
+- **Who uses this application, and what is around it?** creates a System
+  Context starter with one application, one user role, and their intent.
+- **What runs inside this application?** creates a Container starter from the
+  parts that can be started, deployed, or operated separately, plus their
+  responsibilities, technologies, and explicit connections and protocols.
+
+The C4 terms appear beside these choices as optional translations. In
+particular, “Container” is explained as a runtime/deployment unit and does not
+imply Docker. Stable technical IDs are available under **Advanced details**;
+they are not required vocabulary for the normal path. Before applying anything,
+the final step shows the complete generated `draft-1` source. Cancel leaves the
+active document unchanged; apply replaces it explicitly, and **Undo wizard**
+restores the prior document once.
 
 The result is not a separate visual-only document. The wizard generates normal
 C4ML source in the language worker and hands it to the same parser, validator,
 compiler, and preview used for hand-authored source. The current wizard creates
 a new document only; it does not merge into or reformat existing source.
 
-The intended later wizard remains broader: People, Software Systems,
-Containers, Components, Code Elements, deployments, views, Visual Groups, and
-context-dependent relationship and ownership choices. That complete scope and
-safe extension of existing documents are not implemented or accepted yet.
+The intended later wizard remains broader: Components, Code Elements,
+deployments, additional views, Visual Groups, and more context-dependent
+relationship and ownership choices. That complete scope and safe extension of
+existing documents are not implemented or accepted yet.
 
 For the quickest syntax review, begin with
 [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), move

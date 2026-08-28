@@ -12,7 +12,7 @@
     "forge": "./forge.config.cjs"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit && esbuild src/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/main.cjs && esbuild src/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload.cjs",
+    "build": "tsc -p tsconfig.json --noEmit && node scripts/copy-resvg-native.cjs && esbuild src/main.ts --bundle --platform=node --format=cjs --external:electron --loader:.node=copy --asset-names=[name] --outfile=dist/main.cjs && esbuild src/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload.cjs",
     "smoke": "node scripts/launch-packaged.cjs --smoke",
     "start": "node scripts/launch-packaged.cjs",
     "package": "electron-forge package",
@@ -22,6 +22,8 @@
   },
   "devDependencies": {
     "@c4ml/desktop-contract": "workspace:*",
+    "@c4ml/font-ibm-plex": "workspace:*",
+    "@c4ml/spike-render-resvg": "workspace:*",
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/maker-dmg": "7.11.2",
     "@electron-forge/maker-squirrel": "7.11.2",

@@ -87,12 +87,15 @@ function completionRequest(
   };
 }
 
-function wizardRequest(requestId = 1): WizardWorkerRequest {
+function wizardRequest(
+  requestId = 1,
+  answers = defaultSystemContextWizardAnswers,
+): WizardWorkerRequest {
   return {
     protocolVersion: compilerWorkerProtocolVersion,
     type: "generate-system-context",
     requestId,
-    answers: defaultSystemContextWizardAnswers,
+    answers,
   };
 }
 
@@ -156,6 +159,20 @@ describe("compiler worker runtime", () => {
           ],
         }),
         expect.objectContaining({
+          kind: "port",
+          referenceId: "caretaker-reviews-plan",
+          portRole: "source",
+          side: "east",
+          routeSceneObjectId:
+            "scene-route:relationship:caretaker-reviews-plan",
+        }),
+        expect.objectContaining({
+          kind: "route-label",
+          referenceId: "caretaker-reviews-plan",
+          label: "Reviews and adjusts the garden work plan",
+          bounds: expect.objectContaining({ width: expect.any(Number) }),
+        }),
+        expect.objectContaining({
           kind: "route",
           referenceId: "sensor-publishes-observations",
           corridor: expect.objectContaining({
@@ -166,6 +183,14 @@ describe("compiler worker runtime", () => {
             coordinate: 687,
             laneCoordinate: 687,
           }),
+        }),
+        expect.objectContaining({
+          kind: "corridor",
+          referenceId: "sensor-publishes-observations",
+          label: "Corridor lower-entry · lane 2",
+          orientation: "vertical",
+          lane: 1,
+          lanes: 3,
         }),
       ]),
     );
@@ -310,6 +335,25 @@ describe("compiler worker runtime", () => {
     const compiled = await compile(request(generated.source!, 2));
     expect(compiled.status).toBe("valid");
     expect(compiled.svg).toContain("System Context — Field Notes");
+  });
+
+  it("generates a guided Container starter through the same worker path", async () => {
+    const generated = await generateWorkerRequest(
+      wizardRequest(1, {
+        ...defaultSystemContextWizardAnswers,
+        viewKind: "container",
+        viewId: "field-notes-containers",
+        viewTitle: "Container View — Field Notes",
+        viewPurpose: "Show what runs inside Field Notes.",
+      }),
+    );
+    const compiled = await compile(request(generated.source!, 2));
+
+    expect(generated.status).toBe("valid");
+    expect(compiled.status).toBe("valid");
+    expect(compiled.svg).toContain("Container View — Field Notes");
+    expect(compiled.svg).toContain("Field Notes Service");
+    expect(compiled.svg).toContain("HTTPS/JSON");
   });
 });
 

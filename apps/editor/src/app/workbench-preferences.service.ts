@@ -18,6 +18,7 @@ import {
   type WorkbenchColorScheme,
   type WorkbenchEditorFontFamily,
   type WorkbenchPreferences,
+  type WorkbenchUiLanguage,
 } from "./workbench-preferences.js";
 
 @Injectable({ providedIn: "root" })
@@ -39,6 +40,7 @@ export class WorkbenchPreferencesService {
   readonly editorFontSize = computed(
     () => this.preferences().editorFontSize,
   );
+  readonly uiLanguage = computed(() => this.preferences().uiLanguage);
 
   constructor() {
     const mediaQuery = this.#window?.matchMedia(
@@ -57,8 +59,16 @@ export class WorkbenchPreferencesService {
       const effectiveColorScheme = this.effectiveColorScheme();
       this.#document.documentElement.dataset["colorScheme"] =
         effectiveColorScheme;
+      this.#document.documentElement.lang = preferences.uiLanguage;
       storeWorkbenchPreferences(this.#readStorage(), preferences);
     });
+  }
+
+  setUiLanguage(uiLanguage: WorkbenchUiLanguage): void {
+    this.preferences.update((preferences) => ({
+      ...preferences,
+      uiLanguage,
+    }));
   }
 
   setColorScheme(colorScheme: WorkbenchColorScheme): void {

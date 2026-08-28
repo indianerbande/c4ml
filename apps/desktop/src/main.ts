@@ -16,22 +16,36 @@ import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
+  desktopBridgeProtocolVersion,
   desktopIpcChannels,
   isDesktopDocumentState,
+  isDesktopPngExportRequest,
   isDesktopSaveRequest,
+  isDesktopUiLanguage,
   maxDesktopSourceBytes,
+  maxDesktopSvgBytes,
   type DesktopCommand,
   type DesktopDocumentState,
   type DesktopOpenResult,
   type DesktopOperationFailure,
+  type DesktopPngExportResult,
   type DesktopSaveResult,
+  type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
+import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
+import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
 
 import {
   DesktopDocumentRegistry,
   ensureC4mlExtension,
   safeSuggestedSourceName,
 } from "./document-registry.js";
+import {
+  ensurePngExtension,
+  resolveDesktopPngFontFiles,
+  safeSuggestedPngName,
+} from "./diagram-export.js";
+import { desktopMessage } from "./desktop-localization.js";
 import {
   editorEntryUrl,
   editorProtocolScheme,
@@ -45,8 +59,10 @@ const currentDirectory = __dirname;
 const preloadPath = join(currentDirectory, "preload.cjs");
 const documents = new DesktopDocumentRegistry();
 const documentStates = new WeakMap<BrowserWindow, DesktopDocumentState>();
+const pngRenderer = new ResvgPngRenderer();
 
 let mainWindow: BrowserWindow | undefined;
+let uiLanguage: DesktopUiLanguage = "en";
 const trustedEditorUrl = editorEntryUrl;
 
 protocol.registerSchemesAsPrivileged([
@@ -173,8 +189,85 @@ function denyRendererPermissions(): void {
 }
 
 function registerDesktopIpc(): void {
+  ipcMain.removeHandler(desktopIpcChannels.exportPng);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
   ipcMain.removeHandler(desktopIpcChannels.saveDocument);
+  ipcMain.removeAllListeners(desktopIpcChannels.setUiLanguage);
+  ipcMain.handle(
+    desktopIpcChannels.exportPng,
+    async (event, value: unknown): Promise<DesktopPngExportResult> => {
+      if (!isTrustedSender(event) || !isDesktopPngExportRequest(value)) {
+        return invalidIpcResult();
+      }
+      if (Buffer.byteLength(value.svg, "utf8") > maxDesktopSvgBytes) {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-EXPORT-001",
+          message: desktopMessage(uiLanguage, "error.svgTooLarge"),
+        };
+      }
+
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: desktopMessage(uiLanguage, "dialog.exportPng"),
+        defaultPath: safeSuggestedPngName(value.suggestedName),
+        filters: [
+          {
+            name: desktopMessage(uiLanguage, "filter.png"),
+            extensions: ["png"],
+          },
+        ],
+      };
+      const selection =
+        owner === null
+          ? await dialog.showSaveDialog(options)
+          : await dialog.showSaveDialog(owner, options);
+      if (selection.canceled || selection.filePath === undefined) {
+        return { status: "canceled" };
+      }
+
+      let image: {
+        readonly bytes: Uint8Array;
+        readonly width: number;
+        readonly height: number;
+      };
+      try {
+        image = await pngRenderer.render(value.svg, {
+          scale: value.scale,
+          fontFiles: resolveDesktopPngFontFiles({
+            appPath: app.getAppPath(),
+            packaged: app.isPackaged,
+            resourcesPath: process.resourcesPath,
+          }),
+          loadSystemFonts: false,
+          defaultFontFamily: ibmPlexSansFamily,
+        });
+      } catch {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-EXPORT-001",
+          message: desktopMessage(uiLanguage, "error.pngRender"),
+        };
+      }
+
+      const targetPath = ensurePngExtension(selection.filePath);
+      try {
+        await writeFile(targetPath, image.bytes, { mode: 0o600 });
+        return {
+          status: "exported",
+          displayName: basename(targetPath),
+          width: image.width,
+          height: image.height,
+        };
+      } catch {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-EXPORT-002",
+          message: desktopMessage(uiLanguage, "error.pngSave"),
+        };
+      }
+    },
+  );
   ipcMain.handle(
     desktopIpcChannels.openDocument,
     async (event): Promise<DesktopOpenResult> => {
@@ -183,11 +276,17 @@ function registerDesktopIpc(): void {
       }
       const owner = BrowserWindow.fromWebContents(event.sender);
       const options = {
-        title: "Open C4ML source",
+        title: desktopMessage(uiLanguage, "dialog.open"),
         properties: ["openFile" as const],
         filters: [
-          { name: "C4ML source", extensions: ["c4ml"] },
-          { name: "All files", extensions: ["*"] },
+          {
+            name: desktopMessage(uiLanguage, "filter.c4ml"),
+            extensions: ["c4ml"],
+          },
+          {
+            name: desktopMessage(uiLanguage, "filter.all"),
+            extensions: ["*"],
+          },
         ],
       };
       const selection =
@@ -204,7 +303,7 @@ function registerDesktopIpc(): void {
           return {
             status: "failed",
             code: "C4ML-DESKTOP-FILE-001",
-            message: "The selected source is not a readable C4ML file below 8 MiB.",
+            message: desktopMessage(uiLanguage, "error.sourceUnreadable"),
           };
         }
         const source = await readFile(path, "utf8");
@@ -231,7 +330,7 @@ function registerDesktopIpc(): void {
         return {
           status: "failed",
           code: "C4ML-DESKTOP-FILE-002",
-          message: "The C4ML source is larger than the 8 MiB desktop limit.",
+          message: desktopMessage(uiLanguage, "error.sourceTooLarge"),
         };
       }
 
@@ -240,9 +339,14 @@ function registerDesktopIpc(): void {
       if (targetPath === undefined) {
         const owner = BrowserWindow.fromWebContents(event.sender);
         const options = {
-          title: "Save C4ML source",
+          title: desktopMessage(uiLanguage, "dialog.save"),
           defaultPath: safeSuggestedSourceName(value.suggestedName),
-          filters: [{ name: "C4ML source", extensions: ["c4ml"] }],
+          filters: [
+            {
+              name: desktopMessage(uiLanguage, "filter.c4ml"),
+              extensions: ["c4ml"],
+            },
+          ],
         };
         const selection =
           owner === null
@@ -272,7 +376,7 @@ function registerDesktopIpc(): void {
         return {
           status: "failed",
           code: "C4ML-DESKTOP-FILE-002",
-          message: "The C4ML source could not be saved at the selected location.",
+          message: desktopMessage(uiLanguage, "error.sourceSave"),
         };
       }
     },
@@ -296,6 +400,15 @@ function registerDesktopIpc(): void {
       }
     },
   );
+  ipcMain.on(desktopIpcChannels.setUiLanguage, (event, value: unknown) => {
+    if (!isTrustedSender(event) || !isDesktopUiLanguage(value)) {
+      return;
+    }
+    if (uiLanguage !== value) {
+      uiLanguage = value;
+      installApplicationMenu();
+    }
+  });
 }
 
 function isTrustedSender(event: IpcMainEvent | IpcMainInvokeEvent): boolean {
@@ -306,7 +419,7 @@ function invalidIpcResult(): DesktopOperationFailure {
   return {
     status: "failed",
     code: "C4ML-DESKTOP-IPC-001",
-    message: "The desktop request was rejected by the application boundary.",
+    message: desktopMessage(uiLanguage, "error.ipc"),
   };
 }
 
@@ -314,7 +427,7 @@ function fileReadFailure(): DesktopOperationFailure {
   return {
     status: "failed",
     code: "C4ML-DESKTOP-FILE-001",
-    message: "The selected C4ML source could not be read.",
+    message: desktopMessage(uiLanguage, "error.sourceRead"),
   };
 }
 
@@ -332,60 +445,165 @@ function installApplicationMenu(): void {
             {
               label: "C4ML",
               submenu: [
-                { role: "about" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.about"),
+                  role: "about" as const,
+                },
                 { type: "separator" as const },
                 {
-                  label: "Settings…",
+                  label: desktopMessage(uiLanguage, "menu.settings"),
                   accelerator: "CmdOrCtrl+,",
                   click: () => send("open-settings"),
                 },
                 { type: "separator" as const },
-                { role: "services" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.services"),
+                  role: "services" as const,
+                },
                 { type: "separator" as const },
-                { role: "hide" as const },
-                { role: "hideOthers" as const },
-                { role: "unhide" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.hide"),
+                  role: "hide" as const,
+                },
+                {
+                  label: desktopMessage(uiLanguage, "menu.hideOthers"),
+                  role: "hideOthers" as const,
+                },
+                {
+                  label: desktopMessage(uiLanguage, "menu.showAll"),
+                  role: "unhide" as const,
+                },
                 { type: "separator" as const },
-                { role: "quit" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.quit"),
+                  role: "quit" as const,
+                },
               ],
             },
           ]
         : []),
       {
-        label: "File",
+        label: desktopMessage(uiLanguage, "menu.file"),
         submenu: [
           {
-            label: "Open…",
+            label: desktopMessage(uiLanguage, "menu.open"),
             accelerator: "CmdOrCtrl+O",
             click: () => send("open-document"),
           },
           {
-            label: "Save",
+            label: desktopMessage(uiLanguage, "menu.save"),
             accelerator: "CmdOrCtrl+S",
             click: () => send("save-document"),
           },
           {
-            label: "Save As…",
+            label: desktopMessage(uiLanguage, "menu.saveAs"),
             accelerator: "CmdOrCtrl+Shift+S",
             click: () => send("save-as-document"),
+          },
+          { type: "separator" },
+          {
+            label: desktopMessage(uiLanguage, "menu.exportPng"),
+            accelerator: "CmdOrCtrl+Alt+P",
+            click: () => send("export-png"),
           },
           ...(process.platform === "darwin"
             ? []
             : [
                 { type: "separator" as const },
                 {
-                  label: "Settings…",
+                  label: desktopMessage(uiLanguage, "menu.settings"),
                   accelerator: "CmdOrCtrl+,",
                   click: () => send("open-settings"),
                 },
                 { type: "separator" as const },
-                { role: "quit" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.quit"),
+                  role: "quit" as const,
+                },
               ]),
         ],
       },
-      { role: "editMenu" },
-      { role: "viewMenu" },
-      { role: "windowMenu" },
+      {
+        label: desktopMessage(uiLanguage, "menu.edit"),
+        submenu: [
+          { label: desktopMessage(uiLanguage, "menu.undo"), role: "undo" },
+          { label: desktopMessage(uiLanguage, "menu.redo"), role: "redo" },
+          { type: "separator" },
+          { label: desktopMessage(uiLanguage, "menu.cut"), role: "cut" },
+          { label: desktopMessage(uiLanguage, "menu.copy"), role: "copy" },
+          { label: desktopMessage(uiLanguage, "menu.paste"), role: "paste" },
+          ...(process.platform === "darwin"
+            ? [
+                {
+                  label: desktopMessage(uiLanguage, "menu.pasteMatch"),
+                  role: "pasteAndMatchStyle" as const,
+                },
+              ]
+            : []),
+          { label: desktopMessage(uiLanguage, "menu.delete"), role: "delete" },
+          { type: "separator" },
+          {
+            label: desktopMessage(uiLanguage, "menu.selectAll"),
+            role: "selectAll",
+          },
+        ],
+      },
+      {
+        label: desktopMessage(uiLanguage, "menu.view"),
+        submenu: [
+          { label: desktopMessage(uiLanguage, "menu.reload"), role: "reload" },
+          {
+            label: desktopMessage(uiLanguage, "menu.forceReload"),
+            role: "forceReload",
+          },
+          {
+            label: desktopMessage(uiLanguage, "menu.devTools"),
+            role: "toggleDevTools",
+          },
+          { type: "separator" },
+          {
+            label: desktopMessage(uiLanguage, "menu.resetZoom"),
+            role: "resetZoom",
+          },
+          { label: desktopMessage(uiLanguage, "menu.zoomIn"), role: "zoomIn" },
+          {
+            label: desktopMessage(uiLanguage, "menu.zoomOut"),
+            role: "zoomOut",
+          },
+          { type: "separator" },
+          {
+            label: desktopMessage(uiLanguage, "menu.fullscreen"),
+            role: "togglefullscreen",
+          },
+        ],
+      },
+      {
+        label: desktopMessage(uiLanguage, "menu.window"),
+        submenu: [
+          {
+            label: desktopMessage(uiLanguage, "menu.minimize"),
+            role: "minimize",
+          },
+          ...(process.platform === "darwin"
+            ? [
+                {
+                  label: desktopMessage(uiLanguage, "menu.zoom"),
+                  role: "zoom" as const,
+                },
+                { type: "separator" as const },
+                {
+                  label: desktopMessage(uiLanguage, "menu.front"),
+                  role: "front" as const,
+                },
+              ]
+            : [
+                {
+                  label: desktopMessage(uiLanguage, "menu.close"),
+                  role: "close" as const,
+                },
+              ]),
+        ],
+      },
     ]),
   );
 }
@@ -406,10 +624,15 @@ function protectUnsavedDocument(window: BrowserWindow): void {
     void dialog
       .showMessageBox(window, {
         type: "warning",
-        title: "Unsaved C4ML source",
-        message: `Discard changes to ${state.displayName}?`,
-        detail: "The source contains changes that have not been saved.",
-        buttons: ["Cancel", "Discard changes"],
+        title: desktopMessage(uiLanguage, "close.title"),
+        message: desktopMessage(uiLanguage, "close.message", {
+          name: state.displayName,
+        }),
+        detail: desktopMessage(uiLanguage, "close.detail"),
+        buttons: [
+          desktopMessage(uiLanguage, "close.cancel"),
+          desktopMessage(uiLanguage, "close.discard"),
+        ],
         defaultId: 0,
         cancelId: 0,
         noLink: true,
@@ -428,17 +651,23 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
   const result = (await window.webContents.executeJavaScript(
     `new Promise((resolve) => {
       const deadline = Date.now() + 20000;
+      document.querySelector('button[data-activity="export"]')?.click();
       const check = () => {
-        const bridgeReady = window.c4mlDesktop?.protocolVersion === 1;
+        const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
+          typeof window.c4mlDesktop?.exportPng === 'function' &&
+          typeof window.c4mlDesktop?.setUiLanguage === 'function';
         const editorReady = document.querySelector('.source-editor-host') !== null;
         const previewReady = document.querySelector('.diagram') !== null;
+        const pngExportReady = document.querySelector('.png-export-button') !== null;
         const compilerReady = document.querySelector('.worker-state[data-phase="valid"]') !== null;
         const fontsReady = document.fonts.check('14px "IBM Plex Sans"') &&
           document.fonts.check('14px "IBM Plex Mono"');
-        if (bridgeReady && editorReady && previewReady && compilerReady && fontsReady) {
-          resolve({ ok: true, title: document.title });
+        const language = document.documentElement.lang;
+        const languageReady = language === 'en' || language === 'de';
+        if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady) {
+          resolve({ ok: true, title: document.title, language });
         } else if (Date.now() >= deadline) {
-          resolve({ ok: false, bridgeReady, editorReady, previewReady, compilerReady, fontsReady });
+          resolve({ ok: false, bridgeReady, editorReady, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, language });
         } else {
           setTimeout(check, 100);
         }
@@ -447,6 +676,38 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
     })`,
     true,
   )) as { readonly ok?: boolean };
-  console.log(`C4ML_DESKTOP_SMOKE ${JSON.stringify(result)}`);
-  app.exit(result.ok === true ? 0 : 1);
+  let pngReady = false;
+  if (result.ok === true) {
+    try {
+      const svg = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32">',
+        '<rect width="64" height="32" fill="#ffffff"/>',
+        '<text x="4" y="21" font-family="IBM Plex Sans" font-size="12">C4ML</text>',
+        "</svg>",
+      ].join("");
+      const png = await pngRenderer.render(svg, {
+        scale: 2,
+        fontFiles: resolveDesktopPngFontFiles({
+          appPath: app.getAppPath(),
+          packaged: app.isPackaged,
+          resourcesPath: process.resourcesPath,
+        }),
+        loadSystemFonts: false,
+        defaultFontFamily: ibmPlexSansFamily,
+      });
+      pngReady =
+        png.width > 0 &&
+        png.height > 0 &&
+        png.bytes[0] === 0x89 &&
+        png.bytes[1] === 0x50 &&
+        png.bytes[2] === 0x4e &&
+        png.bytes[3] === 0x47;
+    } catch (error) {
+      console.error("C4ML desktop PNG smoke render failed.", error);
+      pngReady = false;
+    }
+  }
+  const smokeResult = { ...result, pngReady };
+  console.log(`C4ML_DESKTOP_SMOKE ${JSON.stringify(smokeResult)}`);
+  app.exit(result.ok === true && pngReady ? 0 : 1);
 }

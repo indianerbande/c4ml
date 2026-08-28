@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.21
+Status: Draft 0.23
 
 Date: 2026-08-28
 
@@ -74,14 +74,16 @@ compilation, invalid-source diagnostics, monotonic request identifiers,
 rejection of deliberately out-of-order results, retention of the last valid
 SVG, context-valid completion ranges, exact completion and marker translation,
 lexer-owned syntax-span classification, semantic-token delta encoding, stale
-asynchronous completion and highlight settlement, deterministic wizard source,
-normal compilation of that source, cancel behavior, and explicit undo. The
+asynchronous completion and highlight settlement, deterministic Context and
+Container wizard source, normal compilation of that source, explicit Container
+connections and protocols, cancel behavior, and explicit undo. The
 worker and navigation-helper suites additionally verify deterministic
 source/scene/SVG mappings, smallest-range source selection, smallest-bound
 preview hit testing, object-fit coordinate conversion, last-valid navigation
 retention, route-control source mapping, polyline-distance hit testing with
 node/route/boundary precedence, effective corridor geometry, and preview-only
-node, Route, Port, label-anchor, and corridor highlighting. The production-mode Angular build
+node, Route, Port, route-label, and corridor highlighting plus distinct detail
+navigation targets. The production-mode Angular build
 proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is
 lazy, and that the reviewed ELK worker and license are packaged locally.
@@ -91,7 +93,7 @@ in-place context-only completion popup, exact candidate application, inline
 diagnostic markers, diagnostic-to-source focus, invalid edit diagnostics,
 keyboard undo/redo, visible last-valid-preview state, wizard/Monaco source
 synchronization, visually inspected Component, Code, System Landscape,
-Dynamic, and Deployment previews, view selection, zoom, the three-step wizard,
+Dynamic, and Deployment previews, view selection, zoom, the guided wizard,
 generated-source review, apply, and undo. The production bundled adapter
 compiles executable slices for all seven view types in worker-runtime tests;
 the current browser-specific ELK pass visually covers a System Context with two
@@ -112,23 +114,37 @@ including regular and bold faces. The preview was visually inspected at 80,
 100, and 120 percent; its rendered box changed size while computed CSS
 `transform` remained `none`.
 
-The local workbench-preference suite verifies default loading, version-one
-round trips, field-level fallback, malformed JSON and unsupported-version
-fallback, bounded half-pixel font sizes, effective system/light/dark resolution,
-and controlled font-stack mapping. Browser and desktop verification MUST also
-cover live scheme changes, Monaco font changes, persistence across relaunch,
-reset, unavailable storage, modal focus containment and return, Escape
-dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
+The English workbench and the live German switch were visually inspected in the
+packaged macOS application. The Settings panel, activity and output areas,
+status and accessibility copy, command surface, and first wizard step changed
+without layout damage; authored source and diagram labels remained unchanged.
+The complete owned native menu tree, including File, Edit, View, Window, and
+their standard actions, changed to German in the same session, and the German
+preference survived an application relaunch. The local inspection state was
+returned to English afterward.
+
+The local workbench-preference suite verifies English language defaulting,
+English/German round trips, backward-compatible version-one records,
+field-level fallback, malformed JSON and unsupported-version fallback, bounded
+half-pixel font sizes, effective system/light/dark resolution, and controlled
+font-stack mapping. Localization-contract tests verify both catalogues and
+interpolation, while command tests verify search in each language. Browser and
+desktop verification MUST also cover live language and scheme changes, the
+document root language attribute, Monaco font changes, persistence across
+relaunch, reset, unavailable storage, modal focus containment and return,
+Escape dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
 changes neither dirty source nor change canonical SVG output.
 
 The Electron desktop foundation adds unit and boundary evidence for its
 versioned bridge, runtime request validators, opaque document handles, filename
 normalization, local protocol traversal rejection, and hardened web
-preferences. The production boundary check pins the reviewed Electron/Forge
+preferences. It also validates the bounded English/German UI-language message,
+bridge, menu, dialog, and close-warning contract. The production boundary check pins the reviewed Electron/Forge
 stack and licenses, verifies that the preload has no filesystem access, checks
-the local-only CSP, and requires the editor, worker, fonts, and notices before
-packaging. A smoke test from the packaged macOS `.app` verifies the bridge,
-Monaco host, valid compiler state, preview, and controlled Sans/Mono typography.
+the local-only CSP, and requires the editor, worker, fonts, resvg native binary,
+and notices before packaging. A smoke test from the packaged macOS `.app`
+verifies the bridge, Monaco host, valid compiler state, preview, controlled
+Sans/Mono typography, and in-memory native PNG rasterization.
 The application was
 visually inspected as a native two-pane workbench with its native menu. The
 macOS application passes strict deep code-signature verification after ad-hoc
@@ -438,11 +454,12 @@ scale, SVG download, and bidirectional source/preview node navigation through
 stable source, scene, and SVG identities. Relationship and effective-Route
 selection, semantic and route-control source mapping, route hit testing, and a
 preview-only routing-debug overlay are covered too. Local Plex font loading,
-standalone-SVG embedding, and transform-free preview zoom are covered too. It
-does not yet satisfy
-individually selectable Ports, labels, corridors, and Arrowheads, PNG export,
-full CLI parity, real assistive-technology coverage, or complete-source
-coverage requirements in this section.
+standalone-SVG embedding, transform-free preview zoom, and native PNG export are
+covered too. Ports, route labels, and corridors are individually selectable
+detail targets that resolve to their owning route-control source. It does not
+yet satisfy individually selectable Arrowheads, full CLI parity, real
+assistive-technology coverage, or complete-source coverage requirements in
+this section.
 
 If the guided modeling wizard is implemented, tests MUST prove that identical
 answers generate deterministic C4ML source, generated source passes through the
@@ -452,11 +469,14 @@ applied generation is undoable. Tests that extend existing documents MUST also
 verify that unrelated declarations, comments, stable identifiers, and
 formatting are not silently rewritten.
 
-The current new-document-only System Context wizard spike proves deterministic
-generation, normal parser and semantic validation, valid fixed ownership and
-relationship direction, stale-result rejection, cancel without source changes,
-and one explicit undo. Existing-document preservation tests do not apply until
-that separate capability is designed and implemented.
+The current new-document-only wizard foundation proves deterministic System
+Context and Container generation, normal parser and semantic validation,
+dynamic part and connection validation, explicit direction and protocol,
+stale-result rejection, cancel without source changes, and one explicit undo.
+Interaction review also checks that questions can be completed from familiar
+architecture concepts without prior C4 vocabulary. Existing-document
+preservation tests do not apply until that separate capability is designed and
+implemented.
 
 ### 2.11 Desktop shell and packaging
 
@@ -471,7 +491,13 @@ Desktop tests MUST cover:
 - opaque document handles and the configured source-size limit;
 - native Open, Save, Save As, cancellation, failure reporting, dirty titles,
   and unsaved-close protection;
+- native PNG export cancellation, validation, 1x/2x/3x scaling, controlled
+  fonts, failure reporting, and faithful canonical-SVG rasterization;
+- safe local workbench-session persistence that excludes source, handles, and
+  filesystem paths;
 - native Settings opening through the application menu and `Cmd/Ctrl+,`;
+- validated English/German synchronization of C4ML-owned native menu commands,
+  dialog labels, failure copy, and unsaved-close protection;
 - packaging without development sources or an application `node_modules`
   tree;
 - required editor workers, fonts, licenses, and notices in the application;

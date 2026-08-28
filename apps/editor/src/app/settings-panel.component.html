@@ -13,18 +13,18 @@
   >
     <header class="settings-header">
       <div>
-        <p class="settings-eyebrow">C4ML workbench</p>
-        <h2 id="settings-title">Settings</h2>
+        <p class="settings-eyebrow">{{ i18n.t("settings.eyebrow") }}</p>
+        <h2 id="settings-title">{{ i18n.t("settings.title") }}</h2>
         <p id="settings-description">
-          Local preferences for this installation. Diagram exports stay unchanged.
+          {{ i18n.t("settings.description") }}
         </p>
       </div>
       <button
         #closeButton
         type="button"
         class="icon-button"
-        aria-label="Close settings"
-        title="Close settings"
+        [attr.aria-label]="i18n.t('settings.close')"
+        [title]="i18n.t('settings.close')"
         (click)="close()"
       >
         ×
@@ -32,8 +32,8 @@
     </header>
 
     <div class="settings-body">
-      <nav class="settings-navigation" aria-label="Settings categories">
-        @for (category of categories; track category.id) {
+      <nav class="settings-navigation" [attr.aria-label]="i18n.t('settings.categories')">
+        @for (category of categories(); track category.id) {
           <button
             type="button"
             [class.is-active]="activeCategory() === category.id"
@@ -51,17 +51,36 @@
           @case ("appearance") {
             <section aria-labelledby="appearance-heading">
               <div class="section-heading">
-                <p>Appearance</p>
-                <h3 id="appearance-heading">Color scheme</h3>
+                <p>{{ i18n.t("settings.appearance") }}</p>
+                <h3 id="appearance-heading">{{ i18n.t("settings.appearance") }}</h3>
                 <span>
-                  Choose how the workbench looks. “System” follows the operating
-                  system automatically.
+                  {{ i18n.t("settings.appearanceHint") }}
                 </span>
               </div>
 
+              <div class="setting-row">
+                <label for="workbench-language">
+                  <strong>{{ i18n.t("settings.languageLabel") }}</strong>
+                  <span>{{ i18n.t("settings.languageDescription") }}</span>
+                </label>
+                <select
+                  id="workbench-language"
+                  [value]="preferences.uiLanguage()"
+                  (change)="setLanguage($event)"
+                >
+                  <option value="en">{{ i18n.t("settings.english") }}</option>
+                  <option value="de">{{ i18n.t("settings.german") }}</option>
+                </select>
+              </div>
+
+              <div class="section-heading">
+                <h3>{{ i18n.t("settings.colorScheme") }}</h3>
+                <span>{{ i18n.t("settings.colorDescription") }}</span>
+              </div>
+
               <fieldset class="scheme-options">
-                <legend>Workbench color scheme</legend>
-                @for (option of colorSchemeOptions; track option.id) {
+                <legend>{{ i18n.t("settings.colorLegend") }}</legend>
+                @for (option of colorSchemeOptions(); track option.id) {
                   <label [attr.data-scheme]="option.id">
                     <input
                       type="radio"
@@ -84,18 +103,17 @@
           @case ("source-editor") {
             <section aria-labelledby="editor-heading">
               <div class="section-heading">
-                <p>Source editor</p>
-                <h3 id="editor-heading">Text</h3>
+                <p>{{ i18n.t("settings.sourceEditor") }}</p>
+                <h3 id="editor-heading">{{ i18n.t("settings.text") }}</h3>
                 <span>
-                  These settings affect C4ML source only, never diagram labels or
-                  exported files.
+                  {{ i18n.t("settings.textDescription") }}
                 </span>
               </div>
 
               <div class="setting-row">
                 <label for="editor-font-family">
-                  <strong>Font family</strong>
-                  <span>Select a locally available monospace stack.</span>
+                  <strong>{{ i18n.t("settings.fontFamily") }}</strong>
+                  <span>{{ i18n.t("settings.fontFamilyHint") }}</span>
                 </label>
                 <select
                   id="editor-font-family"
@@ -103,14 +121,14 @@
                   (change)="setFontFamily($event)"
                 >
                   <option value="ibm-plex-mono">IBM Plex Mono</option>
-                  <option value="system-monospace">System monospace</option>
+                  <option value="system-monospace">{{ i18n.t("settings.systemMonospace") }}</option>
                 </select>
               </div>
 
               <div class="setting-row font-size-row">
                 <label for="editor-font-size">
-                  <strong>Font size</strong>
-                  <span>Between 11 and 24 pixels, in half-pixel steps.</span>
+                  <strong>{{ i18n.t("settings.fontSize") }}</strong>
+                  <span>{{ i18n.t("settings.fontSizeHint") }}</span>
                 </label>
                 <div class="font-size-control">
                   <input
@@ -143,17 +161,17 @@
     </div>
 
     <footer class="settings-footer">
-      <span>Changes are applied and stored immediately.</span>
+      <span>{{ i18n.t("settings.immediate") }}</span>
       <div>
         <button
           type="button"
           class="secondary-button"
           (click)="preferences.reset()"
         >
-          Reset defaults
+          {{ i18n.t("settings.reset") }}
         </button>
         <button type="button" class="primary-button" (click)="close()">
-          Done
+          {{ i18n.t("settings.done") }}
         </button>
       </div>
     </footer>

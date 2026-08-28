@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   afterNextRender,
+  computed,
   inject,
   output,
   signal,
@@ -12,7 +13,9 @@ import {
 import type {
   WorkbenchColorScheme,
   WorkbenchEditorFontFamily,
+  WorkbenchUiLanguage,
 } from "./workbench-preferences.js";
+import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 
 type SettingsCategoryId = "appearance" | "source-editor";
@@ -23,28 +26,11 @@ interface SettingsCategory {
   readonly description: string;
 }
 
-const settingsCategories: readonly SettingsCategory[] = [
-  {
-    id: "appearance",
-    label: "Appearance",
-    description: "Workbench colors",
-  },
-  {
-    id: "source-editor",
-    label: "Source editor",
-    description: "Font and readability",
-  },
-];
-
-const colorSchemeOptions: readonly {
+interface ColorSchemeOption {
   readonly id: WorkbenchColorScheme;
   readonly label: string;
   readonly hint: string;
-}[] = [
-  { id: "system", label: "System", hint: "Follow this computer" },
-  { id: "light", label: "Light", hint: "Bright work surfaces" },
-  { id: "dark", label: "Dark", hint: "Reduced ambient brightness" },
-];
+}
 
 @Component({
   selector: "c4ml-settings-panel",
@@ -54,9 +40,37 @@ const colorSchemeOptions: readonly {
 })
 export class SettingsPanelComponent {
   readonly preferences = inject(WorkbenchPreferencesService);
+  readonly i18n = inject(WorkbenchLocalizationService);
   readonly closed = output<void>();
-  readonly categories = settingsCategories;
-  readonly colorSchemeOptions = colorSchemeOptions;
+  readonly categories = computed<readonly SettingsCategory[]>(() => [
+    {
+      id: "appearance",
+      label: this.i18n.t("settings.appearance"),
+      description: this.i18n.t("settings.appearanceHint"),
+    },
+    {
+      id: "source-editor",
+      label: this.i18n.t("settings.sourceEditor"),
+      description: this.i18n.t("settings.sourceEditorHint"),
+    },
+  ]);
+  readonly colorSchemeOptions = computed<readonly ColorSchemeOption[]>(() => [
+    {
+      id: "system",
+      label: this.i18n.t("settings.system"),
+      hint: this.i18n.t("settings.systemHint"),
+    },
+    {
+      id: "light",
+      label: this.i18n.t("settings.light"),
+      hint: this.i18n.t("settings.lightHint"),
+    },
+    {
+      id: "dark",
+      label: this.i18n.t("settings.dark"),
+      hint: this.i18n.t("settings.darkHint"),
+    },
+  ]);
   readonly activeCategory = signal<SettingsCategoryId>("appearance");
   readonly closeButton = viewChild.required<ElementRef<HTMLButtonElement>>(
     "closeButton",
@@ -77,6 +91,14 @@ export class SettingsPanelComponent {
 
   setColorScheme(colorScheme: WorkbenchColorScheme): void {
     this.preferences.setColorScheme(colorScheme);
+  }
+
+  setLanguage(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+    this.preferences.setUiLanguage(target.value as WorkbenchUiLanguage);
   }
 
   setFontFamily(event: Event): void {

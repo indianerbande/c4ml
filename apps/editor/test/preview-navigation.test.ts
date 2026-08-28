@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type {
   CompilerWorkerNavigation,
+  CompilerWorkerCorridorNavigationTarget,
   CompilerWorkerNodeNavigationTarget,
+  CompilerWorkerPortNavigationTarget,
+  CompilerWorkerRouteLabelNavigationTarget,
   CompilerWorkerRouteNavigationTarget,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -98,6 +101,51 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
   },
 };
 
+const sourcePortTarget: CompilerWorkerPortNavigationTarget = {
+  kind: "port",
+  sceneObjectId: routeTarget.sourcePort.id,
+  svgElementIds: ["c4ml-scene-port-reviews-plan-source"],
+  referenceId: routeTarget.referenceId,
+  label: "Source port · east",
+  source: routeTarget.relatedSources[0]!,
+  relatedSources: [],
+  routeSceneObjectId: routeTarget.sceneObjectId,
+  portRole: "source",
+  side: "east",
+  point: routeTarget.sourcePort.point,
+};
+
+const labelTarget: CompilerWorkerRouteLabelNavigationTarget = {
+  kind: "route-label",
+  sceneObjectId: `${routeTarget.sceneObjectId}:label`,
+  svgElementIds: ["c4ml-scene-route-relationship-reviews-plan-label"],
+  referenceId: routeTarget.referenceId,
+  label: routeTarget.label,
+  source: routeTarget.relatedSources[0]!,
+  relatedSources: [],
+  routeSceneObjectId: routeTarget.sceneObjectId,
+  point: routeTarget.labelPoint,
+  bounds: { x: 300, y: 278, width: 80, height: 28 },
+};
+
+const corridorTarget: CompilerWorkerCorridorNavigationTarget = {
+  kind: "corridor",
+  sceneObjectId: `${routeTarget.sceneObjectId}:corridor:lower-entry:1`,
+  svgElementIds: [routeTarget.svgElementIds[0]!],
+  referenceId: routeTarget.referenceId,
+  label: "Corridor lower-entry · lane 2",
+  source: routeTarget.relatedSources[0]!,
+  relatedSources: [],
+  routeSceneObjectId: routeTarget.sceneObjectId,
+  orientation: "vertical",
+  points: [
+    { x: 460, y: 82 },
+    { x: 460, y: 546 },
+  ],
+  lane: 1,
+  lanes: 3,
+};
+
 describe("preview navigation", () => {
   it("selects the narrowest source or route-control range at the cursor", () => {
     expect(
@@ -130,6 +178,34 @@ describe("preview navigation", () => {
     expect(
       navigationTargetAtPoint([viewTarget, routeTarget], { x: 10, y: 10 }),
     ).toBeUndefined();
+  });
+
+  it("selects ports and labels before routes and corridor lanes away from routes", () => {
+    const targets = [
+      viewTarget,
+      routeTarget,
+      sourcePortTarget,
+      labelTarget,
+      corridorTarget,
+    ];
+    expect(navigationTargetAtPoint(targets, { x: 220, y: 300 })?.kind).toBe(
+      "port",
+    );
+    expect(navigationTargetAtPoint(targets, { x: 340, y: 288 })?.kind).toBe(
+      "route-label",
+    );
+    expect(navigationTargetAtPoint(targets, { x: 460, y: 450 })?.kind).toBe(
+      "corridor",
+    );
+  });
+
+  it("keeps source selection on semantic nodes and routes", () => {
+    expect(
+      navigationTargetForOffset(
+        [routeTarget, sourcePortTarget, labelTarget, corridorTarget],
+        850,
+      )?.kind,
+    ).toBe("route");
   });
 
   it("maps a letterboxed image click into scene coordinates", () => {
@@ -179,5 +255,20 @@ describe("preview navigation", () => {
     expect(highlighted).toContain("editor-corridor-selected");
     expect(highlighted).toContain('x1="460"');
     expect(svg).not.toContain("c4ml-editor-routing-debug");
+  });
+
+  it("highlights port, label, and corridor details only in the preview copy", () => {
+    const svg = `<svg><g id="${labelTarget.svgElementIds[0]}"><text>Reviews plan</text></g></svg>`;
+    const port = svgWithNavigationHighlight(svg, sourcePortTarget);
+    const label = svgWithNavigationHighlight(svg, labelTarget);
+    const corridor = svgWithNavigationHighlight(svg, corridorTarget);
+
+    expect(port).toContain('id="c4ml-editor-detail-selection"');
+    expect(port).toContain('cx="220"');
+    expect(label).toContain(`#${labelTarget.svgElementIds[0]} text`);
+    expect(label).toContain("<rect");
+    expect(corridor).toContain("<line");
+    expect(corridor).toContain('x1="460"');
+    expect(svg).not.toContain("c4ml-editor-detail-selection");
   });
 });

@@ -5,6 +5,9 @@ export const workbenchColorSchemes = ["system", "light", "dark"] as const;
 export type WorkbenchColorScheme = (typeof workbenchColorSchemes)[number];
 export type EffectiveColorScheme = Exclude<WorkbenchColorScheme, "system">;
 
+export const workbenchUiLanguages = ["en", "de"] as const;
+export type WorkbenchUiLanguage = (typeof workbenchUiLanguages)[number];
+
 export const workbenchEditorFontFamilies = [
   "ibm-plex-mono",
   "system-monospace",
@@ -18,6 +21,7 @@ export const editorFontSizeStep = 0.5;
 
 export interface WorkbenchPreferences {
   readonly version: 1;
+  readonly uiLanguage: WorkbenchUiLanguage;
   readonly colorScheme: WorkbenchColorScheme;
   readonly editorFontFamily: WorkbenchEditorFontFamily;
   readonly editorFontSize: number;
@@ -30,6 +34,7 @@ export interface WorkbenchPreferencesStorage {
 
 export const defaultWorkbenchPreferences: WorkbenchPreferences = {
   version: 1,
+  uiLanguage: "en",
   colorScheme: "system",
   editorFontFamily: "ibm-plex-mono",
   editorFontSize: 12.5,
@@ -48,6 +53,9 @@ export function parseWorkbenchPreferences(
     }
     return {
       version: 1,
+      uiLanguage: isUiLanguage(value["uiLanguage"])
+        ? value["uiLanguage"]
+        : defaultWorkbenchPreferences.uiLanguage,
       colorScheme: isColorScheme(value["colorScheme"])
         ? value["colorScheme"]
         : defaultWorkbenchPreferences.colorScheme,
@@ -126,6 +134,10 @@ export function editorFontFamilyCss(
 
 function isColorScheme(value: unknown): value is WorkbenchColorScheme {
   return workbenchColorSchemes.some((candidate) => candidate === value);
+}
+
+function isUiLanguage(value: unknown): value is WorkbenchUiLanguage {
+  return workbenchUiLanguages.some((candidate) => candidate === value);
 }
 
 function isEditorFontFamily(

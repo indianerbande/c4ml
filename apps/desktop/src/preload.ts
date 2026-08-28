@@ -6,15 +6,23 @@ import {
   type C4mlDesktopApi,
   type DesktopCommand,
   type DesktopDocumentState,
+  type DesktopPngExportRequest,
+  type DesktopPngExportResult,
   type DesktopOpenResult,
   type DesktopPlatform,
   type DesktopSaveRequest,
   type DesktopSaveResult,
+  type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
 
 const api: C4mlDesktopApi = Object.freeze({
   protocolVersion: desktopBridgeProtocolVersion,
   platform: toDesktopPlatform(process.platform),
+  exportPng: (request: DesktopPngExportRequest) =>
+    ipcRenderer.invoke(
+      desktopIpcChannels.exportPng,
+      request,
+    ) as Promise<DesktopPngExportResult>,
   openDocument: () =>
     ipcRenderer.invoke(desktopIpcChannels.openDocument) as Promise<DesktopOpenResult>,
   saveDocument: (request: DesktopSaveRequest) =>
@@ -24,6 +32,9 @@ const api: C4mlDesktopApi = Object.freeze({
     ) as Promise<DesktopSaveResult>,
   setDocumentState: (state: DesktopDocumentState) => {
     ipcRenderer.send(desktopIpcChannels.setDocumentState, state);
+  },
+  setUiLanguage: (language: DesktopUiLanguage) => {
+    ipcRenderer.send(desktopIpcChannels.setUiLanguage, language);
   },
   onCommand: (listener: (command: DesktopCommand) => void) => {
     const handler = (_event: unknown, value: unknown): void => {

@@ -20,7 +20,7 @@ The first categories are:
 
 | Category | Purpose | Implemented settings |
 | --- | --- | --- |
-| Appearance | Local workbench presentation | color scheme |
+| Appearance | Local workbench presentation | interface language, color scheme |
 | Source editor | C4ML authoring readability | font family, font size |
 
 Likely later categories include Files, Diagram preview, Export, Accessibility,
@@ -31,6 +31,7 @@ features or accepted settings.
 
 | Stable field | Values | Default | Scope |
 | --- | --- | --- | --- |
+| `uiLanguage` | `en`, `de` | `en` | C4ML-owned workbench and native application copy |
 | `colorScheme` | `system`, `light`, `dark` | `system` | Angular workbench and Monaco theme |
 | `editorFontFamily` | `ibm-plex-mono`, `system-monospace` | `ibm-plex-mono` | Monaco source text only |
 | `editorFontSize` | 11–24 px in 0.5 px steps | 12.5 px | Monaco source text only |
@@ -40,9 +41,17 @@ system monospace stack is confined to the local source editor. Diagram labels,
 layout, text measurement, SVG embedding, and PNG rendering continue to use the
 controlled project fonts.
 
+The interface language changes the workbench, accessibility labels, command
+catalogue, and C4ML-owned native menu and dialog copy. It does not translate
+names or descriptions written by an author, `.c4ml` source, compiler diagnostics,
+diagram labels, SVG, or PNG. English is the initial and fallback language;
+German can be selected without restarting the application.
+
 ## Behavior
 
 - Changes apply immediately and are stored locally for the installation.
+- Language changes also update the document `lang` attribute and the native
+  application controls through the validated desktop bridge.
 - `system` follows operating-system color changes while the application runs.
 - Reset restores the complete version-one default record.
 - Unsupported versions, malformed values, and unavailable browser storage fall
@@ -68,8 +77,11 @@ plain local preference record.
 ## Component pattern
 
 The preferences service owns validation, persistence, system-theme observation,
-and reactive values. The settings panel owns presentation and category
-navigation. Consumers receive only the values they need: the Angular root gets
-the effective workbench scheme, while the Monaco adapter gets the effective
-scheme and source font options. Compiler, language, layout, scene, and renderer
-packages do not depend on this contract.
+and reactive values. The localization service owns the complete English/German
+workbench catalogues and interpolation. The settings panel owns presentation
+and category navigation. Consumers receive only the values they need: the
+Angular root gets interface language and effective workbench scheme, while the
+Monaco adapter gets the effective scheme and source font options. The Electron
+main process has a separate, small native-control catalogue selected through a
+validated language-only IPC message. Compiler, language, layout, scene, and
+renderer packages do not depend on this contract.

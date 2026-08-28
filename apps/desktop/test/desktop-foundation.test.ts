@@ -8,6 +8,11 @@ import {
   safeSuggestedSourceName,
 } from "../src/document-registry.js";
 import {
+  ensurePngExtension,
+  resolveDesktopPngFontFiles,
+  safeSuggestedPngName,
+} from "../src/diagram-export.js";
+import {
   editorEntryUrl,
   resolveEditorAssetPath,
 } from "../src/editor-protocol.js";
@@ -43,6 +48,36 @@ describe("desktop foundation", () => {
     expect(safeSuggestedSourceName("notes.txt")).toBe("notes.txt.c4ml");
     expect(safeSuggestedSourceName("... ")).toBe("architecture.c4ml");
     expect(ensureC4mlExtension("SYSTEM.C4ML")).toBe("SYSTEM.C4ML");
+  });
+
+  it("normalizes PNG suggestions and resolves controlled font locations", () => {
+    expect(safeSuggestedPngName("../System Context")).toBe(
+      "System Context.png",
+    );
+    expect(safeSuggestedPngName("bad:name.PNG")).toBe("bad-name.PNG");
+    expect(safeSuggestedPngName("... ")).toBe("architecture.png");
+    expect(ensurePngExtension("VIEW.PNG")).toBe("VIEW.PNG");
+
+    expect(
+      resolveDesktopPngFontFiles({
+        appPath: "/workspace/apps/desktop",
+        packaged: false,
+        resourcesPath: "/unused",
+      }),
+    ).toEqual([
+      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Regular.ttf",
+      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Bold.ttf",
+      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Italic.ttf",
+    ]);
+    expect(
+      resolveDesktopPngFontFiles({
+        appPath: "/unused",
+        packaged: true,
+        resourcesPath: "/Applications/C4ML.app/Contents/Resources",
+      })[0],
+    ).toBe(
+      "/Applications/C4ML.app/Contents/Resources/sans/IBMPlexSans-Regular.ttf",
+    );
   });
 
   it("maps only owned application URLs into the packaged editor root", () => {

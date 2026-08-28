@@ -30,12 +30,20 @@ Current macOS artifacts are ad-hoc signed development builds, not notarized
 releases. The exact pnpm-managed Node.js 24.19.0 runtime is used for repository
 scripts and packaging.
 
-The desktop workbench also has an implemented version-one local settings
-contract and category-based settings panel. System/Light/Dark workbench color,
+The desktop workbench also has an implemented original IDE-like shell with
+C4ML-specific Files, Diagrams, and Output activity areas, simultaneous source
+and preview tabs, a Problems/Route panel, status bar, and a local command
+palette. A versioned session contract persists only safe UI presentation state
+(active activity area, bottom-panel state, zoom, and route-debug visibility),
+never source, document handles, or filesystem paths. It also has an implemented
+version-one local settings contract and category-based settings panel.
+English/German interface language, System/Light/Dark workbench color,
 source-editor font family, and source-editor font size apply reactively and are
-stored locally. These preferences MUST remain outside `.c4ml`, compiler worker,
-diagram theme, layout, and exported SVG/PNG. `SETTINGS.md` defines the current
-catalogue and extension boundaries.
+stored locally. Language selection also synchronizes C4ML-owned native menus
+and dialogs through the validated desktop bridge, but never translates
+authored or compiler-owned content. These preferences MUST remain outside
+`.c4ml`, compiler worker, diagram theme, layout, and exported SVG/PNG.
+`SETTINGS.md` defines the current catalogue and extension boundaries.
 
 The production-bound Angular editor foundation is implemented under
 `apps/editor`. It uses Angular standalone components, Signals, zoneless change
@@ -54,8 +62,10 @@ executable views. Preview selection styling is not included in exported SVG.
 Relationships and effective Routes are navigation targets too. A toggleable
 preview-only routing overlay exposes effective points, endpoint Ports, the
 label anchor, and corridor lanes, while an inspector reports the selected
-route's policy and geometry. Individual Ports, labels, and corridors are not
-yet navigation targets. The desktop UI and diagrams use the locally packaged
+route's policy and geometry. Ports, route labels, and corridors are separate
+preview navigation targets that reveal the owning route-control source;
+Arrowheads are not separate targets yet. The desktop UI and diagrams use the
+locally packaged
 IBM Plex family: Sans for interface and diagrams, Mono only for source. SVG
 exports embed the controlled Sans WOFF2 faces, and browser zoom changes actual
 preview dimensions instead of applying a rasterizing CSS transform. The
@@ -86,8 +96,8 @@ and approved the corresponding results in `SPEC.md`.
 The first Phase 1 rendering slice is also implemented. A resolved view can be
 prepared as an engine-neutral layout request, routed through inspectable
 automatic, guided, or fixed route contracts, converted into a renderer-neutral
-scene, serialized as standalone SVG, and rasterized as PNG through the existing
-resvg candidate adapter. Automatic geometry is provided by the accepted,
+scene, serialized as standalone SVG, and rasterized as PNG through the accepted
+resvg-js Node adapter. Automatic geometry is provided by the accepted,
 replaceable ELK.js adapter in both Node.js frontends and the browser compiler
 worker. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
@@ -101,8 +111,8 @@ named corridors and exclusive lanes, fixed point lists, and label placement.
 CLI and editor pass those controls into the same compiler API. There is no
 publicly accepted `.c4ml` frontend or frozen grammar yet, the complete
 constraint/routing scope is not implemented, and the remaining candidate
-adapters are not permanently accepted. ELK.js is the accepted exception
-recorded in `SPEC.md` and `DEPENDENCIES.md`.
+adapters are not permanently accepted. ELK.js and resvg-js are accepted
+exceptions recorded in `SPEC.md` and `DEPENDENCIES.md`.
 
 IBM Plex v6.4.2 is the accepted controlled font asset. Exact unmodified Sans
 and Mono files from the tagged official release are isolated in
@@ -140,8 +150,11 @@ material, not as an accepted grammar or a compatibility commitment.
 The completion and wizard source-generation APIs are experimental authoring
 contracts over those same subsets. They MUST stay outside Angular components and
 MUST produce ordinary source edits or complete source documents. The wizard
-currently creates a new System Context document only; extending existing source
-without disturbing comments and formatting remains unimplemented.
+currently creates a new System Context or Container document. It asks first in
+familiar architecture language and presents C4 terminology only as optional
+translation; users MUST NOT need to recall C4 vocabulary to complete it.
+Extending existing source without disturbing comments and formatting remains
+unimplemented.
 
 A thin experimental Node.js CLI now exists under `apps/cli`. It accepts the
 same executable language slices, delegates all compilation to the shared
@@ -151,6 +164,12 @@ reporting, and classified exits. Its commands are provisional, it is not a
 published package, and its SVG/PNG paths use the controlled local IBM Plex
 assets without system-font discovery. Keep Node.js
 filesystem, process, and environment behavior confined to this app.
+
+The desktop bridge also supports native PNG export at 1x, 2x, or 3x. The main
+process validates the canonical SVG payload, uses the accepted resvg-js adapter
+with controlled IBM Plex Sans TTF files and system fonts disabled, and owns the
+native save dialog. The packaged platform-specific native binary and its
+MPL-2.0 notice are required production resources.
 
 ## Read first
 
