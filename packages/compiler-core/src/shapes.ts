@@ -96,52 +96,53 @@ const boxShape: ShapeDefinition = {
     {
       kind: "rectangle",
       paint: "accent",
-      x: 0,
-      y: 0,
+      x: 2.4,
+      y: 4,
       width: 2.4,
-      height: 100,
+      height: 92,
       cornerRadius: 1.2,
     },
   ],
 };
 
-// Original C4ML person glyph: a circular head above a rounded information body.
+// Original C4ML person card: a compact head-and-shoulders glyph establishes
+// the semantic role without making the information surface itself figurative.
 const personShape: ShapeDefinition = {
   id: "c4ml-person",
   canvas: { width: 100, height: 100 },
-  contentBox: { x: 7, y: 39, width: 86, height: 57 },
+  contentBox: { x: 8, y: 5, width: 84, height: 90 },
   ports: {
     north: { x: 50, y: 0 },
-    east: { x: 100, y: 65 },
+    east: { x: 100, y: 50 },
     south: { x: 50, y: 100 },
-    west: { x: 0, y: 65 },
+    west: { x: 0, y: 50 },
   },
   primitives: [
-    {
-      kind: "ellipse",
-      paint: "surface",
-      centerX: 50,
-      centerY: 14,
-      radiusX: 13,
-      radiusY: 13,
-    },
     {
       kind: "rectangle",
       paint: "surface",
       x: 0,
-      y: 30,
+      y: 0,
       width: 100,
-      height: 70,
-      cornerRadius: 12,
+      height: 100,
+      cornerRadius: 8,
+    },
+    {
+      kind: "ellipse",
+      paint: "accent",
+      centerX: 50,
+      centerY: 27,
+      radiusX: 7.2,
+      radiusY: 8,
     },
     {
       kind: "rectangle",
       paint: "accent",
-      x: 0,
-      y: 30,
-      width: 2.4,
-      height: 70,
-      cornerRadius: 1.2,
+      x: 39,
+      y: 36,
+      width: 22,
+      height: 12,
+      cornerRadius: 5.5,
     },
   ],
 };

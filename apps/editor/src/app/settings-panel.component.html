@@ -1,0 +1,217 @@
+<div
+  class="settings-backdrop"
+  (click)="onBackdropClick($event)"
+>
+  <section
+    #dialog
+    class="settings-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="settings-title"
+    aria-describedby="settings-description"
+    (keydown)="onDialogKeydown($event)"
+  >
+    <header class="settings-header">
+      <div>
+        <p class="settings-eyebrow">{{ i18n.t("settings.eyebrow") }}</p>
+        <h2 id="settings-title">{{ i18n.t("settings.title") }}</h2>
+        <p id="settings-description">
+          {{ i18n.t("settings.description") }}
+        </p>
+      </div>
+      <button
+        #closeButton
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="i18n.t('settings.close')"
+        [title]="i18n.t('settings.close')"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="settings-body">
+      <nav class="settings-navigation" [attr.aria-label]="i18n.t('settings.categories')">
+        @for (category of categories(); track category.id) {
+          <button
+            type="button"
+            [class.is-active]="activeCategory() === category.id"
+            [attr.aria-current]="activeCategory() === category.id ? 'page' : null"
+            (click)="selectCategory(category.id)"
+          >
+            <strong>{{ category.label }}</strong>
+            <span>{{ category.description }}</span>
+          </button>
+        }
+      </nav>
+
+      <main class="settings-content">
+        @switch (activeCategory()) {
+          @case ("appearance") {
+            <section aria-labelledby="appearance-heading">
+              <div class="section-heading">
+                <p>{{ i18n.t("settings.appearance") }}</p>
+                <h3 id="appearance-heading">{{ i18n.t("settings.appearance") }}</h3>
+                <span>
+                  {{ i18n.t("settings.appearanceHint") }}
+                </span>
+              </div>
+
+              <div class="setting-row">
+                <label for="workbench-language">
+                  <strong>{{ i18n.t("settings.languageLabel") }}</strong>
+                  <span>{{ i18n.t("settings.languageDescription") }}</span>
+                </label>
+                <select
+                  id="workbench-language"
+                  [value]="preferences.uiLanguage()"
+                  (change)="setLanguage($event)"
+                >
+                  <option value="en">{{ i18n.t("settings.english") }}</option>
+                  <option value="de">{{ i18n.t("settings.german") }}</option>
+                </select>
+              </div>
+
+              <div class="setting-row font-size-row">
+                <label for="interface-font-size">
+                  <strong>{{ i18n.t("settings.interfaceFontSize") }}</strong>
+                  <span>{{ i18n.t("settings.interfaceFontSizeHint") }}</span>
+                </label>
+                <div class="font-size-control">
+                  <input
+                    id="interface-font-size"
+                    type="range"
+                    min="9"
+                    max="16"
+                    step="0.5"
+                    [value]="preferences.interfaceFontSize()"
+                    (input)="setInterfaceFontSize($event)"
+                  />
+                  <output for="interface-font-size">
+                    {{ preferences.interfaceFontSize() }} px
+                  </output>
+                </div>
+              </div>
+
+              <div class="section-heading">
+                <h3>{{ i18n.t("settings.colorScheme") }}</h3>
+                <span>{{ i18n.t("settings.colorDescription") }}</span>
+              </div>
+
+              <fieldset class="scheme-options">
+                <legend>{{ i18n.t("settings.colorLegend") }}</legend>
+                @for (option of colorSchemeOptions(); track option.id) {
+                  <label [attr.data-scheme]="option.id">
+                    <input
+                      type="radio"
+                      name="color-scheme"
+                      [value]="option.id"
+                      [checked]="preferences.preferences().colorScheme === option.id"
+                      (change)="setColorScheme(option.id)"
+                    />
+                    <span class="scheme-preview" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
+                    <strong>{{ option.label }}</strong>
+                    <small>{{ option.hint }}</small>
+                  </label>
+                }
+              </fieldset>
+            </section>
+          }
+
+          @case ("source-editor") {
+            <section aria-labelledby="editor-heading">
+              <div class="section-heading">
+                <p>{{ i18n.t("settings.sourceEditor") }}</p>
+                <h3 id="editor-heading">{{ i18n.t("settings.text") }}</h3>
+                <span>
+                  {{ i18n.t("settings.textDescription") }}
+                </span>
+              </div>
+
+              <div class="setting-row">
+                <label for="editor-font-family">
+                  <strong>{{ i18n.t("settings.fontFamily") }}</strong>
+                  <span>{{ i18n.t("settings.fontFamilyHint") }}</span>
+                </label>
+                <select
+                  id="editor-font-family"
+                  [value]="preferences.preferences().editorFontFamily"
+                  (change)="setFontFamily($event)"
+                >
+                  @for (option of editorFontFamilyOptions; track option.id) {
+                    <option [value]="option.id">{{ option.label }}</option>
+                  }
+                  <option value="system-monospace">{{ i18n.t("settings.systemMonospace") }}</option>
+                </select>
+              </div>
+
+              <div class="setting-row">
+                <label for="editor-font-ligatures">
+                  <strong>{{ i18n.t("settings.fontLigatures") }}</strong>
+                  <span>{{ i18n.t("settings.fontLigaturesHint") }}</span>
+                </label>
+                <input
+                  id="editor-font-ligatures"
+                  class="setting-checkbox"
+                  type="checkbox"
+                  [checked]="preferences.preferences().editorFontLigatures"
+                  (change)="setFontLigatures($event)"
+                />
+              </div>
+
+              <div class="setting-row font-size-row">
+                <label for="editor-font-size">
+                  <strong>{{ i18n.t("settings.fontSize") }}</strong>
+                  <span>{{ i18n.t("settings.fontSizeHint") }}</span>
+                </label>
+                <div class="font-size-control">
+                  <input
+                    id="editor-font-size"
+                    type="range"
+                    min="11"
+                    max="24"
+                    step="0.5"
+                    [value]="preferences.editorFontSize()"
+                    (input)="setFontSize($event)"
+                  />
+                  <output for="editor-font-size">
+                    {{ preferences.editorFontSize() }} px
+                  </output>
+                </div>
+              </div>
+
+              <div
+                class="font-sample"
+                [style.font-family]="preferences.editorFontFamilyCss()"
+                [style.font-feature-settings]="preferences.editorFontFeatureSettingsCss()"
+                [style.font-size.px]="preferences.editorFontSize()"
+              >
+                view system-landscape main<br />
+                portal -&gt; compiler =&gt; scene != output &lt;= preview
+              </div>
+            </section>
+          }
+        }
+      </main>
+    </div>
+
+    <footer class="settings-footer">
+      <span>{{ i18n.t("settings.immediate") }}</span>
+      <div>
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="preferences.reset()"
+        >
+          {{ i18n.t("settings.reset") }}
+        </button>
+        <button type="button" class="primary-button" (click)="close()">
+          {{ i18n.t("settings.done") }}
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

@@ -1,19 +1,28 @@
 # C4ML User Guide
 
-Status: Draft syntax preview with executable internal render reference
+Status: Draft syntax preview with executable language and desktop workbench
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
 can be reviewed through realistic examples rather than grammar fragments.
 
-> **Important:** the `.c4ml` parser, production CLI, and editor do not exist
-> yet. The syntax in this document is non-normative, is not executable, and may
-> change after review. The parser-independent C4 semantic model, all seven
+> **Important:** there is no complete public `.c4ml` parser, release-ready CLI,
+> or feature-complete editor yet. A working Electron desktop application now
+> packages the editor, but it is still a development build rather than a signed
+> and notarized public release. The syntax in this document is non-normative
+> and may change after review. An internal experimental language package and
+> the production-bound Angular editor execute the bounded slices in
+> `hello-context.c4ml`,
+> `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
+> `hello-deployment.c4ml`. The parser-independent C4 semantic model, all seven
 > view-resolution contracts, and a first internal model-to-SVG/PNG rendering
-> path are implemented today. The internal path now also carries explicit
-> Ports, Routes, Arrowheads, and restricted renderer-neutral shape definitions.
+> path are implemented today.
+> The internal path also carries explicit Ports, Routes, Arrowheads, and
+> restricted renderer-neutral shape definitions. `hello-context.c4ml` now
+> exercises the first executable, view-local route-control slice through both
+> the CLI and the editor worker.
 
 `SPEC.md` remains the normative definition of product behavior. If this guide
 and `SPEC.md` disagree, `SPEC.md` wins.
@@ -62,6 +71,99 @@ pnpm install
 pnpm run check
 ```
 
+That gate also generates and tests the experimental `draft-1` language slices.
+It parses `examples/draft/hello-context.c4ml`,
+`examples/draft/hello-container.c4ml`, and
+`examples/draft/hello-static-zoom.c4ml`, and
+`examples/draft/hello-dynamic.c4ml` and
+`examples/draft/hello-deployment.c4ml`, translates their syntax trees into the
+compiler-owned model, and exercises the same compiler pipeline through
+deterministic SVG. This is an experimental contributor path, not a frozen
+public language contract.
+
+The desktop workbench can be started locally:
+
+```shell
+pnpm run desktop:start
+```
+
+It opens as a normal desktop application with simultaneous source and preview
+tabs. The activity bar opens C4ML-specific Files, Diagrams, and Output areas;
+Problems and selected Route details share the bottom panel. Use the command
+center or `Shift+Cmd/Ctrl+P` to search the local command palette. Use the
+toolbar or the native File menu to open and save `.c4ml` source. The standard shortcuts are
+`Cmd/Ctrl+O`, `Cmd/Ctrl+S`, and `Cmd/Ctrl+Shift+S`. The window title and source
+header mark unsaved changes, and closing a dirty document asks before discarding
+them. The renderer receives only an opaque document handle; native filesystem
+paths and Node.js APIs remain in the Electron main process.
+
+Use **Export PNG** in Output or the File menu to save the current canonical
+diagram at 1x, 2x, or 3x. Rasterization runs locally in the desktop main process
+from the same SVG shown by the preview, with the packaged IBM Plex Sans fonts;
+it does not take a browser screenshot or run layout again. Browser-only
+development keeps SVG download but has no native PNG dialog.
+
+Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
+choose English or German interface copy, System, Light, or Dark workbench
+colors, and the source editor's monospace family and size. Changes apply
+immediately and are stored locally. The language choice also updates C4ML-owned
+native menu commands and dialogs; names, descriptions, source, compiler
+diagnostics, and diagrams are never translated automatically. Preferences do
+not edit the open `.c4ml` document or alter exported diagram colors, fonts, or
+geometry. **Reset defaults** restores English and the remaining version-one
+defaults. The settings catalogue and extension rules are documented in
+`SETTINGS.md`.
+
+The workbench restores the active activity area, bottom-panel state, preview
+zoom, and Route Debug visibility after a relaunch. This local session record
+never stores source text, document handles, or filesystem paths; `.c4ml` files
+remain the architecture source of truth.
+
+Open **Help** from the `?` activity or search for **Open C4ML handbook** in the
+command palette. The local handbook groups the currently executable syntax by
+authoring task, can be searched in English or German, and opens beside the
+source editor without closing the diagram. Its **At cursor** card follows the
+syntax owner reported by the C4ML language worker. Press `F1` to open that
+article directly. Help search and navigation never edit the document or alter
+diagram output.
+
+Parsing, compilation, and SVG generation still run in the same browser Web
+Worker as the isolated Angular development path.
+When an edit is invalid, the diagnostic panel updates while the last valid
+diagram remains visible. The accepted lazy Monaco adapter presents only the
+tokens, values, or references accepted at the current cursor and applies the
+language worker's exact source edit. `Ctrl+Space` opens the in-place popup; the
+visible “C4ML IntelliSense” action provides the same keyboard-independent
+trigger.
+Compiler ranges appear as inline markers, and selecting a diagnostic reveals
+its source range. Normal Monaco undo/redo remains synchronized with hot
+compilation. The preview can be zoomed, fitted, scrolled while enlarged, and
+downloaded as SVG. Documents with several executable views expose a view
+selector; changing it recompiles the selected projection without duplicating
+the model. Syntax colors come from the C4ML lexer's source spans through the
+same worker, while automatic preview geometry comes from the local ELK.js
+browser worker.
+
+For isolated renderer development, the Angular application can still be opened
+in a browser with `pnpm run editor:start`; native Open/Save controls are absent
+there. A local packaged application and current-platform installers can be
+created with:
+
+```shell
+pnpm run desktop:package
+pnpm run desktop:make
+```
+
+Artifacts are ignored below `build/desktop/`. On macOS, `desktop:make` produces
+an application, DMG, and ZIP. These are ad-hoc signed local development
+artifacts, not notarized releases. The Windows Setup EXE maker is configured but
+still needs a native Windows build and installation test.
+
+Inside a `route` block, IntelliSense first asks for `policy`. Once it is known,
+the editor offers only controls compatible with that policy and hides properties
+already present. For example, `points` is offered for `fixed` but not for
+`guided`, while `via`, `corridor`, and `lane` are guided controls.
+
 An original Container View can also be exported through the current internal
 TypeScript-fed reference path:
 
@@ -85,33 +187,99 @@ The original `signal-garden` TypeScript fixture demonstrates every semantic
 element and all seven views in
 `packages/compiler-core/test/signal-garden.fixture.ts`.
 
-### Planned end-user workflow
+### Experimental contributor CLI
 
-Command names and flags remain provisional. The intended workflow is:
+The first thin Node.js frontend is now executable for the bounded `draft-1`
+slices covering all seven view types. It builds and calls the same language and
+compiler packages as the editor worker:
 
 ```shell
 # Validate without rendering.
-c4ml check architecture.c4ml
+pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
 
-# Render one view as SVG.
-c4ml render architecture.c4ml \
-  --view signal-context \
-  --format svg \
+# Render one view as canonical SVG and derived PNG.
+pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
+  --view arrangement-engine-code \
+  --format svg,png \
   --output build/diagrams
 
 # Render all views as SVG and PNG.
-c4ml render architecture.c4ml \
+pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --all \
   --format svg,png \
   --output build/diagrams
 ```
 
-The editor will use the same compiler in a browser Web Worker. Source remains
+`--diagnostics json` emits machine-readable validation or rendering results,
+`--scale` controls PNG scale, and `pnpm run c4ml -- version` reports the current
+experimental frontend and language versions. Exit classes distinguish success,
+usage, source/view selection, layout/render compilation, and filesystem or
+environment failures.
+
+The CLI is contributor evidence, not a frozen public command contract. It
+accepts the current absolute route-control slice, but not Visual Groups,
+relative route guidance, avoidance regions, locked segments, shapes, or themes
+from source. SVG and PNG use the same locally packaged IBM Plex Sans files;
+SVG embeds WOFF2 faces and PNG supplies the matching TTF faces to the renderer
+with system-font discovery disabled.
+
+The editor uses the same compiler in a browser Web Worker. Source remains
 authoritative; the preview does not keep hidden semantic or layout state.
+Monaco is the accepted desktop source-editor library behind a C4ML-owned
+adapter, not a second parser. Selecting a source declaration highlights its
+source-mapped diagram node; selecting a diagram node reveals and selects the
+corresponding declaration. The orange selection outline exists only in the
+live preview, so an exported SVG remains the canonical compiler result.
+Relationship declarations and view-local `route` blocks also select their
+effective connection; clicking close to that path reveals the underlying
+Relationship, Dynamic Interaction, or Deployment Relationship declaration.
+The optional Route Debug overlay shows effective route points, source and
+target Ports, the label anchor, and every lane of a selected corridor. Its
+adjacent inspector reports policy, style, Port sides, point count, selected
+label segment, and corridor lane. The overlay and selection styling exist only
+in the live preview. Ports, route labels, and corridors can also be selected
+directly. Each reveals the source of its owning route control; none becomes a
+second architectural relationship. Arrowheads are not separate targets yet.
+
+### Guided modeling wizard
+
+The editor includes a bounded guided architecture interview. It starts with
+the question the diagram should answer, not with a test of C4 vocabulary:
+
+- **Who uses this application, and what is around it?** creates a System
+  Context starter with one application, one user role, and their intent.
+- **What runs inside this application?** creates a Container starter from the
+  parts that can be started, deployed, or operated separately, plus their
+  responsibilities, technologies, and explicit connections and protocols.
+
+The C4 terms appear beside these choices as optional translations. In
+particular, “Container” is explained as a runtime/deployment unit and does not
+imply Docker. Stable technical IDs are available under **Advanced details**;
+they are not required vocabulary for the normal path. Before applying anything,
+the final step shows the complete generated `draft-1` source. Cancel leaves the
+active document unchanged; apply replaces it explicitly, and **Undo wizard**
+restores the prior document once.
+
+The result is not a separate visual-only document. The wizard generates normal
+C4ML source in the language worker and hands it to the same parser, validator,
+compiler, and preview used for hand-authored source. The current wizard creates
+a new document only; it does not merge into or reformat existing source.
+
+The intended later wizard remains broader: Components, Code Elements,
+deployments, additional views, Visual Groups, and more context-dependent
+relationship and ownership choices. That complete scope and safe extension of
+existing documents are not implemented or accepted yet.
 
 For the quickest syntax review, begin with
-[`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), then
-compare it with the complete
+[`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), move
+to [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml),
+then to
+[`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+for Component and Code, continue with
+[`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) for
+System Landscape and Dynamic, then use
+[`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+for Deployment. Finally compare them with the complete
 [`signal-garden.c4ml`](examples/draft/signal-garden.c4ml) preview.
 
 ## 3. Proposed source format
@@ -662,6 +830,10 @@ allow-mixed-levels = true
 
 ## 8. Deployment model and views
 
+The bounded syntax in this section is executable in
+`examples/draft/hello-deployment.c4ml`. It remains experimental and does not
+freeze the eventual public grammar.
+
 ### 8.1 Environments and nested nodes
 
 ```c4ml
@@ -815,6 +987,12 @@ Routing has two independent choices:
 lets the router connect the remaining segments. `fixed` defines the complete
 path and fails if that path is invalid.
 
+The current executable `draft-1` slice accepts cardinal Ports, integer canvas
+coordinates, absolute `via` points, corridors, lanes, a zero-based label
+segment, and an x/y label shift. It deliberately does not pretend to support
+relative anchors, avoidance regions, constraint strengths, or locked segments
+yet.
+
 ```c4ml
 layout {
   route ui-calls-api {
@@ -822,15 +1000,17 @@ layout {
     style = orthogonal
     source-port = east
     target-port = west
-    via = [right-of(studio-ui, 32), above(cultivation-api, 24)]
-    avoid = [notify-worker]
-    strength = hard
+    via = [(520, 260), (520, 410)]
+    label-segment = 2
+    label-shift = (0, -14)
   }
 }
 ```
 
 Explicit waypoints refine a route after automatic placement. They do not create
-or redirect the underlying semantic relationship.
+or redirect the underlying semantic relationship. Relative forms such as
+“right of an element”, plus `avoid` and `strength`, remain part of the planned
+full routing model rather than the executable grammar.
 
 ### 9.5 Named corridors and lanes
 
@@ -843,7 +1023,7 @@ lanes:
 layout {
   corridor data-access-east {
     orientation = vertical
-    anchor = right-of(cultivation-api, 56)
+    coordinate = 780
     lanes = 4
     lane-gap = 16
   }
@@ -855,7 +1035,6 @@ layout {
     target-port = west
     corridor = data-access-east
     lane = 1
-    strength = hard
   }
 
   route api-enqueues-notice {
@@ -864,10 +1043,16 @@ layout {
     source-port = east
     corridor = data-access-east
     lane = 2
-    strength = hard
   }
 }
 ```
+
+`coordinate` is the corridor's x coordinate when `orientation = vertical` and
+its y coordinate when `orientation = horizontal`. Lane numbers are zero-based.
+The compiler rejects a lane outside the declared capacity and rejects two
+relationships that select the same exclusive corridor lane. Relative corridor
+anchors remain planned because they are more stable when automatic geometry
+moves.
 
 The compiler routes hard-guided and fixed paths first. Their occupied corridors
 and lanes then become obstacles for remaining automatic paths. Two unrelated
@@ -887,14 +1072,20 @@ layout {
     policy = fixed
     style = orthogonal
     points = [
-      port(cultivation-api, south),
+      (640, 590),
       (640, 720),
       (1180, 720),
-      port(archive-vault, west)
+      (1180, 460)
     ]
+    label-segment = 2
   }
 }
 ```
+
+The first and last fixed points must lie exactly on the effective source and
+target boundaries. This makes absolute fixed routes a deliberate final escape
+hatch. In practice, guided Ports, corridors, and waypoints are usually more
+resilient.
 
 A guided route may instead lock only selected segments and leave its other
 segments automatic. Hard guidance is never ignored or silently downgraded. If
@@ -905,8 +1096,9 @@ segments, and relaxed soft rules in a routing-debug overlay. Moving a waypoint
 or selecting a lane should create an explicit source edit rather than hidden
 editor state.
 
-The precise constraint, coordinate, and route grammar is especially provisional
-and must be validated against real diagrams before acceptance.
+This executable syntax is still `draft-1`, not a public compatibility promise.
+The precise constraint, relative-coordinate, and remaining route grammar must
+be validated against real diagrams before acceptance.
 
 ## 10. Diagnostics
 
@@ -928,24 +1120,37 @@ Examples of already implemented semantic codes include:
   relationship; and
 - `C4ML-VIEW-011` — illegal or unknown view-level element selection.
 
-The planned CLI will return distinct failure classes for source, layout,
+The experimental CLI returns distinct failure classes for source, layout,
 rendering, and environment failures. The editor will retain the last valid
 preview while showing diagnostics for the current invalid source.
 
 ## 11. Demo files
 
-The repository contains three original syntax previews:
+The repository contains seven original syntax previews:
 
 - [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml) — a
-  minimal model and System Context View; and
+  minimal model and System Context View;
+- [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml)
+  — Container ownership, technologies, protocols, and a Container View;
+- [`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+  — the full static ownership hierarchy and selectable Component, Code,
+  Container, and System Context Views;
+- [`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) — a
+  named System Landscape plus ordered and parallel Dynamic Interactions;
+- [`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+  — nested runtime environments, instances, runtime relationships, and a
+  Deployment View;
 - [`examples/draft/signal-garden.c4ml`](examples/draft/signal-garden.c4ml) — a
   larger model covering Containers, Components, Code, Dynamic behavior,
   Deployment, and every view type; and
 - [`examples/draft/shape-marker.c4ml`](examples/draft/shape-marker.c4ml) — the
   restricted custom-shape contract and explicit cardinal Ports.
 
-These files are documentation artifacts. They are intentionally not part of the
-automated compiler gate until a grammar is accepted and implemented.
+The bounded `hello-context.c4ml`, `hello-container.c4ml`,
+`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and `hello-deployment.c4ml`
+subsets are part of the automated internal language gate. The other files, and
+every construct outside those subsets, remain documentation artifacts. None of
+these previews defines an accepted grammar or compatibility commitment.
 
 ## 12. Design principles for reviewing the proposal
 

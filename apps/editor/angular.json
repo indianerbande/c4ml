@@ -1,0 +1,121 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "c4ml-editor": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "c4ml",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "../../build/editor",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "polyfills": [],
+            "tsConfig": "tsconfig.app.json",
+            "webWorkerTsConfig": "tsconfig.worker.json",
+            "assets": [
+              {
+                "glob": "editor.main.css",
+                "input": "node_modules/monaco-editor/min/vs/editor",
+                "output": "monaco"
+              },
+              {
+                "glob": "LICENSE",
+                "input": "node_modules/monaco-editor",
+                "output": "third-party/monaco-editor"
+              },
+              {
+                "glob": "ThirdPartyNotices.txt",
+                "input": "node_modules/monaco-editor",
+                "output": "third-party/monaco-editor"
+              },
+              {
+                "glob": "elk-worker.min.js",
+                "input": "node_modules/elkjs/lib",
+                "output": "third-party/elkjs"
+              },
+              {
+                "glob": "LICENSE.md",
+                "input": "node_modules/elkjs",
+                "output": "third-party/elkjs"
+              },
+              {
+                "glob": "**/*.woff2",
+                "input": "node_modules/@c4ml/font-ibm-plex/fonts",
+                "output": "fonts/ibm-plex"
+              },
+              {
+                "glob": "LICENSE.txt",
+                "input": "node_modules/@c4ml/font-ibm-plex",
+                "output": "third-party/ibm-plex"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@c4ml/font-editor-mono/fonts",
+                "output": "fonts/editor-mono"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@c4ml/font-editor-mono/licenses",
+                "output": "third-party/editor-mono"
+              }
+            ],
+            "loader": {
+              ".ttf": "file"
+            },
+            "styles": ["src/styles.css"],
+            "outputHashing": "none"
+          },
+          "configurations": {
+            "production": {
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              },
+              "sourceMap": false,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "c4ml-editor:build:production"
+            },
+            "development": {
+              "buildTarget": "c4ml-editor:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false,
+    "cache": {
+      "enabled": false
+    }
+  }
+}

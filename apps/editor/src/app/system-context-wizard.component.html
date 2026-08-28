@@ -1,0 +1,334 @@
+<div class="wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+  <header>
+    <div>
+      <p>{{ i18n.t("wizard.eyebrow") }}</p>
+      <h2 id="wizard-title">{{ i18n.t("wizard.title") }}</h2>
+      <span>{{ i18n.t("wizard.description") }}</span>
+    </div>
+    <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('wizard.close')">×</button>
+  </header>
+
+  <nav [attr.aria-label]="i18n.t('wizard.progress')">
+    @for (label of progress(); track label; let index = $index) {
+      <span [class.current]="step() === index" [class.complete]="step() > index">
+        <i>{{ index + 1 }}</i>{{ label }}
+      </span>
+    }
+  </nav>
+
+  <div class="wizard-body">
+    @if (step() === 0) {
+      <section aria-labelledby="goal-step-title">
+        <div class="step-intro">
+          <p>{{ i18n.t("wizard.goal.eyebrow") }}</p>
+          <h3 id="goal-step-title">{{ i18n.t("wizard.goal.title") }}</h3>
+          <span>{{ i18n.t("wizard.goal.description") }}</span>
+        </div>
+
+        <div class="goal-options" role="radiogroup" [attr.aria-label]="i18n.t('wizard.goal.label')">
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="answers().viewKind === 'system-context'"
+            [class.is-selected]="answers().viewKind === 'system-context'"
+            (click)="selectViewKind('system-context')"
+          >
+            <span class="goal-picture context-picture" aria-hidden="true"><i></i><i></i><i></i></span>
+            <strong>{{ i18n.t("wizard.goal.context") }}</strong>
+            <p>{{ i18n.t("wizard.goal.contextHint") }}</p>
+            <small><b>{{ i18n.t("wizard.c4Translation") }}</b> {{ i18n.t("wizard.systemContext") }}</small>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            [attr.aria-checked]="answers().viewKind === 'container'"
+            [class.is-selected]="answers().viewKind === 'container'"
+            (click)="selectViewKind('container')"
+          >
+            <span class="goal-picture parts-picture" aria-hidden="true"><i></i><i></i><i></i></span>
+            <strong>{{ i18n.t("wizard.goal.container") }}</strong>
+            <p>{{ i18n.t("wizard.goal.containerHint") }}</p>
+            <small><b>{{ i18n.t("wizard.c4Translation") }}</b> {{ i18n.t("wizard.containerView") }}</small>
+          </button>
+        </div>
+
+        <aside class="term-note">
+          <strong>{{ i18n.t("wizard.containerWhy") }}</strong>
+          <p>{{ i18n.t("wizard.containerWhyText") }}</p>
+        </aside>
+      </section>
+    } @else if (step() === 1) {
+      <section aria-labelledby="application-step-title">
+        <div class="step-intro">
+          <p>{{ i18n.t("wizard.application.eyebrow") }}</p>
+          <h3 id="application-step-title">{{ i18n.t("wizard.application.title") }}</h3>
+          <span>{{ i18n.t("wizard.application.description") }}</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>{{ i18n.t("wizard.application.name") }}</span>
+            <input [value]="answers().systemName" (input)="updateSystemName($event)" />
+            @if (issueFor("systemName"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>{{ i18n.t("wizard.application.owner") }}</span>
+            <select [value]="answers().systemClassification" (change)="updateField('systemClassification', $event)">
+              <option value="internal">{{ i18n.t("wizard.application.internal") }}</option>
+              <option value="external">{{ i18n.t("wizard.application.external") }}</option>
+            </select>
+          </label>
+          <label class="wide">
+            <span>{{ i18n.t("wizard.application.job") }}</span>
+            <textarea rows="3" [value]="answers().systemResponsibility" (input)="updateField('systemResponsibility', $event)" [placeholder]="i18n.t('wizard.application.jobPlaceholder')"></textarea>
+            @if (issueFor("systemResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+        </div>
+
+        <details class="advanced-fields">
+          <summary>{{ i18n.t("wizard.technicalNames") }}</summary>
+          <label>
+            <span>{{ i18n.t("wizard.application.id") }}</span>
+            <input [value]="answers().systemId" (input)="updateField('systemId', $event)" />
+            <small>{{ i18n.t("wizard.application.idHint") }}</small>
+            @if (issueFor("systemId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+        </details>
+      </section>
+    } @else if (step() === 2) {
+      <section aria-labelledby="people-step-title">
+        <div class="step-intro">
+          <p>{{ i18n.t("wizard.people.eyebrow") }}</p>
+          <h3 id="people-step-title">{{ i18n.t("wizard.people.title") }}</h3>
+          <span>{{ i18n.t("wizard.people.description") }}</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>{{ i18n.t("wizard.people.role") }}</span>
+            <input [value]="answers().personName" (input)="updatePersonName($event)" />
+            @if (issueFor("personName"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>{{ i18n.t("wizard.people.location") }}</span>
+            <select [value]="answers().personClassification" (change)="updateField('personClassification', $event)">
+              <option value="internal">{{ i18n.t("wizard.people.internal") }}</option>
+              <option value="external">{{ i18n.t("wizard.people.external") }}</option>
+            </select>
+          </label>
+          <label class="wide">
+            <span>{{ i18n.t("wizard.people.goal") }}</span>
+            <textarea rows="3" [value]="answers().personResponsibility" (input)="updateField('personResponsibility', $event)"></textarea>
+            @if (issueFor("personResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+        </div>
+
+        <aside class="term-note compact-note">
+          <strong>{{ i18n.t("wizard.personTranslation") }}</strong>
+          <p>{{ i18n.t("wizard.personTranslationText") }}</p>
+        </aside>
+
+        <details class="advanced-fields">
+          <summary>{{ i18n.t("wizard.technicalName") }}</summary>
+          <label>
+            <span>{{ i18n.t("wizard.people.id") }}</span>
+            <input [value]="answers().personId" (input)="updateField('personId', $event)" />
+            @if (issueFor("personId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+        </details>
+      </section>
+    } @else if (answers().viewKind === "container" && step() === 3) {
+      <section aria-labelledby="parts-step-title">
+        <div class="step-intro split-intro">
+          <div>
+            <p>{{ i18n.t("wizard.parts.eyebrow") }}</p>
+            <h3 id="parts-step-title">{{ i18n.t("wizard.parts.title") }}</h3>
+            <span>{{ i18n.t("wizard.parts.description") }}</span>
+          </div>
+          <button type="button" class="add-button" (click)="addPart()">{{ i18n.t("wizard.parts.add") }}</button>
+        </div>
+
+        <div class="part-list">
+          @for (part of answers().parts; track $index; let index = $index) {
+            <article class="part-card">
+              <header>
+                <span>{{ index + 1 }}</span>
+                <strong>{{ part.name }}</strong>
+                <button type="button" (click)="removePart(index)" [disabled]="answers().parts.length === 1" [attr.aria-label]="i18n.t('wizard.parts.remove', { name: part.name })">×</button>
+              </header>
+              <div class="field-grid compact-grid">
+                <label>
+                  <span>{{ i18n.t("wizard.parts.name") }}</span>
+                  <input [value]="part.name" (input)="updatePart(index, 'name', $event)" />
+                  @if (partIssue(index, "name"); as issue) { <small class="issue">{{ issue }}</small> }
+                </label>
+                <label>
+                  <span>{{ i18n.t("wizard.parts.technology") }}</span>
+                  <input [value]="part.technology" (input)="updatePart(index, 'technology', $event)" />
+                  @if (partIssue(index, "technology"); as issue) { <small class="issue">{{ issue }}</small> }
+                </label>
+                <label class="wide">
+                  <span>{{ i18n.t("wizard.parts.responsibility") }}</span>
+                  <input [value]="part.responsibility" (input)="updatePart(index, 'responsibility', $event)" />
+                  @if (partIssue(index, "responsibility"); as issue) { <small class="issue">{{ issue }}</small> }
+                </label>
+              </div>
+              <details class="card-advanced">
+                <summary>{{ i18n.t("wizard.parts.id") }}</summary>
+                <input [value]="part.id" (input)="updatePart(index, 'id', $event)" />
+                @if (partIssue(index, "id"); as issue) { <small class="issue">{{ issue }}</small> }
+              </details>
+            </article>
+          }
+        </div>
+
+        <aside class="term-note compact-note">
+          <strong>{{ i18n.t("wizard.containerTranslation") }}</strong>
+          <p>{{ i18n.t("wizard.containerTranslationText") }}</p>
+        </aside>
+      </section>
+    } @else {
+      <section aria-labelledby="connection-step-title">
+        <div class="step-intro">
+          <p>{{ i18n.t("wizard.connections.eyebrow") }}</p>
+          <h3 id="connection-step-title">{{ i18n.t("wizard.connections.title") }}</h3>
+          <span>{{ i18n.t("wizard.connections.description") }}</span>
+        </div>
+
+        @if (answers().viewKind === "container") {
+          <div class="entry-connection">
+            <label>
+              <span>{{ i18n.t("wizard.connections.entry", { name: answers().personName }) }}</span>
+              <select [value]="answers().entryPartId" (change)="selectEntryPart($event)">
+                @for (part of answers().parts; track part.id) {
+                  <option [value]="part.id" [selected]="part.id === answers().entryPartId">{{ part.name }}</option>
+                }
+              </select>
+              @if (issueFor("entryPartId"); as issue) { <small class="issue">{{ issue }}</small> }
+            </label>
+            <label>
+              <span>{{ i18n.t("wizard.connections.personAction") }}</span>
+              <input [value]="answers().relationshipIntent" (input)="updateField('relationshipIntent', $event)" />
+              @if (issueFor("relationshipIntent"); as issue) { <small class="issue">{{ issue }}</small> }
+            </label>
+          </div>
+
+          <div class="connection-heading">
+            <div>
+              <strong>{{ i18n.t("wizard.connections.heading") }}</strong>
+              <span>{{ i18n.t("wizard.connections.hint") }}</span>
+            </div>
+            <button type="button" class="add-button" (click)="addConnection()" [disabled]="answers().parts.length < 2">{{ i18n.t("wizard.connections.add") }}</button>
+          </div>
+
+          <div class="connection-list">
+            @for (connection of answers().connections; track connection.id; let index = $index) {
+              <article class="connection-card">
+                <div class="connection-path">
+                  <label>
+                    <span>{{ i18n.t("wizard.connections.from") }}</span>
+                    <select [value]="connection.fromId" (change)="updateConnection(index, 'fromId', $event)">
+                      @for (part of answers().parts; track part.id) { <option [value]="part.id" [selected]="part.id === connection.fromId">{{ part.name }}</option> }
+                    </select>
+                  </label>
+                  <span aria-hidden="true">→</span>
+                  <label>
+                    <span>{{ i18n.t("wizard.connections.to") }}</span>
+                    <select [value]="connection.toId" (change)="updateConnection(index, 'toId', $event)">
+                      @for (part of answers().parts; track part.id) { <option [value]="part.id" [selected]="part.id === connection.toId">{{ part.name }}</option> }
+                    </select>
+                  </label>
+                  <button type="button" (click)="removeConnection(index)" [attr.aria-label]="i18n.t('wizard.connections.remove')">×</button>
+                </div>
+                <div class="field-grid compact-grid">
+                  <label>
+                    <span>{{ i18n.t("wizard.connections.intent") }}</span>
+                    <input [value]="connection.intent" (input)="updateConnection(index, 'intent', $event)" />
+                    @if (connectionIssue(index, "intent"); as issue) { <small class="issue">{{ issue }}</small> }
+                  </label>
+                  <label>
+                    <span>{{ i18n.t("wizard.connections.protocol") }}</span>
+                    <input [value]="connection.protocol" (input)="updateConnection(index, 'protocol', $event)" />
+                    @if (connectionIssue(index, "protocol"); as issue) { <small class="issue">{{ issue }}</small> }
+                  </label>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty-connections">{{ i18n.t("wizard.connections.empty") }}</p>
+            }
+          </div>
+        } @else {
+          <div class="field-grid">
+            <label class="wide">
+              <span>{{ i18n.t("wizard.connections.contextIntent", { person: answers().personName, system: answers().systemName }) }}</span>
+              <input [value]="answers().relationshipIntent" (input)="updateField('relationshipIntent', $event)" />
+              @if (issueFor("relationshipIntent"); as issue) { <small class="issue">{{ issue }}</small> }
+            </label>
+          </div>
+        }
+
+        <details class="result-details" open>
+          <summary>{{ i18n.t("wizard.result.heading") }}</summary>
+          <div class="field-grid compact-grid">
+            <label>
+              <span>{{ i18n.t("wizard.result.title") }}</span>
+              <input [value]="answers().viewTitle" (input)="updateField('viewTitle', $event)" />
+              @if (issueFor("viewTitle"); as issue) { <small class="issue">{{ issue }}</small> }
+            </label>
+            <label>
+              <span>{{ i18n.t("wizard.result.direction") }}</span>
+              <select [value]="answers().flow" (change)="updateField('flow', $event)">
+                <option value="right">{{ i18n.t("wizard.result.right") }}</option>
+                <option value="down">{{ i18n.t("wizard.result.down") }}</option>
+                <option value="left">{{ i18n.t("wizard.result.left") }}</option>
+                <option value="up">{{ i18n.t("wizard.result.up") }}</option>
+              </select>
+            </label>
+            <label class="wide">
+              <span>{{ i18n.t("wizard.result.purpose") }}</span>
+              <input [value]="answers().viewPurpose" (input)="updateField('viewPurpose', $event)" />
+              @if (issueFor("viewPurpose"); as issue) { <small class="issue">{{ issue }}</small> }
+            </label>
+          </div>
+        </details>
+
+        <details class="source-preview">
+          <summary>
+            <strong>{{ i18n.t("wizard.result.review") }}</strong>
+            <span [attr.data-phase]="compiler.wizard().phase">{{ compiler.wizard().phase }}</span>
+          </summary>
+          @if (compiler.wizard().source; as generatedSource) {
+            <pre>{{ generatedSource }}</pre>
+          } @else if (compiler.wizard().phase === "loading") {
+            <p>{{ i18n.t("wizard.result.generating") }}</p>
+          } @else {
+            <ul>
+              @for (issue of compiler.wizard().issues; track issue.field) {
+                <li>{{ issue.message }}</li>
+              }
+            </ul>
+          }
+        </details>
+      </section>
+    }
+  </div>
+
+  <footer>
+    <button type="button" class="secondary" (click)="cancel()">{{ i18n.t("wizard.cancel") }}</button>
+    <span class="validation-state" [attr.data-phase]="compiler.wizard().phase">
+      @if (compiler.wizard().phase === "valid") { {{ i18n.t("wizard.ready") }} }
+      @else if (compiler.wizard().phase === "invalid") { {{ i18n.t("wizard.invalid") }} }
+      @else { {{ i18n.t("wizard.checking") }} }
+    </span>
+    @if (step() > 0) {
+      <button type="button" class="secondary" (click)="previous()">{{ i18n.t("wizard.back") }}</button>
+    }
+    @if (step() < lastStep()) {
+      <button type="button" class="primary" (click)="next()">{{ i18n.t("wizard.continue") }}</button>
+    } @else {
+      <button type="button" class="primary" (click)="apply()" [disabled]="compiler.wizard().phase !== 'valid'">
+        {{ i18n.t("wizard.create") }}
+      </button>
+    }
+  </footer>
+</div>

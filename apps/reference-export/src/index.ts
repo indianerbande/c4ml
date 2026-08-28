@@ -6,7 +6,12 @@ import {
   type ArchitectureModel,
   type ArchitectureView,
 } from "@c4ml/compiler-core";
-import { ElkLayoutAdapter } from "@c4ml/spike-layout-elk";
+import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
+import {
+  ibmPlexSansTtfFontFiles,
+  loadIbmPlexSansSvgFontFaces,
+} from "@c4ml/font-ibm-plex/node";
+import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
 
 const model: ArchitectureModel = {
@@ -142,10 +147,11 @@ const outputDirectory = resolve(
   process.cwd(),
   process.argv[2] ?? "build/reference",
 );
+const embeddedFontFaces = await loadIbmPlexSansSvgFontFaces();
 const compilerResult = await compileArchitectureDiagram({
   model,
   view,
-  layoutAdapter: new ElkLayoutAdapter(),
+  layoutAdapter: createBundledElkLayoutAdapter(),
   routing: {
     corridors: [
       {
@@ -197,7 +203,8 @@ const compilerResult = await compileArchitectureDiagram({
       },
     ],
   },
-  scene: { fontFamily: "Arial", theme: "c4ml-blue" },
+  scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+  svg: { embeddedFontFaces },
 });
 
 if (!compilerResult.valid || compilerResult.svg === undefined) {
@@ -212,15 +219,11 @@ if (!compilerResult.valid || compilerResult.svg === undefined) {
   await writeFile(svgPath, compilerResult.svg, "utf8");
 
   const pngRenderer = new ResvgPngRenderer();
-  const configuredFontFile = process.env.C4ML_DEMO_FONT_FILE;
   const png = await pngRenderer.render(compilerResult.svg, {
     background: compilerResult.scene!.theme.canvas.background,
-    ...(configuredFontFile === undefined
-      ? { loadSystemFonts: true, defaultFontFamily: "Arial" }
-      : {
-          fontFiles: [configuredFontFile],
-          defaultFontFamily: "Arial",
-        }),
+    fontFiles: ibmPlexSansTtfFontFiles,
+    loadSystemFonts: false,
+    defaultFontFamily: ibmPlexSansFamily,
   });
   await writeFile(pngPath, png.bytes);
 

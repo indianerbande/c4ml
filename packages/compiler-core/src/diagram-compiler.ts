@@ -25,7 +25,10 @@ import {
 } from "./scene.js";
 import type { DiagramShapeOptions } from "./shapes.js";
 import { sourceOf } from "./source.js";
-import { renderDiagramSvg } from "./svg-renderer.js";
+import {
+  renderDiagramSvg,
+  type SvgRenderOptions,
+} from "./svg-renderer.js";
 import { resolveArchitectureView } from "./view-resolution.js";
 import type { ArchitectureView, ResolvedView } from "./views.js";
 
@@ -36,6 +39,7 @@ export interface DiagramCompileRequest {
   readonly routing?: DiagramRoutingOptions;
   readonly shapes?: DiagramShapeOptions;
   readonly scene?: SceneOptions;
+  readonly svg?: SvgRenderOptions;
 }
 
 export interface DiagramCompileResult {
@@ -70,7 +74,7 @@ export async function compileArchitectureDiagram(
     layout = await request.layoutAdapter.layout(preparedDiagram.layoutRequest);
     routes = routeDiagram(preparedDiagram, layout, request.routing);
     scene = createDiagramScene(preparedDiagram, layout, routes, request.scene);
-    const svg = renderDiagramSvg(scene);
+    const svg = renderDiagramSvg(scene, request.svg);
     return {
       valid: true,
       diagnostics: resolution.diagnostics,
@@ -110,6 +114,9 @@ function compilerStageDiagnostic(
     (control) =>
       contractError.message.includes(control.relationshipId) &&
       control.source !== undefined,
+  )?.source ?? request.routing?.corridors?.find(
+    (corridor) =>
+      contractError.message.includes(corridor.id) && corridor.source !== undefined,
   )?.source;
   return createDiagnostic({
     code: contractError.code,

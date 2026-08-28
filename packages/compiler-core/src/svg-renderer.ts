@@ -17,8 +17,25 @@ import {
   type SceneTheme,
 } from "./theme.js";
 
-export function renderDiagramSvg(scene: DiagramScene): string {
+export interface SvgEmbeddedFontFace {
+  readonly family: string;
+  readonly style: "italic" | "normal";
+  readonly weight: number;
+  readonly format: "woff2";
+  readonly dataUrl: string;
+}
+
+export interface SvgRenderOptions {
+  readonly embeddedFontFaces?: readonly SvgEmbeddedFontFace[];
+}
+
+export function renderDiagramSvg(
+  scene: DiagramScene,
+  options: SvgRenderOptions = {},
+): string {
   validateScene(scene);
+  const embeddedFontFaces = options.embeddedFontFaces ?? [];
+  validateEmbeddedFontFaces(embeddedFontFaces);
   const boundaries = scene.nodes.filter((node) => node.kind !== "element" && node.kind !== "infrastructure-node");
   const elements = scene.nodes.filter((node) => node.kind === "element" || node.kind === "infrastructure-node");
   const shapeById = new Map(scene.shapes.map((shape) => [shape.id, shape]));
@@ -29,7 +46,7 @@ export function renderDiagramSvg(scene: DiagramScene): string {
     `  <title id="diagram-title">${escapeXml(scene.title)}</title>`,
     `  <desc id="diagram-description">${escapeXml(scene.description)}</desc>`,
     `  <metadata>${escapeXml(JSON.stringify({ generator: "C4ML", sceneId: scene.id, viewKind: scene.viewKind, scope: scene.scope, themeId: scene.theme.id }))}</metadata>`,
-    renderDefinitions(scene.theme),
+    renderDefinitions(scene.theme, embeddedFontFaces),
     `  <rect class="canvas" x="0" y="0" width="${scene.width}" height="${scene.height}"/>`,
     `  <g id="diagram-header">`,
     `    <text class="diagram-title" x="40" y="42">${escapeXml(scene.title)}</text>`,
@@ -40,6 +57,9 @@ export function renderDiagramSvg(scene: DiagramScene): string {
     `  </g>`,
     `  <g id="diagram-routes">`,
     ...scene.routes.map(renderRoutePath),
+    `  </g>`,
+    `  <g id="diagram-route-label-backgrounds" aria-hidden="true">`,
+    ...scene.routes.map(renderRouteLabelBackground),
     `  </g>`,
     `  <g id="diagram-elements">`,
     ...elements.map((node) => renderElement(node, requiredShape(node, shapeById))),
@@ -59,10 +79,14 @@ export function renderDiagramSvg(scene: DiagramScene): string {
   ].join("\n");
 }
 
-function renderDefinitions(theme: SceneTheme): string {
+function renderDefinitions(
+  theme: SceneTheme,
+  embeddedFontFaces: readonly SvgEmbeddedFontFace[],
+): string {
   validateSceneTheme(theme);
   return `  <defs>
     <style>
+${embeddedFontFaces.map(renderEmbeddedFontFace).join("\n")}
       .canvas { fill: ${theme.canvas.background}; }
       .diagram-title { fill: ${theme.canvas.foreground}; font-size: 24px; font-weight: 700; }
       .diagram-subtitle { fill: ${theme.canvas.muted}; font-size: 13px; }
@@ -85,6 +109,8 @@ function renderDefinitions(theme: SceneTheme): string {
       .element-type { font-size: 11px; font-weight: 700; }
       .element-technology { font-size: 11px; font-style: italic; }
       .element-description { font-size: 11px; }
+      .element-content-person text { text-anchor: middle; }
+      .person-type { font-weight: 400; }
 ${renderElementThemeStyles(theme)}
       .route { fill: none; stroke: ${theme.routes.guided}; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
       .route-automatic { stroke: ${theme.routes.automatic}; }
@@ -93,13 +119,18 @@ ${renderElementThemeStyles(theme)}
       .route-arrow-automatic { fill: ${theme.routes.automatic}; }
       .route-arrow-fixed { fill: ${theme.routes.fixed}; }
       .route-port { display: none; }
-      .route-label { fill: ${theme.routes.label}; stroke: ${theme.canvas.background}; stroke-width: 5; paint-order: stroke; font-size: 11px; font-weight: 700; text-anchor: middle; }
-      .route-technology { fill: ${theme.routes.technology}; stroke: ${theme.canvas.background}; stroke-width: 4; paint-order: stroke; font-size: 10px; text-anchor: middle; }
+      .route-label-background { fill: ${theme.canvas.background}; pointer-events: none; }
+      .route-label { fill: ${theme.routes.label}; font-size: 11px; font-weight: 700; text-anchor: middle; }
+      .route-technology { fill: ${theme.routes.technology}; font-size: 10px; text-anchor: middle; }
       .legend-title { fill: ${theme.canvas.foreground}; font-size: 12px; font-weight: 700; }
       .legend-text { fill: ${theme.canvas.muted}; font-size: 10px; }
       .legend-swatch { stroke-width: 1.5; }
     </style>
   </defs>`;
+}
+
+function renderEmbeddedFontFace(face: SvgEmbeddedFontFace): string {
+  return `      @font-face { font-family: "${face.family}"; src: url("${face.dataUrl}") format("${face.format}"); font-style: ${face.style}; font-weight: ${face.weight}; }`;
 }
 
 function renderElementThemeStyles(theme: SceneTheme): string {
@@ -132,7 +163,7 @@ function renderBoundary(node: SceneNode): string {
     (line, index) =>
       `<tspan x="${number(node.x + 14)}" dy="${index === 0 ? 0 : 17}">${escapeXml(line)}</tspan>`,
   );
-  return `    <g id="${stableSvgId(node.id)}" class="boundary-node ${cssClass}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="boundary-node ${cssClass}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${sourceAttribute(node.sourceId)}>
       <rect class="boundary-surface" x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}" rx="12"/>
       <text class="boundary-title" x="${number(node.x + 14)}" y="${number(node.y + 24)}">${titleLines.join("")}</text>
       <text class="boundary-type" x="${number(node.x + 14)}" y="${number(node.y + 43)}">${escapeXml(node.typeLabel)}</text>
@@ -147,6 +178,9 @@ function renderElement(node: SceneNode, shape: ShapeDefinition): string {
     );
   }
   const state = node.external ? "external" : "internal";
+  if (shape.id === "c4ml-person" && node.elementRole === "person") {
+    return renderBuiltInPerson(node, shape, state);
+  }
   const content = scaledBox(node, shape.contentBox);
   const textX = content.x;
   const titleStart = content.y + 18;
@@ -161,12 +195,50 @@ function renderElement(node: SceneNode, shape: ShapeDefinition): string {
     descriptionY,
     15,
   );
-  return `    <g id="${stableSvgId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
       <g class="element-shape">${shape.primitives.map((primitive) => renderShapePrimitive(node, shape, primitive)).join("")}</g>
       <text class="element-title">${titleLines}</text>
       <text class="element-type" x="${number(textX)}" y="${number(typeY)}">${escapeXml(node.typeLabel)}</text>
       ${node.technology === undefined ? "" : `<text class="element-technology" x="${number(textX)}" y="${number(technologyY)}">${escapeXml(node.technology)}</text>`}
       <text class="element-description">${descriptionLines}</text>
+    </g>`;
+}
+
+function renderBuiltInPerson(
+  node: SceneNode,
+  shape: ShapeDefinition,
+  state: "external" | "internal",
+): string {
+  const content = scaledBox(node, shape.contentBox);
+  const textX = content.x + content.width / 2;
+  const typeY = node.y + node.height * 0.105;
+  const titleStart = node.y + node.height * 0.61;
+  const titleLineHeight = 16;
+  const titleLines = tspans(
+    node.title.lines,
+    textX,
+    titleStart,
+    titleLineHeight,
+  );
+  const titleHeight = Math.max(0, node.title.lines.length - 1) * titleLineHeight;
+  const technologyY = titleStart + titleHeight + 17;
+  const descriptionY =
+    titleStart + titleHeight + (node.technology === undefined ? 24 : 35);
+  const descriptionLines = tspans(
+    node.description.lines,
+    textX,
+    descriptionY,
+    14,
+  );
+
+  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
+      <g class="element-shape">${shape.primitives.map((primitive) => renderShapePrimitive(node, shape, primitive)).join("")}</g>
+      <g class="element-content element-content-person">
+        <text class="element-type person-type" x="${number(textX)}" y="${number(typeY)}">${escapeXml(node.typeLabel)}</text>
+        <text class="element-title person-title">${titleLines}</text>
+        ${node.technology === undefined ? "" : `<text class="element-technology person-technology" x="${number(textX)}" y="${number(technologyY)}">${escapeXml(node.technology)}</text>`}
+        <text class="element-description person-description">${descriptionLines}</text>
+      </g>
     </g>`;
 }
 
@@ -249,11 +321,11 @@ function requiredShape(
 }
 
 function renderRoutePath(route: SceneRoute): string {
-  return `    <path id="${stableSvgId(route.id)}" class="route${routePolicyClass(route.policy, "route")}" data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${stableSvgId(route.sourcePortId)}" data-c4ml-target-port="${stableSvgId(route.targetPortId)}" d="${routePath(route.points)}"/>`;
+  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}" data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}" d="${routePath(route.points)}"/>`;
 }
 
 function renderPort(port: ScenePort): string {
-  return `    <circle id="${stableSvgId(port.id)}" class="route-port" data-c4ml-id="${escapeXml(port.relationshipId)}" data-c4ml-port-role="${port.role}" data-c4ml-port-side="${port.side}" data-c4ml-node="${stableSvgId(port.nodeId)}" cx="${number(port.point.x)}" cy="${number(port.point.y)}" r="0"/>`;
+  return `    <circle id="${svgSceneObjectId(port.id)}" class="route-port" data-c4ml-id="${escapeXml(port.relationshipId)}" data-c4ml-port-role="${port.role}" data-c4ml-port-side="${port.side}" data-c4ml-node="${svgSceneObjectId(port.nodeId)}" cx="${number(port.point.x)}" cy="${number(port.point.y)}" r="0"/>`;
 }
 
 function renderRouteArrow(arrowhead: SceneArrowhead): string {
@@ -263,7 +335,7 @@ function renderRouteArrow(arrowhead: SceneArrowhead): string {
         `${index === 0 ? "M" : "L"} ${number(point.x)} ${number(point.y)}`,
     )
     .join(" ");
-  return `    <path id="${stableSvgId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}" data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${stableSvgId(arrowhead.routeId)}" d="${path} Z"/>`;
+  return `    <path id="${svgSceneObjectId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}" data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${svgSceneObjectId(arrowhead.routeId)}" d="${path} Z"/>`;
 }
 
 function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string {
@@ -275,10 +347,18 @@ function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string 
 }
 
 function renderRouteLabel(route: SceneRoute): string {
-  return `    <g data-c4ml-id="${escapeXml(route.relationshipId)}">
-      <text class="route-label" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y - 7)}">${escapeXml(route.label)}</text>
-      ${route.technology === undefined ? "" : `<text class="route-technology" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y + 8)}">${escapeXml(route.technology)}</text>`}
+  const labelY =
+    route.technology === undefined
+      ? route.labelPoint.y + 4
+      : route.labelPoint.y - 4;
+  return `    <g id="${svgSceneObjectId(`${route.id}:label`)}" data-c4ml-id="${escapeXml(route.relationshipId)}">
+      <text class="route-label" x="${number(route.labelPoint.x)}" y="${number(labelY)}">${escapeXml(route.label)}</text>
+      ${route.technology === undefined ? "" : `<text class="route-technology" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y + 11)}">${escapeXml(route.technology)}</text>`}
     </g>`;
+}
+
+function renderRouteLabelBackground(route: SceneRoute): string {
+  return `    <rect class="route-label-background" data-c4ml-id="${escapeXml(route.relationshipId)}" x="${number(route.labelBounds.x)}" y="${number(route.labelBounds.y)}" width="${number(route.labelBounds.width)}" height="${number(route.labelBounds.height)}" rx="4"/>`;
 }
 
 function renderLegend(scene: DiagramScene): string {
@@ -351,7 +431,7 @@ function tspans(
     .join("");
 }
 
-function stableSvgId(id: string): string {
+export function svgSceneObjectId(id: string): string {
   return `c4ml-${id.replace(/[^a-z0-9_-]+/giu, "-").replace(/^-+|-+$/gu, "")}`;
 }
 
@@ -398,7 +478,7 @@ function validateScene(scene: DiagramScene): void {
     ...scene.routes,
     ...scene.arrowheads,
   ]) {
-    const id = stableSvgId(item.id);
+    const id = svgSceneObjectId(item.id);
     if (ids.has(id)) {
       throw new ContractError("C4ML-SVG-004", `Duplicate SVG identifier ${id}.`);
     }
@@ -424,5 +504,48 @@ function validateScene(scene: DiagramScene): void {
         `Route ${route.relationshipId} references an unknown scene port.`,
       );
     }
+    if (
+      !Number.isFinite(route.labelBounds.x) ||
+      !Number.isFinite(route.labelBounds.y) ||
+      !Number.isFinite(route.labelBounds.width) ||
+      !Number.isFinite(route.labelBounds.height) ||
+      route.labelBounds.width <= 0 ||
+      route.labelBounds.height <= 0
+    ) {
+      throw new ContractError(
+        "C4ML-SVG-011",
+        `Route ${route.relationshipId} has invalid label bounds.`,
+      );
+    }
+  }
+}
+
+function validateEmbeddedFontFaces(
+  faces: readonly SvgEmbeddedFontFace[],
+): void {
+  const identities = new Set<string>();
+  for (const face of faces) {
+    if (
+      !/^[A-Za-z0-9 _-]+$/u.test(face.family) ||
+      (face.style !== "italic" && face.style !== "normal") ||
+      !Number.isSafeInteger(face.weight) ||
+      face.weight < 1 ||
+      face.weight > 1000 ||
+      face.format !== "woff2" ||
+      !/^data:font\/woff2;base64,[A-Za-z0-9+/]+={0,2}$/u.test(face.dataUrl)
+    ) {
+      throw new ContractError(
+        "C4ML-SVG-009",
+        "Embedded SVG font faces must use validated WOFF2 data URLs and finite CSS metadata.",
+      );
+    }
+    const identity = `${face.family}\u0000${face.style}\u0000${face.weight}`;
+    if (identities.has(identity)) {
+      throw new ContractError(
+        "C4ML-SVG-010",
+        `Duplicate embedded SVG font face ${face.family} ${face.style} ${face.weight}.`,
+      );
+    }
+    identities.add(identity);
   }
 }

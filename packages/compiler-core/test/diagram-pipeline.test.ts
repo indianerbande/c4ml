@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   compileArchitectureDiagram,
+  builtInShapes,
   prepareDiagram,
   resolveArchitectureView,
   type ArchitectureView,
@@ -153,6 +154,18 @@ describe("diagram compiler pipeline", () => {
           },
         ],
       },
+      scene: { fontFamily: "IBM Plex Sans" },
+      svg: {
+        embeddedFontFaces: [
+          {
+            family: "IBM Plex Sans",
+            style: "normal" as const,
+            weight: 400,
+            format: "woff2" as const,
+            dataUrl: "data:font/woff2;base64,d09GMgAAAAA=",
+          },
+        ],
+      },
     };
 
     const first = await compileArchitectureDiagram(request);
@@ -174,9 +187,22 @@ describe("diagram compiler pipeline", () => {
     expect(svg).toContain("id=\"diagram-route-arrows\"");
     expect(svg).toContain("id=\"diagram-ports\"");
     expect(svg).toContain("class=\"route-arrow");
+    expect(svg).toContain("class=\"route-label-background\"");
+    expect(svg.indexOf("id=\"diagram-routes\"")).toBeLessThan(
+      svg.indexOf("id=\"diagram-route-label-backgrounds\""),
+    );
+    expect(svg.indexOf("id=\"diagram-route-label-backgrounds\"")).toBeLessThan(
+      svg.indexOf("id=\"diagram-elements\""),
+    );
     expect(svg).toContain("data-c4ml-port-side=\"south\"");
     expect(svg).toContain("data-c4ml-shape=\"c4ml-person\"");
+    expect(svg).toContain(
+      "class=\"element-content element-content-person\"",
+    );
+    expect(svg).toContain("class=\"element-type person-type\"");
     expect(svg).toContain("data-c4ml-theme=\"c4ml-blue\"");
+    expect(svg).toContain('font-family="IBM Plex Sans"');
+    expect(svg).toContain('@font-face { font-family: "IBM Plex Sans";');
     expect(svg).toContain("data-c4ml-element-role=\"person\"");
     expect(svg).toContain("data-c4ml-element-role=\"container\"");
     expect(svg).toContain("class=\"legend-swatch element-surface\"");
@@ -191,8 +217,35 @@ describe("diagram compiler pipeline", () => {
     expect(guided).toBeDefined();
     expect(guided!.sourcePort.side).toBe("south");
     expect(guided!.targetPort.side).toBe("north");
+    expect(guided!.corridor).toEqual({
+      corridorId: "east-lane",
+      lane: 1,
+      orientation: "vertical",
+      coordinate: 790,
+      laneCoordinate: 799,
+      lanes: 2,
+      laneSpacing: 18,
+    });
+    expect(
+      first.scene?.routes.find(
+        ({ relationshipId }) => relationshipId === "api-enqueues-notice",
+      )?.corridor,
+    ).toEqual({
+      corridorId: "east-lane",
+      lane: 1,
+      orientation: "vertical",
+      coordinate: 830,
+      laneCoordinate: 839,
+      lanes: 2,
+      laneSpacing: 18,
+    });
     expect(first.scene?.ports).toHaveLength((first.routes?.length ?? 0) * 2);
     expect(first.scene?.arrowheads).toHaveLength(first.routes?.length ?? 0);
+    expect(
+      first.scene?.routes.every(
+        ({ labelBounds }) => labelBounds.width > 0 && labelBounds.height > 0,
+      ),
+    ).toBe(true);
     expect(first.scene?.arrowheads[0]?.points).toHaveLength(3);
     const firstSceneRoute = first.scene!.routes[0]!;
     const firstTargetPort = first.scene!.ports.find(
@@ -233,6 +286,61 @@ describe("diagram compiler pipeline", () => {
     expect(themed.svg).toContain(
       ".element-role-container.element-state-internal .element-surface { fill: #3B1F5A;",
     );
+
+    const externalFont = await compileArchitectureDiagram({
+      ...request,
+      svg: {
+        embeddedFontFaces: [
+          {
+            family: "IBM Plex Sans",
+            style: "normal",
+            weight: 400,
+            format: "woff2",
+            dataUrl: "https://fonts.invalid/plex.woff2",
+          },
+        ],
+      },
+    });
+    expect(externalFont.valid).toBe(false);
+    expect(externalFont.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-SVG-009",
+    );
+  });
+
+  it("gives the built-in Person a portrait layout footprint", () => {
+    const contextView = signalGardenViews.find(
+      (view): view is Extract<ArchitectureView, { kind: "system-context" }> =>
+        view.kind === "system-context",
+    )!;
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const person = diagram.layoutRequest.nodes.find(
+      ({ id }) => id === "element:grower",
+    );
+    const system = diagram.layoutRequest.nodes.find(
+      ({ id }) => id === "element:signal-garden",
+    );
+
+    expect(person).toMatchObject({ width: 210, height: 190 });
+    expect(system).toMatchObject({ width: 250, height: 132 });
+    expect(diagram.nodes.find(({ id }) => id === "element:grower")?.shapeId).toBe(
+      "c4ml-person",
+    );
+
+    const personShape = builtInShapes.find(({ id }) => id === "c4ml-person")!;
+    expect(personShape.ports).toEqual({
+      north: { x: 50, y: 0 },
+      east: { x: 100, y: 50 },
+      south: { x: 50, y: 100 },
+      west: { x: 0, y: 50 },
+    });
+    expect(
+      personShape.primitives.map(({ kind, paint }) => ({ kind, paint })),
+    ).toEqual([
+      { kind: "rectangle", paint: "surface" },
+      { kind: "ellipse", paint: "accent" },
+      { kind: "rectangle", paint: "accent" },
+    ]);
   });
 
   it("reports an impossible fixed orthogonal route as a compiler diagnostic", async () => {
@@ -261,6 +369,45 @@ describe("diagram compiler pipeline", () => {
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: "C4ML-ROUTE-016" }),
+      ]),
+    );
+  });
+
+  it("rejects two relationships assigned to one exclusive corridor lane", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        corridors: [
+          {
+            id: "exclusive-east",
+            orientation: "vertical",
+            coordinate: 790,
+            lanes: 2,
+            laneSpacing: 18,
+          },
+        ],
+        controls: [
+          {
+            relationshipId: "api-enqueues-notice",
+            policy: "guided",
+            corridor: { corridorId: "exclusive-east", lane: 1 },
+          },
+          {
+            relationshipId: "api-writes-ledger",
+            policy: "guided",
+            corridor: { corridorId: "exclusive-east", lane: 1 },
+          },
+        ],
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.svg).toBeUndefined();
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "C4ML-ROUTE-023" }),
       ]),
     );
   });

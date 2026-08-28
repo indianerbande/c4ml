@@ -1,0 +1,535 @@
+<div class="workbench-shell">
+  <header class="title-bar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">C4</span>
+      <span>
+        <strong>C4ML</strong>
+        <small>{{ i18n.t("app.subtitle") }}</small>
+      </span>
+    </div>
+
+    <button
+      type="button"
+      class="command-center"
+      aria-haspopup="dialog"
+      (click)="openCommandPalette()"
+    >
+      <span aria-hidden="true">›_</span>
+      <strong>{{ i18n.t("command.search") }}</strong>
+      <kbd>⇧⌘P</kbd>
+    </button>
+
+    <div class="title-actions">
+      @if (canUndoWizard()) {
+        <button type="button" class="title-action" (click)="undoWizard()">
+          {{ i18n.t("wizard.undo") }}
+        </button>
+      }
+      <button type="button" class="primary-action" (click)="startWizard()">
+        {{ i18n.t("wizard.open") }}
+      </button>
+      <div class="worker-state" [attr.data-phase]="compiler.state().phase">
+        <span class="state-dot" aria-hidden="true"></span>
+        <span aria-live="polite">{{ statusLabel() }}</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="workbench-main">
+    <nav class="activity-bar" [attr.aria-label]="i18n.t('area.label')">
+      <button
+        type="button"
+        [class.is-active]="activeActivity() === 'files'"
+        [attr.aria-current]="activeActivity() === 'files' ? 'page' : null"
+        data-activity="files"
+        [attr.aria-label]="i18n.t('area.files')"
+        [title]="i18n.t('area.files')"
+        (click)="selectActivity('files')"
+      >
+        <span aria-hidden="true">F</span>
+      </button>
+      <button
+        type="button"
+        [class.is-active]="activeActivity() === 'diagrams'"
+        [attr.aria-current]="activeActivity() === 'diagrams' ? 'page' : null"
+        data-activity="diagrams"
+        [attr.aria-label]="i18n.t('area.diagrams')"
+        [title]="i18n.t('area.diagrams')"
+        (click)="selectActivity('diagrams')"
+      >
+        <span aria-hidden="true">D</span>
+      </button>
+      <button
+        type="button"
+        [class.is-active]="activeActivity() === 'export'"
+        [attr.aria-current]="activeActivity() === 'export' ? 'page' : null"
+        data-activity="export"
+        [attr.aria-label]="i18n.t('area.output')"
+        [title]="i18n.t('area.output')"
+        (click)="selectActivity('export')"
+      >
+        <span aria-hidden="true">X</span>
+      </button>
+      <button
+        type="button"
+        [class.is-active]="activeActivity() === 'help'"
+        [attr.aria-current]="activeActivity() === 'help' ? 'page' : null"
+        data-activity="help"
+        [attr.aria-label]="i18n.t('area.help')"
+        [title]="i18n.t('area.help')"
+        (click)="selectActivity('help')"
+      >
+        <span aria-hidden="true">?</span>
+      </button>
+      <span class="activity-spacer"></span>
+      <button
+        #settingsButton
+        type="button"
+        [attr.aria-label]="i18n.t('area.settings')"
+        [title]="i18n.t('area.settings')"
+        (click)="openSettings()"
+      >
+        <span aria-hidden="true">⚙</span>
+      </button>
+    </nav>
+
+    <aside class="side-bar" [attr.aria-label]="i18n.t('sidebar.label')">
+      @switch (activeActivity()) {
+        @case ("files") {
+          <header>
+            <p>{{ i18n.t("files.workspace") }}</p>
+            <h2>{{ i18n.t("area.files") }}</h2>
+          </header>
+          <section class="side-section">
+            <h3>{{ i18n.t("files.openEditors") }}</h3>
+            <button type="button" class="tree-row is-selected">
+              <span class="file-badge" aria-hidden="true">C4</span>
+              <span>{{ documentName() }}</span>
+              @if (documentDirty()) {
+                <i [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+              }
+            </button>
+          </section>
+          <section class="side-section">
+            <h3>{{ i18n.t("files.architecture") }}</h3>
+            <div class="tree-row folder-row">
+              <span class="tree-caret" aria-hidden="true">⌄</span>
+              <strong>{{ i18n.t("files.workspaceName") }}</strong>
+            </div>
+            <div class="tree-row nested-row">
+              <span class="file-badge" aria-hidden="true">C4</span>
+              <span>{{ documentName() }}</span>
+            </div>
+          </section>
+          @if (desktopAvailable) {
+            <section class="side-section quick-actions">
+              <h3>{{ i18n.t("files.actions") }}</h3>
+              <button type="button" (click)="openDocument()">{{ i18n.t("files.open") }}</button>
+              <button type="button" (click)="saveDocument('save')">{{ i18n.t("files.save") }}</button>
+              <button type="button" (click)="saveDocument('save-as')">{{ i18n.t("files.saveAs") }}</button>
+            </section>
+          }
+        }
+
+        @case ("diagrams") {
+          <header>
+            <p>{{ i18n.t("diagrams.architecture") }}</p>
+            <h2>{{ i18n.t("area.diagrams") }}</h2>
+          </header>
+          <section class="side-section diagram-list">
+            <h3>{{ i18n.t("diagrams.available") }}</h3>
+            @for (view of compiler.state().views; track view.id) {
+              <button
+                type="button"
+                class="diagram-row"
+                [class.is-selected]="compiler.state().activeViewId === view.id"
+                (click)="selectView(view.id)"
+              >
+                <span aria-hidden="true">{{ $index + 1 }}</span>
+                <strong>{{ view.title }}</strong>
+                <small>{{ view.kind }}</small>
+              </button>
+            } @empty {
+              <p class="side-empty">{{ i18n.t("diagrams.empty") }}</p>
+            }
+          </section>
+          <section class="side-section quick-actions">
+            <h3>{{ i18n.t("diagrams.help") }}</h3>
+            <button type="button" (click)="startWizard()">
+              {{ i18n.t("diagrams.create") }}
+            </button>
+          </section>
+        }
+
+        @case ("export") {
+          <header>
+            <p>{{ i18n.t("output.current") }}</p>
+            <h2>{{ i18n.t("area.output") }}</h2>
+          </header>
+          <section class="export-card">
+            <span>{{ i18n.t("output.vector") }}</span>
+            <strong>SVG</strong>
+            <p>{{ i18n.t("output.svgDescription") }}</p>
+            <button
+              type="button"
+              (click)="exportSvg()"
+              [disabled]="compiler.state().phase !== 'valid'"
+            >
+              {{ i18n.t("output.exportSvg") }}
+            </button>
+          </section>
+          @if (desktopAvailable) {
+            <section class="export-card">
+              <span>{{ i18n.t("output.image") }}</span>
+              <strong>PNG</strong>
+              <p>{{ i18n.t("output.pngDescription") }}</p>
+              <label>
+                <span>{{ i18n.t("output.resolution") }}</span>
+                <select
+                  [value]="pngScale()"
+                  (change)="onPngScaleSelection($event)"
+                >
+                  <option value="1">1×</option>
+                  <option value="2">2×</option>
+                  <option value="3">3×</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                class="png-export-button"
+                (click)="exportPng()"
+                [disabled]="compiler.state().phase !== 'valid'"
+              >
+                {{ i18n.t("output.exportPng") }}
+              </button>
+            </section>
+          }
+        }
+
+        @case ("help") {
+          <header>
+            <p>{{ i18n.t("help.eyebrow") }}</p>
+            <h2>{{ i18n.t("help.title") }}</h2>
+          </header>
+          <section class="side-section help-search">
+            <label>
+              <span class="sr-only">{{ i18n.t("help.search") }}</span>
+              <input
+                type="search"
+                [value]="helpQuery()"
+                (input)="updateHelpQuery($event)"
+                [placeholder]="i18n.t('help.search')"
+                [attr.aria-label]="i18n.t('help.search')"
+              />
+            </label>
+          </section>
+          <section class="side-section context-help">
+            <h3>{{ i18n.t("help.atCursor") }}</h3>
+            <button type="button" (click)="openContextHelp()">
+              <span aria-hidden="true">›_</span>
+              <strong>{{ contextHelpTopic().title }}</strong>
+              <small>{{ i18n.t("help.atCursorHint") }}</small>
+            </button>
+          </section>
+          <nav class="help-tree" [attr.aria-label]="i18n.t('help.title')">
+            @for (category of filteredHelpCategories(); track category.id) {
+              <details [open]="helpQuery().trim().length > 0 || category.id === 'start'">
+                <summary>{{ category.title }}</summary>
+                @for (topic of category.topics; track topic.id) {
+                  <button
+                    type="button"
+                    [class.is-selected]="activeHelpTopicId() === topic.id && rightPaneMode() === 'help'"
+                    (click)="openHelpTopic(topic.id)"
+                  >
+                    <strong>{{ topic.title }}</strong>
+                    <small>{{ topic.summary }}</small>
+                  </button>
+                }
+              </details>
+            } @empty {
+              <p class="side-empty">{{ i18n.t("help.noResults") }}</p>
+            }
+          </nav>
+        }
+      }
+    </aside>
+
+    <main class="editor-area">
+      <div class="editor-groups">
+        <section class="editor-group source-group" aria-labelledby="source-heading">
+          <div class="tab-strip" role="tablist" [attr.aria-label]="i18n.t('editor.sourceEditors')">
+            <button type="button" class="editor-tab is-active" role="tab" aria-selected="true">
+              <span class="file-badge" aria-hidden="true">C4</span>
+              <span id="source-heading">{{ documentName() }}</span>
+              @if (documentDirty()) {
+                <i class="dirty-indicator" [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+              }
+            </button>
+            <span class="tab-fill"></span>
+            <span class="language-badge">draft-1</span>
+          </div>
+
+          <c4ml-monaco-source-editor
+            #sourceEditor
+            class="source-editor-host"
+            [value]="source()"
+            [diagnostics]="compiler.state().diagnostics"
+            [completionProvider]="provideCompletions"
+            [highlightProvider]="provideHighlights"
+            [colorScheme]="preferences.effectiveColorScheme()"
+            [editorFontFamily]="preferences.editorFontFamilyCss()"
+            [editorFontLigatures]="preferences.editorFontLigatures()"
+            [editorFontSize]="preferences.editorFontSize()"
+            (valueChanged)="onSourceChange($event)"
+            (selectionChanged)="onSourceSelection($event)"
+          />
+
+          <aside
+            class="editor-status"
+            [attr.data-completion-phase]="compiler.completion().phase"
+            aria-live="polite"
+          >
+            <span>
+              <button type="button" (click)="triggerSuggestions()">
+                {{ i18n.t("editor.suggestions") }}
+              </button>
+              <small>Ctrl+Space</small>
+            </span>
+            @if (compiler.completion().phase === "loading") {
+              <span>{{ i18n.t("editor.checkingContext") }}</span>
+            } @else if (compiler.completion().phase === "failed") {
+              <span class="completion-error">{{ compiler.completion().message }}</span>
+            } @else if (fileOperationLabel(); as fileLabel) {
+              <span class="file-operation-label">{{ fileLabel }}</span>
+            } @else {
+              <span>{{ i18n.t("editor.suggestionCount", { count: compiler.completion().candidates.length }) }}</span>
+            }
+          </aside>
+        </section>
+
+        <section class="editor-group preview-group" aria-labelledby="preview-heading">
+          <div class="tab-strip preview-tab-strip" role="tablist">
+            <button
+              type="button"
+              class="editor-tab"
+              role="tab"
+              [class.is-active]="rightPaneMode() === 'diagram'"
+              [attr.aria-selected]="rightPaneMode() === 'diagram'"
+              (click)="showDiagram()"
+            >
+              <span class="diagram-tab-mark" aria-hidden="true"></span>
+              <span id="preview-heading">{{ activeViewTitle() }}</span>
+            </button>
+            <button
+              type="button"
+              class="editor-tab help-tab"
+              role="tab"
+              [class.is-active]="rightPaneMode() === 'help'"
+              [attr.aria-selected]="rightPaneMode() === 'help'"
+              (click)="openHelpTopic(activeHelpTopicId())"
+            >
+              <span class="help-tab-mark" aria-hidden="true">?</span>
+              <span>{{ i18n.t("help.handbookTab") }} · {{ activeHelpTopic().title }}</span>
+            </button>
+            <span class="tab-fill"></span>
+            @if (rightPaneMode() === "diagram") {
+              <div class="preview-actions" [attr.aria-label]="i18n.t('preview.controls')">
+              @if (compiler.state().views.length > 1) {
+                <label class="view-picker">
+                  <span class="sr-only">{{ i18n.t("preview.selectView") }}</span>
+                  <select
+                    [value]="compiler.state().activeViewId ?? ''"
+                    (change)="onViewSelection($event)"
+                    [attr.aria-label]="i18n.t('preview.selectView')"
+                  >
+                    @for (view of compiler.state().views; track view.id) {
+                      <option [value]="view.id">{{ view.title }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              <div class="zoom-controls">
+                <button type="button" (click)="zoomOut()" [attr.aria-label]="i18n.t('preview.zoomOut')">−</button>
+                <button type="button" (click)="fitPreview()" [title]="i18n.t('preview.fit')">
+                  {{ zoomLabel() }}
+                </button>
+                <button type="button" (click)="zoomIn()" [attr.aria-label]="i18n.t('preview.zoomIn')">+</button>
+              </div>
+              <button
+                type="button"
+                class="debug-button"
+                [class.is-active]="routingDebugEnabled()"
+                [attr.aria-pressed]="routingDebugEnabled()"
+                (click)="toggleRoutingDebug()"
+                [title]="i18n.t('preview.routeGeometry')"
+              >
+                {{ i18n.t("preview.routes") }}
+              </button>
+              </div>
+            }
+          </div>
+
+          @if (rightPaneMode() === "help") {
+            <c4ml-help-article
+              [topic]="activeHelpTopic()"
+              [availabilityLabel]="i18n.t('help.available')"
+              role="tabpanel"
+              [attr.aria-label]="i18n.t('help.articleLabel')"
+            />
+          } @else {
+            <div class="preview-stage" role="tabpanel">
+            @if (previewUrl(); as url) {
+              <img
+                class="diagram"
+                [class.is-navigable]="compiler.state().phase === 'valid'"
+                [src]="url"
+                [style.width]="previewSize()"
+                [style.height]="previewSize()"
+                (click)="onPreviewClick($event)"
+                [alt]="i18n.t('preview.alt')"
+                [title]="i18n.t('preview.reveal')"
+              />
+            } @else {
+              <div class="empty-preview">
+                <span class="empty-glyph" aria-hidden="true"></span>
+                <strong>{{ i18n.t("preview.building") }}</strong>
+                <span>{{ i18n.t("preview.worker") }}</span>
+              </div>
+            }
+
+            @if (
+              compiler.state().phase === "invalid" &&
+              compiler.state().lastValidSvg !== undefined
+            ) {
+              <p class="stale-note">{{ i18n.t("preview.stale") }}</p>
+            }
+
+            @if (selectedLabel(); as label) {
+              <p class="selection-note" aria-live="polite">
+                {{ i18n.t("preview.selected", { kind: selectedKindLabel(), label }) }}
+              </p>
+            }
+            </div>
+          }
+        </section>
+      </div>
+
+      @if (bottomPanelOpen()) {
+        <section class="bottom-panel" [attr.aria-label]="i18n.t('panel.label')">
+          <header class="panel-tabs">
+            <button
+              type="button"
+              [class.is-active]="bottomPanel() === 'problems'"
+              (click)="showBottomPanel('problems')"
+            >
+              {{ i18n.t("panel.problems") }} <span>{{ compiler.state().diagnostics.length }}</span>
+            </button>
+            @if (selectedRoute() !== undefined) {
+              <button
+                type="button"
+                [class.is-active]="bottomPanel() === 'route'"
+                (click)="showBottomPanel('route')"
+              >
+                {{ i18n.t("panel.routeDetails") }}
+              </button>
+            }
+            <span></span>
+            <button type="button" class="panel-close" (click)="toggleBottomPanel()" [attr.aria-label]="i18n.t('panel.hide')">×</button>
+          </header>
+
+          @if (bottomPanel() === "route") {
+            @if (selectedRoute(); as route) {
+              <div class="route-inspector">
+                <div class="route-inspector-title">
+                  <span>{{ i18n.t("panel.effectiveRoute", { kind: selectedKindLabel() }) }}</span>
+                  <strong>{{ route.label }}</strong>
+                </div>
+                <dl>
+                  <div><dt>{{ i18n.t("panel.policy") }}</dt><dd>{{ route.policy }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.style") }}</dt><dd>{{ route.style }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.ports") }}</dt><dd>{{ route.sourcePort.side }} → {{ route.targetPort.side }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.points") }}</dt><dd>{{ route.points.length }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.labelSegment") }}</dt><dd>{{ route.labelSegment + 1 }}</dd></div>
+                  @if (route.corridor; as corridor) {
+                    <div><dt>{{ i18n.t("panel.corridor") }}</dt><dd>{{ corridor.id }} · {{ i18n.t("panel.lane") }} {{ corridor.lane + 1 }} / {{ corridor.lanes }}</dd></div>
+                  }
+                </dl>
+              </div>
+            }
+          } @else {
+            <div class="diagnostics" [class.has-errors]="compiler.state().diagnostics.length > 0" aria-live="polite">
+              @if (compiler.state().diagnostics.length === 0) {
+                <p class="diagnostics-empty">{{ i18n.t("panel.noProblems") }}</p>
+              } @else {
+                <ol>
+                  @for (diagnostic of compiler.state().diagnostics; track $index) {
+                    <li [attr.data-severity]="diagnostic.severity">
+                      <button type="button" (click)="onDiagnosticSelected(diagnostic)" [disabled]="diagnostic.source === undefined">
+                        <code>{{ diagnostic.code }}</code>
+                        <p>{{ diagnostic.message }}</p>
+                        @if (diagnostic.source; as sourceLocation) {
+                          <small>{{ i18n.t("panel.location", { line: sourceLocation.start.line + 1, column: sourceLocation.start.column + 1 }) }}</small>
+                        }
+                      </button>
+                    </li>
+                  }
+                </ol>
+              }
+            </div>
+          }
+        </section>
+      }
+    </main>
+  </div>
+
+  <footer class="status-bar">
+    <button type="button" (click)="openCommandPalette()">C4ML · draft-1</button>
+    <span>{{ documentName() }}@if (documentDirty()) { · {{ i18n.t("status.modified") }}}</span>
+    <span class="status-spacer"></span>
+    <button type="button" (click)="showBottomPanel('problems')">
+      {{ i18n.t("status.problemCount", { count: compiler.state().diagnostics.length }) }}
+    </button>
+    <button type="button" (click)="selectActivity('diagrams')">{{ activeViewTitle() }}</button>
+    <span>{{ zoomLabel() }}</span>
+  </footer>
+</div>
+
+@if (commandPaletteOpen()) {
+  <div class="command-backdrop" (click)="closeCommandPalette()">
+    <section class="command-palette" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('command.palette')" (click)="$event.stopPropagation()">
+      <label>
+        <span aria-hidden="true">›</span>
+        <input
+          #commandInput
+          type="text"
+          [placeholder]="i18n.t('command.type')"
+          [value]="commandQuery()"
+          (input)="updateCommandQuery($event)"
+          (keydown)="onCommandInputKeydown($event)"
+          [attr.aria-label]="i18n.t('command.search')"
+        />
+      </label>
+      <div class="command-results" role="listbox" [attr.aria-label]="i18n.t('command.available')">
+        @for (command of filteredCommands(); track command.id) {
+          <button type="button" role="option" (click)="executeCommand(command)">
+            <span><small>{{ command.category }}</small>{{ command.label }}</span>
+            @if (command.shortcut) { <kbd>{{ command.shortcut }}</kbd> }
+          </button>
+        } @empty {
+          <p>{{ i18n.t("command.none") }}</p>
+        }
+      </div>
+    </section>
+  </div>
+}
+
+@if (wizardOpen()) {
+  <c4ml-system-context-wizard
+    (applied)="applyWizard($event)"
+    (cancelled)="cancelWizard()"
+  />
+}
+
+@if (settingsOpen()) {
+  <c4ml-settings-panel (closed)="closeSettings()" />
+}

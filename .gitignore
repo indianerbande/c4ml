@@ -3,6 +3,8 @@ node_modules/
 dist/
 build/
 coverage/
+.angular/
 .DS_Store
 *.tsbuildinfo
 /spikes/language-langium/src/generated/
+/packages/language-c4ml/src/generated/

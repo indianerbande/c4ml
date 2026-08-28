@@ -1,0 +1,33 @@
+{
+  "name": "@c4ml/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "ng build c4ml-editor",
+    "start": "ng serve c4ml-editor",
+    "test": "tsc -p tsconfig.test.json --noEmit && vitest run --exclude 'build/**'"
+  },
+  "dependencies": {
+    "@angular/common": "22.1.4",
+    "@angular/core": "22.1.4",
+    "@angular/platform-browser": "22.1.4",
+    "@c4ml/compiler-core": "workspace:*",
+    "@c4ml/desktop-contract": "workspace:*",
+    "@c4ml/font-editor-mono": "workspace:*",
+    "@c4ml/font-ibm-plex": "workspace:*",
+    "@c4ml/language-c4ml": "workspace:*",
+    "@c4ml/layout-elk": "workspace:*",
+    "elkjs": "0.12.0",
+    "monaco-editor": "0.56.0",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "22.1.6",
+    "@angular/cli": "22.1.6",
+    "@angular/compiler": "22.1.4",
+    "@angular/compiler-cli": "22.1.4"
+  }
+}

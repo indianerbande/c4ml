@@ -1,0 +1,213 @@
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/ibm-plex/sans/IBMPlexSans-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/ibm-plex/sans/IBMPlexSans-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/ibm-plex/sans/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/ibm-plex/sans/IBMPlexSans-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/ibm-plex/sans/IBMPlexSans-Italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex/mono/IBMPlexMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Fira Code";
+  src: url("/fonts/editor-mono/fira-code/FiraCode-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Hack";
+  src: url("/fonts/editor-mono/hack/hack-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/fonts/editor-mono/source-code-pro/SourceCodePro-Regular.ttf.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Intel One Mono";
+  src: url("/fonts/editor-mono/intel-one-mono/IntelOneMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Inconsolata";
+  src: url("/fonts/editor-mono/inconsolata/Inconsolata-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Cascadia Code";
+  src: url("/fonts/editor-mono/cascadia-code/CascadiaCode-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex/mono/IBMPlexMono-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/ibm-plex/mono/IBMPlexMono-Italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+}
+
+:root {
+  color-scheme: light;
+  font-size: var(--c4ml-interface-font-size, 10px);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #17263d;
+  --muted: #65758b;
+  --line: #d9e1ea;
+  --line-strong: #c2ceda;
+  --canvas: #eef3f8;
+  --panel: #ffffff;
+  --surface-subtle: #f8fafc;
+  --navigation-bg: #f3f6f9;
+  --app-bar-bg: rgba(255, 255, 255, 0.94);
+  --control-bg: #ffffff;
+  --control-ink: #40566b;
+  --control-hover: #edf5f8;
+  --accent: #157ca3;
+  --accent-strong: #126684;
+  --accent-border: #b8d9e2;
+  --accent-soft: #dff3fa;
+  --focus-ring: rgba(21, 124, 163, 0.2);
+  --source: #fbfcfe;
+  --source-panel: #f4f7fa;
+  --source-ink: #17263d;
+  --source-muted: #65758b;
+  --source-border: #c2ceda;
+  --source-status: #eef3f8;
+  --source-action: #40566b;
+  --source-action-hover: #dceff5;
+  --preview-stage: #f4f7fa;
+  --preview-grid-dot: #cdd7e2;
+  --panel-shadow: 0 12px 35px rgba(35, 57, 82, 0.08);
+  --app-bar-shadow: 0 2px 14px rgba(26, 44, 68, 0.06);
+  --dialog-shadow: 0 28px 80px rgba(15, 28, 44, 0.3);
+  --backdrop: rgba(20, 34, 50, 0.48);
+  --success: #187a62;
+  --danger: #b53a4f;
+  --warning: #9a6014;
+}
+
+:root[data-color-scheme="dark"] {
+  color-scheme: dark;
+  --ink: #e4edf6;
+  --muted: #9aabba;
+  --line: #304458;
+  --line-strong: #40566b;
+  --canvas: #0d1722;
+  --panel: #172536;
+  --surface-subtle: #1b2b3d;
+  --navigation-bg: #132131;
+  --app-bar-bg: rgba(19, 32, 46, 0.96);
+  --control-bg: #1c2d3f;
+  --control-ink: #d6e2ed;
+  --control-hover: #263d51;
+  --accent: #4cabc1;
+  --accent-strong: #318ba4;
+  --accent-border: #356579;
+  --accent-soft: #173c49;
+  --focus-ring: rgba(76, 171, 193, 0.25);
+  --source: #0f1b29;
+  --source-panel: #152638;
+  --source-ink: #e4eef8;
+  --source-muted: #91a7bb;
+  --source-border: #2d455a;
+  --source-status: #122638;
+  --source-action: #d8e4ef;
+  --source-action-hover: #204058;
+  --preview-stage: #111e2b;
+  --preview-grid-dot: #314355;
+  --panel-shadow: 0 12px 35px rgba(0, 0, 0, 0.24);
+  --app-bar-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
+  --dialog-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+  --backdrop: rgba(3, 8, 13, 0.68);
+  --success: #55b89d;
+  --danger: #ee8799;
+  --warning: #e2ae60;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+button,
+textarea {
+  font: inherit;
+}

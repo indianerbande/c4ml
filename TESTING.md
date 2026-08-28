@@ -1,8 +1,8 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.9
+Status: Draft 0.23
 
-Date: 2026-08-27
+Date: 2026-08-28
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
@@ -14,9 +14,21 @@ commands are:
 - `pnpm run build` for generated-language and TypeScript build validation;
 - `pnpm run check:browser` for in-memory browser bundle validation;
 - `pnpm run typecheck` for source and test type checking;
-- `pnpm run test` for the current semantic, view, and adapter test suite; and
-- `pnpm run check` for the complete current gate; and
-- `pnpm run demo:render` for the ignored visual reference export.
+- `pnpm run test` for the current semantic, view, adapter, language, and editor
+  test suite;
+- `pnpm run check:editor-production` for the accepted Monaco and ELK.js
+  versions, version-sensitive integration points, the unmodified packaged ELK
+  worker, reviewed IBM Plex assets, and packaged license notices;
+- `pnpm run check:desktop-production` for pinned desktop dependencies, secure
+  main/preload boundaries, CSP, and required packaged editor resources;
+- `pnpm run check` for the complete current gate;
+- `pnpm run editor:build` for the production-mode Angular editor build;
+- `pnpm run desktop:smoke` for the built Electron shell and live compiler
+  worker;
+- `pnpm run desktop:package` for the unpacked current-platform application;
+- `pnpm run desktop:make` for current-platform installer/archive artifacts;
+- `pnpm run demo:render` for the ignored visual reference export; and
+- `pnpm run c4ml -- version` for the built experimental CLI entry point.
 
 All commands run locally after dependency installation and require no compiler
 service or runtime network access.
@@ -33,8 +45,146 @@ Group parentage, automatic/guided/fixed route policies, fixed-route rejection,
 explicit source/target Ports, scene-owned Arrowheads, safe custom-shape
 validation and assignment, renderer-neutral scene construction, semantic theme
 roles and presets, stable SVG, ELK absolute compound geometry, SVG-to-PNG
-rasterization, and a visually inspected Signal Garden Container View. This is
-not yet a golden suite or complete rendering evidence for all seven views.
+rasterization, validated embedded WOFF2 faces, controlled TTF rendering with
+system fonts disabled, and a visually inspected Signal Garden Container View.
+This is not yet a golden suite or complete rendering evidence for all seven
+views.
+
+The experimental language package adds a narrow integration suite for the
+original `hello-context.c4ml`, `hello-container.c4ml`, and
+`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and `hello-deployment.c4ml`
+slices. It verifies parsing and explicit AST-to-domain lowering, typed ownership
+and required properties from Software System through Code Element, relationship
+technology and protocols, all four static view scopes, named Landscape scope,
+ordered and parallel Dynamic Interactions, Deployment Environments, nested
+Deployment Nodes, Infrastructure Nodes, static instances, deployment
+relationships, all seven view types, static Relationship references,
+environment-scoped completion references, exact source locations, stable
+diagnostics for unresolved references and invalid property cardinality,
+semantic stability across comments and whitespace, view-local route lowering,
+absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
+label placement, policy-combination diagnostics, route-context completion,
+browser bundling without Node.js polyfills, and deterministic SVG through the
+shared compiler pipeline. This evidence does not claim coverage of the complete
+preview grammar.
+
+The Angular editor foundation adds typed worker-runtime, editor-session, and
+source-editor adapter evidence. It verifies deterministic source-to-SVG
+compilation, invalid-source diagnostics, monotonic request identifiers,
+rejection of deliberately out-of-order results, retention of the last valid
+SVG, context-valid completion ranges, exact completion and marker translation,
+lexer-owned syntax-span classification, semantic-token delta encoding, stale
+asynchronous completion and highlight settlement, deterministic Context and
+Container wizard source, normal compilation of that source, explicit Container
+connections and protocols, cancel behavior, and explicit undo. The
+worker and navigation-helper suites additionally verify deterministic
+source/scene/SVG mappings, smallest-range source selection, smallest-bound
+preview hit testing, object-fit coordinate conversion, last-valid navigation
+retention, route-control source mapping, polyline-distance hit testing with
+node/route/boundary precedence, effective corridor geometry, and preview-only
+node, Route, Port, route-label, and corridor highlighting plus distinct detail
+navigation targets. The production-mode Angular build
+proves that compiler services and Monaco's
+generic editor service are separate worker chunks, that Monaco's runtime is
+lazy, and that the reviewed ELK worker and license are packaged locally.
+Browser verification covers the two-pane layout, lexer-owned syntax
+highlighting, ELK-produced live preview, an
+in-place context-only completion popup, exact candidate application, inline
+diagnostic markers, diagnostic-to-source focus, invalid edit diagnostics,
+keyboard undo/redo, visible last-valid-preview state, wizard/Monaco source
+synchronization, visually inspected Component, Code, System Landscape,
+Dynamic, and Deployment previews, view selection, zoom, the guided wizard,
+generated-source review, apply, and undo. The production bundled adapter
+compiles executable slices for all seven view types in worker-runtime tests;
+the current browser-specific ELK pass visually covers a System Context with two
+guided routes, distinct target Ports, a named corridor and label shifts, plus a
+nested Deployment View. Route-block completion was inspected with the active
+policy and existing properties. Bidirectional navigation was visually inspected:
+selecting the `garden-pulse` declaration highlighted only Garden Pulse, and
+clicking Sensor Post in the preview selected and revealed its complete source
+declaration. Relationship/Route navigation was also inspected in both
+directions: clicking the corridor-guided observation path selected its semantic
+Relationship and displayed its effective routing data; selecting the other
+view-local `route` block highlighted only its effective path and inspector.
+The Route Debug toggle removed helper points, Ports, label anchor, and corridor
+lanes while retaining selection. The browser accessibility tree was inspected;
+a real screen-reader pass is not yet complete. Typography verification confirms
+that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
+including regular and bold faces. The preview was visually inspected at 80,
+100, and 120 percent; its rendered box changed size while computed CSS
+`transform` remained `none`.
+
+The English workbench and the live German switch were visually inspected in the
+packaged macOS application. The Settings panel, activity and output areas,
+status and accessibility copy, command surface, and first wizard step changed
+without layout damage; authored source and diagram labels remained unchanged.
+The complete owned native menu tree, including File, Edit, View, Window, and
+their standard actions, changed to German in the same session, and the German
+preference survived an application relaunch. The local inspection state was
+returned to English afterward.
+
+The local workbench-preference suite verifies English language defaulting,
+English/German round trips, backward-compatible version-one records,
+field-level fallback, malformed JSON and unsupported-version fallback, bounded
+half-pixel interface and editor font sizes, effective system/light/dark resolution, and controlled
+font-stack mapping. Localization-contract tests verify both catalogues and
+interpolation, while command tests verify search in each language. Browser and
+desktop verification MUST also cover live language and scheme changes, the
+document root language attribute, interface typography changes at minimum,
+default, and maximum size without changing Monaco or canonical SVG, every
+packaged Monaco font choice, font remeasurement after loading, persistence across
+relaunch, reset, unavailable storage, modal focus containment and return,
+Escape dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
+changes neither dirty source nor change canonical SVG output.
+
+Editor-font tests MUST additionally verify the default-enabled ligature
+preference, explicit disabling, backward-compatible loading of older version-one
+records, family-specific `ss01` and `dlig` mappings, and unchanged source text
+and canonical SVG while ligatures are toggled.
+
+The Monaco-theme suite MUST verify explicit normal, highlighted, selected, icon,
+and focus colors for both workbench schemes. Normal, highlighted, and selected
+text/background pairs require a computed contrast ratio of at least 4.5:1.
+Browser inspection MUST open the completion list in both light and dark schemes
+and confirm the focused row remains legible.
+
+The local-handbook suite MUST verify that every help-topic identifier has
+English and German content, search is deterministic in both languages, only
+the executable `draft-1` set is marked available, and examples contain no
+external asset reference. Language-package tests MUST map representative model,
+relationship, view, deployment, layout, and route cursor positions to stable
+topic identifiers and reject offsets outside the source. Worker and editor-
+session tests MUST validate the versioned request/response boundary and reject
+stale cursor-context responses. Browser verification MUST cover Help activity
+navigation, expandable chapters, localized search, the cursor topic, `F1`,
+command-palette access, diagram/Handbook tab switching, keyboard focus, and
+legibility in both light and dark schemes. Help navigation MUST leave source,
+dirty state, and canonical SVG unchanged.
+
+The Electron desktop foundation adds unit and boundary evidence for its
+versioned bridge, runtime request validators, opaque document handles, filename
+normalization, local protocol traversal rejection, and hardened web
+preferences. It also validates the bounded English/German UI-language message,
+bridge, menu, dialog, and close-warning contract. The production boundary check pins the reviewed Electron/Forge
+stack and licenses, verifies that the preload has no filesystem access, checks
+the local-only CSP, and requires the editor, worker, fonts, resvg native binary,
+and notices before packaging. A smoke test from the packaged macOS `.app`
+verifies the bridge, Monaco host, valid compiler state, preview, controlled
+Sans/Mono typography, and in-memory native PNG rasterization.
+The application was
+visually inspected as a native two-pane workbench with its native menu. The
+macOS application passes strict deep code-signature verification after ad-hoc
+signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
+testing. Native file-dialog interaction and the Windows installer remain
+manual/platform-specific evidence.
+
+The experimental CLI suite exercises successful validation, source-located JSON
+diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
+stable view selection, paths containing spaces and non-ASCII characters,
+invocation with a working directory outside the repository, and distinct usage,
+source, and environment exit classes. The suite also renders selected Dynamic
+and Deployment Views. A direct root-level smoke invocation produced Deployment
+SVG and PNG through the built entry point; the PNG was visually inspected.
 
 ## 1. Testing principles
 
@@ -193,6 +343,7 @@ Routing tests MUST cover:
 - relative and absolute waypoints;
 - named horizontal and vertical corridors;
 - deterministic lane assignment and explicit lane selection;
+- rejection when two relationships select one exclusive lane;
 - locked segments combined with automatically completed segments;
 - hard and soft avoidance regions;
 - intentional shared segments and junctions only when explicitly authored;
@@ -226,9 +377,15 @@ every directed Route has exactly one Arrowhead whose tip overlaps its target
 Port by the documented amount. The SVG renderer MUST consume that geometry
 rather than calculate a second arrowhead independently.
 
+Relationship-label tests MUST prove that label clearance interrupts its Route
+without producing a visible banner, renders below elements and Arrowheads, and
+never obscures a node surface even when label bounds approach a Port.
+
 Shape tests MUST verify:
 
 - the built-in Person shape is distinct from the default box shape;
+- its type, head-and-shoulders pictogram, title, and description occupy distinct
+  vertical regions without overlap;
 - all definitions use a 100 x 100 normalized canvas;
 - content boxes and primitive geometry remain finite and inside that canvas;
 - all four cardinal Ports exist on their matching canvas sides;
@@ -257,7 +414,8 @@ SVG tests MUST include:
 - unique IDs and valid internal references;
 - correct `viewBox` and bounds;
 - selectable text where required;
-- title and description metadata; and
+- title and description metadata;
+- validated embedded WOFF2 faces with no external font URL; and
 - equivalent semantic content to the scene graph.
 
 Raw SVG byte snapshots SHOULD be avoided until canonical serialization is
@@ -271,7 +429,7 @@ PNG tests MUST verify:
 - transparent and configured backgrounds;
 - no clipping;
 - consistency with SVG bounds;
-- use of controlled fonts; and
+- explicit controlled TTF files with system-font discovery disabled; and
 - visually equivalent content to the SVG source.
 
 On the reference platform, deterministic PNGs SHOULD be byte-stable. Across
@@ -305,7 +463,8 @@ Editor tests MUST cover:
 - current diagnostics replacing obsolete diagnostics;
 - source-to-preview and preview-to-source navigation;
 - stable mapping from source ranges through semantic and scene IDs to SVG;
-- zoom, pan, and fit-to-view behavior without geometry mutation;
+- zoom, pan, and fit-to-view behavior without geometry mutation or CSS
+  transform scaling;
 - SVG and PNG export; and
 - operation without a compiler service or network connection.
 
@@ -316,6 +475,76 @@ serialization MUST NOT change compiler behavior.
 
 Race tests MUST deliberately deliver worker responses out of order and prove
 that the editor never displays an obsolete result.
+
+The current editor foundation covers worker execution, scheduled compilation,
+out-of-order response rejection, current diagnostics, and last-valid-preview
+retention for the experimental static zoom subsets. It also covers
+context-completion requests, exact text edits, selection of a declared view by
+stable identifier, Monaco marker translation, diagnostic-to-source navigation,
+keyboard undo/redo, source synchronization, zoom, fit, scroll-pan at enlarged
+scale, SVG download, and bidirectional source/preview node navigation through
+stable source, scene, and SVG identities. Relationship and effective-Route
+selection, semantic and route-control source mapping, route hit testing, and a
+preview-only routing-debug overlay are covered too. Local Plex font loading,
+standalone-SVG embedding, transform-free preview zoom, and native PNG export are
+covered too. Ports, route labels, and corridors are individually selectable
+detail targets that resolve to their owning route-control source. It does not
+yet satisfy individually selectable Arrowheads, full CLI parity, real
+assistive-technology coverage, or complete-source coverage requirements in
+this section.
+
+If the guided modeling wizard is implemented, tests MUST prove that identical
+answers generate deterministic C4ML source, generated source passes through the
+normal parser and semantic validator, only context-valid ownership and
+relationship choices are offered, cancellation leaves source unchanged, and an
+applied generation is undoable. Character-by-character edits in dynamic wizard
+rows MUST keep the active control mounted and focused even when an answer also
+changes its generated technical identifier. Tests that extend existing
+documents MUST also verify that unrelated declarations, comments, stable
+identifiers, and formatting are not silently rewritten.
+
+The current new-document-only wizard foundation proves deterministic System
+Context and Container generation, normal parser and semantic validation,
+dynamic part and connection validation, explicit direction and protocol,
+stale-result rejection, cancel without source changes, and one explicit undo.
+Interaction review also checks that questions can be completed from familiar
+architecture concepts without prior C4 vocabulary. Existing-document
+preservation tests do not apply until that separate capability is designed and
+implemented.
+
+### 2.11 Desktop shell and packaging
+
+Desktop tests MUST cover:
+
+- runtime validation of every privileged renderer request;
+- rejection of IPC from untrusted pages and denial of external navigation,
+  windows, permissions, and webviews;
+- context isolation, renderer sandboxing, disabled Node.js integration, and a
+  preload surface limited to the versioned C4ML bridge;
+- path-traversal rejection for the owned local application protocol;
+- opaque document handles and the configured source-size limit;
+- native Open, Save, Save As, cancellation, failure reporting, dirty titles,
+  and unsaved-close protection;
+- native PNG export cancellation, validation, 1x/2x/3x scaling, controlled
+  fonts, failure reporting, and faithful canonical-SVG rasterization;
+- safe local workbench-session persistence that excludes source, handles, and
+  filesystem paths;
+- native Settings opening through the application menu and `Cmd/Ctrl+,`;
+- validated English/German synchronization of C4ML-owned native menu commands,
+  dialog labels, failure copy, and unsaved-close protection;
+- packaging without development sources or an application `node_modules`
+  tree;
+- required editor workers, fonts, licenses, and notices in the application;
+- the configured production Electron fuses;
+- launch and live compilation from the packaged application; and
+- signature, installer/archive integrity, installation, launch, file round
+  trip, and uninstall behavior on every supported release platform.
+
+Automated tests may substitute adapters for native dialogs, but at least one
+manual file round trip and close-protection check is required on each supported
+desktop platform before release. Apple Developer ID signing/notarization and
+Windows signing MUST be checked with release identities; ad-hoc signing is only
+local development evidence.
 
 ## 3. Original fixture catalog
 
@@ -425,6 +654,20 @@ Continuous validation MUST eventually include:
 - a check that bundled fonts and visual assets have documented redistribution
   rights.
 
+The accepted editor dependency check currently pins Monaco's reviewed version,
+verifies the version-sensitive Suggest controller boundary, requires Angular's
+generated production license inventory, and requires Monaco's upstream license
+and third-party notices in the built editor artifact. It also verifies every
+reviewed IBM Plex WOFF2 hash, packaged byte identity, and the unchanged OFL-1.1
+license.
+
+The desktop dependency check pins Electron, Forge, makers, fuses, Windows
+startup handling, and macOS maker helpers to the reviewed versions and licenses.
+It also protects the local CSP, preload/main separation, and packaged resource
+inventory. A release pipeline MUST additionally inventory the complete
+installer payload and verify platform signatures and notarization where
+applicable.
+
 No copied third-party example may be introduced as a test fixture.
 
 ## 8. Golden-update procedure
@@ -470,6 +713,8 @@ Before the MVP may be called complete:
 - CLI and browser-worker compiler contract results are equivalent;
 - editor hot compilation, stale-result rejection, last-valid preview, and
   source/preview navigation pass their integration tests;
+- desktop open/save, dirty-state protection, secure bridge behavior, packaged
+  launch, and native installers pass on every supported platform;
 - the supported-platform PNG policy passes;
 - no network access is required;
 - dependency and asset licenses are documented; and

@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/app/compiler-worker-runtime.ts",
+    "src/app/compiler-worker.protocol.ts",
+    "src/app/desktop-bridge.ts",
+    "src/app/editor-session.ts",
+    "src/app/initial-source.ts",
+    "src/app/linear-preview-layout.ts",
+    "src/app/workbench-preferences.ts",
+    "test/**/*.ts"
+  ]
+}

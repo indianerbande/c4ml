@@ -1,0 +1,11 @@
+{
+  "projectName": "C4mlDraft",
+  "languages": [
+    {
+      "id": "c4ml-draft",
+      "grammar": "src/c4ml-draft.langium",
+      "fileExtensions": [".c4ml"]
+    }
+  ],
+  "out": "src/generated"
+}
