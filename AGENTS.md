@@ -9,13 +9,31 @@ and resvg-js technical spikes are authorized.
 
 The runtime architecture is accepted: one browser-compatible TypeScript
 compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
-in a Web Worker. Angular 22 with the pinned TypeScript 6.0.x toolchain is the
-accepted editor application baseline. Angular owns UI composition and
-interaction only; compiler and language processing remain in the worker behind
-C4ML-owned contracts. The concrete code-editor component is still an open,
-replaceable dependency decision. The MVP has no required Python or network
-service. Parser, layout, rendering, and remaining UI dependencies stay draft
-unless a recorded spike result explicitly accepts them.
+in a Web Worker. Angular 22 with the pinned TypeScript 6.0.x toolchain and Monaco
+Editor 0.56.0 are the accepted desktop editor stack. Angular owns UI composition
+and interaction, while Monaco owns source editing and editor affordances behind
+a C4ML-owned adapter. Compiler and language processing remain in the worker
+behind C4ML-owned contracts. The MVP has no required Python or network service.
+Parser, layout, rendering, and remaining UI dependencies stay draft unless a
+recorded spike result explicitly accepts them.
+
+The production-bound Angular editor foundation is implemented under
+`apps/editor`. It uses Angular standalone components, Signals, zoneless change
+detection, a lazy
+Monaco source-editor adapter, and a versioned request/response contract to run
+the experimental language package and shared compiler in a browser Web Worker.
+It rejects stale responses, retains the last valid SVG during invalid edits,
+and displays source-located diagnostics in a two-pane layout. The same worker
+provides the only context-completion and diagnostic source; Monaco presents its
+exact edits in an in-place popup and its ranges as markers without owning C4ML
+syntax or semantics. The UI also exposes diagnostics-to-source navigation,
+zoom, fit, scroll-pan, SVG download, wizard preview, cancel, apply, one-step
+wizard undo, and selection among declared executable views. Its linear preview
+layout is a temporary bounded adapter, not the accepted automatic-layout
+solution. The editor is not yet feature-complete, but Angular and Monaco are
+production dependencies rather than active UI-library experiments. It accepts
+the current executable slices for all seven view types: System Landscape,
+System Context, Container, Component, Code, Dynamic, and Deployment.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
@@ -28,9 +46,10 @@ resolution contracts for all seven view types are implemented and automatically
 validated in the portable compiler core. View-local Visual Groups are also
 implemented with deterministic nesting, scope protection, and deployment-item
 membership. They are an internal compiler contract, not a frozen public DSL
-grammar. Do not represent a spike dependency as permanent, start production
-editor UI work, or freeze the DSL grammar until the user has reviewed and
-approved the corresponding results in `SPEC.md`.
+grammar. Production editor work is authorized within the accepted Angular,
+Monaco, worker, and compiler boundaries. Do not represent any remaining spike
+dependency as permanent or freeze the DSL grammar until the user has reviewed
+and approved the corresponding results in `SPEC.md`.
 
 The first Phase 1 rendering slice is also implemented. A resolved view can be
 prepared as an engine-neutral layout request, routed through inspectable
@@ -39,10 +58,11 @@ scene, serialized as standalone SVG, and rasterized as PNG through the existing
 resvg candidate adapter. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
 placement, ELK compound geometry, SVG, and PNG. The separate experimental
-language package can parse and lower only the original `hello-context.c4ml`
-subset into these compiler contracts. There is no public `.c4ml` frontend or
-CLI yet, the complete constraint/routing scope is not implemented, and the
-candidate adapters are not permanently accepted.
+language package can parse and lower the original `hello-context.c4ml`,
+`hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
+`hello-deployment.c4ml` slices into these compiler contracts. There is no
+public `.c4ml` frontend or CLI yet, the complete constraint/routing scope is
+not implemented, and the candidate adapters are not permanently accepted.
 
 The renderer also has an implemented semantic color-theme contract. The
 original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
@@ -61,10 +81,25 @@ contract. Custom shapes remain presentation-only and cannot create new C4
 element kinds. Their future author-facing grammar is still draft.
 
 `DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
-preview. They are deliberately non-normative. Only the `hello-context.c4ml`
-subset is executable through the internal experimental language package; the
-remaining preview is not. Treat all of it as review material, not as an
-accepted grammar or a compatibility commitment.
+preview. They are deliberately non-normative. Only the `hello-context.c4ml`,
+`hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
+`hello-deployment.c4ml` slices are executable through the internal experimental
+language package; the remaining preview is not. Treat all of it as review
+material, not as an accepted grammar or a compatibility commitment.
+
+The completion and wizard source-generation APIs are experimental authoring
+contracts over those same subsets. They MUST stay outside Angular components and
+MUST produce ordinary source edits or complete source documents. The wizard
+currently creates a new System Context document only; extending existing source
+without disturbing comments and formatting remains unimplemented.
+
+A thin experimental Node.js CLI now exists under `apps/cli`. It accepts the
+same executable language slices, delegates all compilation to the shared
+language and compiler packages, and supports check, one/all-view SVG and PNG
+rendering, scale, output-directory selection, human or JSON results, version
+reporting, and classified exits. Its commands are provisional, it is not a
+published package, and its current PNG path loads system fonts. Keep Node.js
+filesystem, process, and environment behavior confined to this app.
 
 ## Read first
 
@@ -244,12 +279,21 @@ repository:
   packages;
 - `pnpm run check:browser` bundles the portable core, Langium services, and ELK
   adapter for a browser without writing bundle artifacts;
+- `pnpm run check:editor-production` verifies the accepted Monaco version, its
+  pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run typecheck` builds source and type-checks test code;
-- `pnpm run test` runs the semantic, view-resolution, and adapter tests;
+- `pnpm run test` runs the semantic, view-resolution, adapter, language,
+  editor, and CLI tests;
 - `pnpm run check` runs the complete current build, browser, type, and test
-  gate; and
+  gate;
 - `pnpm run demo:render` regenerates the ignored Signal Garden SVG and PNG
-  reference output under `apps/reference-export/build/reference/`.
+  reference output under `apps/reference-export/build/reference/`;
+- `pnpm run editor:build` creates the ignored production-mode Angular editor
+  build under `build/editor/`;
+- `pnpm run editor:start` starts the local Angular editor development server;
+  and
+- `pnpm run c4ml -- version` builds the CLI dependency slice and runs the
+  experimental command-line frontend.
 
 Do not add a command here until it has succeeded in this checkout.
 

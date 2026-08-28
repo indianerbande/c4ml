@@ -9,10 +9,31 @@ import {
   type LayoutResult,
 } from "@c4ml/compiler-core";
 
-import { parseC4mlDraft } from "../src/index.js";
+import {
+  completeC4mlDraft,
+  defaultSystemContextWizardAnswers,
+  generateSystemContextDraft,
+  parseC4mlDraft,
+} from "../src/index.js";
 
 const helloContextUrl = new URL(
   "../../../examples/draft/hello-context.c4ml",
+  import.meta.url,
+);
+const helloContainerUrl = new URL(
+  "../../../examples/draft/hello-container.c4ml",
+  import.meta.url,
+);
+const helloStaticZoomUrl = new URL(
+  "../../../examples/draft/hello-static-zoom.c4ml",
+  import.meta.url,
+);
+const helloDynamicUrl = new URL(
+  "../../../examples/draft/hello-dynamic.c4ml",
+  import.meta.url,
+);
+const helloDeploymentUrl = new URL(
+  "../../../examples/draft/hello-deployment.c4ml",
   import.meta.url,
 );
 
@@ -57,6 +78,22 @@ class RowLayoutAdapter implements LayoutAdapter {
 
 async function helloContextSource(): Promise<string> {
   return readFile(helloContextUrl, "utf8");
+}
+
+async function helloContainerSource(): Promise<string> {
+  return readFile(helloContainerUrl, "utf8");
+}
+
+async function helloStaticZoomSource(): Promise<string> {
+  return readFile(helloStaticZoomUrl, "utf8");
+}
+
+async function helloDynamicSource(): Promise<string> {
+  return readFile(helloDynamicUrl, "utf8");
+}
+
+async function helloDeploymentSource(): Promise<string> {
+  return readFile(helloDeploymentUrl, "utf8");
 }
 
 describe("C4ML draft-1 language slice", () => {
@@ -188,6 +225,753 @@ describe("C4ML draft-1 language slice", () => {
     const second = await parseC4mlDraft(variant);
 
     expect(semanticSnapshot(first)).toEqual(semanticSnapshot(second));
+  });
+});
+
+describe("C4ML draft-1 completion contract", () => {
+  it("offers only missing properties in the active element block", async () => {
+    const marker = '    name = "Garden Caretaker"\n';
+    const source = (await helloContextSource())
+      .replace(marker, `${marker}    \n`)
+      .replace(
+        '    responsibility = "Reviews cultivation signals and schedules garden work."\n',
+        "",
+      )
+      .replace("    classification = external\n", "");
+    const offset = source.indexOf(marker) + marker.length + 4;
+    const result = await completeC4mlDraft(source, {
+      file: "editor.c4ml",
+      offset,
+    });
+
+    expect(result.candidates.map(({ kind, label }) => ({ kind, label }))).toEqual([
+      { kind: "property", label: "classification" },
+      { kind: "property", label: "responsibility" },
+    ]);
+    expect(result.candidates[0]?.edit.range.start).toMatchObject({
+      offset,
+      line: 7,
+      column: 4,
+    });
+  });
+
+  it("offers declared elements for relationship endpoints", async () => {
+    const source = (await helloContextSource()).replace(
+      "from = caretaker",
+      "from = ",
+    );
+    const offset = source.indexOf("from = ") + "from = ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ detail, kind, label }) => ({
+      detail,
+      kind,
+      label,
+    }))).toEqual([
+      {
+        detail: "Person reference",
+        kind: "reference",
+        label: "caretaker",
+      },
+      {
+        detail: "Software System reference",
+        kind: "reference",
+        label: "garden-pulse",
+      },
+      {
+        detail: "Software System reference",
+        kind: "reference",
+        label: "sensor-post",
+      },
+    ]);
+  });
+
+  it("restricts System Context scope references to Software Systems", async () => {
+    const source = (await helloContextSource()).replace(
+      "scope = garden-pulse",
+      "scope = ",
+    );
+    const offset = source.indexOf("scope = ") + "scope = ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "garden-pulse",
+      "sensor-post",
+    ]);
+  });
+
+  it("returns exact enum values and a replacement edit for partial input", async () => {
+    const source = (await helloContextSource()).replace(
+      "classification = external",
+      "classification = ex",
+    );
+    const tokenOffset = source.indexOf("classification = ex") +
+      "classification = ".length;
+    const result = await completeC4mlDraft(source, {
+      offset: tokenOffset + 2,
+    });
+
+    expect(result.candidates.map(({ kind, label }) => ({ kind, label }))).toEqual([
+      { kind: "value", label: "external" },
+    ]);
+    expect(result.candidates[0]?.edit).toMatchObject({
+      text: "external",
+      range: {
+        start: { offset: tokenOffset },
+        end: { offset: tokenOffset + 2 },
+      },
+    });
+  });
+
+  it("rejects offsets outside the current source", async () => {
+    await expect(
+      completeC4mlDraft("c4ml draft-1", { offset: 99 }),
+    ).rejects.toThrow("Completion offset must be inside the source text.");
+  });
+});
+
+describe("C4ML draft-1 Container slice", () => {
+  it("lowers Container ownership, technology, protocols, and a Container View", async () => {
+    const result = await parseC4mlDraft(await helloContainerSource(), {
+      file: "examples/draft/hello-container.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(
+      result.model?.elements.find(({ id }) => id === "path-service"),
+    ).toMatchObject({
+      kind: "container",
+      softwareSystemId: "route-canvas",
+      technology: "TypeScript service",
+    });
+    expect(
+      result.model?.relationships.find(
+        ({ id }) => id === "console-requests-path",
+      ),
+    ).toMatchObject({ technology: "HTTPS/JSON" });
+    expect(
+      result.model?.relationships.find(
+        ({ id }) => id === "service-writes-store",
+      ),
+    ).toMatchObject({ protocol: "PostgreSQL wire protocol" });
+    expect(result.views?.[0]).toMatchObject({
+      id: "route-canvas-containers",
+      kind: "container",
+      softwareSystemId: "route-canvas",
+    });
+    expect(result.resolvedViews?.[0]?.elements.map(({ id }) => id)).toEqual([
+      "path-service",
+      "planning-console",
+      "route-planner",
+      "route-store",
+      "terrain-feed",
+    ]);
+  });
+
+  it("requires Container technology and a protocol or technology between Containers", async () => {
+    const source = (await helloContainerSource())
+      .replace('    technology = "TypeScript service"\n', "")
+      .replace('    technology = "HTTPS/JSON"\n', "");
+    const result = await parseC4mlDraft(source);
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-LANG-101",
+    );
+
+    const relationshipOnly = (await helloContainerSource()).replace(
+      '    technology = "HTTPS/JSON"\n',
+      "",
+    );
+    const relationshipResult = await parseC4mlDraft(relationshipOnly);
+    expect(relationshipResult.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-SEM-015",
+    );
+  });
+
+  it("offers only Container properties inside a Container declaration", async () => {
+    const marker = '    name = "Planning Console"\n';
+    const source = (await helloContainerSource())
+      .replace(marker, `${marker}    \n`)
+      .replace(
+        '    responsibility = "Presents route proposals and accepts planning changes."\n',
+        "",
+      )
+      .replace('    technology = "TypeScript web application"\n', "");
+    const offset = source.indexOf(marker) + marker.length + 4;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ kind, label }) => ({ kind, label }))).toEqual([
+      { kind: "property", label: "responsibility" },
+      { kind: "property", label: "technology" },
+    ]);
+  });
+
+  it("offers only Software Systems as Container owners", async () => {
+    const source = (await helloContainerSource()).replace(
+      "inside route-canvas",
+      "inside ",
+    );
+    const offset = source.indexOf("inside ") + "inside ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Software System reference", label: "route-canvas" },
+      { detail: "Software System reference", label: "terrain-feed" },
+    ]);
+  });
+
+  it("offers all seven executable view types", async () => {
+    const source = (await helloContainerSource()).replace(
+      "type = container",
+      "type = ",
+    );
+    const offset = source.indexOf("type = ") + "type = ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "code",
+      "component",
+      "container",
+      "deployment",
+      "dynamic",
+      "system-context",
+      "system-landscape",
+    ]);
+  });
+});
+
+describe("C4ML draft-1 Component and Code slices", () => {
+  it("lowers the complete static ownership hierarchy and all four static views", async () => {
+    const result = await parseC4mlDraft(await helloStaticZoomSource(), {
+      file: "examples/draft/hello-static-zoom.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(
+      result.model?.elements.find(({ id }) => id === "arrangement-engine"),
+    ).toMatchObject({
+      kind: "component",
+      containerId: "planning-service",
+      technology: "TypeScript component",
+    });
+    expect(
+      result.model?.elements.find(({ id }) => id === "candidate-ranker"),
+    ).toMatchObject({
+      kind: "code-element",
+      componentId: "arrangement-engine",
+      codeKind: "function",
+      language: "TypeScript",
+    });
+    expect(result.views).toMatchObject([
+      {
+        id: "workshop-lens-components",
+        kind: "component",
+        containerId: "planning-service",
+      },
+      {
+        id: "arrangement-engine-code",
+        kind: "code",
+        componentId: "arrangement-engine",
+      },
+      {
+        id: "workshop-lens-containers",
+        kind: "container",
+        softwareSystemId: "workshop-lens",
+      },
+      {
+        id: "workshop-lens-context",
+        kind: "system-context",
+        softwareSystemId: "workshop-lens",
+      },
+    ]);
+    expect(
+      result.resolvedViews
+        ?.find(({ id }) => id === "workshop-lens-components")
+        ?.elements.map(({ id }) => id),
+    ).toEqual([
+      "arrangement-engine",
+      "request-gateway",
+    ]);
+    expect(
+      result.resolvedViews
+        ?.find(({ id }) => id === "arrangement-engine-code")
+        ?.elements.map(({ id }) => id),
+    ).toEqual([
+      "candidate-ranker",
+      "constraint-normalizer",
+    ]);
+  });
+
+  it("requires Component technology and Code Element kind", async () => {
+    const source = (await helloStaticZoomSource())
+      .replace('    technology = "TypeScript component"\n', "")
+      .replace("    code-kind = function\n", "");
+    const result = await parseC4mlDraft(source);
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual([
+      "C4ML-LANG-101",
+      "C4ML-LANG-101",
+    ]);
+    expect(result.diagnostics.map(({ message }) => message).join("\n")).toContain(
+      "technology",
+    );
+    expect(result.diagnostics.map(({ message }) => message).join("\n")).toContain(
+      "code-kind",
+    );
+  });
+
+  it("offers only Containers as Component owners and Components as Code owners", async () => {
+    const componentSource = (await helloStaticZoomSource()).replace(
+      "component request-gateway inside planning-service",
+      "component request-gateway inside ",
+    );
+    const componentOffset =
+      componentSource.indexOf("component request-gateway inside ") +
+      "component request-gateway inside ".length;
+    const componentResult = await completeC4mlDraft(componentSource, {
+      offset: componentOffset,
+    });
+
+    expect(componentResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Container reference", label: "browser-studio" },
+      { detail: "Container reference", label: "plan-store" },
+      { detail: "Container reference", label: "planning-service" },
+    ]);
+
+    const codeSource = (await helloStaticZoomSource()).replace(
+      "code constraint-normalizer inside arrangement-engine",
+      "code constraint-normalizer inside ",
+    );
+    const codeOffset =
+      codeSource.indexOf("code constraint-normalizer inside ") +
+      "code constraint-normalizer inside ".length;
+    const codeResult = await completeC4mlDraft(codeSource, {
+      offset: codeOffset,
+    });
+
+    expect(codeResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Component reference", label: "arrangement-engine" },
+      { detail: "Component reference", label: "request-gateway" },
+    ]);
+  });
+
+  it("restricts view scopes according to the selected zoom level", async () => {
+    const source = (await helloStaticZoomSource())
+      .replace("scope = planning-service", "scope = ")
+      .replace("scope = arrangement-engine", "scope = ");
+    const componentOffset = source.indexOf("scope = ") + "scope = ".length;
+    const codeOffset =
+      source.indexOf("scope = ", componentOffset) + "scope = ".length;
+    const [componentResult, codeResult] = await Promise.all([
+      completeC4mlDraft(source, { offset: componentOffset }),
+      completeC4mlDraft(source, { offset: codeOffset }),
+    ]);
+
+    expect(componentResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Container reference", label: "browser-studio" },
+      { detail: "Container reference", label: "plan-store" },
+      { detail: "Container reference", label: "planning-service" },
+    ]);
+    expect(codeResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Component reference", label: "arrangement-engine" },
+      { detail: "Component reference", label: "request-gateway" },
+    ]);
+  });
+
+  it("offers only Code Element properties inside a Code declaration", async () => {
+    const marker = '    name = "Candidate Ranker"\n';
+    const source = (await helloStaticZoomSource())
+      .replace(marker, `${marker}    \n`)
+      .replace(
+        '    responsibility = "Orders candidate arrangements by their satisfied constraints."\n',
+        "",
+      )
+      .replace(
+        '    code-kind = function\n    language = "TypeScript"\n',
+        "",
+      );
+    const offset = source.indexOf(marker) + marker.length + 4;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ kind, label }) => ({ kind, label }))).toEqual([
+      { kind: "property", label: "code-kind" },
+      { kind: "property", label: "language" },
+      { kind: "property", label: "responsibility" },
+    ]);
+  });
+});
+
+describe("C4ML draft-1 Landscape and Dynamic slices", () => {
+  it("lowers a named System Landscape and ordered Dynamic Interactions", async () => {
+    const result = await parseC4mlDraft(await helloDynamicSource(), {
+      file: "examples/draft/hello-dynamic.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.views?.[0]).toMatchObject({
+      id: "release-portfolio",
+      kind: "system-landscape",
+      scope: "Release Operations",
+    });
+    expect(result.views?.[1]).toMatchObject({
+      id: "finalize-release",
+      kind: "dynamic",
+      scenario: "Finalize a release decision",
+      display: "collaboration",
+      interactions: [
+        {
+          id: "submit-decision",
+          order: 1,
+          sourceId: "review-console",
+          targetId: "decision-service",
+          relationshipId: "console-submits-decision",
+        },
+        {
+          id: "store-decision",
+          order: 2,
+          parallelGroup: "persist-and-publish",
+          relationshipId: "service-stores-decision",
+        },
+        {
+          id: "queue-notice",
+          order: 2,
+          parallelGroup: "persist-and-publish",
+          relationshipId: "service-queues-notice",
+        },
+      ],
+    });
+    expect(
+      result.resolvedViews
+        ?.find(({ id }) => id === "finalize-release")
+        ?.interactions.map(({ id, order }) => ({ id, order })),
+    ).toEqual([
+      { id: "submit-decision", order: 1 },
+      { id: "queue-notice", order: 2 },
+      { id: "store-decision", order: 2 },
+    ]);
+  });
+
+  it("rejects element references where a named scenario or portfolio is required", async () => {
+    const landscapeWithReference = (await helloDynamicSource()).replace(
+      'scope = "Release Operations"',
+      "scope = release-atlas",
+    );
+    const dynamicWithReference = (await helloDynamicSource()).replace(
+      'scope = "Finalize a release decision"',
+      "scope = release-atlas",
+    );
+
+    const [landscape, dynamic] = await Promise.all([
+      parseC4mlDraft(landscapeWithReference),
+      parseC4mlDraft(dynamicWithReference),
+    ]);
+
+    expect(landscape.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-LANG-003",
+    );
+    expect(dynamic.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-LANG-003",
+    );
+  });
+
+  it("offers only declared static Relationships for an interaction relation", async () => {
+    const source = (await helloDynamicSource()).replace(
+      "relation = console-submits-decision",
+      "relation = ",
+    );
+    const offset = source.indexOf("relation = ") + "relation = ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.every(({ detail }) => detail === "Relationship reference"))
+      .toBe(true);
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "console-submits-decision",
+      "coordinator-uses-atlas",
+      "register-supplies-atlas",
+      "service-queues-notice",
+      "service-stores-decision",
+    ]);
+  });
+
+  it("offers Dynamic display values and missing interaction properties", async () => {
+    const displaySource = (await helloDynamicSource()).replace(
+      "display = collaboration",
+      "display = ",
+    );
+    const displayOffset =
+      displaySource.indexOf("display = ") + "display = ".length;
+    const display = await completeC4mlDraft(displaySource, {
+      offset: displayOffset,
+    });
+    expect(display.candidates.map(({ label }) => label)).toEqual([
+      "collaboration",
+      "sequence",
+    ]);
+
+    const marker = "  interaction submit-decision {\n";
+    const propertySource = (await helloDynamicSource())
+      .replace(marker, `${marker}    \n`)
+      .replace("    order = 1\n", "")
+      .replace("    relation = console-submits-decision\n", "");
+    const propertyOffset =
+      propertySource.indexOf(marker) + marker.length + 4;
+    const properties = await completeC4mlDraft(propertySource, {
+      offset: propertyOffset,
+    });
+    expect(properties.candidates.map(({ label }) => label)).toEqual([
+      "order",
+      "parallel",
+      "relation",
+    ]);
+  });
+});
+
+describe("C4ML draft-1 Deployment slice", () => {
+  it("lowers environments, nested nodes, infrastructure, instances, relationships, and the view", async () => {
+    const result = await parseC4mlDraft(await helloDeploymentSource(), {
+      file: "examples/draft/hello-deployment.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.model?.deployment?.environments.map(({ id }) => id)).toEqual([
+      "production",
+      "verification",
+    ]);
+    expect(result.model?.deployment?.nodes).toMatchObject([
+      { id: "regional-cloud", environmentId: "production" },
+      {
+        id: "application-cluster",
+        environmentId: "production",
+        parentNodeId: "regional-cloud",
+      },
+      {
+        id: "managed-data",
+        environmentId: "production",
+        parentNodeId: "regional-cloud",
+      },
+      { id: "verification-host", environmentId: "verification" },
+    ]);
+    expect(result.model?.deployment?.infrastructureNodes).toMatchObject([
+      {
+        id: "public-gateway",
+        environmentId: "production",
+        nodeId: "regional-cloud",
+      },
+    ]);
+    expect(result.model?.deployment?.instances.map(({ id }) => id)).toEqual([
+      "production-observer",
+      "production-board",
+      "production-service",
+      "production-events",
+      "verification-service",
+    ]);
+    expect(result.model?.deployment?.relationships).toMatchObject([
+      {
+        id: "gateway-forwards-board",
+        sourceId: "public-gateway",
+        targetId: "production-board",
+      },
+      {
+        id: "board-calls-service",
+        staticRelationshipId: "board-queries-service",
+      },
+      {
+        id: "service-connects-events",
+        staticRelationshipId: "service-reads-events",
+      },
+    ]);
+    expect(result.views?.[0]).toMatchObject({
+      id: "parcel-observer-production",
+      kind: "deployment",
+      environmentId: "production",
+      softwareSystemIds: ["parcel-observer"],
+      layout: { direction: "right" },
+    });
+    const resolved = result.resolvedViews?.[0];
+    expect(resolved?.deploymentEnvironment?.id).toBe("production");
+    expect(resolved?.deploymentNodes.map(({ id }) => id)).toEqual([
+      "application-cluster",
+      "managed-data",
+      "regional-cloud",
+    ]);
+    expect(resolved?.infrastructureNodes.map(({ id }) => id)).toEqual([
+      "public-gateway",
+    ]);
+    expect(resolved?.deploymentInstances.map(({ id }) => id)).toEqual([
+      "production-board",
+      "production-events",
+      "production-observer",
+      "production-service",
+    ]);
+  });
+
+  it("keeps Deployment Node and endpoint references inside their Environment", async () => {
+    const nodeSource = (await helloDeploymentSource()).replace(
+      "infrastructure public-gateway on regional-cloud",
+      "infrastructure public-gateway on ",
+    );
+    const nodeOffset =
+      nodeSource.indexOf("infrastructure public-gateway on ") +
+      "infrastructure public-gateway on ".length;
+    const nodeResult = await completeC4mlDraft(nodeSource, {
+      offset: nodeOffset,
+    });
+    expect(nodeResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Deployment Node reference", label: "application-cluster" },
+      { detail: "Deployment Node reference", label: "managed-data" },
+      { detail: "Deployment Node reference", label: "regional-cloud" },
+    ]);
+
+    const endpointSource = (await helloDeploymentSource()).replace(
+      "from = production-board",
+      "from = ",
+    );
+    const endpointOffset =
+      endpointSource.indexOf("from = ", endpointSource.indexOf("deployment-relation board-calls-service")) +
+      "from = ".length;
+    const endpointResult = await completeC4mlDraft(endpointSource, {
+      offset: endpointOffset,
+    });
+    expect(endpointResult.candidates.every(
+      ({ detail }) => detail === "Deployment endpoint reference",
+    )).toBe(true);
+    expect(endpointResult.candidates.map(({ label }) => label)).toEqual([
+      "production-board",
+      "production-events",
+      "production-observer",
+      "production-service",
+      "public-gateway",
+    ]);
+  });
+
+  it("offers declared Environments and Software Systems to a Deployment View", async () => {
+    const environmentSource = (await helloDeploymentSource()).replace(
+      "environment = production",
+      "environment = ",
+    );
+    const environmentOffset =
+      environmentSource.lastIndexOf("environment = ") + "environment = ".length;
+    const environmentResult = await completeC4mlDraft(environmentSource, {
+      offset: environmentOffset,
+    });
+    expect(environmentResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Deployment Environment reference", label: "production" },
+      { detail: "Deployment Environment reference", label: "verification" },
+    ]);
+
+    const systemsSource = (await helloDeploymentSource()).replace(
+      "systems = [parcel-observer]",
+      "systems = []",
+    );
+    const systemsOffset = systemsSource.lastIndexOf("systems = [") + "systems = [".length;
+    const systemsResult = await completeC4mlDraft(systemsSource, {
+      offset: systemsOffset,
+    });
+    expect(systemsResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      { detail: "Software System reference", label: "parcel-observer" },
+    ]);
+  });
+
+  it("rejects cross-environment placement and mismatched static relationships", async () => {
+    const crossEnvironment = (await helloDeploymentSource()).replace(
+      "production-service of tracking-service on application-cluster",
+      "production-service of tracking-service on verification-host",
+    );
+    const mismatch = (await helloDeploymentSource()).replace(
+      "relation = board-queries-service",
+      "relation = service-reads-events",
+    );
+    const [placement, relationship] = await Promise.all([
+      parseC4mlDraft(crossEnvironment),
+      parseC4mlDraft(mismatch),
+    ]);
+
+    expect(placement.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-LANG-003",
+    );
+    expect(relationship.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-DEP-016",
+    );
+  });
+
+  it("requires the Deployment View environment and systems selection", async () => {
+    const source = (await helloDeploymentSource())
+      .replace("  environment = production\n", "")
+      .replace("  systems = [parcel-observer]\n", "");
+    const result = await parseC4mlDraft(source);
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual([
+      "C4ML-LANG-101",
+      "C4ML-LANG-101",
+    ]);
+    expect(result.diagnostics.map(({ message }) => message).join("\n")).toContain(
+      "environment",
+    );
+    expect(result.diagnostics.map(({ message }) => message).join("\n")).toContain(
+      "systems",
+    );
+  });
+});
+
+describe("C4ML draft-1 System Context wizard source", () => {
+  it("generates deterministic source that passes the normal parser and validator", async () => {
+    const first = generateSystemContextDraft(defaultSystemContextWizardAnswers);
+    const second = generateSystemContextDraft(defaultSystemContextWizardAnswers);
+
+    expect(first).toEqual(second);
+    expect(first.valid).toBe(true);
+    expect(first.issues).toEqual([]);
+    const parsed = await parseC4mlDraft(first.source!, {
+      file: "wizard.c4ml",
+    });
+    expect(parsed.valid).toBe(true);
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.model?.elements.map(({ id }) => id)).toEqual([
+      "observer",
+      "field-notes",
+    ]);
+    expect(parsed.views?.[0]).toMatchObject({
+      id: "field-notes-context",
+      softwareSystemId: "field-notes",
+      layout: { direction: "right" },
+    });
+  });
+
+  it("escapes authored text without changing stable identifiers", async () => {
+    const generated = generateSystemContextDraft({
+      ...defaultSystemContextWizardAnswers,
+      personName: 'Observer "North"',
+      viewPurpose: "Show notes\\decisions.",
+    });
+    const parsed = await parseC4mlDraft(generated.source!);
+
+    expect(generated.source).toContain('name = "Observer \\"North\\""');
+    expect(parsed.valid).toBe(true);
+    expect(parsed.model?.elements[0]?.name).toBe('Observer "North"');
+  });
+
+  it("reports invalid identifiers and empty required answers before generation", () => {
+    const result = generateSystemContextDraft({
+      ...defaultSystemContextWizardAnswers,
+      personId: "not valid",
+      relationshipIntent: "  ",
+    });
+
+    expect(result).toMatchObject({
+      valid: false,
+      source: undefined,
+      issues: [
+        { field: "personId", code: "C4ML-WIZARD-001" },
+        { field: "relationshipIntent", code: "C4ML-WIZARD-002" },
+      ],
+    });
   });
 });
 

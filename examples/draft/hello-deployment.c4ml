@@ -1,0 +1,144 @@
+c4ml draft-1
+
+// Original executable fixture for a Deployment View.
+
+model {
+  person dispatch-coordinator {
+    name = "Dispatch Coordinator"
+    responsibility = "Monitors parcel movement and investigates delayed deliveries."
+    classification = external
+  }
+
+  system parcel-observer {
+    name = "Parcel Observer"
+    responsibility = "Collects parcel events and presents the current delivery state."
+    classification = internal
+  }
+
+  container tracking-board inside parcel-observer {
+    name = "Tracking Board"
+    responsibility = "Presents parcel progress to dispatch coordinators."
+    technology = "TypeScript web application"
+  }
+
+  container tracking-service inside parcel-observer {
+    name = "Tracking Service"
+    responsibility = "Accepts parcel events and assembles delivery timelines."
+    technology = "TypeScript service"
+  }
+
+  container event-store inside parcel-observer {
+    name = "Event Store"
+    responsibility = "Stores the ordered parcel event history."
+    technology = "PostgreSQL"
+  }
+}
+
+relations {
+  relation coordinator-uses-board {
+    from = dispatch-coordinator
+    to = tracking-board
+    intent = "Reviews parcel progress"
+    technology = "HTTPS"
+  }
+
+  relation board-queries-service {
+    from = tracking-board
+    to = tracking-service
+    intent = "Requests delivery timelines"
+    technology = "HTTPS/JSON"
+  }
+
+  relation service-reads-events {
+    from = tracking-service
+    to = event-store
+    intent = "Reads parcel event history"
+    protocol = "PostgreSQL wire protocol"
+  }
+}
+
+deployments {
+  environment production {
+    name = "Production"
+    responsibility = "Runs the live parcel tracking installation."
+
+    node regional-cloud {
+      name = "Regional Cloud"
+      responsibility = "Hosts the production Parcel Observer installation."
+      technology = "European cloud region"
+    }
+
+    node application-cluster inside regional-cloud {
+      name = "Application Cluster"
+      responsibility = "Runs the interactive and service workloads."
+      technology = "Kubernetes"
+    }
+
+    node managed-data inside regional-cloud {
+      name = "Managed Data"
+      responsibility = "Runs the durable parcel event database."
+      technology = "Managed PostgreSQL"
+    }
+
+    infrastructure public-gateway on regional-cloud {
+      name = "Public Gateway"
+      responsibility = "Terminates and forwards public web traffic."
+      technology = "Managed application gateway"
+    }
+
+    system-instance production-observer of parcel-observer on regional-cloud
+    container-instance production-board of tracking-board on application-cluster
+    container-instance production-service of tracking-service on application-cluster
+    container-instance production-events of event-store on managed-data
+
+    deployment-relation gateway-forwards-board {
+      from = public-gateway
+      to = production-board
+      intent = "Forwards browser requests"
+      technology = "HTTPS"
+    }
+
+    deployment-relation board-calls-service {
+      from = production-board
+      to = production-service
+      intent = "Requests delivery timelines"
+      relation = board-queries-service
+      technology = "HTTPS/JSON"
+    }
+
+    deployment-relation service-connects-events {
+      from = production-service
+      to = production-events
+      intent = "Reads parcel event history"
+      relation = service-reads-events
+      technology = "PostgreSQL wire protocol"
+    }
+  }
+
+  environment verification {
+    name = "Verification"
+    responsibility = "Runs a compact installation for release checks."
+
+    node verification-host {
+      name = "Verification Host"
+      responsibility = "Runs the tracking service during release checks."
+      technology = "Virtual machine"
+    }
+
+    container-instance verification-service of tracking-service on verification-host
+  }
+}
+
+view parcel-observer-production {
+  type = deployment
+  environment = production
+  systems = [parcel-observer]
+  title = "Deployment View — Parcel Observer Production"
+  purpose = "Shows where the live Parcel Observer containers execute."
+  audience = default
+  legend = generated
+
+  layout {
+    flow = right
+  }
+}

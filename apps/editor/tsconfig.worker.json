@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "WebWorker"],
+    "outDir": "../../build/out-tsc/editor-worker",
+    "types": [],
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*.worker.ts"]
+}

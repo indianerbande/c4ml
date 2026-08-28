@@ -1,0 +1,135 @@
+c4ml draft-1
+
+// Original executable fixture for System Landscape and Dynamic Views.
+
+model {
+  person release-coordinator {
+    name = "Release Coordinator"
+    responsibility = "Reviews release readiness and records the final decision."
+    classification = external
+  }
+
+  system release-atlas {
+    name = "Release Atlas"
+    responsibility = "Coordinates release evidence, decisions, and notices."
+    classification = internal
+  }
+
+  system change-register {
+    name = "Change Register"
+    responsibility = "Publishes the approved set of product changes."
+    classification = external
+  }
+
+  container review-console inside release-atlas {
+    name = "Review Console"
+    responsibility = "Presents release evidence and accepts a decision."
+    technology = "TypeScript web application"
+  }
+
+  container decision-service inside release-atlas {
+    name = "Decision Service"
+    responsibility = "Validates and finalizes a release decision."
+    technology = "TypeScript service"
+  }
+
+  container decision-log inside release-atlas {
+    name = "Decision Log"
+    responsibility = "Stores release decisions and their evidence references."
+    technology = "PostgreSQL"
+  }
+
+  container notice-worker inside release-atlas {
+    name = "Notice Worker"
+    responsibility = "Publishes the finalized release decision to subscribers."
+    technology = "TypeScript worker"
+  }
+}
+
+relations {
+  relation coordinator-uses-atlas {
+    from = release-coordinator
+    to = release-atlas
+    intent = "Records release decisions"
+  }
+
+  relation register-supplies-atlas {
+    from = change-register
+    to = release-atlas
+    intent = "Supplies approved changes"
+  }
+
+  relation console-submits-decision {
+    from = review-console
+    to = decision-service
+    intent = "Submits the reviewed release decision"
+    technology = "HTTPS/JSON"
+  }
+
+  relation service-stores-decision {
+    from = decision-service
+    to = decision-log
+    intent = "Stores the finalized release decision"
+    protocol = "PostgreSQL wire protocol"
+  }
+
+  relation service-queues-notice {
+    from = decision-service
+    to = notice-worker
+    intent = "Queues publication of the release decision"
+    protocol = "AMQP"
+  }
+}
+
+view release-portfolio {
+  type = system-landscape
+  scope = "Release Operations"
+  title = "System Landscape — Release Operations"
+  purpose = "Shows the people and systems participating in release decisions."
+  audience = default
+  legend = generated
+
+  layout {
+    flow = right
+  }
+}
+
+view finalize-release {
+  type = dynamic
+  scope = "Finalize a release decision"
+  title = "Dynamic View — Finalize a Release Decision"
+  purpose = "Shows the ordered collaboration that records and publishes a release decision."
+  audience = default
+  legend = generated
+  display = collaboration
+
+  interaction submit-decision {
+    order = 1
+    from = review-console
+    to = decision-service
+    intent = "Submits release decision"
+    relation = console-submits-decision
+  }
+
+  interaction store-decision {
+    order = 2
+    parallel = persist-and-publish
+    from = decision-service
+    to = decision-log
+    intent = "Stores release decision"
+    relation = service-stores-decision
+  }
+
+  interaction queue-notice {
+    order = 2
+    parallel = persist-and-publish
+    from = decision-service
+    to = notice-worker
+    intent = "Queues release notice"
+    relation = service-queues-notice
+  }
+
+  layout {
+    flow = right
+  }
+}

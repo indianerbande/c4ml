@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.10
+Status: Draft 0.14
 
 Date: 2026-08-28
 
@@ -14,9 +14,14 @@ commands are:
 - `pnpm run build` for generated-language and TypeScript build validation;
 - `pnpm run check:browser` for in-memory browser bundle validation;
 - `pnpm run typecheck` for source and test type checking;
-- `pnpm run test` for the current semantic, view, and adapter test suite; and
-- `pnpm run check` for the complete current gate; and
-- `pnpm run demo:render` for the ignored visual reference export.
+- `pnpm run test` for the current semantic, view, adapter, language, and editor
+  test suite;
+- `pnpm run check:editor-production` for the accepted Monaco version, its
+  version-sensitive integration point, and packaged license notices;
+- `pnpm run check` for the complete current gate;
+- `pnpm run editor:build` for the production-mode Angular editor build;
+- `pnpm run demo:render` for the ignored visual reference export; and
+- `pnpm run c4ml -- version` for the built experimental CLI entry point.
 
 All commands run locally after dependency installation and require no compiler
 service or runtime network access.
@@ -37,12 +42,45 @@ rasterization, and a visually inspected Signal Garden Container View. This is
 not yet a golden suite or complete rendering evidence for all seven views.
 
 The experimental language package adds a narrow integration suite for the
-original `hello-context.c4ml` subset. It verifies parsing and explicit
-AST-to-domain lowering, exact source locations, stable diagnostics for
-unresolved references and invalid property cardinality, semantic stability
-across comments and whitespace, browser bundling without Node.js polyfills, and
-deterministic SVG through the shared compiler pipeline. This evidence does not
-claim coverage of the complete preview grammar.
+original `hello-context.c4ml`, `hello-container.c4ml`, and
+`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and `hello-deployment.c4ml`
+slices. It verifies parsing and explicit AST-to-domain lowering, typed ownership
+and required properties from Software System through Code Element, relationship
+technology and protocols, all four static view scopes, named Landscape scope,
+ordered and parallel Dynamic Interactions, Deployment Environments, nested
+Deployment Nodes, Infrastructure Nodes, static instances, deployment
+relationships, all seven view types, static Relationship references,
+environment-scoped completion references, exact source locations, stable
+diagnostics for unresolved references and invalid property cardinality,
+semantic stability across comments and whitespace, browser bundling without
+Node.js polyfills, and deterministic SVG through the shared compiler pipeline.
+This evidence does not claim coverage of the complete preview grammar.
+
+The Angular editor foundation adds typed worker-runtime, editor-session, and
+source-editor adapter evidence. It verifies deterministic source-to-SVG
+compilation, invalid-source diagnostics, monotonic request identifiers,
+rejection of deliberately out-of-order results, retention of the last valid
+SVG, context-valid completion ranges, exact completion and marker translation,
+stale asynchronous completion settlement, deterministic wizard source, normal
+compilation of that source, cancel behavior, and explicit undo. The
+production-mode Angular build proves that compiler services and Monaco's
+generic editor service are separate worker chunks and that Monaco's runtime is
+lazy. Browser verification covers the two-pane layout, live preview, an
+in-place context-only completion popup, exact candidate application, inline
+diagnostic markers, diagnostic-to-source focus, invalid edit diagnostics,
+keyboard undo/redo, visible last-valid-preview state, wizard/Monaco source
+synchronization, visually inspected Component, Code, System Landscape,
+Dynamic, and Deployment previews, view selection, zoom, the three-step wizard,
+generated-source review, apply, and undo. The browser accessibility tree was
+inspected; a real screen-reader pass is not yet complete.
+
+The experimental CLI suite exercises successful validation, source-located JSON
+diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
+stable view selection, paths containing spaces and non-ASCII characters,
+invocation with a working directory outside the repository, and distinct usage,
+source, and environment exit classes. The suite also renders selected Dynamic
+and Deployment Views. A direct root-level smoke invocation produced Deployment
+SVG and PNG through the built entry point; the PNG was visually inspected.
 
 ## 1. Testing principles
 
@@ -325,6 +363,30 @@ serialization MUST NOT change compiler behavior.
 Race tests MUST deliberately deliver worker responses out of order and prove
 that the editor never displays an obsolete result.
 
+The current editor foundation covers worker execution, scheduled compilation,
+out-of-order response rejection, current diagnostics, and last-valid-preview
+retention for the experimental static zoom subsets. It also covers
+context-completion requests, exact text edits, selection of a declared view by
+stable identifier, Monaco marker translation, diagnostic-to-source navigation,
+keyboard undo/redo, source synchronization, zoom, fit, scroll-pan at enlarged
+scale, and SVG download. It does not yet satisfy bidirectional source/preview
+element navigation, PNG export, full CLI parity, real assistive-technology
+coverage, or complete-source coverage requirements in this section.
+
+If the guided modeling wizard is implemented, tests MUST prove that identical
+answers generate deterministic C4ML source, generated source passes through the
+normal parser and semantic validator, only context-valid ownership and
+relationship choices are offered, cancellation leaves source unchanged, and an
+applied generation is undoable. Tests that extend existing documents MUST also
+verify that unrelated declarations, comments, stable identifiers, and
+formatting are not silently rewritten.
+
+The current new-document-only System Context wizard spike proves deterministic
+generation, normal parser and semantic validation, valid fixed ownership and
+relationship direction, stale-result rejection, cancel without source changes,
+and one explicit undo. Existing-document preservation tests do not apply until
+that separate capability is designed and implemented.
+
 ## 3. Original fixture catalog
 
 All fixtures below must be designed specifically for C4ML. They must not be
@@ -432,6 +494,11 @@ Continuous validation MUST eventually include:
 - verification that render tests make no network request; and
 - a check that bundled fonts and visual assets have documented redistribution
   rights.
+
+The accepted editor dependency check currently pins Monaco's reviewed version,
+verifies the version-sensitive Suggest controller boundary, requires Angular's
+generated production license inventory, and requires Monaco's upstream license
+and third-party notices in the built editor artifact.
 
 No copied third-party example may be introduced as a test fixture.
 

@@ -11,8 +11,9 @@ The intended user experience has two entry points:
 - a two-pane TypeScript editor with source on the left and a hot graphical
   preview on the right.
 
-Both frontends will use the same browser-compatible TypeScript compiler core.
-The CLI will not launch a browser, and neither frontend requires a Python
+The production-bound editor foundation and experimental CLI use the same
+browser-compatible TypeScript compiler core. The CLI will not launch a browser,
+and neither frontend requires a Python
 service, cloud account, or network connection for the planned normal workflow.
 
 ## Project status
@@ -42,27 +43,52 @@ Implemented and automatically validated:
 - a Node.js PNG adapter that rasterizes the canonical SVG;
 - original semantic `c4ml-blue` and `c4ml-garden` color presets with deep,
   role-specific overrides;
-- an experimental browser-compatible `draft-1` language slice that parses and
-  lowers the original `hello-context.c4ml` example into the shared compiler;
+- experimental browser-compatible `draft-1` language slices that parse and
+  lower the original `hello-context.c4ml`, `hello-container.c4ml`, and
+  `hello-static-zoom.c4ml` examples into the shared compiler, including the
+  complete static ownership hierarchy and four static C4 views;
+- executable System Landscape and Dynamic View slices in the original
+  `hello-dynamic.c4ml`, including ordered and parallel interactions over static
+  relationships;
+- an executable Deployment View slice in the original `hello-deployment.c4ml`,
+  including environments, nested Deployment Nodes, Infrastructure Nodes,
+  static instances, and runtime relationships;
+- an experimental thin Node.js CLI for local validation, one/all-view SVG and
+  PNG rendering, scaling, human or JSON diagnostics, and classified exits;
+- an Angular 22 desktop editor foundation with a two-pane source/preview layout,
+  local compiler Web Worker, live diagnostics, stale-result rejection, and
+  retention of the last valid SVG;
+- an accepted lazy Monaco 0.56.0 adapter that presents only the language
+  worker's context-valid completions, applies exact source edits, displays
+  inline diagnostic markers, supports keyboard undo/redo, and navigates from
+  diagnostics to source;
+- selectable views, plus zoom, fit, scroll-pan, and local SVG export;
+- a bounded three-step wizard that previews and generates a new executable
+  System Context document with cancel and undo;
 - an original, executable Signal Garden Container View reference export; and
 - browser-compatible compiler-core contracts.
 
 Not implemented yet:
 
 - the complete public `.c4ml` parser and formatter;
-- the production CLI;
+- the production CLI contract, packaging, and reproducible bundled font;
 - relative placement constraints, pinning, avoidance regions, locked route
   segments, and the remaining full routing contract;
 - complete render validation for all seven view types;
 - a bundled reproducible font and frozen author-facing theme grammar;
-- the public source grammar for custom shape definitions and assignments; and
-- the browser editor.
+- the public source grammar for custom shape definitions and assignments;
+- the remaining production editor capabilities: C4ML syntax highlighting,
+  bidirectional source/preview element navigation, PNG export, persistence, and
+  graphical source editing; and
+- the complete guided modeling wizard for Containers, Components, Code,
+  deployments, Visual Groups, and safe extension of existing documents.
 
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
-[`examples/draft`](examples/draft) remains a **design preview**. Only the
-minimal `hello-context.c4ml` subset is executable through an internal package;
-it is not a public or frozen grammar. The remaining syntax is not accepted by a
-compiler yet.
+[`examples/draft`](examples/draft) remains a **design preview**. Bounded System
+All seven view types have bounded executable slices through an internal
+package; they are not a public or frozen grammar. Visual Groups, route and Port
+controls, themes, custom shapes, and the remaining preview syntax are not
+accepted by the source compiler yet.
 
 ## C4 scope
 
@@ -106,12 +132,14 @@ text layout rather than from a browser screenshot.
 
 ## Development quick start
 
-Use Node.js 24 LTS and the pnpm version pinned in `package.json`.
+Use Node.js 24.15 or a newer supported line and the pnpm version pinned in
+`package.json`.
 
 ```shell
 pnpm install
 pnpm run check
 pnpm run demo:render
+pnpm run editor:start
 ```
 
 The check builds all current packages, verifies browser bundles in memory,
@@ -119,18 +147,35 @@ type-checks source and tests, and runs the semantic, view-resolution, and
 adapter suites. `demo:render` creates a real SVG and PNG under
 `apps/reference-export/build/reference/` from an in-code original model. It is
 a contributor reference path, not the future `.c4ml` command-line interface.
+`editor:start` opens the production-bound Angular desktop editor for all seven
+bounded executable view types. Angular and Monaco are accepted production
+libraries; the language, layout, and several MVP editor capabilities remain
+under development.
+
+The experimental local CLI builds its required workspace packages and runs
+through the same language and compiler core:
+
+```shell
+pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
+pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
+  --view arrangement-engine-code \
+  --format svg,png \
+  --output build/diagrams
+```
+
+Its command names and current static-language scope remain provisional.
 
 ## Documentation
 
 - [DOCUMENTATION.md](DOCUMENTATION.md) — first user guide, proposed syntax,
-  planned commands, and demo walkthroughs
+  current contributor commands, and demo walkthroughs
 - [SPEC.md](SPEC.md) — normative product behavior and architectural boundaries
 - [TESTING.md](TESTING.md) — required validation evidence
 - [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licensing, and
   replacement boundaries
 - [AGENTS.md](AGENTS.md) — repository workflow and project invariants
-- [`examples/draft`](examples/draft) — original syntax previews; only the
-  minimal `hello-context.c4ml` subset is internally executable
+- [`examples/draft`](examples/draft) — original syntax previews; the bounded
+  seven-view slices are internally executable
 
 ## Relationship to the wider ecosystem
 

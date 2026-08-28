@@ -1,6 +1,6 @@
 # C4ML User Guide
 
-Status: Draft syntax preview with one executable language slice
+Status: Draft syntax preview with executable language and editor foundation
 
 Date: 2026-08-28
 
@@ -8,13 +8,17 @@ This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
 can be reviewed through realistic examples rather than grammar fragments.
 
-> **Important:** there is no complete public `.c4ml` parser, production CLI, or
-> editor yet. The syntax in this document is non-normative and may change after
-> review. An internal experimental package executes only the minimal
-> `hello-context.c4ml` subset. The parser-independent C4 semantic model, all
-> seven view-resolution contracts, and a first internal model-to-SVG/PNG
-> rendering path are implemented today. The internal path also carries explicit
-> Ports, Routes, Arrowheads, and restricted renderer-neutral shape definitions.
+> **Important:** there is no complete public `.c4ml` parser, release-ready CLI,
+> or feature-complete editor yet. The syntax in this document is non-normative
+> and may change after review. An internal experimental language package and
+> the production-bound Angular editor execute the bounded slices in
+> `hello-context.c4ml`,
+> `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
+> `hello-deployment.c4ml`. The parser-independent C4 semantic model, all seven
+> view-resolution contracts, and a first internal model-to-SVG/PNG rendering
+> path are implemented today.
+> The internal path also carries explicit Ports, Routes, Arrowheads, and
+> restricted renderer-neutral shape definitions.
 
 `SPEC.md` remains the normative definition of product behavior. If this guide
 and `SPEC.md` disagree, `SPEC.md` wins.
@@ -63,10 +67,36 @@ pnpm install
 pnpm run check
 ```
 
-That gate also generates and tests the experimental `draft-1` language slice.
-It parses `examples/draft/hello-context.c4ml`, translates its syntax tree into
-the compiler-owned model, and exercises the same compiler pipeline through
-deterministic SVG. This is an internal contributor path, not the production CLI.
+That gate also generates and tests the experimental `draft-1` language slices.
+It parses `examples/draft/hello-context.c4ml`,
+`examples/draft/hello-container.c4ml`, and
+`examples/draft/hello-static-zoom.c4ml`, and
+`examples/draft/hello-dynamic.c4ml` and
+`examples/draft/hello-deployment.c4ml`, translates their syntax trees into the
+compiler-owned model, and exercises the same compiler pipeline through
+deterministic SVG. This is an experimental contributor path, not a frozen
+public language contract.
+
+The Angular desktop editor can be started locally:
+
+```shell
+pnpm run editor:start
+```
+
+It presents source on the left and a live SVG preview with diagnostics on the
+right. Parsing, compilation, and SVG generation run in a browser Web Worker.
+When an edit is invalid, the diagnostic panel updates while the last valid
+diagram remains visible. The accepted lazy Monaco adapter presents only the
+tokens, values, or references accepted at the current cursor and applies the
+language worker's exact source edit. `Ctrl+Space` opens the in-place popup; the
+visible “C4ML IntelliSense” action provides the same keyboard-independent
+trigger.
+Compiler ranges appear as inline markers, and selecting a diagnostic reveals
+its source range. Normal Monaco undo/redo remains synchronized with hot
+compilation. The preview can be zoomed, fitted, scrolled while enlarged, and
+downloaded as SVG. Documents with several executable views expose a view
+selector; changing it recompiles the selected projection without duplicating
+the model. C4ML syntax highlighting is a remaining production capability.
 
 An original Container View can also be exported through the current internal
 TypeScript-fed reference path:
@@ -91,33 +121,76 @@ The original `signal-garden` TypeScript fixture demonstrates every semantic
 element and all seven views in
 `packages/compiler-core/test/signal-garden.fixture.ts`.
 
-### Planned end-user workflow
+### Experimental contributor CLI
 
-Command names and flags remain provisional. The intended workflow is:
+The first thin Node.js frontend is now executable for the bounded `draft-1`
+slices covering all seven view types. It builds and calls the same language and
+compiler packages as the editor worker:
 
 ```shell
 # Validate without rendering.
-c4ml check architecture.c4ml
+pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
 
-# Render one view as SVG.
-c4ml render architecture.c4ml \
-  --view signal-context \
-  --format svg \
+# Render one view as canonical SVG and derived PNG.
+pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
+  --view arrangement-engine-code \
+  --format svg,png \
   --output build/diagrams
 
 # Render all views as SVG and PNG.
-c4ml render architecture.c4ml \
+pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --all \
   --format svg,png \
   --output build/diagrams
 ```
 
-The editor will use the same compiler in a browser Web Worker. Source remains
+`--diagnostics json` emits machine-readable validation or rendering results,
+`--scale` controls PNG scale, and `pnpm run c4ml -- version` reports the current
+experimental frontend and language versions. Exit classes distinguish success,
+usage, source/view selection, layout/render compilation, and filesystem or
+environment failures.
+
+The CLI is contributor evidence, not a frozen public command contract. It does
+not yet accept the non-executable Visual Group, route-control, shape, or theme
+syntax. PNG currently uses local system fonts; production release artifacts
+still require a controlled bundled font.
+
+The editor uses the same compiler in a browser Web Worker. Source remains
 authoritative; the preview does not keep hidden semantic or layout state.
+Monaco is the accepted desktop source-editor library behind a C4ML-owned
+adapter, not a second parser. The editor will retain this separation while
+filling the remaining navigation, export, accessibility, and graphical-editing
+gaps.
+
+### Guided modeling wizard spike
+
+The editor now includes the first bounded guided architecture interview. “New
+from wizard” asks for one focal Software System, one Person, their directed
+relationship, and the System Context View. Before applying anything, the final
+step shows the complete generated `draft-1` source. Cancel leaves the active
+document unchanged; apply replaces it explicitly, and “Undo wizard” restores
+the prior document once.
+
+The result is not a separate visual-only document. The wizard generates normal
+C4ML source in the language worker and hands it to the same parser, validator,
+compiler, and preview used for hand-authored source. The current wizard creates
+a new document only; it does not merge into or reformat existing source.
+
+The intended later wizard remains broader: People, Software Systems,
+Containers, Components, Code Elements, deployments, views, Visual Groups, and
+context-dependent relationship and ownership choices. That complete scope and
+safe extension of existing documents are not implemented or accepted yet.
 
 For the quickest syntax review, begin with
-[`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), then
-compare it with the complete
+[`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), move
+to [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml),
+then to
+[`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+for Component and Code, continue with
+[`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) for
+System Landscape and Dynamic, then use
+[`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+for Deployment. Finally compare them with the complete
 [`signal-garden.c4ml`](examples/draft/signal-garden.c4ml) preview.
 
 ## 3. Proposed source format
@@ -668,6 +741,10 @@ allow-mixed-levels = true
 
 ## 8. Deployment model and views
 
+The bounded syntax in this section is executable in
+`examples/draft/hello-deployment.c4ml`. It remains experimental and does not
+freeze the eventual public grammar.
+
 ### 8.1 Environments and nested nodes
 
 ```c4ml
@@ -934,26 +1011,37 @@ Examples of already implemented semantic codes include:
   relationship; and
 - `C4ML-VIEW-011` — illegal or unknown view-level element selection.
 
-The planned CLI will return distinct failure classes for source, layout,
+The experimental CLI returns distinct failure classes for source, layout,
 rendering, and environment failures. The editor will retain the last valid
 preview while showing diagnostics for the current invalid source.
 
 ## 11. Demo files
 
-The repository contains three original syntax previews:
+The repository contains seven original syntax previews:
 
 - [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml) — a
-  minimal model and System Context View; and
+  minimal model and System Context View;
+- [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml)
+  — Container ownership, technologies, protocols, and a Container View;
+- [`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+  — the full static ownership hierarchy and selectable Component, Code,
+  Container, and System Context Views;
+- [`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) — a
+  named System Landscape plus ordered and parallel Dynamic Interactions;
+- [`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+  — nested runtime environments, instances, runtime relationships, and a
+  Deployment View;
 - [`examples/draft/signal-garden.c4ml`](examples/draft/signal-garden.c4ml) — a
   larger model covering Containers, Components, Code, Dynamic behavior,
   Deployment, and every view type; and
 - [`examples/draft/shape-marker.c4ml`](examples/draft/shape-marker.c4ml) — the
   restricted custom-shape contract and explicit cardinal Ports.
 
-The minimal `hello-context.c4ml` subset is part of the automated internal
-language gate. The other files, and every construct outside that subset, remain
-documentation artifacts. None of these previews defines an accepted grammar or
-compatibility commitment.
+The bounded `hello-context.c4ml`, `hello-container.c4ml`,
+`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and `hello-deployment.c4ml`
+subsets are part of the automated internal language gate. The other files, and
+every construct outside those subsets, remain documentation artifacts. None of
+these previews defines an accepted grammar or compatibility commitment.
 
 ## 12. Design principles for reviewing the proposal
 

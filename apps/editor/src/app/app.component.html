@@ -1,0 +1,180 @@
+<header class="app-bar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">C4</span>
+    <span>
+      <strong>C4ML</strong>
+      <small>Architecture editor</small>
+    </span>
+  </div>
+
+  <div class="app-actions">
+    @if (canUndoWizard()) {
+      <button type="button" class="quiet-action" (click)="undoWizard()">
+        Undo wizard
+      </button>
+    }
+    <button type="button" class="wizard-action" (click)="startWizard()">
+      New from wizard
+    </button>
+    <div class="worker-state" [attr.data-phase]="compiler.state().phase">
+      <span class="state-dot" aria-hidden="true"></span>
+      <span aria-live="polite">{{ statusLabel() }}</span>
+    </div>
+  </div>
+</header>
+
+<main class="workspace">
+  <section class="pane source-pane" aria-labelledby="source-heading">
+    <div class="pane-heading source-heading">
+      <div>
+        <p class="eyebrow">Source</p>
+        <h1 id="source-heading">architecture.c4ml</h1>
+      </div>
+      <span class="language-badge">draft-1</span>
+    </div>
+
+    <c4ml-monaco-source-editor
+      #sourceEditor
+      class="source-editor-host"
+      [value]="source()"
+      [diagnostics]="compiler.state().diagnostics"
+      [completionProvider]="provideCompletions"
+      (valueChanged)="onSourceChange($event)"
+    />
+
+    <aside
+      class="editor-status"
+      [attr.data-completion-phase]="compiler.completion().phase"
+      aria-live="polite"
+    >
+      <span>
+        <button type="button" (click)="triggerSuggestions()">
+          C4ML IntelliSense
+        </button>
+        <small>Ctrl+Space</small>
+      </span>
+      @if (compiler.completion().phase === "loading") {
+        <span>Checking context…</span>
+      } @else if (compiler.completion().phase === "failed") {
+        <span class="completion-error">{{ compiler.completion().message }}</span>
+      } @else {
+        <span>{{ compiler.completion().candidates.length }} suggestions</span>
+      }
+    </aside>
+  </section>
+
+  <section class="pane preview-pane" aria-labelledby="preview-heading">
+    <div class="pane-heading preview-heading">
+      <div>
+        <p class="eyebrow">Diagram</p>
+        <h2 id="preview-heading">Live preview</h2>
+      </div>
+      <div class="preview-tools">
+        @if (compiler.state().views.length > 0) {
+          <label class="view-picker">
+            <span>View</span>
+            <select
+              [value]="compiler.state().activeViewId ?? ''"
+              (change)="onViewSelection($event)"
+              aria-label="Select diagram view"
+            >
+              @for (view of compiler.state().views; track view.id) {
+                <option [value]="view.id">
+                  {{ view.title }} · {{ view.kind }}
+                </option>
+              }
+            </select>
+          </label>
+        }
+        <div class="preview-actions" aria-label="Preview controls">
+          <div class="zoom-controls">
+            <button type="button" (click)="zoomOut()" aria-label="Zoom out">−</button>
+            <button type="button" (click)="fitPreview()" title="Fit to view">
+              {{ zoomLabel() }}
+            </button>
+            <button type="button" (click)="zoomIn()" aria-label="Zoom in">+</button>
+          </div>
+          <button
+            type="button"
+            class="export-button"
+            (click)="exportSvg()"
+            [disabled]="compiler.state().phase !== 'valid'"
+          >
+            Export SVG
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-body">
+      <div class="preview-stage">
+        @if (previewUrl(); as url) {
+          <img
+            class="diagram"
+            [src]="url"
+            [style.transform]="previewTransform()"
+            alt="Compiled C4 diagram"
+          />
+        } @else {
+          <div class="empty-preview">
+            <span class="empty-glyph" aria-hidden="true"></span>
+            <strong>Building the first preview</strong>
+            <span>The compiler is running locally in a Web Worker.</span>
+          </div>
+        }
+
+        @if (
+          compiler.state().phase === "invalid" &&
+          compiler.state().lastValidSvg !== undefined
+        ) {
+          <p class="stale-note">Showing the last valid diagram.</p>
+        }
+      </div>
+
+      <aside
+        class="diagnostics"
+        [class.has-errors]="compiler.state().diagnostics.length > 0"
+        aria-live="polite"
+      >
+        <div class="diagnostics-heading">
+          <strong>Diagnostics</strong>
+          <span>{{ compiler.state().diagnostics.length }}</span>
+        </div>
+
+        @if (compiler.state().diagnostics.length === 0) {
+          <p class="diagnostics-empty">No issues in the current source.</p>
+        } @else {
+          <ol>
+            @for (diagnostic of compiler.state().diagnostics; track $index) {
+              <li [attr.data-severity]="diagnostic.severity">
+                <button
+                  type="button"
+                  (click)="onDiagnosticSelected(diagnostic)"
+                  [disabled]="diagnostic.source === undefined"
+                >
+                  <span>
+                    <code>{{ diagnostic.code }}</code>
+                    @if (diagnostic.source; as sourceLocation) {
+                      <small>
+                        Line {{ sourceLocation.start.line + 1 }}, column
+                        {{ sourceLocation.start.column + 1 }}
+                      </small>
+                    }
+                  </span>
+                  <p>{{ diagnostic.message }}</p>
+                </button>
+              </li>
+            }
+          </ol>
+        }
+      </aside>
+    </div>
+  </section>
+</main>
+
+@if (wizardOpen()) {
+  <c4ml-system-context-wizard
+    (applied)="applyWizard($event)"
+    (cancelled)="cancelWizard()"
+  />
+}

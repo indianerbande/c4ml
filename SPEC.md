@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.10
+Status: Draft 0.14
 
 Date: 2026-08-28
 
@@ -62,8 +62,9 @@ The first release will not attempt to provide:
 - a required local or remote compiler service;
 - automatic discovery of architecture from source code;
 - animated or presentation-oriented diagrams;
-- a complete icon marketplace; or
-- arbitrary user scripting inside source files.
+- a complete icon marketplace;
+- arbitrary user scripting inside source files; or
+- mobile-browser support for the first-release editor.
 
 The complete C4 abstraction and diagram family is part of the minimum complete
 release. Code, Dynamic, and Deployment views MUST NOT be deferred merely because
@@ -610,19 +611,21 @@ semantic, layout, routing, or scene-generation implementations.
 
 The accepted Phase 0 toolchain is:
 
-- the active Node.js 24 LTS line as the minimum development and CLI baseline;
+- Node.js 24.15.0 or a newer supported line as the minimum workspace build and
+  CLI baseline;
 - a pnpm workspace with the package-manager version pinned in the repository;
 - strict TypeScript using ECMAScript modules; and
 - Vitest for the initial unit and adapter-contract tests.
 
 The accepted editor application baseline is Angular 22 with the pinned
-TypeScript 6.0.x toolchain. The editor SHOULD use Angular standalone components
-and Signals for application-local state. Angular owns UI composition and
-interaction only; it MUST NOT introduce editor-specific semantic, layout,
-routing, scene, or rendering behavior. Compilation and language processing
-remain in a browser Web Worker behind the same C4ML-owned contracts used by the
-CLI. The concrete source-editor component remains a replaceable dependency and
-requires its own recorded evaluation before adoption.
+TypeScript 6.0.x toolchain and Monaco Editor 0.56.0. The editor SHOULD use
+Angular standalone components and Signals for application-local state. Angular
+owns UI composition and interaction; Monaco owns source editing, selection,
+completion presentation, markers, keyboard commands, and undo behind a
+C4ML-owned adapter. Neither library may introduce editor-specific semantic,
+layout, routing, scene, or rendering behavior. Compilation and language
+processing remain in a browser Web Worker behind the same C4ML-owned contracts
+used by the CLI.
 
 C4ML is licensed under Apache License 2.0. Third-party dependencies retain
 their own licenses and MUST remain behind the boundaries recorded in
@@ -725,17 +728,37 @@ grammar, geometry-affecting style tokens, or a bundled font. The ELK.js and
 resvg-js implementations remain candidate adapters behind the accepted
 engine-neutral boundaries.
 
-### 9.4 Experimental `draft-1` language slice
+### 9.4 Experimental `draft-1` language slices
 
-An internal, browser-compatible language package implements the smallest
-executable `draft-1` slice needed by the original
-`examples/draft/hello-context.c4ml` document. The slice currently recognizes:
+An internal, browser-compatible language package implements the executable
+`draft-1` slices needed by the original `examples/draft/hello-context.c4ml`,
+`examples/draft/hello-container.c4ml`, and
+`examples/draft/hello-static-zoom.c4ml`, plus
+`examples/draft/hello-dynamic.c4ml` and
+`examples/draft/hello-deployment.c4ml`. The slices currently recognize:
 
 - Person and Software System declarations with name, responsibility, and
   internal or external classification;
-- directed relationships with source, target, and intent;
-- one or more System Context Views with scope, title, purpose, default
-  audience, generated legend, and optional flow direction; and
+- Container declarations with explicit Software System ownership,
+  responsibility, and technology;
+- Component declarations with explicit Container ownership, responsibility,
+  and technology;
+- Code Element declarations with explicit Component ownership, responsibility,
+  code kind, and optional implementation language;
+- directed relationships with source, target, intent, and optional technology
+  or protocol, with normal semantic enforcement for Container relationships;
+- one or more System Context, Container, Component, or Code Views with a scope
+  restricted to the required C4 element kind, title, purpose, default audience,
+  generated legend, and optional flow direction; and
+- System Landscape Views with a quoted organizational scope;
+- Dynamic Views with a quoted scenario, collaboration or sequence display,
+  ordered interactions, explicit parallel groups, typed endpoints, and
+  references to static Relationships;
+- Deployment Environments, nested Deployment Nodes, Infrastructure Nodes,
+  Software System Instances, Container Instances, and deployment
+  relationships that may reference corresponding static Relationships;
+- Deployment Views that select one Environment and one or more Software
+  Systems; and
 - line comments and formatting-only whitespace changes.
 
 The Langium-generated syntax types remain private to the language package. An
@@ -745,12 +768,122 @@ codes, and invokes the same semantic and view resolution used by TypeScript-fed
 inputs. Parsed source can therefore enter the existing layout, scene, and SVG
 pipeline without introducing a second compiler implementation.
 
-This slice is an implemented feasibility boundary, not an accepted public
-grammar or compatibility promise. It does not yet cover Containers, Components,
-Code Elements, Dynamic or Deployment declarations, Visual Groups, complete
-selection, styling, shapes, ports, route guidance, formatting, incremental
-documents, a CLI, or editor language services. The rest of the syntax in
-`DOCUMENTATION.md` and `examples/draft` remains non-executable review material.
+These slices are an implemented feasibility boundary, not an accepted public
+grammar or compatibility promise. They do not yet cover Visual Groups,
+complete selection, styling, shapes, ports, route guidance,
+formatting, incremental documents, or complete editor language services. They
+expose a narrow context-completion contract for the executable subsets. The
+rest of the syntax in `DOCUMENTATION.md` and `examples/draft` remains
+non-executable review material.
+
+### 9.5 Angular editor foundation
+
+The production-bound editor foundation is implemented as an Angular 22
+standalone application under `apps/editor`. It uses Signals and zoneless change
+detection for UI state and keeps parser, semantic, layout, scene, and rendering
+behavior outside Angular components.
+
+The editor communicates with a module Web Worker through a C4ML-owned message
+contract. Compile, completion, and wizard-source requests share one
+monotonically increasing request sequence and carry a protocol version. Each UI
+consumer accepts a response only when it matches that consumer's newest active
+request, so an older compilation, completion list, or generated source can
+never replace a newer result. Invalid current source replaces the diagnostic
+list but retains the last valid SVG. Source changes are compiled after a short
+local debounce. A successful compilation returns the declared executable view
+catalogue and active view identity; the UI can request another view by stable
+identifier without creating another semantic model.
+
+The worker executes the experimental `draft-1` parser, explicit AST-to-domain
+lowering, shared semantic and view resolution, diagram compiler, scene builder,
+and SVG renderer. The UI displays compiler-produced SVG as an image through a
+local object URL rather than injecting authored markup into the application
+DOM. The same worker uses the language package's completion scopes and wizard
+source generator, so Angular does not contain a parallel set of language or C4
+rules. No compiler service or runtime network connection is required.
+
+This is the accepted foundation of the production editor, not a claim that the
+MVP editor is feature-complete. A lazy Monaco 0.56.0 adapter owns text input,
+selection, undo, keyboard commands, completion presentation, and marker
+presentation. Context-valid candidates and
+their exact replacement ranges still come only from the C4ML language worker.
+Compiler diagnostics are mapped to Monaco markers and can be selected in the
+diagnostic list to reveal and focus their source range. Zoom, fit-to-view,
+scroll-pan at enlarged scale, and local SVG download are implemented without
+mutating compiler geometry. C4ML syntax highlighting, preview-to-source and
+source-to-preview element navigation, persistence, PNG export, and graphical
+editing are not implemented. Its deterministic linear preview layout is a
+temporary adapter for the worker-to-preview path and MUST NOT be represented as
+the intended automatic-layout or routing solution. The browser form of the
+candidate ELK adapter remains a separate open evaluation.
+
+#### 9.5.1 Accepted source-editor dependency
+
+**Status: Accepted and implemented for the desktop editor.**
+
+The editor pins Monaco Editor 0.56.0 and loads its editor, selected
+interaction features, stylesheet, and generic editor worker locally. The
+Monaco runtime is a lazy chunk; its completion items receive explicit
+replacement ranges translated by a C4ML-owned source-editor contract. Monaco
+MUST remain a replaceable Angular UI adapter: it may own text editing,
+completion presentation, markers, keyboard commands, and undo, but it MUST NOT
+own C4 syntax or semantic rules. The existing C4ML compiler worker remains the
+only source of contextual candidates and diagnostics. Monaco's TypeScript,
+CSS, HTML, JSON, and native LSP language services are not loaded. C4ML syntax
+highlighting remains C4ML-owned and MUST NOT introduce a second authoritative
+parser or grammar.
+
+Superseded evaluation note (2026-08-28): CodeMirror 6 was considered as a
+smaller modular fallback. Monaco's broad adoption, familiar desktop interaction,
+implemented integration, and acceptable lazy-load cost for C4ML's explicitly
+desktop-only editor led to Monaco's acceptance. CodeMirror is no longer an
+active production-library decision.
+
+The measured production build has a 195.90 KB initial application total,
+a 3.05 MB lazy Monaco runtime, a 304.37 KB generic Monaco worker, and a locally
+loaded 350,112-byte Monaco stylesheet before transfer compression. The compiler
+worker remains a separate 760.92 KB chunk. Automated tests protect exact edit
+and diagnostic-range translation plus stale asynchronous completion handling.
+Interactive browser evidence covers an in-place context-only popup, exact edit
+application, marker display, diagnostic navigation, keyboard undo/redo, source
+synchronization, last-valid preview retention, and wizard apply/undo. The
+accessible browser tree exposes the editor as a labelled textbox and the popup
+as a listbox, but a real assistive-technology pass is still outstanding. All
+runtime assets were served locally without a compiler service or CDN.
+
+The first-release editor is explicitly desktop-only, and the measured lazy-load
+and installation costs are accepted for that scope. The production build MUST
+ship Monaco's license and upstream third-party notices. The pinned adapter's
+version-sensitive Suggest controller import MUST be checked on every dependency
+upgrade. A real assistive-technology pass remains required before an accessible
+release claim, but it is not a renewed source-editor selection gate.
+
+Sources: [Monaco README](https://github.com/microsoft/monaco-editor/blob/main/README.md),
+[Monaco 0.56 changelog](https://github.com/microsoft/monaco-editor/blob/main/CHANGELOG.md),
+[Monaco completion item API](https://microsoft.github.io/monaco-editor/typedoc/interfaces/editor_editor_api.languages.CompletionItem.html),
+[CodeMirror completion guide](https://codemirror.net/examples/autocompletion/),
+[CodeMirror reference manual](https://codemirror.net/docs/ref/), and
+[CodeMirror lint guide](https://codemirror.net/examples/lint/).
+
+### 9.6 Experimental authoring assistance
+
+The language package exposes an editor-independent completion contract for the
+`draft-1` subset. It accepts source text and a cursor offset and returns stable
+candidate identities, a C4ML-owned candidate kind, documentation, and one exact
+replacement range and text. Candidate discovery uses the current grammar and
+scope provider. It filters already-declared singleton properties and restricts
+cross-references by their semantic target type, including Software-System-only
+System Context and Container scopes, Container-only Component scopes, and
+Component-only Code scopes. Results are deterministically ordered.
+
+The first guided-modeling spike generates one new System Context document from
+explicit answers about one focal Software System, one Person, their directed
+relationship, and the view. The generated document uses the ordinary `draft-1`
+syntax and passes through the normal parser, semantic validator, compiler, and
+preview. The editor displays the proposed source before apply; cancel leaves the
+active source unchanged, and an applied generation has an explicit one-step
+undo. This spike does not extend or reformat existing documents and does not
+claim the future full wizard scope described in Section 14.4.
 
 ## 10. Scene graph and rendering
 
@@ -898,9 +1031,29 @@ remain provisional:
 Successful validation and successful rendering MUST use distinct, documented
 exit behavior from source, layout, rendering, and environment failures.
 
+### 13.1 Experimental CLI slice
+
+A thin Node.js CLI is implemented for the currently executable `draft-1`
+language slices. It delegates parsing, semantic validation, view
+resolution, layout, scene construction, SVG serialization, and PNG
+rasterization to the same packages used elsewhere. It supports validation,
+one-view or all-view rendering, SVG and PNG selection, PNG scale, output
+directory selection, human or JSON diagnostics, version reporting, and the
+documented exit classes `0`, `2`, `3`, `4`, and `5`.
+
+This is an implementation spike, not the accepted public CLI contract. Command
+names remain provisional, there is no distributable package yet, and current
+PNG output loads local system fonts. The spike therefore does not satisfy the
+controlled-font or complete-language requirements for a production release.
+
 ## 14. Editor
 
 ### 14.1 MVP editor
+
+The first-release editor targets desktop-class browsers or a future desktop
+application shell using the same browser runtime. Mobile-browser and mobile-web
+framework support are outside the first release. The packaging choice MUST NOT
+change the worker, compiler, or source-editor contracts.
 
 The MVP editor MUST provide:
 
@@ -938,6 +1091,47 @@ unrelated formatting.
 
 Direct manipulation is not an MVP acceptance requirement, but the compiler and
 source mapping MUST NOT preclude it.
+
+### 14.4 Future guided modeling wizard
+
+A later editor version MAY provide a guided wizard as an additional way to
+create or extend a model. The wizard should ask context-sensitive questions
+about the architecture, including:
+
+- people and software systems;
+- Containers, Components, Code Elements, and their ownership;
+- responsibilities, technologies, classifications, and other required C4
+  metadata;
+- directed relationships, their architectural intent, and applicable
+  technologies or protocols;
+- views, scopes, audiences, and purposes;
+- deployment environments, nodes, infrastructure, and instances; and
+- optional Visual Groups and presentation or layout preferences where they are
+  meaningful.
+
+Available questions and choices SHOULD be derived from the current semantic
+context. For example, Component questions require a selected owning Container,
+and Code Element questions require a selected owning Component. Relationship
+questions must offer only valid source and target elements for the active C4
+scope while still allowing the user to return to earlier answers.
+
+The result of the interview MUST be ordinary, explicit C4ML source that can be
+reviewed, compiled, edited, formatted, versioned, and processed by the CLI or
+editor like hand-authored source. The wizard MUST NOT create a private model,
+hidden relationships, or editor-only architecture state. It MUST use the same
+semantic validation and stable-identity rules as every other source-producing
+operation.
+
+Before applying generated source, the editor SHOULD show the proposed source
+and resulting diagnostics or preview. Applying, cancelling, and undoing the
+wizard operation MUST be explicit. Whether the first wizard creates only new
+documents or can also extend existing source without disturbing comments and
+formatting remains an open interaction-design decision.
+
+The implemented experimental wizard currently chooses the conservative
+new-document-only behavior for its narrow System Context slice. This is spike
+evidence, not acceptance of the final wizard interaction model; safe extension
+of existing documents remains open and unimplemented.
 
 ## 15. MVP acceptance criteria
 
@@ -981,7 +1175,6 @@ The following decisions remain deliberately open:
 
 - final project name and source extension;
 - exact source grammar and formatting rules;
-- code-editor component;
 - single-file versus optional sidecar layout organization;
 - namespace and multi-file merge rules;
 - whether custom element kinds are allowed in strict C4 mode;

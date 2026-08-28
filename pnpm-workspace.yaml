@@ -4,4 +4,14 @@ packages:
   - apps/*
 
 allowBuilds:
+  '@parcel/watcher': false
   'esbuild@0.28.2': true
+  lmdb: false
+  msgpackr-extract: false
+
+minimumReleaseAgeExclude:
+  - '@angular/common@22.1.4'
+  - '@angular/compiler-cli@22.1.4'
+  - '@angular/compiler@22.1.4'
+  - '@angular/core@22.1.4'
+  - '@angular/platform-browser@22.1.4'

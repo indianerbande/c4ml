@@ -1,0 +1,82 @@
+c4ml draft-1
+
+// Experimental executable Container slice; not a public or frozen grammar.
+
+model {
+  person route-planner {
+    name = "Route Planner"
+    responsibility = "Reviews route proposals and selects a workable path."
+    classification = external
+  }
+
+  system route-canvas {
+    name = "Route Canvas"
+    responsibility = "Builds reviewable route proposals from terrain observations."
+    classification = internal
+  }
+
+  system terrain-feed {
+    name = "Terrain Feed"
+    responsibility = "Publishes current terrain observations."
+    classification = external
+  }
+
+  container planning-console inside route-canvas {
+    name = "Planning Console"
+    responsibility = "Presents route proposals and accepts planning changes."
+    technology = "TypeScript web application"
+  }
+
+  container path-service inside route-canvas {
+    name = "Path Service"
+    responsibility = "Calculates route proposals from planning and terrain data."
+    technology = "TypeScript service"
+  }
+
+  container route-store inside route-canvas {
+    name = "Route Store"
+    responsibility = "Stores route proposals and planning decisions."
+    technology = "PostgreSQL"
+  }
+}
+
+relations {
+  relation planner-edits-console {
+    from = route-planner
+    to = planning-console
+    intent = "Reviews and changes route proposals"
+  }
+
+  relation console-requests-path {
+    from = planning-console
+    to = path-service
+    intent = "Requests a revised route proposal"
+    technology = "HTTPS/JSON"
+  }
+
+  relation terrain-supplies-service {
+    from = terrain-feed
+    to = path-service
+    intent = "Supplies current terrain observations"
+  }
+
+  relation service-writes-store {
+    from = path-service
+    to = route-store
+    intent = "Stores route proposals and decisions"
+    protocol = "PostgreSQL wire protocol"
+  }
+}
+
+view route-canvas-containers {
+  type = container
+  scope = route-canvas
+  title = "Container View — Route Canvas"
+  purpose = "Shows the deployable responsibilities inside Route Canvas."
+  audience = default
+  legend = generated
+
+  layout {
+    flow = right
+  }
+}

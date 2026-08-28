@@ -1,0 +1,168 @@
+<div class="wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+  <header>
+    <div>
+      <p>Guided modeling · draft-1</p>
+      <h2 id="wizard-title">New System Context document</h2>
+    </div>
+    <button type="button" class="close-button" (click)="cancel()" aria-label="Cancel wizard">×</button>
+  </header>
+
+  <nav aria-label="Wizard progress">
+    <span [class.current]="step() === 0">1 · System</span>
+    <span [class.current]="step() === 1">2 · Person</span>
+    <span [class.current]="step() === 2">3 · Connection & view</span>
+  </nav>
+
+  <div class="wizard-body">
+    @if (step() === 0) {
+      <section aria-labelledby="system-step-title">
+        <div class="step-intro">
+          <p>Step 1</p>
+          <h3 id="system-step-title">What is the focal Software System?</h3>
+          <span>The stable identifier survives later renames.</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Stable identifier</span>
+            <input [value]="answers().systemId" (input)="updateField('systemId', $event)" />
+            @if (issueFor("systemId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Display name</span>
+            <input [value]="answers().systemName" (input)="updateField('systemName', $event)" />
+            @if (issueFor("systemName"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label class="wide">
+            <span>Responsibility</span>
+            <textarea rows="3" [value]="answers().systemResponsibility" (input)="updateField('systemResponsibility', $event)"></textarea>
+            @if (issueFor("systemResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Classification</span>
+            <select [value]="answers().systemClassification" (change)="updateField('systemClassification', $event)">
+              <option value="internal">Internal</option>
+              <option value="external">External</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    } @else if (step() === 1) {
+      <section aria-labelledby="person-step-title">
+        <div class="step-intro">
+          <p>Step 2</p>
+          <h3 id="person-step-title">Who interacts with the system?</h3>
+          <span>This first wizard slice creates one C4 Person.</span>
+        </div>
+
+        <div class="field-grid">
+          <label>
+            <span>Stable identifier</span>
+            <input [value]="answers().personId" (input)="updateField('personId', $event)" />
+            @if (issueFor("personId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Display name</span>
+            <input [value]="answers().personName" (input)="updateField('personName', $event)" />
+            @if (issueFor("personName"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label class="wide">
+            <span>Responsibility</span>
+            <textarea rows="3" [value]="answers().personResponsibility" (input)="updateField('personResponsibility', $event)"></textarea>
+            @if (issueFor("personResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Classification</span>
+            <select [value]="answers().personClassification" (change)="updateField('personClassification', $event)">
+              <option value="external">External</option>
+              <option value="internal">Internal</option>
+            </select>
+          </label>
+        </div>
+      </section>
+    } @else {
+      <section aria-labelledby="relation-step-title">
+        <div class="step-intro">
+          <p>Step 3</p>
+          <h3 id="relation-step-title">How are they connected and presented?</h3>
+          <span>The generated source is visible before it replaces the editor document.</span>
+        </div>
+
+        <div class="field-grid compact-grid">
+          <label>
+            <span>Relationship identifier</span>
+            <input [value]="answers().relationshipId" (input)="updateField('relationshipId', $event)" />
+            @if (issueFor("relationshipId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Relationship intent</span>
+            <input [value]="answers().relationshipIntent" (input)="updateField('relationshipIntent', $event)" />
+            @if (issueFor("relationshipIntent"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>View identifier</span>
+            <input [value]="answers().viewId" (input)="updateField('viewId', $event)" />
+            @if (issueFor("viewId"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>View title</span>
+            <input [value]="answers().viewTitle" (input)="updateField('viewTitle', $event)" />
+            @if (issueFor("viewTitle"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>View purpose</span>
+            <input [value]="answers().viewPurpose" (input)="updateField('viewPurpose', $event)" />
+            @if (issueFor("viewPurpose"); as issue) { <small class="issue">{{ issue }}</small> }
+          </label>
+          <label>
+            <span>Primary flow</span>
+            <select [value]="answers().flow" (change)="updateField('flow', $event)">
+              <option value="right">Right</option>
+              <option value="down">Down</option>
+              <option value="left">Left</option>
+              <option value="up">Up</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="source-preview">
+          <div>
+            <strong>Generated C4ML source</strong>
+            <span [attr.data-phase]="compiler.wizard().phase">{{ compiler.wizard().phase }}</span>
+          </div>
+          @if (compiler.wizard().source; as generatedSource) {
+            <pre>{{ generatedSource }}</pre>
+          } @else if (compiler.wizard().phase === "loading") {
+            <p>Generating source in the language worker…</p>
+          } @else {
+            <ul>
+              @for (issue of compiler.wizard().issues; track issue.field) {
+                <li>{{ issue.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      </section>
+    }
+  </div>
+
+  <footer>
+    <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    <span></span>
+    @if (step() > 0) {
+      <button type="button" class="secondary" (click)="previous()">Back</button>
+    }
+    @if (step() < 2) {
+      <button type="button" class="primary" (click)="next()">Continue</button>
+    } @else {
+      <button
+        type="button"
+        class="primary"
+        (click)="apply()"
+        [disabled]="compiler.wizard().phase !== 'valid'"
+      >
+        Use generated source
+      </button>
+    }
+  </footer>
+</div>

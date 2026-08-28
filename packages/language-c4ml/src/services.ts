@@ -8,6 +8,12 @@ import {
   type Module,
   type PartialLangiumCoreServices,
 } from "langium";
+import {
+  createDefaultModule,
+  createDefaultSharedModule,
+  type LangiumServices,
+  type LangiumSharedServices,
+} from "langium/lsp";
 
 import {
   C4mlDraftGeneratedModule,
@@ -29,6 +35,11 @@ export interface C4mlDraftServices {
   readonly language: LangiumCoreServices;
 }
 
+export interface C4mlDraftLanguageServices {
+  readonly shared: LangiumSharedServices;
+  readonly language: LangiumServices;
+}
+
 export function createC4mlDraftServices(): C4mlDraftServices {
   const shared = inject(
     createDefaultSharedCoreModule(EmptyFileSystem),
@@ -36,6 +47,21 @@ export function createC4mlDraftServices(): C4mlDraftServices {
   );
   const language = inject(
     createDefaultCoreModule({ shared }),
+    C4mlDraftGeneratedModule,
+    C4mlDraftModule,
+  );
+
+  shared.ServiceRegistry.register(language);
+  return { shared, language };
+}
+
+export function createC4mlDraftLanguageServices(): C4mlDraftLanguageServices {
+  const shared = inject(
+    createDefaultSharedModule(EmptyFileSystem),
+    C4mlDraftGeneratedSharedModule,
+  );
+  const language = inject(
+    createDefaultModule({ shared }),
     C4mlDraftGeneratedModule,
     C4mlDraftModule,
   );
