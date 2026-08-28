@@ -6,7 +6,7 @@ import type {
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
 
-export const compilerWorkerProtocolVersion = 4 as const;
+export const compilerWorkerProtocolVersion = 5 as const;
 
 export interface CompilerWorkerView {
   readonly id: string;
@@ -31,6 +31,26 @@ export interface CompilerWorkerSource {
   readonly file: string;
   readonly start: CompilerWorkerPosition;
   readonly end: CompilerWorkerPosition;
+}
+
+export interface CompilerWorkerNavigationTarget {
+  readonly sceneNodeId: string;
+  readonly svgElementId: string;
+  readonly referenceId: string;
+  readonly label: string;
+  readonly source: CompilerWorkerSource;
+  readonly bounds: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
+export interface CompilerWorkerNavigation {
+  readonly width: number;
+  readonly height: number;
+  readonly targets: readonly CompilerWorkerNavigationTarget[];
 }
 
 export interface CompilerWorkerDiagnostic {
@@ -87,6 +107,7 @@ export interface CompilerWorkerResponse {
   readonly status: "failed" | "invalid" | "valid";
   readonly diagnostics: readonly CompilerWorkerDiagnostic[];
   readonly svg: string | undefined;
+  readonly navigation: CompilerWorkerNavigation | undefined;
   readonly views: readonly CompilerWorkerView[];
   readonly activeViewId: string | undefined;
 }
@@ -234,9 +255,10 @@ export function isCompilerWorkerResponse(
       typeof candidate.activeViewId === "string") &&
     (candidate.status === "valid"
       ? typeof candidate.svg === "string" &&
+        isCompilerWorkerNavigation(candidate.navigation) &&
         typeof candidate.activeViewId === "string" &&
         candidate.views.some(({ id }) => id === candidate.activeViewId)
-      : candidate.svg === undefined)
+      : candidate.svg === undefined && candidate.navigation === undefined)
   );
 }
 
@@ -339,6 +361,63 @@ function isCompilerWorkerView(value: unknown): value is CompilerWorkerView {
       candidate.kind === "system-context" ||
       candidate.kind === "system-landscape")
   );
+}
+
+function isCompilerWorkerNavigation(
+  value: unknown,
+): value is CompilerWorkerNavigation {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerNavigation>;
+  return (
+    isPositiveFinite(candidate.width) &&
+    isPositiveFinite(candidate.height) &&
+    Array.isArray(candidate.targets) &&
+    candidate.targets.every(isCompilerWorkerNavigationTarget)
+  );
+}
+
+function isCompilerWorkerNavigationTarget(
+  value: unknown,
+): value is CompilerWorkerNavigationTarget {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerNavigationTarget>;
+  const bounds = candidate.bounds;
+  return (
+    typeof candidate.sceneNodeId === "string" &&
+    typeof candidate.svgElementId === "string" &&
+    typeof candidate.referenceId === "string" &&
+    typeof candidate.label === "string" &&
+    isCompilerWorkerSource(candidate.source) &&
+    typeof bounds === "object" &&
+    bounds !== null &&
+    Number.isFinite(bounds.x) &&
+    Number.isFinite(bounds.y) &&
+    isPositiveFinite(bounds.width) &&
+    isPositiveFinite(bounds.height)
+  );
+}
+
+function isCompilerWorkerSource(
+  value: unknown,
+): value is CompilerWorkerSource {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerSource>;
+  return (
+    typeof candidate.file === "string" &&
+    isPosition(candidate.start) &&
+    isPosition(candidate.end) &&
+    candidate.start.offset <= candidate.end.offset
+  );
+}
+
+function isPositiveFinite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 function isCompletionCandidate(

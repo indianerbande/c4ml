@@ -17,6 +17,9 @@ import type {
   InteractionDeclaration,
   LayoutBlock,
   RelationshipDeclaration,
+  RouteCorridorDeclaration,
+  RouteDeclaration,
+  RoutePolicyProperty,
   ViewDeclaration,
 } from "./generated/ast.js";
 import {
@@ -28,6 +31,8 @@ import {
   isInteractionDeclaration,
   isLayoutBlock,
   isRelationshipDeclaration,
+  isRouteCorridorDeclaration,
+  isRouteDeclaration,
   isViewDeclaration,
 } from "./generated/ast.js";
 import { c4mlDraftLanguageVersion } from "./language.js";
@@ -70,6 +75,8 @@ const propertyLabels = new Set([
   "allow-mixed-levels",
   "classification",
   "code-kind",
+  "coordinate",
+  "corridor",
   "flow",
   "from",
   "display",
@@ -77,6 +84,12 @@ const propertyLabels = new Set([
   "intent",
   "legend",
   "language",
+  "label-segment",
+  "label-shift",
+  "lane",
+  "lane-gap",
+  "lanes",
+  "orientation",
   "order",
   "parallel",
   "name",
@@ -90,11 +103,21 @@ const propertyLabels = new Set([
   "to",
   "type",
   "protocol",
+  "points",
+  "policy",
+  "source-port",
+  "style",
+  "target-port",
+  "via",
 ]);
 
 const valueLabels = new Set([
   "default",
+  "automatic",
+  "direct",
   "down",
+  "east",
+  "fixed",
   "container",
   "code",
   "component",
@@ -103,14 +126,21 @@ const valueLabels = new Set([
   "dynamic",
   "deployment",
   "generated",
+  "guided",
+  "horizontal",
   "internal",
   "left",
+  "north",
+  "orthogonal",
   "right",
   "sequence",
   "system-context",
   "system-landscape",
+  "south",
   "true",
   "up",
+  "vertical",
+  "west",
 ]);
 
 const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
@@ -118,6 +148,8 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   audience: ["ViewAudienceProperty"],
   classification: ["ClassificationProperty"],
   "code-kind": ["CodeKindProperty"],
+  coordinate: ["CorridorCoordinateProperty"],
+  corridor: ["RouteCorridorSelectionProperty"],
   display: ["ViewDisplayProperty"],
   environment: ["ViewEnvironmentProperty"],
   flow: ["FlowProperty"],
@@ -133,6 +165,12 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   ],
   legend: ["ViewLegendProperty"],
   language: ["LanguageProperty"],
+  "label-segment": ["RouteLabelSegmentProperty"],
+  "label-shift": ["RouteLabelShiftProperty"],
+  lane: ["RouteLaneProperty"],
+  "lane-gap": ["CorridorLaneGapProperty"],
+  lanes: ["CorridorLanesProperty"],
+  orientation: ["CorridorOrientationProperty"],
   order: ["InteractionOrderProperty"],
   parallel: ["InteractionParallelProperty"],
   name: ["DisplayNameProperty"],
@@ -153,40 +191,64 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   ],
   type: ["ViewTypeProperty"],
   protocol: ["ProtocolProperty"],
+  points: ["RoutePointsProperty"],
+  policy: ["RoutePolicyProperty"],
+  "source-port": ["RouteSourcePortProperty"],
+  style: ["RouteStyleProperty"],
+  "target-port": ["RouteTargetPortProperty"],
+  via: ["RouteViaProperty"],
 };
 
 const documentationByLabel: Readonly<Record<string, string>> = {
   "allow-mixed-levels": "Acknowledges that a Dynamic View deliberately mixes C4 abstraction levels.",
+  automatic: "Lets the router choose the effective path for this relationship appearance.",
   audience: "Declares the intended audience policy for this view.",
   classification: "Classifies an architecture element as internal or external.",
   code: "Declares a C4 Code Element or selects a C4 Code View in the active context.",
   "code-kind": "Names the implementation-level role, such as module, class, or function.",
+  coordinate: "Sets the absolute x or y position of this corridor in view coordinates.",
+  corridor: "Selects a named route corridor in the active view.",
   component: "Declares a C4 Component or selects a C4 Component View in the active context.",
   collaboration: "Renders Dynamic Interactions as a numbered collaboration.",
   container: "Selects a C4 Container View or declares a Container in a model block.",
   default: "Uses the C4ML default audience or legend policy for this context.",
+  direct: "Connects route points using straight segments.",
   deployment: "Selects a C4 Deployment View over one modeled runtime environment.",
   down: "Arranges the view from north to south.",
+  east: "Attaches this relationship appearance to the east side.",
   dynamic: "Selects a C4 Dynamic View over ordered static-model interactions.",
   display: "Selects the visual vocabulary for a Dynamic View.",
   external: "Marks an element as owned outside the modeled organization or scope.",
+  fixed: "Uses and validates the complete authored route without replacing it.",
   environment: "Selects the Deployment Environment shown by this view.",
   flow: "Chooses the primary automatic layout direction for this view.",
   from: "Selects the source element of this directed relationship.",
   generated: "Generates the diagram legend from the effective notation.",
+  guided: "Keeps authored route controls while the router completes the remaining path.",
+  horizontal: "Creates lanes parallel to the horizontal view axis.",
   intent: "Describes the architectural intent in the relationship direction.",
   internal: "Marks an element as owned inside the modeled organization or scope.",
   layout: "Opens view-local layout preferences without changing architecture semantics.",
   left: "Arranges the view from east to west.",
   legend: "Declares how this view explains its notation.",
   language: "Declares the implementation language of a Code Element.",
+  "label-segment": "Selects the zero-based effective route segment that carries the label.",
+  "label-shift": "Moves the relationship label by an explicit x/y offset.",
+  lane: "Selects the zero-based lane within the named corridor.",
+  "lane-gap": "Sets the distance between adjacent corridor lanes.",
+  lanes: "Declares how many exclusive lanes this corridor provides.",
   model: "Opens the shared semantic architecture model.",
   name: "Declares the human-readable display name.",
+  north: "Attaches this relationship appearance to the north side.",
+  orientation: "Selects whether corridor lanes run horizontally or vertically.",
+  orthogonal: "Connects route points using axis-aligned segments.",
   person: "Declares a C4 Person with a stable identifier.",
   order: "Declares the positive interaction order in a Dynamic View.",
   parallel: "Groups same-order Dynamic Interactions into one explicit parallel occurrence.",
   purpose: "Explains why this view exists and what question it answers.",
   protocol: "Declares the communication protocol for a relationship.",
+  points: "Supplies the complete point list for a fixed route.",
+  policy: "Selects automatic, guided, or fixed route authorship.",
   relation: "Declares one stable, directed architecture relationship.",
   interaction: "Declares one ordered occurrence over the static architecture model.",
   infrastructure: "Declares infrastructure placed on a Deployment Node.",
@@ -194,6 +256,9 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   "container-instance": "Places one Container instance on a Deployment Node.",
   "deployment-relation": "Declares runtime communication between deployed endpoints.",
   sequence: "Renders Dynamic Interactions using a sequence-oriented vocabulary.",
+  south: "Attaches this relationship appearance to the south side.",
+  "source-port": "Selects the source-side attachment for this relationship appearance.",
+  style: "Selects direct or orthogonal route geometry.",
   relations: "Opens the shared relationship declarations.",
   responsibility: "Summarizes what this architecture element is responsible for.",
   right: "Arranges the view from west to east.",
@@ -203,12 +268,16 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   "system-landscape": "Selects a C4 System Landscape View with a named organizational scope.",
   systems: "Selects the Software Systems whose runtime instances appear in a Deployment View.",
   technology: "Declares implementation or communication technology.",
+  "target-port": "Selects the target-side attachment for this relationship appearance.",
   title: "Declares the human-readable diagram title.",
   to: "Selects the target element of this directed relationship.",
   true: "Explicitly enables the current boolean policy.",
   type: "Declares the C4 view type.",
   up: "Arranges the view from south to north.",
+  vertical: "Creates lanes parallel to the vertical view axis.",
+  via: "Adds absolute waypoints that guide an otherwise completed route.",
   view: "Declares a named projection of the shared architecture model.",
+  west: "Attaches this relationship appearance to the west side.",
 };
 
 export async function completeC4mlDraft(
@@ -275,6 +344,8 @@ type CompletionOwner =
   | InteractionDeclaration
   | LayoutBlock
   | RelationshipDeclaration
+  | RouteCorridorDeclaration
+  | RouteDeclaration
   | ViewDeclaration
   | undefined;
 
@@ -420,6 +491,8 @@ function isCompletionOwner(node: AstNode): node is Exclude<CompletionOwner, unde
     isInfrastructureNodeDeclaration(node) ||
     isInteractionDeclaration(node) ||
     isRelationshipDeclaration(node) ||
+    isRouteCorridorDeclaration(node) ||
+    isRouteDeclaration(node) ||
     isViewDeclaration(node) ||
     isLayoutBlock(node)
   );
@@ -438,6 +511,12 @@ function isAlreadyDeclared(
   if (candidate.kind !== "property" || owner === undefined) {
     return false;
   }
+  if (
+    isRouteDeclaration(owner) &&
+    !isRoutePropertyAllowed(candidate.label, owner)
+  ) {
+    return true;
+  }
   const propertyTypes = propertyTypesByLabel[candidate.label];
   if (propertyTypes === undefined) {
     return false;
@@ -446,6 +525,57 @@ function isAlreadyDeclared(
   return properties.some(
     (property) =>
       propertyTypes.includes(property.$type) && !containsOffset(property, offset),
+  );
+}
+
+function isRoutePropertyAllowed(
+  label: string,
+  route: RouteDeclaration,
+): boolean {
+  const policy = route.properties.find(
+    (property): property is RoutePolicyProperty =>
+      property.$type === "RoutePolicyProperty",
+  )?.value;
+  if (policy === undefined) {
+    return label === "policy";
+  }
+
+  const allowedByPolicy: Readonly<Record<typeof policy, ReadonlySet<string>>> = {
+    automatic: new Set(["label-segment", "label-shift", "policy"]),
+    guided: new Set([
+      "corridor",
+      "label-segment",
+      "label-shift",
+      "lane",
+      "policy",
+      "source-port",
+      "style",
+      "target-port",
+      "via",
+    ]),
+    fixed: new Set([
+      "label-segment",
+      "label-shift",
+      "points",
+      "policy",
+      "style",
+    ]),
+  };
+  if (!allowedByPolicy[policy].has(label)) {
+    return false;
+  }
+
+  const hasVia = route.properties.some(
+    ({ $type }) => $type === "RouteViaProperty",
+  );
+  const hasCorridorSelection = route.properties.some(
+    ({ $type }) =>
+      $type === "RouteCorridorSelectionProperty" ||
+      $type === "RouteLaneProperty",
+  );
+  return !(
+    (hasVia && (label === "corridor" || label === "lane")) ||
+    (hasCorridorSelection && label === "via")
   );
 }
 

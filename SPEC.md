@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.14
+Status: Draft 0.16
 
 Date: 2026-08-28
 
@@ -763,6 +763,29 @@ An internal, browser-compatible language package implements the executable
   Systems; and
 - line comments and formatting-only whitespace changes.
 
+The first executable view-local routing subset additionally recognizes:
+
+- named horizontal or vertical corridors at an absolute integer canvas
+  coordinate, with positive capacity and lane spacing;
+- route controls keyed by a declared static Relationship identifier;
+- independent `automatic`, `guided`, and `fixed` authorship policies and
+  `direct` or `orthogonal` route styles;
+- independent automatic or cardinal source and target Ports;
+- absolute integer waypoints for guided routes and complete point lists for
+  fixed routes;
+- a named corridor plus a zero-based exclusive lane for guided routes; and
+- a zero-based effective label segment and an integer x/y label offset.
+
+These controls lower into the compiler-owned `DiagramRoutingOptions` for their
+own view and are passed identically by the CLI and browser worker. They do not
+alter the semantic Relationship or the resolved view. The lowering stage
+rejects duplicate corridor identities, duplicate controls for one Relationship,
+missing required corridor properties, non-positive corridor capacity or lane
+spacing, and policy-incompatible combinations. The routing stage rejects an
+unknown or non-visible Relationship, unknown corridors, out-of-capacity lanes,
+shared exclusive lanes, invalid point geometry, obstacle crossings, invalid
+label segments, and fixed endpoints that do not attach to their nodes.
+
 The Langium-generated syntax types remain private to the language package. An
 explicit lowering stage translates them into the parser-independent C4ML model
 and view contracts, preserves source locations, assigns stable C4ML diagnostic
@@ -772,11 +795,13 @@ pipeline without introducing a second compiler implementation.
 
 These slices are an implemented feasibility boundary, not an accepted public
 grammar or compatibility promise. They do not yet cover Visual Groups,
-complete selection, styling, shapes, ports, route guidance,
-formatting, incremental documents, or complete editor language services. They
-expose a narrow context-completion contract for the executable subsets. The
-rest of the syntax in `DOCUMENTATION.md` and `examples/draft` remains
-non-executable review material.
+complete selection, styling, shapes, relative route anchors, avoidance regions,
+locked segments, route controls for Dynamic Interactions or Deployment
+Relationships, formatting, incremental documents, or complete editor language
+services. They expose context-completion for the executable subsets, including
+only valid properties and references inside route and corridor blocks. The rest
+of the syntax in `DOCUMENTATION.md` and `examples/draft` remains non-executable
+review material.
 
 ### 9.5 Angular editor foundation
 
@@ -815,8 +840,17 @@ diagnostic list to reveal and focus their source range. Zoom, fit-to-view,
 scroll-pan at enlarged scale, and local SVG download are implemented without
 mutating compiler geometry. Syntax highlighting is implemented with spans from
 the authoritative C4ML lexer, transported through the compiler worker and
-encoded as Monaco semantic tokens. Preview-to-source and source-to-preview
-element navigation, persistence, PNG export, and graphical editing are not
+encoded as Monaco semantic tokens. Successful compilation also returns an
+inspectable navigation map from source ranges through stable scene-node and SVG
+identities to scene bounds. Selecting a source declaration highlights the
+smallest matching source-mapped preview node. Selecting a preview node reveals
+and selects its source declaration. The selection style is applied only to the
+displayed SVG copy; SVG export retains the canonical, unselected compiler
+output. Invalid edits retain the last valid navigation map with the last valid
+preview, but preview clicks are disabled until current source compiles again.
+This first navigation slice covers source-mapped diagram nodes and boundaries,
+not Relationships, Routes, Ports, Arrowheads, or labels. Persistence, PNG
+export, graphical editing, and those additional selection targets are not
 implemented. The production preview uses the accepted ELK.js adapter described
 in Section 9.5.2; the former deterministic linear preview remains test-only
 compatibility code.

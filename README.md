@@ -64,6 +64,12 @@ Implemented and automatically validated:
   diagnostics to source;
 - lexer-owned C4ML syntax highlighting presented through Monaco semantic
   tokens without a second editor grammar;
+- bidirectional navigation between source declarations and source-mapped
+  preview nodes, with a preview-only selection highlight that does not alter
+  exported SVG;
+- executable, view-local `draft-1` route controls for automatic, guided, and
+  fixed policies, cardinal Ports, absolute waypoints, named corridors and
+  exclusive lanes, complete fixed point lists, and label placement;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   browser-worker entry points behind the shared layout contract;
 - selectable views, plus zoom, fit, scroll-pan, and local SVG export;
@@ -81,18 +87,20 @@ Not implemented yet:
 - complete render validation for all seven view types;
 - a bundled reproducible font and frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
-- the remaining production editor capabilities: bidirectional source/preview
-  element navigation, PNG export, persistence, and
-  graphical source editing; and
+- the remaining production editor capabilities: relationship/route selection,
+  PNG export, persistence, accessibility validation, and graphical source
+  editing; and
 - the complete guided modeling wizard for Containers, Components, Code,
   deployments, Visual Groups, and safe extension of existing documents.
 
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
 [`examples/draft`](examples/draft) remains a **design preview**. Bounded System
-All seven view types have bounded executable slices through an internal
-package; they are not a public or frozen grammar. Visual Groups, route and Port
-controls, themes, custom shapes, and the remaining preview syntax are not
-accepted by the source compiler yet.
+Context, Container, Component, Code, System Landscape, Dynamic, and Deployment
+slices are executable through an internal package; they are not a public or
+frozen grammar. The first absolute route- and Port-control slice is executable.
+Visual Groups, relative routing, avoidance regions, locked segments, themes,
+custom shapes, and the remaining preview syntax are not accepted by the source
+compiler yet.
 
 ## C4 scope
 
@@ -110,11 +118,11 @@ C4ML keeps the semantic architecture model separate from view selection,
 presentation, layout, scene construction, and output rendering. A model element
 retains the same stable identity when it appears in different diagrams.
 
-Automatic routing is a starting point rather than an irreversible result.
-View-local ports, named corridors and lanes, relative or absolute waypoints,
-avoidance regions, locked segments, and fully fixed routes will let authors
-control dense connection graphs without turning layout instructions into fake
-architecture relationships.
+Automatic routing is a starting point rather than an irreversible result. The
+current draft source can already select view-local Ports, absolute waypoints,
+named corridors and exclusive lanes, label placement, or a fully fixed route.
+Relative waypoints, avoidance regions, and locked segments remain planned. None
+of these controls creates a fake architecture relationship.
 
 ## Intended compiler pipeline
 

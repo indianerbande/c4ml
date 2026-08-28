@@ -19,15 +19,18 @@ Implemented:
   replacement ranges;
 - inline compiler markers, diagnostic-to-source navigation, and keyboard
   undo/redo;
+- bidirectional navigation between source declarations and source-mapped
+  preview nodes, using compiler-owned stable scene/SVG identities;
 - selection among the executable views declared in the current document;
 - zoom, fit, scroll-pan, and local SVG download; and
 - a three-step new-document System Context wizard with generated-source review,
   cancel, apply, and one explicit undo.
 
 Monaco owns browser text editing and presentation only. The C4ML worker remains
-the sole source of completions and diagnostics, and no Monaco language service
-defines C4ML syntax or semantics. The linear preview layout remains a temporary
-adapter and is not the planned automatic-layout implementation.
+the sole source of completions, highlighting, diagnostics, and navigation
+mappings, and no Monaco language service defines C4ML syntax or semantics. The
+preview uses the accepted browser ELK.js adapter; the linear preview layout
+remains test-only compatibility code.
 
 The current wizard is intentionally narrower than the future guided-modeling
 scope recorded in `SPEC.md`. It creates one complete `draft-1` System Context

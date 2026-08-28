@@ -1,6 +1,7 @@
 import {
   compilerWorkerProtocolVersion,
   type CompilerWorkerDiagnostic,
+  type CompilerWorkerNavigation,
   type CompilerWorkerRequest,
   type CompilerWorkerResponse,
   type CompilerWorkerView,
@@ -38,6 +39,7 @@ export interface EditorCompilationState {
   readonly activeRequestId: number;
   readonly diagnostics: readonly CompilerWorkerDiagnostic[];
   readonly lastValidSvg: string | undefined;
+  readonly lastValidNavigation: CompilerWorkerNavigation | undefined;
   readonly views: readonly CompilerWorkerView[];
   readonly activeViewId: string | undefined;
 }
@@ -47,6 +49,7 @@ const initialState: EditorCompilationState = {
   activeRequestId: 0,
   diagnostics: [],
   lastValidSvg: undefined,
+  lastValidNavigation: undefined,
   views: [],
   activeViewId: undefined,
 };
@@ -97,6 +100,10 @@ export class EditorCompilationSession {
         response.status === "valid" && response.svg !== undefined
           ? response.svg
           : this.#state.lastValidSvg,
+      lastValidNavigation:
+        response.status === "valid" && response.navigation !== undefined
+          ? response.navigation
+          : this.#state.lastValidNavigation,
       views:
         response.views.length > 0 ? response.views : this.#state.views,
       activeViewId: response.activeViewId ?? this.#state.activeViewId,

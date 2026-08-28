@@ -10,10 +10,14 @@ import {
   sortDiagnostics,
   type ArchitectureModel,
   type ArchitectureView,
+  type DiagramRoutingOptions,
   type DeploymentModel,
   type Diagnostic,
+  type Point,
   type RelatedDiagnosticInformation,
   type ResolvedView,
+  type RouteControl,
+  type RouteCorridor,
   type SourceReference,
   type StaticElement,
 } from "@c4ml/compiler-core";
@@ -24,6 +28,10 @@ import type {
   CodeElementDeclaration,
   CodeKindProperty,
   ComponentDeclaration,
+  CorridorCoordinateProperty,
+  CorridorLaneGapProperty,
+  CorridorLanesProperty,
+  CorridorOrientationProperty,
   ContainerDeclaration,
   ContainerInstanceDeclaration,
   DeploymentNodeDeclaration,
@@ -51,6 +59,19 @@ import type {
   ProtocolProperty,
   RelationshipToProperty,
   ResponsibilityProperty,
+  RouteCorridorDeclaration,
+  RouteCorridorSelectionProperty,
+  RouteDeclaration,
+  RouteLabelSegmentProperty,
+  RouteLabelShiftProperty,
+  RouteLaneProperty,
+  RoutePointsProperty,
+  RoutePolicyProperty,
+  RouteSourcePortProperty,
+  RouteStyleProperty,
+  RouteTargetPortProperty,
+  RouteViaProperty,
+  SignedInteger,
   SoftwareSystemInstanceDeclaration,
   TechnologyProperty,
   ViewAllowMixedLevelsProperty,
@@ -79,12 +100,14 @@ export interface C4mlDraftResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly model?: ArchitectureModel;
   readonly views?: readonly ArchitectureView[];
+  readonly routingByViewId?: Readonly<Record<string, DiagramRoutingOptions>>;
   readonly resolvedViews?: readonly ResolvedView[];
 }
 
 interface LoweredDocument {
   readonly model: ArchitectureModel;
   readonly views: readonly ArchitectureView[];
+  readonly routingByViewId: Readonly<Record<string, DiagramRoutingOptions>>;
 }
 
 interface LangiumDiagnosticLike {
@@ -154,6 +177,7 @@ export async function parseC4mlDraft(
     diagnostics,
     model: lowered.model,
     views: lowered.views,
+    routingByViewId: lowered.routingByViewId,
     resolvedViews: resolution.views,
   };
 }
@@ -178,6 +202,12 @@ function lowerDocument(
   const views = document.views
     .map((view) => lowerView(view, file, diagnostics))
     .filter((view): view is ArchitectureView => view !== undefined);
+  const routingByViewId = Object.fromEntries(
+    document.views.flatMap((view) => {
+      const routing = lowerViewRouting(view, file, diagnostics);
+      return routing === undefined ? [] : [[view.name, routing] as const];
+    }),
+  );
 
   if (hasErrors(diagnostics)) {
     return undefined;
@@ -189,6 +219,7 @@ function lowerDocument(
       ...(deployment === undefined ? {} : { deployment }),
     },
     views,
+    routingByViewId,
   };
 }
 
@@ -823,6 +854,342 @@ function lowerView(
     case "code":
       return { ...base, kind: type.value, componentId: scopeId };
   }
+}
+
+function lowerViewRouting(
+  declaration: ViewDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): DiagramRoutingOptions | undefined {
+  const layout = declaration.layout;
+  if (layout === undefined) {
+    return undefined;
+  }
+
+  const corridors = layout.corridors
+    .map((corridor) => lowerRouteCorridor(corridor, file, diagnostics))
+    .filter((corridor): corridor is RouteCorridor => corridor !== undefined);
+  const controls = layout.routes
+    .map((route) => lowerRouteControl(route, file, diagnostics))
+    .filter((control): control is RouteControl => control !== undefined);
+
+  diagnoseDuplicateRoutingIds(layout.corridors, layout.routes, file, diagnostics);
+  if (corridors.length === 0 && controls.length === 0) {
+    return undefined;
+  }
+  return { corridors, controls };
+}
+
+function lowerRouteCorridor(
+  declaration: RouteCorridorDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): RouteCorridor | undefined {
+  const orientation = requiredProperty<CorridorOrientationProperty>(
+    declaration.properties,
+    "CorridorOrientationProperty",
+    "orientation",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const coordinate = requiredProperty<CorridorCoordinateProperty>(
+    declaration.properties,
+    "CorridorCoordinateProperty",
+    "coordinate",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const lanes = requiredProperty<CorridorLanesProperty>(
+    declaration.properties,
+    "CorridorLanesProperty",
+    "lanes",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const laneGap = requiredProperty<CorridorLaneGapProperty>(
+    declaration.properties,
+    "CorridorLaneGapProperty",
+    "lane-gap",
+    declaration,
+    file,
+    diagnostics,
+  );
+  if (
+    orientation === undefined ||
+    coordinate === undefined ||
+    lanes === undefined ||
+    laneGap === undefined
+  ) {
+    return undefined;
+  }
+  if (lanes.value <= 0 || laneGap.value <= 0) {
+    diagnostics.push(
+      createDiagnostic({
+        code: "C4ML-LANG-112",
+        severity: "error",
+        message: `Route corridor "${declaration.name}" requires positive lanes and lane-gap values.`,
+        source: sourceReference(declaration, file),
+        correction: "Use at least one lane and a lane gap greater than zero.",
+      }),
+    );
+    return undefined;
+  }
+  return {
+    id: declaration.name,
+    orientation: orientation.value,
+    coordinate: signedInteger(coordinate.value),
+    lanes: lanes.value,
+    laneSpacing: laneGap.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function lowerRouteControl(
+  declaration: RouteDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): RouteControl | undefined {
+  const policy = requiredProperty<RoutePolicyProperty>(
+    declaration.properties,
+    "RoutePolicyProperty",
+    "policy",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const style = optionalProperty<RouteStyleProperty>(
+    declaration.properties,
+    "RouteStyleProperty",
+    "style",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const sourcePort = optionalProperty<RouteSourcePortProperty>(
+    declaration.properties,
+    "RouteSourcePortProperty",
+    "source-port",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const targetPort = optionalProperty<RouteTargetPortProperty>(
+    declaration.properties,
+    "RouteTargetPortProperty",
+    "target-port",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const via = optionalProperty<RouteViaProperty>(
+    declaration.properties,
+    "RouteViaProperty",
+    "via",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const corridor = optionalProperty<RouteCorridorSelectionProperty>(
+    declaration.properties,
+    "RouteCorridorSelectionProperty",
+    "corridor",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const lane = optionalProperty<RouteLaneProperty>(
+    declaration.properties,
+    "RouteLaneProperty",
+    "lane",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const points = optionalProperty<RoutePointsProperty>(
+    declaration.properties,
+    "RoutePointsProperty",
+    "points",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const labelSegment = optionalProperty<RouteLabelSegmentProperty>(
+    declaration.properties,
+    "RouteLabelSegmentProperty",
+    "label-segment",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const labelShift = optionalProperty<RouteLabelShiftProperty>(
+    declaration.properties,
+    "RouteLabelShiftProperty",
+    "label-shift",
+    declaration,
+    file,
+    diagnostics,
+  );
+  if (policy === undefined) {
+    return undefined;
+  }
+
+  const invalidCombination = routeCombinationError(policy.value, {
+    corridor: corridor !== undefined,
+    lane: lane !== undefined,
+    points: points !== undefined,
+    sourcePort: sourcePort !== undefined,
+    style: style !== undefined,
+    targetPort: targetPort !== undefined,
+    via: via !== undefined,
+  });
+  if (invalidCombination !== undefined) {
+    diagnostics.push(
+      createDiagnostic({
+        code: "C4ML-LANG-113",
+        severity: "error",
+        message: `Route for relationship "${declaration.relationship.ref!.name}" is invalid: ${invalidCombination}`,
+        source: sourceReference(declaration, file),
+        correction: "Keep only the controls allowed by the selected route policy.",
+      }),
+    );
+    return undefined;
+  }
+
+  return {
+    relationshipId: declaration.relationship.ref!.name,
+    policy: policy.value,
+    ...(style === undefined ? {} : { style: style.value }),
+    ...(sourcePort === undefined ? {} : { sourcePort: sourcePort.value }),
+    ...(targetPort === undefined ? {} : { targetPort: targetPort.value }),
+    ...(via === undefined ? {} : { waypoints: pointsOf(via.value.points) }),
+    ...(corridor === undefined || lane === undefined
+      ? {}
+      : {
+          corridor: {
+            corridorId: corridor.value.ref!.name,
+            lane: lane.value,
+          },
+        }),
+    ...(points === undefined ? {} : { points: pointsOf(points.value.points) }),
+    ...(labelSegment === undefined
+      ? {}
+      : { labelSegment: labelSegment.value }),
+    ...(labelShift === undefined
+      ? {}
+      : { labelOffset: pointOf(labelShift.value) }),
+    source: sourceReference(declaration, file),
+  };
+}
+
+function routeCombinationError(
+  policy: RoutePolicyProperty["value"],
+  present: Readonly<{
+    corridor: boolean;
+    lane: boolean;
+    points: boolean;
+    sourcePort: boolean;
+    style: boolean;
+    targetPort: boolean;
+    via: boolean;
+  }>,
+): string | undefined {
+  if (present.corridor !== present.lane) {
+    return "corridor and lane must be declared together.";
+  }
+  if (policy === "automatic") {
+    return present.corridor || present.points || present.sourcePort ||
+      present.style || present.targetPort || present.via
+      ? "automatic policy accepts only label placement controls."
+      : undefined;
+  }
+  if (policy === "guided") {
+    if (present.points) {
+      return "guided policy uses via, not a complete points list.";
+    }
+    if (present.corridor && present.via) {
+      return "the current guided slice cannot combine a corridor with via points.";
+    }
+    return undefined;
+  }
+  if (!present.points) {
+    return "fixed policy requires a complete points list.";
+  }
+  return present.corridor || present.sourcePort || present.targetPort || present.via
+    ? "fixed policy accepts its complete points list instead of ports, via points, or a corridor."
+    : undefined;
+}
+
+function diagnoseDuplicateRoutingIds(
+  corridors: readonly RouteCorridorDeclaration[],
+  routes: readonly RouteDeclaration[],
+  file: string,
+  diagnostics: Diagnostic[],
+): void {
+  diagnoseDuplicateDeclarations(
+    corridors,
+    (corridor) => corridor.name,
+    "route corridor",
+    "C4ML-LANG-110",
+    file,
+    diagnostics,
+  );
+  diagnoseDuplicateDeclarations(
+    routes,
+    (route) => route.relationship.ref?.name ?? route.relationship.$refText,
+    "route control for relationship",
+    "C4ML-LANG-111",
+    file,
+    diagnostics,
+  );
+}
+
+function diagnoseDuplicateDeclarations<T extends AstNode>(
+  declarations: readonly T[],
+  idOf: (declaration: T) => string,
+  label: string,
+  code: string,
+  file: string,
+  diagnostics: Diagnostic[],
+): void {
+  const firstById = new Map<string, T>();
+  for (const declaration of declarations) {
+    const id = idOf(declaration);
+    const first = firstById.get(id);
+    if (first === undefined) {
+      firstById.set(id, declaration);
+      continue;
+    }
+    diagnostics.push(
+      createDiagnostic({
+        code,
+        severity: "error",
+        message: `Duplicate ${label} "${id}".`,
+        source: sourceReference(declaration, file),
+        related: [{
+          message: `The first ${label} is here.`,
+          source: sourceReference(first, file),
+        }],
+        correction: `Keep one ${label} for "${id}" in this view.`,
+      }),
+    );
+  }
+}
+
+function signedInteger(value: SignedInteger): number {
+  return value.negative ? -value.value : value.value;
+}
+
+function pointOf(value: { readonly x: SignedInteger; readonly y: SignedInteger }): Point {
+  return { x: signedInteger(value.x), y: signedInteger(value.y) };
+}
+
+function pointsOf(
+  values: readonly { readonly x: SignedInteger; readonly y: SignedInteger }[],
+): readonly Point[] {
+  return values.map(pointOf);
 }
 
 function lowerDynamicView(

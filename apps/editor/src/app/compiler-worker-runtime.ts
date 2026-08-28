@@ -1,7 +1,13 @@
 import {
   compileArchitectureDiagram,
+  svgSceneObjectId,
+  type ArchitectureModel,
+  type ArchitectureView,
   type Diagnostic,
+  type DiagramScene,
   type LayoutAdapter,
+  type SceneNode,
+  type SourceReference,
 } from "@c4ml/compiler-core";
 import { createBrowserElkLayoutAdapter } from "@c4ml/layout-elk/browser";
 import {
@@ -15,6 +21,7 @@ import {
   compilerWorkerProtocolVersion,
   type CompilerWorkerDiagnostic,
   type CompilerWorkerInbound,
+  type CompilerWorkerNavigation,
   type CompilerWorkerOutbound,
   type CompilerWorkerRequest,
   type CompilerWorkerResponse,
@@ -46,6 +53,7 @@ export async function compileWorkerRequest(
         "invalid",
         parsed.diagnostics,
         undefined,
+        undefined,
         [],
         undefined,
       );
@@ -60,6 +68,9 @@ export async function compileWorkerRequest(
       model: parsed.model,
       view,
       layoutAdapter,
+      ...(parsed.routingByViewId?.[view.id] === undefined
+        ? {}
+        : { routing: parsed.routingByViewId[view.id] }),
       scene: { fontFamily: "Arial", theme: "c4ml-blue" },
     });
     if (!compiled.valid || compiled.svg === undefined) {
@@ -67,6 +78,7 @@ export async function compileWorkerRequest(
         request,
         "invalid",
         compiled.diagnostics,
+        undefined,
         undefined,
         views,
         view.id,
@@ -78,6 +90,7 @@ export async function compileWorkerRequest(
       "valid",
       compiled.diagnostics,
       compiled.svg,
+      toWorkerNavigation(parsed.model, view, compiled.scene!),
       views,
       view.id,
     );
@@ -89,6 +102,7 @@ export async function compileWorkerRequest(
       requestId: request.requestId,
       status: "failed",
       svg: undefined,
+      navigation: undefined,
       views: [],
       activeViewId: undefined,
       diagnostics: [
@@ -216,6 +230,7 @@ function response(
   status: "invalid" | "valid",
   diagnostics: readonly Diagnostic[],
   svg: string | undefined,
+  navigation: CompilerWorkerNavigation | undefined,
   views: readonly CompilerWorkerView[],
   activeViewId: string | undefined,
 ): CompilerWorkerResponse {
@@ -226,6 +241,7 @@ function response(
     status,
     diagnostics: diagnostics.map(toWorkerDiagnostic),
     svg,
+    navigation,
     views,
     activeViewId,
   };
@@ -244,11 +260,72 @@ function toWorkerDiagnostic(diagnostic: Diagnostic): CompilerWorkerDiagnostic {
     code: diagnostic.code,
     severity: diagnostic.severity,
     message: diagnostic.message,
-    source: {
-      file: diagnostic.source.file,
-      start: diagnostic.source.range.start,
-      end: diagnostic.source.range.end,
-    },
+    source: toWorkerSource(diagnostic.source),
     correction: diagnostic.correction,
+  };
+}
+
+function toWorkerNavigation(
+  model: ArchitectureModel,
+  view: ArchitectureView,
+  scene: DiagramScene,
+): CompilerWorkerNavigation {
+  return {
+    width: scene.width,
+    height: scene.height,
+    targets: scene.nodes.flatMap((node) => {
+      const source = sourceForSceneNode(model, view, node);
+      return source === undefined
+        ? []
+        : [
+            {
+              sceneNodeId: node.id,
+              svgElementId: svgSceneObjectId(node.id),
+              referenceId: node.referenceId,
+              label: node.title.lines.join(" "),
+              source: toWorkerSource(source),
+              bounds: {
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height,
+              },
+            },
+          ];
+    }),
+  };
+}
+
+function sourceForSceneNode(
+  model: ArchitectureModel,
+  view: ArchitectureView,
+  node: SceneNode,
+): SourceReference | undefined {
+  switch (node.kind) {
+    case "scope-boundary":
+      return view.source;
+    case "visual-group":
+      return view.groups?.find(({ id }) => id === node.referenceId)?.source;
+    case "deployment-node":
+      return model.deployment?.nodes.find(({ id }) => id === node.referenceId)
+        ?.source;
+    case "infrastructure-node":
+      return model.deployment?.infrastructureNodes.find(
+        ({ id }) => id === node.referenceId,
+      )?.source;
+    case "element":
+      return node.elementRole === "container-instance" ||
+        node.elementRole === "software-system-instance"
+        ? model.deployment?.instances.find(({ id }) => id === node.referenceId)
+            ?.source
+        : model.elements.find(({ id }) => id === node.referenceId)?.source;
+  }
+}
+
+function toWorkerSource(source: SourceReference) {
+  return {
+    file: source.file,
+    start: source.range.start,
+    end: source.range.end,
   };
 }

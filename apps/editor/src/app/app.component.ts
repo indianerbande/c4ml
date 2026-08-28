@@ -9,11 +9,23 @@ import {
   viewChild,
 } from "@angular/core";
 
-import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
+import type {
+  CompilerWorkerDiagnostic,
+  CompilerWorkerNavigationTarget,
+} from "./compiler-worker.protocol.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
 import { initialC4mlSource } from "./initial-source.js";
-import { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
+import {
+  C4mlMonacoSourceEditorComponent,
+  type SourceEditorSelection,
+} from "./monaco-source-editor.component.js";
+import {
+  clientPointToScene,
+  navigationTargetAtPoint,
+  navigationTargetForOffset,
+  svgWithNavigationHighlight,
+} from "./preview-navigation.js";
 import type {
   SourceEditorCompletionProvider,
   SourceEditorHighlightProvider,
@@ -41,11 +53,29 @@ export class AppComponent {
     this.compiler.highlight(source);
   readonly previewUrl = signal<string | undefined>(undefined);
   readonly previewZoom = signal(1);
+  readonly selectedSceneNodeId = signal<string | undefined>(undefined);
   readonly wizardOpen = signal(false);
   readonly canUndoWizard = signal(false);
   readonly lastValidSvg = computed(
     () => this.compiler.state().lastValidSvg,
   );
+  readonly navigation = computed(
+    () => this.compiler.state().lastValidNavigation,
+  );
+  readonly selectedTarget = computed(() =>
+    this.navigation()?.targets.find(
+      ({ sceneNodeId }) => sceneNodeId === this.selectedSceneNodeId(),
+    ),
+  );
+  readonly selectedLabel = computed(
+    () => this.selectedTarget()?.label,
+  );
+  readonly previewSvg = computed(() => {
+    const svg = this.lastValidSvg();
+    return svg === undefined
+      ? undefined
+      : svgWithNavigationHighlight(svg, this.selectedTarget());
+  });
   readonly previewTransform = computed(
     () => `scale(${this.previewZoom()})`,
   );
@@ -77,7 +107,7 @@ export class AppComponent {
       }
     });
     effect((onCleanup) => {
-      const svg = this.lastValidSvg();
+      const svg = this.previewSvg();
       if (svg === undefined) {
         this.previewUrl.set(undefined);
         return;
@@ -93,6 +123,7 @@ export class AppComponent {
 
   onSourceChange(source: string): void {
     this.source.set(source);
+    this.selectedSceneNodeId.set(undefined);
     this.#wizardSourceSession.invalidateUndo();
     this.canUndoWizard.set(false);
     this.#scheduleCompile();
@@ -100,6 +131,36 @@ export class AppComponent {
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
     this.sourceEditor()?.revealDiagnostic(diagnostic);
+  }
+
+  onSourceSelection(selection: SourceEditorSelection): void {
+    const target = navigationTargetForOffset(
+      this.navigation()?.targets ?? [],
+      selection.startOffset,
+    );
+    this.selectedSceneNodeId.set(target?.sceneNodeId);
+  }
+
+  onPreviewClick(event: MouseEvent): void {
+    const navigation = this.navigation();
+    const image = event.target as HTMLImageElement | null;
+    if (
+      navigation === undefined ||
+      this.compiler.state().phase !== "valid" ||
+      image?.tagName !== "IMG"
+    ) {
+      return;
+    }
+    const point = clientPointToScene(
+      { x: event.clientX, y: event.clientY },
+      image.getBoundingClientRect(),
+      navigation,
+    );
+    const target =
+      point === undefined
+        ? undefined
+        : navigationTargetAtPoint(navigation.targets, point);
+    this.#selectTarget(target, true);
   }
 
   triggerSuggestions(): void {
@@ -138,6 +199,7 @@ export class AppComponent {
     if (!(target instanceof HTMLSelectElement) || target.value.length === 0) {
       return;
     }
+    this.selectedSceneNodeId.set(undefined);
     this.compiler.compile(this.source(), target.value);
   }
 
@@ -154,6 +216,7 @@ export class AppComponent {
   applyWizard(source: string): void {
     const next = this.#wizardSourceSession.apply(source);
     this.source.set(next);
+    this.selectedSceneNodeId.set(undefined);
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardOpen.set(false);
     this.compiler.compile(next);
@@ -162,6 +225,7 @@ export class AppComponent {
   undoWizard(): void {
     const restored = this.#wizardSourceSession.undo(this.source());
     this.source.set(restored);
+    this.selectedSceneNodeId.set(undefined);
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.compiler.compile(restored);
   }
@@ -176,6 +240,16 @@ export class AppComponent {
         this.compiler.state().activeViewId,
       );
     }, 180);
+  }
+
+  #selectTarget(
+    target: CompilerWorkerNavigationTarget | undefined,
+    revealSource: boolean,
+  ): void {
+    this.selectedSceneNodeId.set(target?.sceneNodeId);
+    if (revealSource && target !== undefined) {
+      this.sourceEditor()?.revealSource(target.source);
+    }
   }
 
 }

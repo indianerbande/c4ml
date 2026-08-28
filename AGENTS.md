@@ -28,8 +28,11 @@ and displays source-located diagnostics in a two-pane layout. The same worker
 provides the only context-completion, syntax-highlighting, and diagnostic
 source; Monaco presents its exact edits, semantic-token spans, and ranges
 without owning C4ML syntax or semantics. The UI also exposes diagnostics-to-source navigation,
-zoom, fit, scroll-pan, SVG download, wizard preview, cancel, apply, one-step
-wizard undo, and selection among declared executable views. The compiler worker
+bidirectional source/preview node navigation through compiler-owned stable
+identities and source ranges, zoom, fit, scroll-pan, SVG download, wizard
+preview, cancel, apply, one-step wizard undo, and selection among declared
+executable views. Preview selection styling is not included in exported SVG.
+Relationships and route objects are not yet navigation targets. The compiler worker
 uses ELK's API-only entry and a separate local ELK Web Worker for automatic
 layout; the earlier linear adapter remains test-only compatibility code. The
 editor is not yet feature-complete, but Angular and Monaco are
@@ -64,11 +67,15 @@ export exercises Visual Groups, cardinal ports, a named corridor, label
 placement, ELK compound geometry, SVG, and PNG. The separate experimental
 language package can parse and lower the original `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
-`hello-deployment.c4ml` slices into these compiler contracts. There is no
-public `.c4ml` frontend or CLI yet, the complete constraint/routing scope is
-not implemented, and the remaining candidate adapters are not permanently
-accepted. ELK.js is the accepted exception recorded in `SPEC.md` and
-`DEPENDENCIES.md`.
+`hello-deployment.c4ml` slices into these compiler contracts. The first
+executable view-local route slice lowers static Relationship controls for
+automatic, guided, and fixed policies, cardinal Ports, absolute waypoints,
+named corridors and exclusive lanes, fixed point lists, and label placement.
+CLI and editor pass those controls into the same compiler API. There is no
+publicly accepted `.c4ml` frontend or frozen grammar yet, the complete
+constraint/routing scope is not implemented, and the remaining candidate
+adapters are not permanently accepted. ELK.js is the accepted exception
+recorded in `SPEC.md` and `DEPENDENCIES.md`.
 
 The renderer also has an implemented semantic color-theme contract. The
 original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
@@ -90,7 +97,9 @@ element kinds. Their future author-facing grammar is still draft.
 preview. They are deliberately non-normative. Only the `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices are executable through the internal experimental
-language package; the remaining preview is not. Treat all of it as review
+language package. `hello-context.c4ml` also exercises the executable absolute
+route-control subset; relative anchors, avoidance regions, locked segments,
+and the remaining preview are not executable. Treat all of it as review
 material, not as an accepted grammar or a compatibility commitment.
 
 The completion and wizard source-generation APIs are experimental authoring

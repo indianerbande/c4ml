@@ -11,6 +11,8 @@ every construct outside those subsets remain non-executable review material.
 Nothing in this directory defines a stable grammar or compatibility commitment.
 
 - `hello-context.c4ml` is the smallest useful model and System Context View.
+  It also exercises executable guided route controls, cardinal Ports, and
+  label shifts in the live editor preview.
 - `hello-container.c4ml` adds Container ownership, technologies, protocols, and
   one Container View.
 - `hello-static-zoom.c4ml` adds Components, Code Elements, their typed ownership,

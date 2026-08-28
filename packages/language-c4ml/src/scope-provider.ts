@@ -10,12 +10,14 @@ import {
 import {
   type C4mlDocument,
   type EnvironmentDeclaration,
+  type LayoutBlock,
   isComponentDeclaration,
   isContainerDeclaration,
   isC4mlDocument,
   isDeploymentEndpointDeclaration,
   isDeploymentNodeDeclaration,
   isEnvironmentDeclaration,
+  isLayoutBlock,
   isSoftwareSystemDeclaration,
   isViewDeclaration,
   isViewTypeProperty,
@@ -34,7 +36,8 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
       context.property !== "system" &&
       context.property !== "container" &&
       context.property !== "node" &&
-      context.property !== "parent"
+      context.property !== "parent" &&
+      context.property !== "relationship"
     ) {
       return super.getScope(context);
     }
@@ -47,6 +50,12 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
     if (referenceType === "RelationshipDeclaration") {
       return this.createScopeForNodes(
         root.relations.relationships,
+        super.getScope(context),
+      );
+    }
+    if (referenceType === "RouteCorridorDeclaration") {
+      return this.createScopeForNodes(
+        layoutOf(context.container)?.corridors ?? [],
         super.getScope(context),
       );
     }
@@ -115,6 +124,17 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
         return [];
     }
   }
+}
+
+function layoutOf(node: AstNode): LayoutBlock | undefined {
+  let current: AstNode | undefined = node;
+  while (current !== undefined) {
+    if (isLayoutBlock(current)) {
+      return current;
+    }
+    current = current.$container;
+  }
+  return undefined;
 }
 
 function environmentOf(node: AstNode): EnvironmentDeclaration | undefined {

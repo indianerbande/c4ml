@@ -422,6 +422,10 @@
   filter: drop-shadow(0 9px 16px rgba(28, 50, 72, 0.1));
 }
 
+.diagram.is-navigable {
+  cursor: crosshair;
+}
+
 .empty-preview {
   display: grid;
   max-width: 320px;
@@ -461,6 +465,20 @@
   color: #963145;
   font-size: 11px;
   font-weight: 650;
+}
+
+.selection-note {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid #e3b35d;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #7a4a00;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .diagnostics {

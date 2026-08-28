@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.15
+Status: Draft 0.17
 
 Date: 2026-08-28
 
@@ -53,9 +53,12 @@ Deployment Nodes, Infrastructure Nodes, static instances, deployment
 relationships, all seven view types, static Relationship references,
 environment-scoped completion references, exact source locations, stable
 diagnostics for unresolved references and invalid property cardinality,
-semantic stability across comments and whitespace, browser bundling without
-Node.js polyfills, and deterministic SVG through the shared compiler pipeline.
-This evidence does not claim coverage of the complete preview grammar.
+semantic stability across comments and whitespace, view-local route lowering,
+absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
+label placement, policy-combination diagnostics, route-context completion,
+browser bundling without Node.js polyfills, and deterministic SVG through the
+shared compiler pipeline. This evidence does not claim coverage of the complete
+preview grammar.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -65,7 +68,11 @@ SVG, context-valid completion ranges, exact completion and marker translation,
 lexer-owned syntax-span classification, semantic-token delta encoding, stale
 asynchronous completion and highlight settlement, deterministic wizard source,
 normal compilation of that source, cancel behavior, and explicit undo. The
-production-mode Angular build proves that compiler services and Monaco's
+worker and navigation-helper suites additionally verify deterministic
+source/scene/SVG mappings, smallest-range source selection, smallest-bound
+preview hit testing, object-fit coordinate conversion, last-valid navigation
+retention, and preview-only SVG highlighting. The production-mode Angular build
+proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is
 lazy, and that the reviewed ELK worker and license are packaged locally.
 Browser verification covers the two-pane layout, lexer-owned syntax
@@ -77,9 +84,14 @@ synchronization, visually inspected Component, Code, System Landscape,
 Dynamic, and Deployment previews, view selection, zoom, the three-step wizard,
 generated-source review, apply, and undo. The production bundled adapter
 compiles executable slices for all seven view types in worker-runtime tests;
-the current browser-specific ELK pass visually covers System Context and a
-nested Deployment View. The browser accessibility tree was inspected; a real
-screen-reader pass is not yet complete.
+the current browser-specific ELK pass visually covers a System Context with two
+guided routes, distinct target Ports, a named corridor and label shifts, plus a
+nested Deployment View. Route-block completion was inspected with the active
+policy and existing properties. Bidirectional navigation was visually inspected:
+selecting the `garden-pulse` declaration highlighted only Garden Pulse, and
+clicking Sensor Post in the preview selected and revealed its complete source
+declaration. The browser accessibility tree was inspected; a real screen-reader
+pass is not yet complete.
 
 The experimental CLI suite exercises successful validation, source-located JSON
 diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
@@ -246,6 +258,7 @@ Routing tests MUST cover:
 - relative and absolute waypoints;
 - named horizontal and vertical corridors;
 - deterministic lane assignment and explicit lane selection;
+- rejection when two relationships select one exclusive lane;
 - locked segments combined with automatically completed segments;
 - hard and soft avoidance regions;
 - intentional shared segments and junctions only when explicitly authored;
@@ -376,9 +389,11 @@ retention for the experimental static zoom subsets. It also covers
 context-completion requests, exact text edits, selection of a declared view by
 stable identifier, Monaco marker translation, diagnostic-to-source navigation,
 keyboard undo/redo, source synchronization, zoom, fit, scroll-pan at enlarged
-scale, and SVG download. It does not yet satisfy bidirectional source/preview
-element navigation, PNG export, full CLI parity, real assistive-technology
-coverage, or complete-source coverage requirements in this section.
+scale, SVG download, and bidirectional source/preview node navigation through
+stable source, scene, and SVG identities. It does not yet satisfy
+relationship/route selection, PNG export, full CLI parity, real
+assistive-technology coverage, or complete-source coverage requirements in
+this section.
 
 If the guided modeling wizard is implemented, tests MUST prove that identical
 answers generate deterministic C4ML source, generated source passes through the

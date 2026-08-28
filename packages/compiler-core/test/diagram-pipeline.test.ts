@@ -265,6 +265,45 @@ describe("diagram compiler pipeline", () => {
     );
   });
 
+  it("rejects two relationships assigned to one exclusive corridor lane", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        corridors: [
+          {
+            id: "exclusive-east",
+            orientation: "vertical",
+            coordinate: 790,
+            lanes: 2,
+            laneSpacing: 18,
+          },
+        ],
+        controls: [
+          {
+            relationshipId: "api-enqueues-notice",
+            policy: "guided",
+            corridor: { corridorId: "exclusive-east", lane: 1 },
+          },
+          {
+            relationshipId: "api-writes-ledger",
+            policy: "guided",
+            corridor: { corridorId: "exclusive-east", lane: 1 },
+          },
+        ],
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.svg).toBeUndefined();
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "C4ML-ROUTE-023" }),
+      ]),
+    );
+  });
+
   it("renders an assigned custom shape without changing the element's C4 role", async () => {
     const result = await compileArchitectureDiagram({
       model: signalGardenModel,

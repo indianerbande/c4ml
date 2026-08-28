@@ -18,7 +18,7 @@ export interface C4mlHighlight {
   readonly range: SourceRange;
 }
 
-const operatorImages = new Set(["{", "}", "[", "]", "=", ","]);
+const operatorImages = new Set(["{", "}", "[", "]", "(", ")", "=", ",", "-"]);
 let highlightingServices: C4mlDraftServices | undefined;
 
 /**

@@ -97,6 +97,13 @@ async function helloDeploymentSource(): Promise<string> {
   return readFile(helloDeploymentUrl, "utf8");
 }
 
+function replaceContextLayout(source: string, layoutLines: readonly string[]): string {
+  return source.replace(
+    /  layout \{[\s\S]*?\n  \}\n\}\s*$/,
+    `${layoutLines.join("\n")}\n}\n`,
+  );
+}
+
 describe("C4ML draft-1 language slice", () => {
   it("parses and lowers the original hello-context source", async () => {
     const source = await helloContextSource();
@@ -154,6 +161,7 @@ describe("C4ML draft-1 language slice", () => {
       model: parsed.model!,
       view: parsed.views![0]!,
       layoutAdapter: new RowLayoutAdapter(),
+      routing: parsed.routingByViewId!["garden-pulse-context"]!,
     };
 
     const first = await compileArchitectureDiagram(request);
@@ -226,6 +234,122 @@ describe("C4ML draft-1 language slice", () => {
     const second = await parseC4mlDraft(variant);
 
     expect(semanticSnapshot(first)).toEqual(semanticSnapshot(second));
+  });
+
+  it("lowers view-local corridors, ports, guided routes, fixed routes, and label placement", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+        "  layout {",
+        "    flow = right",
+        "",
+        "    corridor review-lane {",
+        "      orientation = vertical",
+        "      coordinate = 330",
+        "      lanes = 2",
+        "      lane-gap = 16",
+        "    }",
+        "",
+        "    route caretaker-reviews-plan {",
+        "      policy = guided",
+        "      style = orthogonal",
+        "      source-port = east",
+        "      target-port = west",
+        "      corridor = review-lane",
+        "      lane = 0",
+        "      label-segment = 1",
+        "      label-shift = (0, -12)",
+        "    }",
+        "",
+        "    route sensor-publishes-observations {",
+        "      policy = fixed",
+        "      style = orthogonal",
+        "      points = [(700, 146), (620, 146)]",
+        "      label-segment = 0",
+        "    }",
+        "  }",
+      ]);
+    const parsed = await parseC4mlDraft(source, { file: "guided-routes.c4ml" });
+
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.valid).toBe(true);
+    expect(parsed.routingByViewId?.["garden-pulse-context"]).toEqual({
+      corridors: [
+        expect.objectContaining({
+          id: "review-lane",
+          orientation: "vertical",
+          coordinate: 330,
+          lanes: 2,
+          laneSpacing: 16,
+        }),
+      ],
+      controls: [
+        expect.objectContaining({
+          relationshipId: "caretaker-reviews-plan",
+          policy: "guided",
+          style: "orthogonal",
+          sourcePort: "east",
+          targetPort: "west",
+          corridor: { corridorId: "review-lane", lane: 0 },
+          labelSegment: 1,
+          labelOffset: { x: 0, y: -12 },
+        }),
+        expect.objectContaining({
+          relationshipId: "sensor-publishes-observations",
+          policy: "fixed",
+          style: "orthogonal",
+          points: [
+            { x: 700, y: 146 },
+            { x: 620, y: 146 },
+          ],
+        }),
+      ],
+    });
+
+    const compiled = await compileArchitectureDiagram({
+      model: parsed.model!,
+      view: parsed.views![0]!,
+      layoutAdapter: new RowLayoutAdapter(),
+      routing: parsed.routingByViewId!["garden-pulse-context"]!,
+    });
+    expect(compiled.valid).toBe(true);
+    expect(compiled.routes).toMatchObject([
+      {
+        relationshipId: "caretaker-reviews-plan",
+        policy: "guided",
+        sourcePort: { side: "east" },
+        targetPort: { side: "west" },
+        corridor: { corridorId: "review-lane", lane: 0 },
+      },
+      {
+        relationshipId: "sensor-publishes-observations",
+        policy: "fixed",
+      },
+    ]);
+    expect(compiled.svg).toContain('data-c4ml-route-policy="guided"');
+    expect(compiled.svg).toContain('data-c4ml-route-policy="fixed"');
+  });
+
+  it("rejects duplicate and policy-incompatible route controls with source locations", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+        "  layout {",
+        "    flow = right",
+        "    route caretaker-reviews-plan {",
+        "      policy = automatic",
+        "      source-port = east",
+        "    }",
+        "    route caretaker-reviews-plan {",
+        "      policy = guided",
+        "    }",
+        "  }",
+      ]);
+    const result = await parseC4mlDraft(source, { file: "invalid-routes.c4ml" });
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.map(({ code }) => code)).toEqual([
+      "C4ML-LANG-113",
+      "C4ML-LANG-111",
+    ]);
+    expect(result.diagnostics[0]?.source.file).toBe("invalid-routes.c4ml");
+    expect(result.diagnostics[1]?.related).toHaveLength(1);
   });
 });
 
@@ -328,6 +452,73 @@ describe("C4ML draft-1 completion contract", () => {
     await expect(
       completeC4mlDraft("c4ml draft-1", { offset: 99 }),
     ).rejects.toThrow("Completion offset must be inside the source text.");
+  });
+
+  it("offers only relationship references after route in a layout block", async () => {
+    const source = (await helloContextSource()).replace(
+      "    flow = right",
+      "    flow = right\n    route ",
+    );
+    const offset = source.indexOf("    route ") + "    route ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(result.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
+      {
+        detail: "Relationship reference",
+        label: "caretaker-reviews-plan",
+      },
+      {
+        detail: "Relationship reference",
+        label: "sensor-publishes-observations",
+      },
+    ]);
+  });
+
+  it("limits route-block properties to the active routing context", async () => {
+    const source = (await helloContextSource()).replace(
+      "    flow = right",
+      [
+        "    flow = right",
+        "    route caretaker-reviews-plan {",
+        "      policy = guided",
+        "      ",
+        "    }",
+      ].join("\n"),
+    );
+    const offset = source.indexOf("      \n") + 6;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(
+      result.candidates
+        .filter(({ kind }) => kind === "property")
+        .map(({ label }) => label),
+    ).toEqual([
+      "corridor",
+      "label-segment",
+      "label-shift",
+      "lane",
+      "source-port",
+      "style",
+      "target-port",
+      "via",
+    ]);
+    expect(result.candidates.some(({ label }) => label === "flow")).toBe(false);
+    expect(result.candidates.some(({ label }) => label === "technology")).toBe(false);
+  });
+
+  it("asks for a route policy before offering policy-dependent controls", async () => {
+    const source = (await helloContextSource()).replace(
+      "      policy = guided",
+      "      ",
+    );
+    const offset = source.indexOf("      \n") + 6;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(
+      result.candidates
+        .filter(({ kind }) => kind === "property")
+        .map(({ label }) => label),
+    ).toEqual(["policy"]);
   });
 });
 

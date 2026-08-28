@@ -269,6 +269,8 @@ InteractionRelationshipProperty:
 LayoutBlock:
     'layout' '{'
         properties+=LayoutProperty*
+        corridors+=RouteCorridorDeclaration*
+        routes+=RouteDeclaration*
     '}';
 
 LayoutProperty:
@@ -276,6 +278,85 @@ LayoutProperty:
 
 FlowProperty:
     'flow' '=' value=('down' | 'left' | 'right' | 'up');
+
+RouteCorridorDeclaration:
+    'corridor' name=ID '{'
+        properties+=RouteCorridorSetting*
+    '}';
+
+RouteCorridorSetting:
+    CorridorOrientationProperty
+    | CorridorCoordinateProperty
+    | CorridorLanesProperty
+    | CorridorLaneGapProperty;
+
+CorridorOrientationProperty:
+    'orientation' '=' value=('horizontal' | 'vertical');
+
+CorridorCoordinateProperty:
+    'coordinate' '=' value=SignedInteger;
+
+CorridorLanesProperty:
+    'lanes' '=' value=INT;
+
+CorridorLaneGapProperty:
+    'lane-gap' '=' value=INT;
+
+RouteDeclaration:
+    'route' relationship=[RelationshipDeclaration:ID] '{'
+        properties+=RouteProperty*
+    '}';
+
+RouteProperty:
+    RoutePolicyProperty
+    | RouteStyleProperty
+    | RouteSourcePortProperty
+    | RouteTargetPortProperty
+    | RouteViaProperty
+    | RouteCorridorSelectionProperty
+    | RouteLaneProperty
+    | RoutePointsProperty
+    | RouteLabelSegmentProperty
+    | RouteLabelShiftProperty;
+
+RoutePolicyProperty:
+    'policy' '=' value=('automatic' | 'guided' | 'fixed');
+
+RouteStyleProperty:
+    'style' '=' value=('direct' | 'orthogonal');
+
+RouteSourcePortProperty:
+    'source-port' '=' value=('automatic' | 'north' | 'east' | 'south' | 'west');
+
+RouteTargetPortProperty:
+    'target-port' '=' value=('automatic' | 'north' | 'east' | 'south' | 'west');
+
+RouteViaProperty:
+    'via' '=' value=PointList;
+
+RouteCorridorSelectionProperty:
+    'corridor' '=' value=[RouteCorridorDeclaration:ID];
+
+RouteLaneProperty:
+    'lane' '=' value=INT;
+
+RoutePointsProperty:
+    'points' '=' value=PointList;
+
+RouteLabelSegmentProperty:
+    'label-segment' '=' value=INT;
+
+RouteLabelShiftProperty:
+    'label-shift' '=' value=PointLiteral;
+
+PointList:
+    '[' points+=PointLiteral (',' points+=PointLiteral)* ']';
+
+PointLiteral:
+    '(' x=SignedInteger ',' y=SignedInteger ')';
+
+SignedInteger:
+    (negative?='-')? value=INT;
 
 hidden terminal WS: /\s+/;
 hidden terminal LINE_COMMENT: /\/\/[^\n\r]*/;

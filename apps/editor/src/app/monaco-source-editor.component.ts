@@ -28,6 +28,11 @@ const c4mlLanguageId = "c4ml";
 const markerOwner = "c4ml-compiler";
 type MonacoRuntime = typeof import("./monaco-source-editor.runtime.js");
 
+export interface SourceEditorSelection {
+  readonly startOffset: number;
+  readonly endOffset: number;
+}
+
 globalThis.MonacoEnvironment = {
   getWorker: () =>
     new Worker(new URL("./monaco-editor.worker", import.meta.url), {
@@ -56,6 +61,7 @@ export class C4mlMonacoSourceEditorComponent
     input.required<SourceEditorCompletionProvider>();
   readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
   readonly valueChanged = output<string>();
+  readonly selectionChanged = output<SourceEditorSelection>();
   readonly loadFailure = signal<string | undefined>(undefined);
   readonly editorHost =
     viewChild.required<ElementRef<HTMLDivElement>>("editorHost");
@@ -112,7 +118,14 @@ export class C4mlMonacoSourceEditorComponent
 
   revealDiagnostic(diagnostic: CompilerWorkerDiagnostic): void {
     const source = diagnostic.source;
-    if (source === undefined || this.#editor === undefined) {
+    if (source === undefined) {
+      return;
+    }
+    this.revealSource(source);
+  }
+
+  revealSource(source: NonNullable<CompilerWorkerDiagnostic["source"]>): void {
+    if (this.#editor === undefined) {
       return;
     }
     const range = {
@@ -184,6 +197,16 @@ export class C4mlMonacoSourceEditorComponent
       if (!this.#synchronizeExternalValue && this.#model !== undefined) {
         this.valueChanged.emit(this.#model.getValue());
       }
+    });
+    this.#editor.onDidChangeCursorSelection(({ selection }) => {
+      const model = this.#model;
+      if (model === undefined) {
+        return;
+      }
+      this.selectionChanged.emit({
+        startOffset: model.getOffsetAt(selection.getStartPosition()),
+        endOffset: model.getOffsetAt(selection.getEndPosition()),
+      });
     });
     this.#completionRegistration =
       runtime.languages.registerCompletionItemProvider(c4mlLanguageId, {

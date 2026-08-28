@@ -41,6 +41,7 @@
       [completionProvider]="provideCompletions"
       [highlightProvider]="provideHighlights"
       (valueChanged)="onSourceChange($event)"
+      (selectionChanged)="onSourceSelection($event)"
     />
 
     <aside
@@ -112,9 +113,12 @@
         @if (previewUrl(); as url) {
           <img
             class="diagram"
+            [class.is-navigable]="compiler.state().phase === 'valid'"
             [src]="url"
             [style.transform]="previewTransform()"
+            (click)="onPreviewClick($event)"
             alt="Compiled C4 diagram"
+            title="Select a diagram element to reveal its source declaration"
           />
         } @else {
           <div class="empty-preview">
@@ -129,6 +133,12 @@
           compiler.state().lastValidSvg !== undefined
         ) {
           <p class="stale-note">Showing the last valid diagram.</p>
+        }
+
+        @if (selectedLabel(); as label) {
+          <p class="selection-note" aria-live="polite">
+            Selected: {{ label }}
+          </p>
         }
       </div>
 

@@ -49,6 +49,27 @@ function response(
           ]
         : [],
     svg,
+    navigation:
+      status === "valid"
+        ? {
+            width: 800,
+            height: 600,
+            targets: [
+              {
+                sceneNodeId: "scene-node:element:context",
+                svgElementId: "c4ml-scene-node-element-context",
+                referenceId: "context",
+                label: "Context",
+                source: {
+                  file: "editor.c4ml",
+                  start: { offset: 0, line: 0, column: 0 },
+                  end: { offset: 10, line: 0, column: 10 },
+                },
+                bounds: { x: 20, y: 20, width: 200, height: 120 },
+              },
+            ],
+          }
+        : undefined,
     views:
       status === "valid"
         ? [{ id: "context", kind: "system-context", title: "Context" }]
@@ -247,6 +268,9 @@ describe("editor compilation session", () => {
     );
     expect(session.state.phase).toBe("invalid");
     expect(session.state.lastValidSvg).toBe("<svg>current</svg>");
+    expect(session.state.lastValidNavigation?.targets[0]?.referenceId).toBe(
+      "context",
+    );
     expect(session.state.diagnostics).toHaveLength(1);
   });
 

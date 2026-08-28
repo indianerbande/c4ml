@@ -18,7 +18,9 @@ can be reviewed through realistic examples rather than grammar fragments.
 > view-resolution contracts, and a first internal model-to-SVG/PNG rendering
 > path are implemented today.
 > The internal path also carries explicit Ports, Routes, Arrowheads, and
-> restricted renderer-neutral shape definitions.
+> restricted renderer-neutral shape definitions. `hello-context.c4ml` now
+> exercises the first executable, view-local route-control slice through both
+> the CLI and the editor worker.
 
 `SPEC.md` remains the normative definition of product behavior. If this guide
 and `SPEC.md` disagree, `SPEC.md` wins.
@@ -100,6 +102,11 @@ the model. Syntax colors come from the C4ML lexer's source spans through the
 same worker, while automatic preview geometry comes from the local ELK.js
 browser worker.
 
+Inside a `route` block, IntelliSense first asks for `policy`. Once it is known,
+the editor offers only controls compatible with that policy and hides properties
+already present. For example, `points` is offered for `fixed` but not for
+`guided`, while `via`, `corridor`, and `lane` are guided controls.
+
 An original Container View can also be exported through the current internal
 TypeScript-fed reference path:
 
@@ -152,17 +159,22 @@ experimental frontend and language versions. Exit classes distinguish success,
 usage, source/view selection, layout/render compilation, and filesystem or
 environment failures.
 
-The CLI is contributor evidence, not a frozen public command contract. It does
-not yet accept the non-executable Visual Group, route-control, shape, or theme
-syntax. PNG currently uses local system fonts; production release artifacts
-still require a controlled bundled font.
+The CLI is contributor evidence, not a frozen public command contract. It
+accepts the current absolute route-control slice, but not Visual Groups,
+relative route guidance, avoidance regions, locked segments, shapes, or themes
+from source. PNG currently uses local system fonts; production release
+artifacts still require a controlled bundled font.
 
 The editor uses the same compiler in a browser Web Worker. Source remains
 authoritative; the preview does not keep hidden semantic or layout state.
 Monaco is the accepted desktop source-editor library behind a C4ML-owned
-adapter, not a second parser. The editor will retain this separation while
-filling the remaining navigation, export, accessibility, and graphical-editing
-gaps.
+adapter, not a second parser. Selecting a source declaration highlights its
+source-mapped diagram node; selecting a diagram node reveals and selects the
+corresponding declaration. The orange selection outline exists only in the
+live preview, so an exported SVG remains the canonical compiler result.
+Relationships, Routes, Ports, and labels are not selectable in this first
+navigation slice. The editor will retain this separation while filling the
+remaining export, accessibility, and graphical-editing gaps.
 
 ### Guided modeling wizard spike
 
@@ -900,6 +912,12 @@ Routing has two independent choices:
 lets the router connect the remaining segments. `fixed` defines the complete
 path and fails if that path is invalid.
 
+The current executable `draft-1` slice accepts cardinal Ports, integer canvas
+coordinates, absolute `via` points, corridors, lanes, a zero-based label
+segment, and an x/y label shift. It deliberately does not pretend to support
+relative anchors, avoidance regions, constraint strengths, or locked segments
+yet.
+
 ```c4ml
 layout {
   route ui-calls-api {
@@ -907,15 +925,17 @@ layout {
     style = orthogonal
     source-port = east
     target-port = west
-    via = [right-of(studio-ui, 32), above(cultivation-api, 24)]
-    avoid = [notify-worker]
-    strength = hard
+    via = [(520, 260), (520, 410)]
+    label-segment = 2
+    label-shift = (0, -14)
   }
 }
 ```
 
 Explicit waypoints refine a route after automatic placement. They do not create
-or redirect the underlying semantic relationship.
+or redirect the underlying semantic relationship. Relative forms such as
+“right of an element”, plus `avoid` and `strength`, remain part of the planned
+full routing model rather than the executable grammar.
 
 ### 9.5 Named corridors and lanes
 
@@ -928,7 +948,7 @@ lanes:
 layout {
   corridor data-access-east {
     orientation = vertical
-    anchor = right-of(cultivation-api, 56)
+    coordinate = 780
     lanes = 4
     lane-gap = 16
   }
@@ -940,7 +960,6 @@ layout {
     target-port = west
     corridor = data-access-east
     lane = 1
-    strength = hard
   }
 
   route api-enqueues-notice {
@@ -949,10 +968,16 @@ layout {
     source-port = east
     corridor = data-access-east
     lane = 2
-    strength = hard
   }
 }
 ```
+
+`coordinate` is the corridor's x coordinate when `orientation = vertical` and
+its y coordinate when `orientation = horizontal`. Lane numbers are zero-based.
+The compiler rejects a lane outside the declared capacity and rejects two
+relationships that select the same exclusive corridor lane. Relative corridor
+anchors remain planned because they are more stable when automatic geometry
+moves.
 
 The compiler routes hard-guided and fixed paths first. Their occupied corridors
 and lanes then become obstacles for remaining automatic paths. Two unrelated
@@ -972,14 +997,20 @@ layout {
     policy = fixed
     style = orthogonal
     points = [
-      port(cultivation-api, south),
+      (640, 590),
       (640, 720),
       (1180, 720),
-      port(archive-vault, west)
+      (1180, 460)
     ]
+    label-segment = 2
   }
 }
 ```
+
+The first and last fixed points must lie exactly on the effective source and
+target boundaries. This makes absolute fixed routes a deliberate final escape
+hatch. In practice, guided Ports, corridors, and waypoints are usually more
+resilient.
 
 A guided route may instead lock only selected segments and leave its other
 segments automatic. Hard guidance is never ignored or silently downgraded. If
@@ -990,8 +1021,9 @@ segments, and relaxed soft rules in a routing-debug overlay. Moving a waypoint
 or selecting a lane should create an explicit source edit rather than hidden
 editor state.
 
-The precise constraint, coordinate, and route grammar is especially provisional
-and must be validated against real diagrams before acceptance.
+This executable syntax is still `draft-1`, not a public compatibility promise.
+The precise constraint, relative-coordinate, and remaining route grammar must
+be validated against real diagrams before acceptance.
 
 ## 10. Diagnostics
 

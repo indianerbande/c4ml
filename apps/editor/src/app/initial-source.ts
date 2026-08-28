@@ -46,6 +46,31 @@ view garden-pulse-context {
 
   layout {
     flow = right
+
+    corridor lower-entry {
+      orientation = vertical
+      coordinate = 647
+      lanes = 3
+      lane-gap = 16
+    }
+
+    route caretaker-reviews-plan {
+      policy = guided
+      style = orthogonal
+      source-port = east
+      target-port = west
+      label-shift = (0, -14)
+    }
+
+    route sensor-publishes-observations {
+      policy = guided
+      style = orthogonal
+      source-port = east
+      target-port = south
+      corridor = lower-entry
+      lane = 1
+      label-shift = (0, 16)
+    }
   }
 }
 `;

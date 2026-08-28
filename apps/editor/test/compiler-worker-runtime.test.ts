@@ -113,6 +113,19 @@ describe("compiler worker runtime", () => {
     expect(first.svg).toBe(second.svg);
     expect(first.svg).toContain("System Context — Garden Pulse");
     expect(first.svg).toContain('data-c4ml-shape="c4ml-person"');
+    expect(first.navigation).toEqual(second.navigation);
+    expect(first.navigation?.targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          referenceId: "garden-pulse",
+          svgElementId: "c4ml-scene-node-element-garden-pulse",
+          source: expect.objectContaining({
+            file: "editor.c4ml",
+            start: expect.objectContaining({ line: 11, column: 2 }),
+          }),
+        }),
+      ]),
+    );
   });
 
   it("compiles the executable Container slice in the same worker", async () => {
@@ -189,6 +202,7 @@ describe("compiler worker runtime", () => {
 
     expect(result.status).toBe("invalid");
     expect(result.svg).toBeUndefined();
+    expect(result.navigation).toBeUndefined();
     expect(result.diagnostics[0]).toMatchObject({
       code: "C4ML-LANG-003",
       source: {

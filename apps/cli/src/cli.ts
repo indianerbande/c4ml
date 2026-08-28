@@ -122,6 +122,9 @@ export async function runCli(
         model: parsed.model,
         view,
         layoutAdapter,
+        ...(parsed.routingByViewId?.[view.id] === undefined
+          ? {}
+          : { routing: parsed.routingByViewId[view.id] }),
         scene: { fontFamily: "Arial", theme: "c4ml-blue" },
       });
       if (!result.valid || result.svg === undefined) {

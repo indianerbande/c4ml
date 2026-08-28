@@ -132,7 +132,7 @@ function renderBoundary(node: SceneNode): string {
     (line, index) =>
       `<tspan x="${number(node.x + 14)}" dy="${index === 0 ? 0 : 17}">${escapeXml(line)}</tspan>`,
   );
-  return `    <g id="${stableSvgId(node.id)}" class="boundary-node ${cssClass}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="boundary-node ${cssClass}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${sourceAttribute(node.sourceId)}>
       <rect class="boundary-surface" x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}" rx="12"/>
       <text class="boundary-title" x="${number(node.x + 14)}" y="${number(node.y + 24)}">${titleLines.join("")}</text>
       <text class="boundary-type" x="${number(node.x + 14)}" y="${number(node.y + 43)}">${escapeXml(node.typeLabel)}</text>
@@ -161,7 +161,7 @@ function renderElement(node: SceneNode, shape: ShapeDefinition): string {
     descriptionY,
     15,
   );
-  return `    <g id="${stableSvgId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
       <g class="element-shape">${shape.primitives.map((primitive) => renderShapePrimitive(node, shape, primitive)).join("")}</g>
       <text class="element-title">${titleLines}</text>
       <text class="element-type" x="${number(textX)}" y="${number(typeY)}">${escapeXml(node.typeLabel)}</text>
@@ -249,11 +249,11 @@ function requiredShape(
 }
 
 function renderRoutePath(route: SceneRoute): string {
-  return `    <path id="${stableSvgId(route.id)}" class="route${routePolicyClass(route.policy, "route")}" data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${stableSvgId(route.sourcePortId)}" data-c4ml-target-port="${stableSvgId(route.targetPortId)}" d="${routePath(route.points)}"/>`;
+  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}" data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}" d="${routePath(route.points)}"/>`;
 }
 
 function renderPort(port: ScenePort): string {
-  return `    <circle id="${stableSvgId(port.id)}" class="route-port" data-c4ml-id="${escapeXml(port.relationshipId)}" data-c4ml-port-role="${port.role}" data-c4ml-port-side="${port.side}" data-c4ml-node="${stableSvgId(port.nodeId)}" cx="${number(port.point.x)}" cy="${number(port.point.y)}" r="0"/>`;
+  return `    <circle id="${svgSceneObjectId(port.id)}" class="route-port" data-c4ml-id="${escapeXml(port.relationshipId)}" data-c4ml-port-role="${port.role}" data-c4ml-port-side="${port.side}" data-c4ml-node="${svgSceneObjectId(port.nodeId)}" cx="${number(port.point.x)}" cy="${number(port.point.y)}" r="0"/>`;
 }
 
 function renderRouteArrow(arrowhead: SceneArrowhead): string {
@@ -263,7 +263,7 @@ function renderRouteArrow(arrowhead: SceneArrowhead): string {
         `${index === 0 ? "M" : "L"} ${number(point.x)} ${number(point.y)}`,
     )
     .join(" ");
-  return `    <path id="${stableSvgId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}" data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${stableSvgId(arrowhead.routeId)}" d="${path} Z"/>`;
+  return `    <path id="${svgSceneObjectId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}" data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${svgSceneObjectId(arrowhead.routeId)}" d="${path} Z"/>`;
 }
 
 function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string {
@@ -351,7 +351,7 @@ function tspans(
     .join("");
 }
 
-function stableSvgId(id: string): string {
+export function svgSceneObjectId(id: string): string {
   return `c4ml-${id.replace(/[^a-z0-9_-]+/giu, "-").replace(/^-+|-+$/gu, "")}`;
 }
 
@@ -398,7 +398,7 @@ function validateScene(scene: DiagramScene): void {
     ...scene.routes,
     ...scene.arrowheads,
   ]) {
-    const id = stableSvgId(item.id);
+    const id = svgSceneObjectId(item.id);
     if (ids.has(id)) {
       throw new ContractError("C4ML-SVG-004", `Duplicate SVG identifier ${id}.`);
     }

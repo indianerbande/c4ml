@@ -85,6 +85,7 @@ export function routeDiagram(
   const edgeById = new Map(layout.edges.map((edge) => [edge.id, edge]));
   const controlByRelationshipId = indexControls(diagram, options.controls ?? []);
   const corridorById = indexCorridors(options.corridors ?? []);
+  validateExclusiveCorridorLanes(options.controls ?? [], corridorById);
   const obstacleNodeIds = new Set(
     diagram.nodes
       .filter(
@@ -373,6 +374,36 @@ function indexCorridors(
     result.set(corridor.id, corridor);
   }
   return result;
+}
+
+function validateExclusiveCorridorLanes(
+  controls: readonly RouteControl[],
+  corridorById: ReadonlyMap<string, RouteCorridor>,
+): void {
+  const relationshipByLane = new Map<string, string>();
+  for (const control of controls) {
+    if (control.corridor === undefined) {
+      continue;
+    }
+    const corridor = corridorById.get(control.corridor.corridorId);
+    if (
+      corridor === undefined ||
+      !Number.isInteger(control.corridor.lane) ||
+      control.corridor.lane < 0 ||
+      control.corridor.lane >= corridor.lanes
+    ) {
+      continue;
+    }
+    const key = `${control.corridor.corridorId}:${control.corridor.lane}`;
+    const firstRelationshipId = relationshipByLane.get(key);
+    if (firstRelationshipId !== undefined) {
+      throw new ContractError(
+        "C4ML-ROUTE-023",
+        `Relationships ${firstRelationshipId} and ${control.relationshipId} select the same exclusive lane ${control.corridor.lane} in corridor ${control.corridor.corridorId}.`,
+      );
+    }
+    relationshipByLane.set(key, control.relationshipId);
+  }
 }
 
 function requiredNode(

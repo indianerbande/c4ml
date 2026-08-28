@@ -110,6 +110,9 @@ function compilerStageDiagnostic(
     (control) =>
       contractError.message.includes(control.relationshipId) &&
       control.source !== undefined,
+  )?.source ?? request.routing?.corridors?.find(
+    (corridor) =>
+      contractError.message.includes(corridor.id) && corridor.source !== undefined,
   )?.source;
   return createDiagnostic({
     code: contractError.code,
