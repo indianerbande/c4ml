@@ -100,6 +100,40 @@ Redistribution must preserve MPL-2.0 notices and the source availability rights
 for covered resvg-js files. C4ML MUST NOT modify or copy resvg-js source into the
 repository.
 
+### IBM Plex 6.4.2 assets
+
+**Status: accepted, implemented, automatically validated, and visually
+validated as C4ML's controlled typography family.**
+
+- **Capability:** a coherent Sans/Mono family for the desktop UI, source editor,
+  standalone SVG, and deterministic PNG text.
+- **Why external:** designing and maintaining a high-quality typeface with broad
+  glyph coverage is specialist work outside C4ML's compiler and renderer.
+- **License:** SIL Open Font License 1.1. The upstream `LICENSE.txt` is included
+  unchanged. IBM's Reserved Font Name "Plex" is preserved because C4ML ships
+  unmodified binaries.
+- **Provenance:** exact files from official tag `v6.4.2`, commit
+  `242c4cccd37e87985a5337815c99b960ef13c65c`, with SHA-256 values recorded in
+  `packages/font-ibm-plex/README.md`.
+- **Impact:** eleven selected files occupy 1,078,892 bytes in the source tree.
+  The browser artifact contains only eight WOFF2 files totaling 469,600 bytes.
+  Each standalone SVG embeds the three Sans faces it may use; Node PNG
+  rendering loads three Sans TTF files. No IBM npm telemetry package or font
+  CDN is included.
+- **Offline behavior:** every font is local after checkout/install. SVG uses
+  embedded WOFF2 data URLs; resvg receives TTF paths explicitly and keeps
+  system-font discovery disabled.
+- **Boundary:** `@c4ml/font-ibm-plex` owns binary assets and Node/browser asset
+  loading. The renderer accepts validated generic embedded-font descriptors and
+  PNG font paths. Fonts do not enter semantic model types or source grammar.
+- **Protecting evidence:** asset headers, local browser URLs, hashes, packaged
+  byte identity, unchanged OFL license, embedded SVG faces, rejection of
+  external font URLs, disabled PNG system fonts, production build, and visual
+  checks at multiple editor zoom levels.
+
+Source: [IBM Plex v6.4.2](https://github.com/IBM/plex/tree/v6.4.2) and its
+[OFL-1.1 license](https://github.com/IBM/plex/blob/v6.4.2/LICENSE.txt).
+
 ## Accepted desktop editor libraries
 
 The editor pins `@angular/core`, `@angular/common`, and
@@ -164,7 +198,7 @@ validated for the desktop editor.**
   DOMPurify entries are approximately 952 KB and 756 KB. Shared pnpm storage
   increased the complete workspace tree from approximately 298 MB to 372 MB on
   the reference macOS arm64 checkout. The production build keeps the app at a
-  198.51 KB initial total and emits Monaco as a 3.06 MB lazy runtime with a
+  214.91 KB initial total and emits Monaco as a 3.06 MB lazy runtime with a
   304.37 KB generic editor worker. Its official 350,112-byte stylesheet is loaded
   lazily from a local build asset. Sizes are before transfer compression.
   Monaco's official README says mobile browsers are unsupported; C4ML's
@@ -215,10 +249,9 @@ none of those Node.js concerns enter the portable compiler core. Its tests
 protect that boundary through real local files, invocation from an unrelated
 working directory, source validation, view selection, and SVG/PNG output.
 
-The current PNG path loads local system fonts to make the contributor command
-usable. This is explicitly non-reproducible and cannot become the release
-default; a licensed bundled font and corresponding render evidence remain an
-open dependency decision.
+SVG output embeds the accepted IBM Plex Sans WOFF2 faces. PNG rendering uses
+the matching local TTF faces with system-font discovery disabled. Font loading
+remains a Node frontend responsibility and does not enter the compiler core.
 
 ## Development tools
 
@@ -254,7 +287,7 @@ the following evidence:
   runtime relationships, Relationship references, formatting stability, and
   deterministic SVG through the shared compiler pipeline.
 - The current browser check bundled the compiler core and experimental language
-  package at 136,109 and 1,520,436 unminified bytes respectively, without
+  package at 139,434 and 1,563,719 unminified bytes respectively, without
   Node.js polyfills. The increase reflects activated LSP completion services;
   this is feasibility evidence, not a production size budget.
 - ELK.js returned finite, normalized, repeatable geometry for flat and compound
@@ -266,13 +299,14 @@ the following evidence:
   browser-targeted ECMAScript modules without Node.js polyfills. Unminified
   in-memory probe bundle sizes were approximately 2.5 KB, 920 KB, and 3.3 MB
   respectively; production size and worker-loading strategy remain open.
-- The complete current suite contains 122 distinct passing tests. Build, source/test
+- The complete current suite contains 136 distinct passing tests. Build, source/test
   type checking, browser bundling, and tests passed through `pnpm run check`.
 - The installed development tree occupied approximately 113 MB on macOS arm64;
   individual package-store entries were approximately 7.7 MB for ELK.js, 5.4 MB
   for Langium, 3.4 MB for the resvg native binary, and 10 MB for esbuild.
 - The production license inventory contained Apache-2.0, MIT, MPL-2.0, and
-  `EPL-2.0 OR GPL-3.0-or-later`; no unknown license was reported.
+  `EPL-2.0 OR GPL-3.0-or-later`; the separately packaged IBM assets carry their
+  verified OFL-1.1 license. No unknown license was reported.
 
 ELK.js 0.12.0's published declaration files are not fully compatible with the
 pinned TypeScript 6.0.3 toolchain: one generic declaration fails and its browser
@@ -287,10 +321,10 @@ before it became the pinned workspace compiler. The compiler and configuration
 do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility for the remaining candidates,
-not their permanent acceptance. The complete product grammar, font policy, and
-final routing architecture remain open. Angular 22, Monaco 0.56.0, and ELK.js
-0.12.0 are accepted production dependencies behind the boundaries recorded
-above.
+not their permanent acceptance. The complete product grammar and final routing
+architecture remain open. Angular 22, Monaco 0.56.0, ELK.js 0.12.0, and the
+controlled IBM Plex assets are accepted production dependencies behind the
+boundaries recorded above.
 
 Superseded evaluation note (2026-08-28): Direct use of ELK.js's bundled
 CommonJS entry inside the Angular compiler worker failed while constructing the
@@ -302,10 +336,10 @@ the production preview path.
 The Phase 1 reference exporter now invokes the accepted ELK.js and candidate
 resvg-js adapters through the C4ML-owned contracts. ELK output is normalized to
 absolute geometry across nested compound nodes before later stages consume it.
-The reference PNG explicitly uses locally available system fonts when no font
-file is configured, so it is suitable for visual review but not a reproducible
-golden. A future accepted font asset must be documented before deterministic
-text-bearing PNG evidence can be claimed.
+The reference SVG embeds IBM Plex Sans WOFF2 faces, and its PNG path explicitly
+loads the matching TTF faces with system fonts disabled. The current artifact
+has been visually inspected; promotion to a committed golden still requires
+the golden-update procedure in `TESTING.md`.
 
 The complete local gate ran on macOS arm64 with Node.js 26.4.0. Node.js 24.15.0
 is the declared minimum but still needs a clean CI or local run before that
@@ -313,6 +347,6 @@ baseline can be claimed as automatically validated.
 
 ## Asset status
 
-Phase 0 contains no third-party fonts, icons, themes, sample architectures, or
-other visual assets. All probe data and test fixtures must be original C4ML
-material.
+C4ML includes only the documented IBM Plex font binaries as third-party visual
+assets. It contains no third-party icons, themes, or sample architectures. All
+probe data and test fixtures remain original C4ML material.

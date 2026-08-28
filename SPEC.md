@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.16
+Status: Draft 0.18
 
 Date: 2026-08-28
 
@@ -726,7 +726,7 @@ These types are internal compiler contracts, not accepted `.c4ml` grammar. The
 current slice intentionally does not claim complete placement constraints,
 relative waypoints, avoidance regions, locked segments, route-junction
 authorship, complete all-view rendering evidence, a frozen author-facing theme
-grammar, geometry-affecting style tokens, or a bundled font. ELK.js is the
+grammar, or geometry-affecting style tokens. ELK.js is the
 accepted first automatic-layout adapter behind the engine-neutral boundary;
 resvg-js remains a candidate renderer adapter.
 
@@ -848,12 +848,25 @@ and selects its source declaration. The selection style is applied only to the
 displayed SVG copy; SVG export retains the canonical, unselected compiler
 output. Invalid edits retain the last valid navigation map with the last valid
 preview, but preview clicks are disabled until current source compiles again.
-This first navigation slice covers source-mapped diagram nodes and boundaries,
-not Relationships, Routes, Ports, Arrowheads, or labels. Persistence, PNG
-export, graphical editing, and those additional selection targets are not
-implemented. The production preview uses the accepted ELK.js adapter described
-in Section 9.5.2; the former deterministic linear preview remains test-only
-compatibility code.
+The navigation map also preserves every effective Route's Relationship source,
+optional view-local route-control source, stable scene/SVG identities, final
+polyline, endpoint Ports, policy, style, label anchor and segment, and effective
+corridor lane. Relationship or route-control selection therefore highlights
+the corresponding Route; path hit testing reveals the semantic Relationship,
+Dynamic Interaction, or Deployment Relationship declaration. Element interiors
+take precedence over Routes, Routes take precedence over enclosing boundaries,
+and nearby path selection uses a bounded scene-space tolerance.
+
+A toggleable routing-debug overlay displays the selected Route's effective
+points, endpoint Ports, label anchor, and all lanes of its selected corridor.
+An adjacent inspector reports the same compiler-owned route facts. This is
+preview-only editor presentation; it does not recalculate geometry, mutate
+source, or enter SVG export. Individual Ports, labels, corridors, and
+Arrowheads are not separate navigation targets yet. Persistence, PNG export,
+graphical editing, and those additional selection targets are not implemented.
+The production preview uses the accepted ELK.js adapter described in Section
+9.5.2; the former deterministic linear preview remains test-only compatibility
+code.
 
 #### 9.5.1 Accepted source-editor dependency
 
@@ -878,11 +891,12 @@ implemented integration, and acceptable lazy-load cost for C4ML's explicitly
 desktop-only editor led to Monaco's acceptance. CodeMirror is no longer an
 active production-library decision.
 
-The measured production build has a 198.51 KB initial application total,
+The measured production build has a 214.91 KB initial application total,
 a 3.06 MB lazy Monaco runtime, a 304.37 KB generic Monaco worker, and a locally
 loaded 350,112-byte Monaco stylesheet before transfer compression. The compiler
-worker remains a separate 769.01 KB chunk; the unchanged 1,595,334-byte ELK
-worker is a separate local asset. Automated tests protect exact edit,
+worker remains a separate 805.64 KB chunk; the unchanged 1,595,334-byte ELK
+worker and 469,600 bytes of IBM Plex WOFF2 files are separate local assets.
+Automated tests protect exact edit,
 diagnostic-range, and semantic-token translation plus stale asynchronous
 completion and highlighting handling.
 Interactive browser evidence covers an in-place context-only popup, exact edit
@@ -993,6 +1007,26 @@ silently change layout, fonts, wrapping, or label positions.
 
 Fonts used for reproducible rendering MUST be explicitly configured. Test
 fixtures MUST not depend on whatever fonts happen to be installed on a machine.
+
+### 10.1 Controlled typography
+
+IBM Plex v6.4.2 is accepted as C4ML's controlled typography family. IBM Plex
+Sans MUST be used for the desktop interface and all generated diagram text.
+IBM Plex Mono MUST be confined to C4ML source and literal-code presentation;
+it MUST NOT be used as the general diagram typeface.
+
+The exact unmodified upstream files, release commit, license, and hashes are
+recorded in `packages/font-ibm-plex`. The editor MUST package those files
+locally and MUST NOT load fonts from Google Fonts or another runtime CDN.
+Standalone SVG MUST embed the Sans WOFF2 faces it uses as validated data URLs.
+Node PNG rendering MUST load the matching TTF files explicitly and MUST keep
+system-font discovery disabled. The compiler's font embedding input is a
+renderer contract, not a semantic-model or author-facing grammar feature.
+
+The editor preview MUST resize the SVG's actual display box for zoom. It MUST
+NOT use CSS transform scaling that can leave text rasterized at a different
+resolution. Interface and preview font availability, SVG embedding, packaged
+asset integrity, and PNG font loading require automated and visual evidence.
 
 ## 11. Shapes, styles, and themes
 
@@ -1111,9 +1145,10 @@ directory selection, human or JSON diagnostics, version reporting, and the
 documented exit classes `0`, `2`, `3`, `4`, and `5`.
 
 This is an implementation spike, not the accepted public CLI contract. Command
-names remain provisional, there is no distributable package yet, and current
-PNG output loads local system fonts. The spike therefore does not satisfy the
-controlled-font or complete-language requirements for a production release.
+names remain provisional and there is no distributable package yet. SVG embeds
+the controlled IBM Plex Sans WOFF2 faces; PNG uses matching local TTF faces with
+system-font discovery disabled. The spike still does not satisfy the complete-
+language or release-packaging requirements.
 
 ## 14. Editor
 
@@ -1251,7 +1286,6 @@ The following decisions remain deliberately open:
 - the first constraint-solving strategy;
 - whether C4ML owns the full orthogonal router in the MVP or initially wraps a
   replaceable routing engine;
-- bundled font choice and redistribution terms;
 - the accessibility target for generated SVG.
 
 The project license and initial distribution decision are accepted: C4ML is an
@@ -1301,6 +1335,9 @@ not source material for C4ML syntax or implementation.
   <https://eclipse.dev/elk/reference/options/org-eclipse-elk-portConstraints.html>
 - SVG coordinate systems and the `viewBox` model:
   <https://www.w3.org/TR/SVG/coords.html>
+- IBM Plex v6.4.2 and its SIL Open Font License 1.1:
+  <https://github.com/IBM/plex/tree/v6.4.2>,
+  <https://github.com/IBM/plex/blob/v6.4.2/LICENSE.txt>
 - Penrose separation of domain, substance, and style:
   <https://penrose.cs.cmu.edu/docs/ref>,
   <https://penrose.cs.cmu.edu/docs/ref/substance/overview>,

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type {
   CompilerWorkerNavigation,
-  CompilerWorkerNavigationTarget,
+  CompilerWorkerNodeNavigationTarget,
+  CompilerWorkerRouteNavigationTarget,
 } from "../src/app/compiler-worker.protocol.js";
 import {
   clientPointToScene,
@@ -11,22 +12,26 @@ import {
   svgWithNavigationHighlight,
 } from "../src/app/preview-navigation.js";
 
-const viewTarget: CompilerWorkerNavigationTarget = {
-  sceneNodeId: "scene-node:view",
-  svgElementId: "c4ml-scene-node-view",
+const viewTarget: CompilerWorkerNodeNavigationTarget = {
+  kind: "node",
+  sceneObjectId: "scene-node:view",
+  svgElementIds: ["c4ml-scene-node-view"],
   referenceId: "context",
   label: "Context",
   source: {
     file: "editor.c4ml",
     start: { offset: 100, line: 5, column: 0 },
-    end: { offset: 400, line: 20, column: 1 },
+    end: { offset: 500, line: 25, column: 1 },
   },
+  relatedSources: [],
+  nodeRole: "boundary",
   bounds: { x: 20, y: 20, width: 700, height: 400 },
 };
 
-const elementTarget: CompilerWorkerNavigationTarget = {
-  sceneNodeId: "scene-node:element:garden-pulse",
-  svgElementId: "c4ml-scene-node-element-garden-pulse",
+const elementTarget: CompilerWorkerNodeNavigationTarget = {
+  kind: "node",
+  sceneObjectId: "scene-node:element:garden-pulse",
+  svgElementIds: ["c4ml-scene-node-element-garden-pulse"],
   referenceId: "garden-pulse",
   label: "Garden Pulse",
   source: {
@@ -34,24 +39,96 @@ const elementTarget: CompilerWorkerNavigationTarget = {
     start: { offset: 180, line: 9, column: 2 },
     end: { offset: 260, line: 13, column: 3 },
   },
+  relatedSources: [],
+  nodeRole: "element",
   bounds: { x: 500, y: 80, width: 200, height: 120 },
 };
 
-describe("preview navigation", () => {
-  it("selects the narrowest source range at the cursor", () => {
-    expect(
-      navigationTargetForOffset([viewTarget, elementTarget], 210)?.referenceId,
-    ).toBe("garden-pulse");
-    expect(navigationTargetForOffset([viewTarget, elementTarget], 50)).toBeUndefined();
-  });
+const routeTarget: CompilerWorkerRouteNavigationTarget = {
+  kind: "route",
+  sceneObjectId: "scene-route:relationship:reviews-plan",
+  svgElementIds: [
+    "c4ml-scene-route-relationship-reviews-plan",
+    "c4ml-scene-route-relationship-reviews-plan-arrowhead",
+  ],
+  referenceId: "reviews-plan",
+  label: "Reviews plan",
+  source: {
+    file: "editor.c4ml",
+    start: { offset: 520, line: 27, column: 2 },
+    end: { offset: 620, line: 31, column: 3 },
+  },
+  relatedSources: [
+    {
+      file: "editor.c4ml",
+      start: { offset: 800, line: 40, column: 4 },
+      end: { offset: 940, line: 47, column: 5 },
+    },
+  ],
+  policy: "guided",
+  style: "orthogonal",
+  points: [
+    { x: 220, y: 300 },
+    { x: 460, y: 300 },
+    { x: 460, y: 140 },
+    { x: 500, y: 140 },
+  ],
+  sourcePort: {
+    id: "scene-port:reviews-plan:source",
+    role: "source",
+    side: "east",
+    point: { x: 220, y: 300 },
+  },
+  targetPort: {
+    id: "scene-port:reviews-plan:target",
+    role: "target",
+    side: "west",
+    point: { x: 500, y: 140 },
+  },
+  labelPoint: { x: 340, y: 300 },
+  labelSegment: 0,
+  corridor: {
+    id: "lower-entry",
+    orientation: "vertical",
+    coordinate: 452,
+    laneCoordinate: 460,
+    lane: 1,
+    lanes: 3,
+    laneSpacing: 8,
+  },
+};
 
-  it("selects the smallest geometry under a preview point", () => {
+describe("preview navigation", () => {
+  it("selects the narrowest source or route-control range at the cursor", () => {
     expect(
-      navigationTargetAtPoint([viewTarget, elementTarget], { x: 550, y: 120 })
+      navigationTargetForOffset([viewTarget, elementTarget, routeTarget], 210)
         ?.referenceId,
     ).toBe("garden-pulse");
     expect(
-      navigationTargetAtPoint([viewTarget, elementTarget], { x: 10, y: 10 }),
+      navigationTargetForOffset([viewTarget, routeTarget], 850)?.referenceId,
+    ).toBe("reviews-plan");
+    expect(
+      navigationTargetForOffset([viewTarget, elementTarget, routeTarget], 50),
+    ).toBeUndefined();
+  });
+
+  it("prioritizes elements, then nearby routes, then containing boundaries", () => {
+    expect(
+      navigationTargetAtPoint([viewTarget, elementTarget, routeTarget], {
+        x: 550,
+        y: 120,
+      })?.referenceId,
+    ).toBe("garden-pulse");
+    expect(
+      navigationTargetAtPoint([viewTarget, routeTarget], { x: 350, y: 307 })
+        ?.referenceId,
+    ).toBe("reviews-plan");
+    expect(
+      navigationTargetAtPoint([viewTarget, routeTarget], { x: 100, y: 100 })
+        ?.referenceId,
+    ).toBe("context");
+    expect(
+      navigationTargetAtPoint([viewTarget, routeTarget], { x: 10, y: 10 }),
     ).toBeUndefined();
   });
 
@@ -77,7 +154,7 @@ describe("preview navigation", () => {
     ).toBeUndefined();
   });
 
-  it("adds a preview-only highlight for the selected compiler node", () => {
+  it("adds a preview-only highlight for a selected compiler node", () => {
     const svg = '<svg><g id="c4ml-scene-node-element-garden-pulse"></g></svg>';
     const highlighted = svgWithNavigationHighlight(svg, elementTarget);
 
@@ -86,5 +163,21 @@ describe("preview navigation", () => {
       "#c4ml-scene-node-element-garden-pulse .element-surface",
     );
     expect(svg).not.toContain("c4ml-editor-selection");
+  });
+
+  it("highlights a route and adds inspectable debug geometry only to the preview", () => {
+    const svg = `<svg><path id="${routeTarget.svgElementIds[0]}"></path><path id="${routeTarget.svgElementIds[1]}"></path></svg>`;
+    const highlighted = svgWithNavigationHighlight(svg, routeTarget, {
+      showRouteDebug: true,
+      width: 800,
+      height: 600,
+    });
+
+    expect(highlighted).toContain('id="c4ml-editor-routing-debug"');
+    expect(highlighted).toContain("editor-route-port-source");
+    expect(highlighted).toContain("editor-route-port-target");
+    expect(highlighted).toContain("editor-corridor-selected");
+    expect(highlighted).toContain('x1="460"');
+    expect(svg).not.toContain("c4ml-editor-routing-debug");
   });
 });

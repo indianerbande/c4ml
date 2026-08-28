@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.17
+Status: Draft 0.19
 
 Date: 2026-08-28
 
@@ -18,7 +18,7 @@ commands are:
   test suite;
 - `pnpm run check:editor-production` for the accepted Monaco and ELK.js
   versions, version-sensitive integration points, the unmodified packaged ELK
-  worker, and packaged license notices;
+  worker, reviewed IBM Plex assets, and packaged license notices;
 - `pnpm run check` for the complete current gate;
 - `pnpm run editor:build` for the production-mode Angular editor build;
 - `pnpm run demo:render` for the ignored visual reference export; and
@@ -39,8 +39,10 @@ Group parentage, automatic/guided/fixed route policies, fixed-route rejection,
 explicit source/target Ports, scene-owned Arrowheads, safe custom-shape
 validation and assignment, renderer-neutral scene construction, semantic theme
 roles and presets, stable SVG, ELK absolute compound geometry, SVG-to-PNG
-rasterization, and a visually inspected Signal Garden Container View. This is
-not yet a golden suite or complete rendering evidence for all seven views.
+rasterization, validated embedded WOFF2 faces, controlled TTF rendering with
+system fonts disabled, and a visually inspected Signal Garden Container View.
+This is not yet a golden suite or complete rendering evidence for all seven
+views.
 
 The experimental language package adds a narrow integration suite for the
 original `hello-context.c4ml`, `hello-container.c4ml`, and
@@ -71,7 +73,9 @@ normal compilation of that source, cancel behavior, and explicit undo. The
 worker and navigation-helper suites additionally verify deterministic
 source/scene/SVG mappings, smallest-range source selection, smallest-bound
 preview hit testing, object-fit coordinate conversion, last-valid navigation
-retention, and preview-only SVG highlighting. The production-mode Angular build
+retention, route-control source mapping, polyline-distance hit testing with
+node/route/boundary precedence, effective corridor geometry, and preview-only
+node, Route, Port, label-anchor, and corridor highlighting. The production-mode Angular build
 proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is
 lazy, and that the reviewed ELK worker and license are packaged locally.
@@ -90,8 +94,17 @@ nested Deployment View. Route-block completion was inspected with the active
 policy and existing properties. Bidirectional navigation was visually inspected:
 selecting the `garden-pulse` declaration highlighted only Garden Pulse, and
 clicking Sensor Post in the preview selected and revealed its complete source
-declaration. The browser accessibility tree was inspected; a real screen-reader
-pass is not yet complete.
+declaration. Relationship/Route navigation was also inspected in both
+directions: clicking the corridor-guided observation path selected its semantic
+Relationship and displayed its effective routing data; selecting the other
+view-local `route` block highlighted only its effective path and inspector.
+The Route Debug toggle removed helper points, Ports, label anchor, and corridor
+lanes while retaining selection. The browser accessibility tree was inspected;
+a real screen-reader pass is not yet complete. Typography verification confirms
+that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
+including regular and bold faces. The preview was visually inspected at 80,
+100, and 120 percent; its rendered box changed size while computed CSS
+`transform` remained `none`.
 
 The experimental CLI suite exercises successful validation, source-located JSON
 diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
@@ -323,7 +336,8 @@ SVG tests MUST include:
 - unique IDs and valid internal references;
 - correct `viewBox` and bounds;
 - selectable text where required;
-- title and description metadata; and
+- title and description metadata;
+- validated embedded WOFF2 faces with no external font URL; and
 - equivalent semantic content to the scene graph.
 
 Raw SVG byte snapshots SHOULD be avoided until canonical serialization is
@@ -337,7 +351,7 @@ PNG tests MUST verify:
 - transparent and configured backgrounds;
 - no clipping;
 - consistency with SVG bounds;
-- use of controlled fonts; and
+- explicit controlled TTF files with system-font discovery disabled; and
 - visually equivalent content to the SVG source.
 
 On the reference platform, deterministic PNGs SHOULD be byte-stable. Across
@@ -371,7 +385,8 @@ Editor tests MUST cover:
 - current diagnostics replacing obsolete diagnostics;
 - source-to-preview and preview-to-source navigation;
 - stable mapping from source ranges through semantic and scene IDs to SVG;
-- zoom, pan, and fit-to-view behavior without geometry mutation;
+- zoom, pan, and fit-to-view behavior without geometry mutation or CSS
+  transform scaling;
 - SVG and PNG export; and
 - operation without a compiler service or network connection.
 
@@ -390,10 +405,14 @@ context-completion requests, exact text edits, selection of a declared view by
 stable identifier, Monaco marker translation, diagnostic-to-source navigation,
 keyboard undo/redo, source synchronization, zoom, fit, scroll-pan at enlarged
 scale, SVG download, and bidirectional source/preview node navigation through
-stable source, scene, and SVG identities. It does not yet satisfy
-relationship/route selection, PNG export, full CLI parity, real
-assistive-technology coverage, or complete-source coverage requirements in
-this section.
+stable source, scene, and SVG identities. Relationship and effective-Route
+selection, semantic and route-control source mapping, route hit testing, and a
+preview-only routing-debug overlay are covered too. Local Plex font loading,
+standalone-SVG embedding, and transform-free preview zoom are covered too. It
+does not yet satisfy
+individually selectable Ports, labels, corridors, and Arrowheads, PNG export,
+full CLI parity, real assistive-technology coverage, or complete-source
+coverage requirements in this section.
 
 If the guided modeling wizard is implemented, tests MUST prove that identical
 answers generate deterministic C4ML source, generated source passes through the
@@ -520,7 +539,9 @@ Continuous validation MUST eventually include:
 The accepted editor dependency check currently pins Monaco's reviewed version,
 verifies the version-sensitive Suggest controller boundary, requires Angular's
 generated production license inventory, and requires Monaco's upstream license
-and third-party notices in the built editor artifact.
+and third-party notices in the built editor artifact. It also verifies every
+reviewed IBM Plex WOFF2 hash, packaged byte identity, and the unchanged OFL-1.1
+license.
 
 No copied third-party example may be introduced as a test fixture.
 

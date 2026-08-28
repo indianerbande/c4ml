@@ -43,6 +43,16 @@
                 "glob": "LICENSE.md",
                 "input": "node_modules/elkjs",
                 "output": "third-party/elkjs"
+              },
+              {
+                "glob": "**/*.woff2",
+                "input": "node_modules/@c4ml/font-ibm-plex/fonts",
+                "output": "fonts/ibm-plex"
+              },
+              {
+                "glob": "LICENSE.txt",
+                "input": "node_modules/@c4ml/font-ibm-plex",
+                "output": "third-party/ibm-plex"
               }
             ],
             "loader": {

@@ -32,7 +32,15 @@ bidirectional source/preview node navigation through compiler-owned stable
 identities and source ranges, zoom, fit, scroll-pan, SVG download, wizard
 preview, cancel, apply, one-step wizard undo, and selection among declared
 executable views. Preview selection styling is not included in exported SVG.
-Relationships and route objects are not yet navigation targets. The compiler worker
+Relationships and effective Routes are navigation targets too. A toggleable
+preview-only routing overlay exposes effective points, endpoint Ports, the
+label anchor, and corridor lanes, while an inspector reports the selected
+route's policy and geometry. Individual Ports, labels, and corridors are not
+yet navigation targets. The desktop UI and diagrams use the locally packaged
+IBM Plex family: Sans for interface and diagrams, Mono only for source. SVG
+exports embed the controlled Sans WOFF2 faces, and browser zoom changes actual
+preview dimensions instead of applying a rasterizing CSS transform. The
+compiler worker
 uses ELK's API-only entry and a separate local ELK Web Worker for automatic
 layout; the earlier linear adapter remains test-only compatibility code. The
 editor is not yet feature-complete, but Angular and Monaco are
@@ -77,6 +85,14 @@ constraint/routing scope is not implemented, and the remaining candidate
 adapters are not permanently accepted. ELK.js is the accepted exception
 recorded in `SPEC.md` and `DEPENDENCIES.md`.
 
+IBM Plex v6.4.2 is the accepted controlled font asset. Exact unmodified Sans
+and Mono files from the tagged official release are isolated in
+`packages/font-ibm-plex` with their OFL-1.1 license and recorded hashes. The
+browser packages only WOFF2 assets; standalone SVG embeds the required Sans
+faces; Node PNG rendering receives the matching Sans TTF files explicitly and
+keeps system-font discovery disabled. Font choice is presentation behavior and
+MUST NOT enter the semantic model or author-facing source grammar.
+
 The renderer also has an implemented semantic color-theme contract. The
 original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
 deployment roles, boundaries, relationship policies, and internal/external
@@ -113,7 +129,8 @@ same executable language slices, delegates all compilation to the shared
 language and compiler packages, and supports check, one/all-view SVG and PNG
 rendering, scale, output-directory selection, human or JSON results, version
 reporting, and classified exits. Its commands are provisional, it is not a
-published package, and its current PNG path loads system fonts. Keep Node.js
+published package, and its SVG/PNG paths use the controlled local IBM Plex
+assets without system-font discovery. Keep Node.js
 filesystem, process, and environment behavior confined to this app.
 
 ## Read first

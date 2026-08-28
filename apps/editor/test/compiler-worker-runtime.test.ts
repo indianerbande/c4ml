@@ -7,6 +7,7 @@ import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 
 import {
   compilerWorkerProtocolVersion,
+  isCompilerWorkerResponse,
   type CompilerWorkerRequest,
   type CompletionWorkerRequest,
   type HighlightWorkerRequest,
@@ -42,9 +43,18 @@ const deploymentSourceUrl = new URL(
   import.meta.url,
 );
 const nodeLayoutAdapter = createBundledElkLayoutAdapter();
+const testFontFaces = [
+  {
+    family: "IBM Plex Sans",
+    style: "normal" as const,
+    weight: 400,
+    format: "woff2" as const,
+    dataUrl: "data:font/woff2;base64,d09GMgAAAAA=",
+  },
+];
 
 function compile(request: CompilerWorkerRequest) {
-  return compileWorkerRequest(request, nodeLayoutAdapter);
+  return compileWorkerRequest(request, nodeLayoutAdapter, testFontFaces);
 }
 
 function request(
@@ -109,6 +119,7 @@ describe("compiler worker runtime", () => {
     const second = await compile(request(initialC4mlSource));
 
     expect(first.status).toBe("valid");
+    expect(isCompilerWorkerResponse(first)).toBe(true);
     expect(first.diagnostics).toEqual([]);
     expect(first.svg).toBe(second.svg);
     expect(first.svg).toContain("System Context — Garden Pulse");
@@ -117,11 +128,43 @@ describe("compiler worker runtime", () => {
     expect(first.navigation?.targets).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          kind: "node",
           referenceId: "garden-pulse",
-          svgElementId: "c4ml-scene-node-element-garden-pulse",
+          sceneObjectId: "scene-node:element:garden-pulse",
+          svgElementIds: ["c4ml-scene-node-element-garden-pulse"],
           source: expect.objectContaining({
             file: "editor.c4ml",
             start: expect.objectContaining({ line: 11, column: 2 }),
+          }),
+        }),
+        expect.objectContaining({
+          kind: "route",
+          referenceId: "caretaker-reviews-plan",
+          sceneObjectId:
+            "scene-route:relationship:caretaker-reviews-plan",
+          policy: "guided",
+          style: "orthogonal",
+          sourcePort: expect.objectContaining({ side: "east" }),
+          targetPort: expect.objectContaining({ side: "west" }),
+          source: expect.objectContaining({
+            start: expect.objectContaining({ line: 25, column: 2 }),
+          }),
+          relatedSources: [
+            expect.objectContaining({
+              start: expect.objectContaining({ line: 56, column: 4 }),
+            }),
+          ],
+        }),
+        expect.objectContaining({
+          kind: "route",
+          referenceId: "sensor-publishes-observations",
+          corridor: expect.objectContaining({
+            id: "lower-entry",
+            orientation: "vertical",
+            lane: 1,
+            lanes: 3,
+            coordinate: 687,
+            laneCoordinate: 687,
           }),
         }),
       ]),

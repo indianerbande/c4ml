@@ -31,6 +31,14 @@ export interface CorridorSelection {
   readonly lane: number;
 }
 
+export interface EffectiveCorridor extends CorridorSelection {
+  readonly orientation: RouteCorridor["orientation"];
+  readonly coordinate: number;
+  readonly laneCoordinate: number;
+  readonly lanes: number;
+  readonly laneSpacing: number;
+}
+
 export interface RouteControl extends SourceBacked {
   readonly relationshipId: string;
   readonly policy: RoutePolicy;
@@ -65,7 +73,7 @@ export interface EffectiveRoute {
   readonly technology?: string;
   readonly labelSegment: number;
   readonly labelPoint: Point;
-  readonly corridor?: CorridorSelection;
+  readonly corridor?: EffectiveCorridor;
 }
 
 export function routeDiagram(
@@ -205,6 +213,10 @@ function controlledRoute(
   corridorById: ReadonlyMap<string, RouteCorridor>,
 ): EffectiveRoute {
   const style = control.style ?? "orthogonal";
+  const corridor =
+    control.corridor === undefined
+      ? undefined
+      : resolveCorridor(edge, control.corridor, corridorById);
   let sourcePort = choosePort(source, target, control.sourcePort ?? "automatic");
   let targetPort = choosePort(target, source, control.targetPort ?? "automatic");
   let points: readonly Point[];
@@ -254,7 +266,7 @@ function controlledRoute(
       guidedStart,
       guidedEnd,
       control,
-      corridorById,
+      corridor,
     );
     points =
       style === "orthogonal"
@@ -276,7 +288,7 @@ function controlledRoute(
     targetPort,
     points,
     labelSegment,
-    control.corridor,
+    corridor,
     control.labelOffset,
   );
 }
@@ -286,10 +298,10 @@ function guidedAnchors(
   start: Point,
   end: Point,
   control: RouteControl,
-  corridorById: ReadonlyMap<string, RouteCorridor>,
+  corridor: EffectiveCorridor | undefined,
 ): readonly Point[] {
   const waypoints = control.waypoints ?? [];
-  if (control.corridor === undefined) {
+  if (corridor === undefined) {
     return [start, ...waypoints, end];
   }
   if (waypoints.length > 0) {
@@ -298,30 +310,55 @@ function guidedAnchors(
       `Guided route ${edge.referenceId} cannot combine a corridor and free waypoints yet.`,
     );
   }
-  const corridor = corridorById.get(control.corridor.corridorId);
+  return corridor.orientation === "vertical"
+    ? [
+        start,
+        { x: corridor.laneCoordinate, y: start.y },
+        { x: corridor.laneCoordinate, y: end.y },
+        end,
+      ]
+    : [
+        start,
+        { x: start.x, y: corridor.laneCoordinate },
+        { x: end.x, y: corridor.laneCoordinate },
+        end,
+      ];
+}
+
+function resolveCorridor(
+  edge: DiagramEdge,
+  selection: CorridorSelection,
+  corridorById: ReadonlyMap<string, RouteCorridor>,
+): EffectiveCorridor {
+  const corridor = corridorById.get(selection.corridorId);
   if (corridor === undefined) {
     throw new ContractError(
       "C4ML-ROUTE-007",
-      `Guided route ${edge.referenceId} references unknown corridor ${control.corridor.corridorId}.`,
+      `Guided route ${edge.referenceId} references unknown corridor ${selection.corridorId}.`,
     );
   }
   if (
-    !Number.isInteger(control.corridor.lane) ||
-    control.corridor.lane < 0 ||
-    control.corridor.lane >= corridor.lanes
+    !Number.isInteger(selection.lane) ||
+    selection.lane < 0 ||
+    selection.lane >= corridor.lanes
   ) {
     throw new ContractError(
       "C4ML-ROUTE-008",
-      `Guided route ${edge.referenceId} selects invalid lane ${control.corridor.lane}.`,
+      `Guided route ${edge.referenceId} selects invalid lane ${selection.lane}.`,
     );
   }
   const laneOffset =
-    (control.corridor.lane - (corridor.lanes - 1) / 2) *
+    (selection.lane - (corridor.lanes - 1) / 2) *
     corridor.laneSpacing;
-  const coordinate = corridor.coordinate + laneOffset;
-  return corridor.orientation === "vertical"
-    ? [start, { x: coordinate, y: start.y }, { x: coordinate, y: end.y }, end]
-    : [start, { x: start.x, y: coordinate }, { x: end.x, y: coordinate }, end];
+  return {
+    corridorId: corridor.id,
+    lane: selection.lane,
+    orientation: corridor.orientation,
+    coordinate: corridor.coordinate,
+    laneCoordinate: corridor.coordinate + laneOffset,
+    lanes: corridor.lanes,
+    laneSpacing: corridor.laneSpacing,
+  };
 }
 
 function indexControls(
@@ -702,7 +739,7 @@ function routeResult(
   targetPortSide: CardinalPortSide,
   points: readonly Point[],
   labelSegment: number,
-  corridor?: CorridorSelection,
+  corridor?: EffectiveCorridor,
   labelOffset?: Point,
 ): EffectiveRoute {
   if (

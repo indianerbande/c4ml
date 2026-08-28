@@ -21,8 +21,14 @@ Implemented:
   undo/redo;
 - bidirectional navigation between source declarations and source-mapped
   preview nodes, using compiler-owned stable scene/SVG identities;
+- Relationship and effective-Route selection from either semantic or
+  view-local route-control source, with a toggleable routing-debug overlay and
+  effective-route inspector;
 - selection among the executable views declared in the current document;
-- zoom, fit, scroll-pan, and local SVG download; and
+- locally packaged IBM Plex Sans for the interface and diagrams, IBM Plex Mono
+  for source, and standalone SVG font embedding;
+- vector-preserving zoom without CSS transform scaling, fit, scroll-pan, and
+  local SVG download; and
 - a three-step new-document System Context wizard with generated-source review,
   cancel, apply, and one explicit undo.
 
@@ -49,4 +55,6 @@ The built application is written to the ignored `build/editor/` directory and
 requires no runtime network connection. The production build keeps the Angular
 shell small, loads the Monaco runtime, stylesheet, and generic editor worker
 locally when the source pane initializes, and includes generated dependency
-licenses plus Monaco's upstream license and third-party notices.
+licenses plus Monaco's upstream license and third-party notices. The reviewed
+IBM Plex WOFF2 assets and unchanged OFL-1.1 license are packaged locally; the
+application performs no font-CDN request.

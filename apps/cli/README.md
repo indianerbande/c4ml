@@ -31,6 +31,6 @@ layout/render compilation, and `5` filesystem/environment failure.
 
 The CLI currently accepts the bounded experimental language slices for all
 seven view types, including Deployment. Its command names and output contract
-remain provisional. PNG output uses the isolated resvg candidate and currently
-loads local system fonts; a bundled reproducible font remains required before
-production acceptance.
+remain provisional. SVG embeds the controlled IBM Plex Sans WOFF2 faces. PNG
+uses the matching local TTF faces through the isolated resvg candidate with
+system-font discovery disabled.

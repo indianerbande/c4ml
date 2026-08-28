@@ -100,6 +100,8 @@ describe("experimental C4ML CLI", () => {
     expect(exitCode).toBe(cliExitCode.success);
     expect(svg).toContain("Code View — Arrangement Engine");
     expect(svg).toContain("Code Element · function");
+    expect(svg).toContain('font-family="IBM Plex Sans"');
+    expect(svg).toContain('data:font/woff2;base64,d09GMg');
     expect(stderr).toEqual([]);
   });
 

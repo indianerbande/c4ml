@@ -26,6 +26,9 @@ importers:
       '@c4ml/compiler-core':
         specifier: workspace:*
         version: link:../../packages/compiler-core
+      '@c4ml/font-ibm-plex':
+        specifier: workspace:*
+        version: link:../../packages/font-ibm-plex
       '@c4ml/language-c4ml':
         specifier: workspace:*
         version: link:../../packages/language-c4ml
@@ -50,6 +53,9 @@ importers:
       '@c4ml/compiler-core':
         specifier: workspace:*
         version: link:../../packages/compiler-core
+      '@c4ml/font-ibm-plex':
+        specifier: workspace:*
+        version: link:../../packages/font-ibm-plex
       '@c4ml/language-c4ml':
         specifier: workspace:*
         version: link:../../packages/language-c4ml
@@ -87,6 +93,9 @@ importers:
       '@c4ml/compiler-core':
         specifier: workspace:*
         version: link:../../packages/compiler-core
+      '@c4ml/font-ibm-plex':
+        specifier: workspace:*
+        version: link:../../packages/font-ibm-plex
       '@c4ml/layout-elk':
         specifier: workspace:*
         version: link:../../packages/layout-elk
@@ -95,6 +104,8 @@ importers:
         version: link:../../spikes/render-resvg
 
   packages/compiler-core: {}
+
+  packages/font-ibm-plex: {}
 
   packages/language-c4ml:
     dependencies:

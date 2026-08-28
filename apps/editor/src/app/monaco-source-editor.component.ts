@@ -171,8 +171,7 @@ export class C4mlMonacoSourceEditorComponent
       automaticLayout: true,
       bracketPairColorization: { enabled: true },
       editContext: false,
-      fontFamily:
-        '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
+      fontFamily: '"IBM Plex Mono", monospace',
       fontSize: 12.5,
       lineHeight: 21,
       lineNumbersMinChars: 3,

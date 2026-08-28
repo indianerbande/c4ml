@@ -5,10 +5,16 @@ import {
   type ArchitectureView,
   type Diagnostic,
   type DiagramScene,
+  type DiagramRoutingOptions,
   type LayoutAdapter,
   type SceneNode,
+  type ScenePort,
+  type SceneRoute,
   type SourceReference,
+  type SvgEmbeddedFontFace,
 } from "@c4ml/compiler-core";
+import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
+import { loadIbmPlexSansSvgFontFaces } from "@c4ml/font-ibm-plex/browser";
 import { createBrowserElkLayoutAdapter } from "@c4ml/layout-elk/browser";
 import {
   completeC4mlDraft,
@@ -39,6 +45,7 @@ let browserLayoutAdapter: LayoutAdapter | undefined;
 export async function compileWorkerRequest(
   request: CompilerWorkerRequest,
   layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
+  embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
 ): Promise<CompilerWorkerResponse> {
   try {
     const parsed = await parseC4mlDraft(request.source, { file: request.file });
@@ -64,6 +71,8 @@ export async function compileWorkerRequest(
       parsed.views.find(({ id }) => id === request.requestedViewId) ??
       parsed.views[0];
 
+    const effectiveFontFaces =
+      embeddedFontFaces ?? (await getBrowserSvgFontFaces());
     const compiled = await compileArchitectureDiagram({
       model: parsed.model,
       view,
@@ -71,7 +80,8 @@ export async function compileWorkerRequest(
       ...(parsed.routingByViewId?.[view.id] === undefined
         ? {}
         : { routing: parsed.routingByViewId[view.id] }),
-      scene: { fontFamily: "Arial", theme: "c4ml-blue" },
+      scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+      svg: { embeddedFontFaces: effectiveFontFaces },
     });
     if (!compiled.valid || compiled.svg === undefined) {
       return response(
@@ -90,7 +100,12 @@ export async function compileWorkerRequest(
       "valid",
       compiled.diagnostics,
       compiled.svg,
-      toWorkerNavigation(parsed.model, view, compiled.scene!),
+      toWorkerNavigation(
+        parsed.model,
+        view,
+        compiled.scene!,
+        parsed.routingByViewId?.[view.id],
+      ),
       views,
       view.id,
     );
@@ -116,6 +131,12 @@ export async function compileWorkerRequest(
       ],
     };
   }
+}
+
+function getBrowserSvgFontFaces(): Promise<readonly SvgEmbeddedFontFace[]> {
+  return loadIbmPlexSansSvgFontFaces(
+    new URL("fonts/ibm-plex/", self.location.href),
+  );
 }
 
 function getBrowserLayoutAdapter(): LayoutAdapter {
@@ -269,30 +290,101 @@ function toWorkerNavigation(
   model: ArchitectureModel,
   view: ArchitectureView,
   scene: DiagramScene,
+  routing: DiagramRoutingOptions | undefined,
 ): CompilerWorkerNavigation {
+  const portById = new Map(scene.ports.map((port) => [port.id, port]));
   return {
     width: scene.width,
     height: scene.height,
-    targets: scene.nodes.flatMap((node) => {
-      const source = sourceForSceneNode(model, view, node);
-      return source === undefined
-        ? []
-        : [
-            {
-              sceneNodeId: node.id,
-              svgElementId: svgSceneObjectId(node.id),
-              referenceId: node.referenceId,
-              label: node.title.lines.join(" "),
-              source: toWorkerSource(source),
-              bounds: {
-                x: node.x,
-                y: node.y,
-                width: node.width,
-                height: node.height,
+    targets: [
+      ...scene.nodes.flatMap((node) => {
+        const source = sourceForSceneNode(model, view, node);
+        return source === undefined
+          ? []
+          : [
+              {
+                kind: "node" as const,
+                sceneObjectId: node.id,
+                svgElementIds: [svgSceneObjectId(node.id)],
+                referenceId: node.referenceId,
+                label: node.title.lines.join(" "),
+                source: toWorkerSource(source),
+                relatedSources: [],
+                nodeRole:
+                  node.kind === "element" ||
+                  node.kind === "infrastructure-node"
+                    ? ("element" as const)
+                    : ("boundary" as const),
+                bounds: {
+                  x: node.x,
+                  y: node.y,
+                  width: node.width,
+                  height: node.height,
+                },
               },
-            },
-          ];
-    }),
+            ];
+      }),
+      ...scene.routes.flatMap((route) => {
+        const source = sourceForSceneRoute(model, view, route);
+        const sourcePort = portById.get(route.sourcePortId);
+        const targetPort = portById.get(route.targetPortId);
+        if (
+          source === undefined ||
+          sourcePort === undefined ||
+          targetPort === undefined
+        ) {
+          return [];
+        }
+        const controlSource = routing?.controls?.find(
+          ({ relationshipId }) => relationshipId === route.relationshipId,
+        )?.source;
+        return [
+          {
+            kind: "route" as const,
+            sceneObjectId: route.id,
+            svgElementIds: [
+              svgSceneObjectId(route.id),
+              svgSceneObjectId(`${route.id}:arrowhead`),
+            ],
+            referenceId: route.relationshipId,
+            label: route.label,
+            source: toWorkerSource(source),
+            relatedSources:
+              controlSource === undefined
+                ? []
+                : [toWorkerSource(controlSource)],
+            policy: route.policy,
+            style: route.style,
+            points: route.points,
+            sourcePort: toWorkerPort(sourcePort),
+            targetPort: toWorkerPort(targetPort),
+            labelPoint: route.labelPoint,
+            labelSegment: route.labelSegment,
+            corridor:
+              route.corridor === undefined
+                ? undefined
+                : {
+                    id: route.corridor.corridorId,
+                    orientation: route.corridor.orientation,
+                    coordinate: route.corridor.coordinate,
+                    laneCoordinate: route.corridor.laneCoordinate,
+                    lane: route.corridor.lane,
+                    lanes: route.corridor.lanes,
+                    laneSpacing: route.corridor.laneSpacing,
+                  },
+          },
+        ];
+      }),
+    ],
+  };
+}
+
+function toWorkerPort(port: ScenePort) {
+  return {
+    id: port.id,
+    role: port.role,
+    side: port.side,
+    point: port.point,
   };
 }
 
@@ -320,6 +412,24 @@ function sourceForSceneNode(
             ?.source
         : model.elements.find(({ id }) => id === node.referenceId)?.source;
   }
+}
+
+function sourceForSceneRoute(
+  model: ArchitectureModel,
+  view: ArchitectureView,
+  route: SceneRoute,
+): SourceReference | undefined {
+  if (view.kind === "dynamic") {
+    return view.interactions.find(({ id }) => id === route.relationshipId)
+      ?.source;
+  }
+  if (view.kind === "deployment") {
+    return model.deployment?.relationships.find(
+      ({ id }) => id === route.relationshipId,
+    )?.source;
+  }
+  return model.relationships.find(({ id }) => id === route.relationshipId)
+    ?.source;
 }
 
 function toWorkerSource(source: SourceReference) {

@@ -153,6 +153,18 @@ describe("diagram compiler pipeline", () => {
           },
         ],
       },
+      scene: { fontFamily: "IBM Plex Sans" },
+      svg: {
+        embeddedFontFaces: [
+          {
+            family: "IBM Plex Sans",
+            style: "normal" as const,
+            weight: 400,
+            format: "woff2" as const,
+            dataUrl: "data:font/woff2;base64,d09GMgAAAAA=",
+          },
+        ],
+      },
     };
 
     const first = await compileArchitectureDiagram(request);
@@ -177,6 +189,8 @@ describe("diagram compiler pipeline", () => {
     expect(svg).toContain("data-c4ml-port-side=\"south\"");
     expect(svg).toContain("data-c4ml-shape=\"c4ml-person\"");
     expect(svg).toContain("data-c4ml-theme=\"c4ml-blue\"");
+    expect(svg).toContain('font-family="IBM Plex Sans"');
+    expect(svg).toContain('@font-face { font-family: "IBM Plex Sans";');
     expect(svg).toContain("data-c4ml-element-role=\"person\"");
     expect(svg).toContain("data-c4ml-element-role=\"container\"");
     expect(svg).toContain("class=\"legend-swatch element-surface\"");
@@ -191,6 +205,28 @@ describe("diagram compiler pipeline", () => {
     expect(guided).toBeDefined();
     expect(guided!.sourcePort.side).toBe("south");
     expect(guided!.targetPort.side).toBe("north");
+    expect(guided!.corridor).toEqual({
+      corridorId: "east-lane",
+      lane: 1,
+      orientation: "vertical",
+      coordinate: 790,
+      laneCoordinate: 799,
+      lanes: 2,
+      laneSpacing: 18,
+    });
+    expect(
+      first.scene?.routes.find(
+        ({ relationshipId }) => relationshipId === "api-enqueues-notice",
+      )?.corridor,
+    ).toEqual({
+      corridorId: "east-lane",
+      lane: 1,
+      orientation: "vertical",
+      coordinate: 830,
+      laneCoordinate: 839,
+      lanes: 2,
+      laneSpacing: 18,
+    });
     expect(first.scene?.ports).toHaveLength((first.routes?.length ?? 0) * 2);
     expect(first.scene?.arrowheads).toHaveLength(first.routes?.length ?? 0);
     expect(first.scene?.arrowheads[0]?.points).toHaveLength(3);
@@ -232,6 +268,25 @@ describe("diagram compiler pipeline", () => {
     expect(themed.svg).toContain("data-c4ml-theme=\"orchid-night\"");
     expect(themed.svg).toContain(
       ".element-role-container.element-state-internal .element-surface { fill: #3B1F5A;",
+    );
+
+    const externalFont = await compileArchitectureDiagram({
+      ...request,
+      svg: {
+        embeddedFontFaces: [
+          {
+            family: "IBM Plex Sans",
+            style: "normal",
+            weight: 400,
+            format: "woff2",
+            dataUrl: "https://fonts.invalid/plex.woff2",
+          },
+        ],
+      },
+    });
+    expect(externalFont.valid).toBe(false);
+    expect(externalFont.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-SVG-009",
     );
   });
 

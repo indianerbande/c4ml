@@ -98,6 +98,16 @@
           </div>
           <button
             type="button"
+            class="debug-button"
+            [class.is-active]="routingDebugEnabled()"
+            [attr.aria-pressed]="routingDebugEnabled()"
+            (click)="toggleRoutingDebug()"
+            title="Show effective route points, ports, labels, and corridor lanes"
+          >
+            Route debug
+          </button>
+          <button
+            type="button"
             class="export-button"
             (click)="exportSvg()"
             [disabled]="compiler.state().phase !== 'valid'"
@@ -115,10 +125,11 @@
             class="diagram"
             [class.is-navigable]="compiler.state().phase === 'valid'"
             [src]="url"
-            [style.transform]="previewTransform()"
+            [style.width]="previewSize()"
+            [style.height]="previewSize()"
             (click)="onPreviewClick($event)"
             alt="Compiled C4 diagram"
-            title="Select a diagram element to reveal its source declaration"
+            title="Select a diagram node or route to reveal its source declaration"
           />
         } @else {
           <div class="empty-preview">
@@ -137,10 +148,50 @@
 
         @if (selectedLabel(); as label) {
           <p class="selection-note" aria-live="polite">
-            Selected: {{ label }}
+            Selected {{ selectedTarget()?.kind }}: {{ label }}
           </p>
         }
       </div>
+
+      @if (selectedRoute(); as route) {
+        <aside class="route-inspector" aria-label="Selected route details">
+          <div class="route-inspector-title">
+            <span>Effective route</span>
+            <strong>{{ route.label }}</strong>
+          </div>
+          <dl>
+            <div>
+              <dt>Policy</dt>
+              <dd>{{ route.policy }}</dd>
+            </div>
+            <div>
+              <dt>Style</dt>
+              <dd>{{ route.style }}</dd>
+            </div>
+            <div>
+              <dt>Ports</dt>
+              <dd>{{ route.sourcePort.side }} → {{ route.targetPort.side }}</dd>
+            </div>
+            <div>
+              <dt>Points</dt>
+              <dd>{{ route.points.length }}</dd>
+            </div>
+            <div>
+              <dt>Label segment</dt>
+              <dd>{{ route.labelSegment + 1 }}</dd>
+            </div>
+            @if (route.corridor; as corridor) {
+              <div>
+                <dt>Corridor</dt>
+                <dd>
+                  {{ corridor.id }} · lane {{ corridor.lane + 1 }} /
+                  {{ corridor.lanes }}
+                </dd>
+              </div>
+            }
+          </dl>
+        </aside>
+      }
 
       <aside
         class="diagnostics"

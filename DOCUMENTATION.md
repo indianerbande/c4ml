@@ -162,8 +162,9 @@ environment failures.
 The CLI is contributor evidence, not a frozen public command contract. It
 accepts the current absolute route-control slice, but not Visual Groups,
 relative route guidance, avoidance regions, locked segments, shapes, or themes
-from source. PNG currently uses local system fonts; production release
-artifacts still require a controlled bundled font.
+from source. SVG and PNG use the same locally packaged IBM Plex Sans files;
+SVG embeds WOFF2 faces and PNG supplies the matching TTF faces to the renderer
+with system-font discovery disabled.
 
 The editor uses the same compiler in a browser Web Worker. Source remains
 authoritative; the preview does not keep hidden semantic or layout state.
@@ -172,9 +173,16 @@ adapter, not a second parser. Selecting a source declaration highlights its
 source-mapped diagram node; selecting a diagram node reveals and selects the
 corresponding declaration. The orange selection outline exists only in the
 live preview, so an exported SVG remains the canonical compiler result.
-Relationships, Routes, Ports, and labels are not selectable in this first
-navigation slice. The editor will retain this separation while filling the
-remaining export, accessibility, and graphical-editing gaps.
+Relationship declarations and view-local `route` blocks also select their
+effective connection; clicking close to that path reveals the underlying
+Relationship, Dynamic Interaction, or Deployment Relationship declaration.
+The optional Route Debug overlay shows effective route points, source and
+target Ports, the label anchor, and every lane of a selected corridor. Its
+adjacent inspector reports policy, style, Port sides, point count, selected
+label segment, and corridor lane. The overlay and selection styling exist only
+in the live preview. Individual Ports, labels, and corridors are not separate
+selection targets yet. The editor will retain this separation while filling
+the remaining export, accessibility, and graphical-editing gaps.
 
 ### Guided modeling wizard spike
 

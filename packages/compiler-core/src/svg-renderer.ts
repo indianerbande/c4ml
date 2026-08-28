@@ -17,8 +17,25 @@ import {
   type SceneTheme,
 } from "./theme.js";
 
-export function renderDiagramSvg(scene: DiagramScene): string {
+export interface SvgEmbeddedFontFace {
+  readonly family: string;
+  readonly style: "italic" | "normal";
+  readonly weight: number;
+  readonly format: "woff2";
+  readonly dataUrl: string;
+}
+
+export interface SvgRenderOptions {
+  readonly embeddedFontFaces?: readonly SvgEmbeddedFontFace[];
+}
+
+export function renderDiagramSvg(
+  scene: DiagramScene,
+  options: SvgRenderOptions = {},
+): string {
   validateScene(scene);
+  const embeddedFontFaces = options.embeddedFontFaces ?? [];
+  validateEmbeddedFontFaces(embeddedFontFaces);
   const boundaries = scene.nodes.filter((node) => node.kind !== "element" && node.kind !== "infrastructure-node");
   const elements = scene.nodes.filter((node) => node.kind === "element" || node.kind === "infrastructure-node");
   const shapeById = new Map(scene.shapes.map((shape) => [shape.id, shape]));
@@ -29,7 +46,7 @@ export function renderDiagramSvg(scene: DiagramScene): string {
     `  <title id="diagram-title">${escapeXml(scene.title)}</title>`,
     `  <desc id="diagram-description">${escapeXml(scene.description)}</desc>`,
     `  <metadata>${escapeXml(JSON.stringify({ generator: "C4ML", sceneId: scene.id, viewKind: scene.viewKind, scope: scene.scope, themeId: scene.theme.id }))}</metadata>`,
-    renderDefinitions(scene.theme),
+    renderDefinitions(scene.theme, embeddedFontFaces),
     `  <rect class="canvas" x="0" y="0" width="${scene.width}" height="${scene.height}"/>`,
     `  <g id="diagram-header">`,
     `    <text class="diagram-title" x="40" y="42">${escapeXml(scene.title)}</text>`,
@@ -59,10 +76,14 @@ export function renderDiagramSvg(scene: DiagramScene): string {
   ].join("\n");
 }
 
-function renderDefinitions(theme: SceneTheme): string {
+function renderDefinitions(
+  theme: SceneTheme,
+  embeddedFontFaces: readonly SvgEmbeddedFontFace[],
+): string {
   validateSceneTheme(theme);
   return `  <defs>
     <style>
+${embeddedFontFaces.map(renderEmbeddedFontFace).join("\n")}
       .canvas { fill: ${theme.canvas.background}; }
       .diagram-title { fill: ${theme.canvas.foreground}; font-size: 24px; font-weight: 700; }
       .diagram-subtitle { fill: ${theme.canvas.muted}; font-size: 13px; }
@@ -100,6 +121,10 @@ ${renderElementThemeStyles(theme)}
       .legend-swatch { stroke-width: 1.5; }
     </style>
   </defs>`;
+}
+
+function renderEmbeddedFontFace(face: SvgEmbeddedFontFace): string {
+  return `      @font-face { font-family: "${face.family}"; src: url("${face.dataUrl}") format("${face.format}"); font-style: ${face.style}; font-weight: ${face.weight}; }`;
 }
 
 function renderElementThemeStyles(theme: SceneTheme): string {
@@ -424,5 +449,35 @@ function validateScene(scene: DiagramScene): void {
         `Route ${route.relationshipId} references an unknown scene port.`,
       );
     }
+  }
+}
+
+function validateEmbeddedFontFaces(
+  faces: readonly SvgEmbeddedFontFace[],
+): void {
+  const identities = new Set<string>();
+  for (const face of faces) {
+    if (
+      !/^[A-Za-z0-9 _-]+$/u.test(face.family) ||
+      (face.style !== "italic" && face.style !== "normal") ||
+      !Number.isSafeInteger(face.weight) ||
+      face.weight < 1 ||
+      face.weight > 1000 ||
+      face.format !== "woff2" ||
+      !/^data:font\/woff2;base64,[A-Za-z0-9+/]+={0,2}$/u.test(face.dataUrl)
+    ) {
+      throw new ContractError(
+        "C4ML-SVG-009",
+        "Embedded SVG font faces must use validated WOFF2 data URLs and finite CSS metadata.",
+      );
+    }
+    const identity = `${face.family}\u0000${face.style}\u0000${face.weight}`;
+    if (identities.has(identity)) {
+      throw new ContractError(
+        "C4ML-SVG-010",
+        `Duplicate embedded SVG font face ${face.family} ${face.style} ${face.weight}.`,
+      );
+    }
+    identities.add(identity);
   }
 }

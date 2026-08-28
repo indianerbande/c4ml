@@ -56,8 +56,9 @@ function response(
             height: 600,
             targets: [
               {
-                sceneNodeId: "scene-node:element:context",
-                svgElementId: "c4ml-scene-node-element-context",
+                kind: "node",
+                sceneObjectId: "scene-node:element:context",
+                svgElementIds: ["c4ml-scene-node-element-context"],
                 referenceId: "context",
                 label: "Context",
                 source: {
@@ -65,6 +66,8 @@ function response(
                   start: { offset: 0, line: 0, column: 0 },
                   end: { offset: 10, line: 0, column: 10 },
                 },
+                relatedSources: [],
+                nodeRole: "element",
                 bounds: { x: 20, y: 20, width: 200, height: 120 },
               },
             ],

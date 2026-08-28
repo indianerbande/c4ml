@@ -67,11 +67,16 @@ Implemented and automatically validated:
 - bidirectional navigation between source declarations and source-mapped
   preview nodes, with a preview-only selection highlight that does not alter
   exported SVG;
+- selectable Relationships and effective Routes, including navigation from a
+  view-local route-control block and an optional debug overlay for route
+  points, endpoint Ports, label anchors, and corridor lanes;
 - executable, view-local `draft-1` route controls for automatic, guided, and
   fixed policies, cardinal Ports, absolute waypoints, named corridors and
   exclusive lanes, complete fixed point lists, and label placement;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   browser-worker entry points behind the shared layout contract;
+- locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
+  fonts, and controlled system-font-free PNG rendering;
 - selectable views, plus zoom, fit, scroll-pan, and local SVG export;
 - a bounded three-step wizard that previews and generates a new executable
   System Context document with cancel and undo;
@@ -81,15 +86,15 @@ Implemented and automatically validated:
 Not implemented yet:
 
 - the complete public `.c4ml` parser and formatter;
-- the production CLI contract, packaging, and reproducible bundled font;
+- the production CLI contract and packaging;
 - relative placement constraints, pinning, avoidance regions, locked route
   segments, and the remaining full routing contract;
 - complete render validation for all seven view types;
-- a bundled reproducible font and frozen author-facing theme grammar;
+- a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
-- the remaining production editor capabilities: relationship/route selection,
-  PNG export, persistence, accessibility validation, and graphical source
-  editing; and
+- the remaining production editor capabilities: independently selectable
+  Ports, labels, and corridors, PNG export, persistence, accessibility
+  validation, and graphical source editing; and
 - the complete guided modeling wizard for Containers, Components, Code,
   deployments, Visual Groups, and safe extension of existing documents.
 

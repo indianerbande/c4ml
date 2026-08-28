@@ -11,7 +11,12 @@ import {
 } from "./layout.js";
 import { compareText } from "./ordering.js";
 import type { CardinalPortSide, PortRole } from "./ports.js";
-import type { EffectiveRoute, RoutePolicy, RouteStyle } from "./routing.js";
+import type {
+  EffectiveCorridor,
+  EffectiveRoute,
+  RoutePolicy,
+  RouteStyle,
+} from "./routing.js";
 import type { ShapeDefinition } from "./shapes.js";
 import {
   resolveSceneTheme,
@@ -58,6 +63,7 @@ export interface SceneRoute {
   readonly technology?: string;
   readonly labelPoint: Point;
   readonly labelSegment: number;
+  readonly corridor?: EffectiveCorridor;
 }
 
 export interface ScenePort {
@@ -145,7 +151,7 @@ export function createDiagramScene(
     description: diagram.view.purpose,
     scope: diagram.view.scope,
     viewKind: diagram.view.kind,
-    fontFamily: options.fontFamily ?? "Arial",
+    fontFamily: options.fontFamily ?? "IBM Plex Sans",
     theme: resolveSceneTheme(
       options.theme ?? diagram.view.presentation?.theme,
     ),
@@ -216,6 +222,22 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
       y: route.labelPoint.y + offset.y,
     },
     labelSegment: route.labelSegment,
+    ...(route.corridor === undefined
+      ? {}
+      : { corridor: sceneCorridor(route.corridor, offset) }),
+  };
+}
+
+function sceneCorridor(
+  corridor: EffectiveCorridor,
+  offset: Point,
+): EffectiveCorridor {
+  const sceneOffset =
+    corridor.orientation === "vertical" ? offset.x : offset.y;
+  return {
+    ...corridor,
+    coordinate: corridor.coordinate + sceneOffset,
+    laneCoordinate: corridor.laneCoordinate + sceneOffset,
   };
 }
 

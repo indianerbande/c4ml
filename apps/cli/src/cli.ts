@@ -5,7 +5,13 @@ import {
   compileArchitectureDiagram,
   type ArchitectureView,
   type Diagnostic,
+  type SvgEmbeddedFontFace,
 } from "@c4ml/compiler-core";
+import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
+import {
+  ibmPlexSansTtfFontFiles,
+  loadIbmPlexSansSvgFontFaces,
+} from "@c4ml/font-ibm-plex/node";
 import {
   c4mlDraftLanguageVersion,
   parseC4mlDraft,
@@ -116,6 +122,18 @@ export async function runCli(
   }> = [];
   const layoutAdapter = createBundledElkLayoutAdapter();
   const pngRenderer = new ResvgPngRenderer();
+  let embeddedFontFaces: readonly SvgEmbeddedFontFace[];
+  try {
+    embeddedFontFaces = await loadIbmPlexSansSvgFontFaces();
+  } catch (error: unknown) {
+    reportCliFailure(
+      "C4ML-CLI-ENV-003",
+      `Cannot load bundled IBM Plex fonts: ${errorMessage(error)}`,
+      parsedCommand.diagnostics,
+      io,
+    );
+    return cliExitCode.environment;
+  }
   for (const view of selectedViews) {
     try {
       const result = await compileArchitectureDiagram({
@@ -125,7 +143,8 @@ export async function runCli(
         ...(parsed.routingByViewId?.[view.id] === undefined
           ? {}
           : { routing: parsed.routingByViewId[view.id] }),
-        scene: { fontFamily: "Arial", theme: "c4ml-blue" },
+        scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+        svg: { embeddedFontFaces },
       });
       if (!result.valid || result.svg === undefined) {
         reportDiagnostics(result.diagnostics, parsedCommand.diagnostics, io);
@@ -137,8 +156,9 @@ export async function runCli(
       if (parsedCommand.formats.includes("png")) {
         const png = await pngRenderer.render(result.svg, {
           scale: parsedCommand.scale,
-          loadSystemFonts: true,
-          defaultFontFamily: "Arial",
+          fontFiles: ibmPlexSansTtfFontFiles,
+          loadSystemFonts: false,
+          defaultFontFamily: ibmPlexSansFamily,
           ...(result.scene === undefined
             ? {}
             : { background: result.scene.theme.canvas.background }),
