@@ -126,14 +126,40 @@ returned to English afterward.
 The local workbench-preference suite verifies English language defaulting,
 English/German round trips, backward-compatible version-one records,
 field-level fallback, malformed JSON and unsupported-version fallback, bounded
-half-pixel font sizes, effective system/light/dark resolution, and controlled
+half-pixel interface and editor font sizes, effective system/light/dark resolution, and controlled
 font-stack mapping. Localization-contract tests verify both catalogues and
 interpolation, while command tests verify search in each language. Browser and
 desktop verification MUST also cover live language and scheme changes, the
-document root language attribute, Monaco font changes, persistence across
+document root language attribute, interface typography changes at minimum,
+default, and maximum size without changing Monaco or canonical SVG, every
+packaged Monaco font choice, font remeasurement after loading, persistence across
 relaunch, reset, unavailable storage, modal focus containment and return,
 Escape dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
 changes neither dirty source nor change canonical SVG output.
+
+Editor-font tests MUST additionally verify the default-enabled ligature
+preference, explicit disabling, backward-compatible loading of older version-one
+records, family-specific `ss01` and `dlig` mappings, and unchanged source text
+and canonical SVG while ligatures are toggled.
+
+The Monaco-theme suite MUST verify explicit normal, highlighted, selected, icon,
+and focus colors for both workbench schemes. Normal, highlighted, and selected
+text/background pairs require a computed contrast ratio of at least 4.5:1.
+Browser inspection MUST open the completion list in both light and dark schemes
+and confirm the focused row remains legible.
+
+The local-handbook suite MUST verify that every help-topic identifier has
+English and German content, search is deterministic in both languages, only
+the executable `draft-1` set is marked available, and examples contain no
+external asset reference. Language-package tests MUST map representative model,
+relationship, view, deployment, layout, and route cursor positions to stable
+topic identifiers and reject offsets outside the source. Worker and editor-
+session tests MUST validate the versioned request/response boundary and reject
+stale cursor-context responses. Browser verification MUST cover Help activity
+navigation, expandable chapters, localized search, the cursor topic, `F1`,
+command-palette access, diagram/Handbook tab switching, keyboard focus, and
+legibility in both light and dark schemes. Help navigation MUST leave source,
+dirty state, and canonical SVG unchanged.
 
 The Electron desktop foundation adds unit and boundary evidence for its
 versioned bridge, runtime request validators, opaque document handles, filename
@@ -351,9 +377,15 @@ every directed Route has exactly one Arrowhead whose tip overlaps its target
 Port by the documented amount. The SVG renderer MUST consume that geometry
 rather than calculate a second arrowhead independently.
 
+Relationship-label tests MUST prove that label clearance interrupts its Route
+without producing a visible banner, renders below elements and Arrowheads, and
+never obscures a node surface even when label bounds approach a Port.
+
 Shape tests MUST verify:
 
 - the built-in Person shape is distinct from the default box shape;
+- its type, head-and-shoulders pictogram, title, and description occupy distinct
+  vertical regions without overlap;
 - all definitions use a 100 x 100 normalized canvas;
 - content boxes and primitive geometry remain finite and inside that canvas;
 - all four cardinal Ports exist on their matching canvas sides;
@@ -465,9 +497,11 @@ If the guided modeling wizard is implemented, tests MUST prove that identical
 answers generate deterministic C4ML source, generated source passes through the
 normal parser and semantic validator, only context-valid ownership and
 relationship choices are offered, cancellation leaves source unchanged, and an
-applied generation is undoable. Tests that extend existing documents MUST also
-verify that unrelated declarations, comments, stable identifiers, and
-formatting are not silently rewritten.
+applied generation is undoable. Character-by-character edits in dynamic wizard
+rows MUST keep the active control mounted and focused even when an answer also
+changes its generated technical identifier. Tests that extend existing
+documents MUST also verify that unrelated declarations, comments, stable
+identifiers, and formatting are not silently rewritten.
 
 The current new-document-only wizard foundation proves deterministic System
 Context and Container generation, normal parser and semantic validation,

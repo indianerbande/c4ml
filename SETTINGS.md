@@ -20,7 +20,7 @@ The first categories are:
 
 | Category | Purpose | Implemented settings |
 | --- | --- | --- |
-| Appearance | Local workbench presentation | interface language, color scheme |
+| Appearance | Local workbench presentation | interface language, color scheme, interface font size |
 | Source editor | C4ML authoring readability | font family, font size |
 
 Likely later categories include Files, Diagram preview, Export, Accessibility,
@@ -33,13 +33,24 @@ features or accepted settings.
 | --- | --- | --- | --- |
 | `uiLanguage` | `en`, `de` | `en` | C4ML-owned workbench and native application copy |
 | `colorScheme` | `system`, `light`, `dark` | `system` | Angular workbench and Monaco theme |
-| `editorFontFamily` | `ibm-plex-mono`, `system-monospace` | `ibm-plex-mono` | Monaco source text only |
+| `interfaceFontSize` | 9–16 px in 0.5 px steps | 10 px | C4ML-owned workbench interface text |
+| `editorFontFamily` | packaged IBM Plex Mono, Fira Code, Hack, Source Code Pro, Intel One Mono, Inconsolata, Cascadia Code; or `system-monospace` | `ibm-plex-mono` | Monaco source text only |
+| `editorFontLigatures` | `true`, `false` | `true` | Monaco and the source-font sample only |
 | `editorFontSize` | 11–24 px in 0.5 px steps | 12.5 px | Monaco source text only |
 
-IBM Plex Sans remains the controlled interface and diagram family. The optional
-system monospace stack is confined to the local source editor. Diagram labels,
-layout, text measurement, SVG embedding, and PNG rendering continue to use the
-controlled project fonts.
+IBM Plex Sans remains the controlled interface and diagram family. The seven
+packaged monospace families and the optional system monospace stack are confined
+to the local source editor. Diagram labels, layout, text measurement, SVG
+embedding, and PNG rendering continue to use the controlled IBM Plex Sans
+faces. Packaged editor fonts load locally and trigger a Monaco font
+remeasurement before their final metrics are used.
+
+Programming ligatures are enabled by default and can be disabled independently
+of the selected family. The effective OpenType features are family-aware:
+standard `liga`/`calt` behavior is used normally, Intel One Mono additionally
+uses `ss01`, and Inconsolata additionally uses `dlig`. Ligatures only alter
+glyph composition; stored source characters, cursor positions, diagnostics,
+compiler input, and exported diagrams remain unchanged.
 
 The interface language changes the workbench, accessibility labels, command
 catalogue, and C4ML-owned native menu and dialog copy. It does not translate
@@ -52,6 +63,8 @@ German can be selected without restarting the application.
 - Changes apply immediately and are stored locally for the installation.
 - Language changes also update the document `lang` attribute and the native
   application controls through the validated desktop bridge.
+- Interface font-size changes apply through one root typography token. They
+  scale C4ML-owned workbench text but not Monaco source text or diagram output.
 - `system` follows operating-system color changes while the application runs.
 - Reset restores the complete version-one default record.
 - Unsupported versions, malformed values, and unavailable browser storage fall

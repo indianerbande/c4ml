@@ -98,6 +98,8 @@ Implemented and automatically validated:
 - a bounded plain-language wizard that previews and generates a new executable
   System Context or Container document with explicit connections, cancel, and
   undo;
+- a local English/German handbook with searchable task-oriented chapters,
+  a dedicated Help activity, and language-worker-owned help at the cursor;
 - an original, executable Signal Garden Container View reference export; and
 - browser-compatible compiler-core contracts.
 

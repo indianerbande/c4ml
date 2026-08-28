@@ -140,6 +140,49 @@ validated as C4ML's controlled typography family.**
 Source: [IBM Plex v6.4.2](https://github.com/IBM/plex/tree/v6.4.2) and its
 [OFL-1.1 license](https://github.com/IBM/plex/blob/v6.4.2/LICENSE.txt).
 
+### Optional source-editor font assets
+
+**Status: accepted and implemented for local Monaco source presentation.**
+
+- **Capability:** six additional readable monospace choices for C4ML source:
+  Fira Code 6.2, Hack 3.003, Source Code Pro 2.042R-u, Intel One Mono 1.4.0,
+  Inconsolata 3.000, and Cascadia Code 2407.24.
+- **Why external:** typeface design, hinting, glyph coverage, and screen
+  rendering are specialist work outside C4ML's editor and compiler core.
+- **License:** Fira Code, Source Code Pro, Intel One Mono, Inconsolata, and
+  Cascadia Code use SIL Open Font License 1.1. Hack combines MIT-licensed Hack
+  work with the retained Bitstream Vera license terms. All upstream license
+  texts are packaged unchanged.
+- **Provenance:** one unmodified regular face from each official release is
+  pinned by release tag, Git commit, and SHA-256 in
+  `packages/font-editor-mono/README.md`.
+- **Impact:** six browser font files total 591,832 bytes. They add no JavaScript,
+  native code, install hook, telemetry, or runtime service. Only a selected
+  family is requested by the browser. Bold and italic faces are not bundled in
+  this initial set.
+- **Ligature behavior:** Monaco enables the standard programming features when
+  requested. C4ML additionally selects Intel One Mono's documented `ss01` and
+  Inconsolata's documented `dlig` feature. This remains a local, reversible
+  presentation preference and never rewrites source text.
+- **Offline behavior:** all files ship inside the editor artifact; no CDN,
+  Google Fonts request, system installation, or runtime network access is
+  required.
+- **Boundary:** `@c4ml/font-editor-mono` owns the binary assets and notices.
+  Workbench preference mapping and CSS expose them only to Monaco. Compiler,
+  scene, SVG, PNG, and diagram typography remain unchanged.
+- **Protecting evidence:** package tests verify file headers, exact hashes, and
+  complete licenses. Production checks compare every packaged byte and notice
+  with its reviewed source package. Browser verification selects every family,
+  confirms its loaded face and Monaco remeasurement, and checks that canonical
+  diagram SVG is unchanged.
+
+Sources: [Fira Code](https://github.com/tonsky/FiraCode/releases/tag/6.2),
+[Hack](https://github.com/source-foundry/Hack/releases/tag/v3.003),
+[Source Code Pro](https://github.com/adobe-fonts/source-code-pro/releases),
+[Intel One Mono](https://github.com/intel/intel-one-mono/releases/tag/V1.4.0),
+[Inconsolata](https://github.com/googlefonts/Inconsolata/releases/tag/v3.000),
+and [Cascadia Code](https://github.com/microsoft/cascadia-code/releases/tag/v2407.24).
+
 ## Accepted desktop editor libraries
 
 The editor pins `@angular/core`, `@angular/common`, and

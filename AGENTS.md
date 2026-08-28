@@ -31,8 +31,8 @@ releases. The exact pnpm-managed Node.js 24.19.0 runtime is used for repository
 scripts and packaging.
 
 The desktop workbench also has an implemented original IDE-like shell with
-C4ML-specific Files, Diagrams, and Output activity areas, simultaneous source
-and preview tabs, a Problems/Route panel, status bar, and a local command
+C4ML-specific Files, Diagrams, Output, and Help activity areas, simultaneous
+source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a local command
 palette. A versioned session contract persists only safe UI presentation state
 (active activity area, bottom-panel state, zoom, and route-debug visibility),
 never source, document handles, or filesystem paths. It also has an implemented
@@ -52,13 +52,16 @@ Monaco source-editor adapter, and a versioned request/response contract to run
 the experimental language package and shared compiler in a browser Web Worker.
 It rejects stale responses, retains the last valid SVG during invalid edits,
 and displays source-located diagnostics in a two-pane layout. The same worker
-provides the only context-completion, syntax-highlighting, and diagnostic
+provides the only context-completion, help-context, syntax-highlighting, and diagnostic
 source; Monaco presents its exact edits, semantic-token spans, and ranges
 without owning C4ML syntax or semantics. The UI also exposes diagnostics-to-source navigation,
 bidirectional source/preview node navigation through compiler-owned stable
 identities and source ranges, zoom, fit, scroll-pan, SVG download, wizard
 preview, cancel, apply, one-step wizard undo, and selection among declared
 executable views. Preview selection styling is not included in exported SVG.
+The packaged English/German handbook is searchable and task-oriented; its
+cursor topic comes from the versioned language-worker contract and does not
+mutate source or compiler output.
 Relationships and effective Routes are navigation targets too. A toggleable
 preview-only routing overlay exposes effective points, endpoint Ports, the
 label anchor, and corridor lanes, while an inspector reports the selected

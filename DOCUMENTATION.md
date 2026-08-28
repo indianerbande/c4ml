@@ -119,6 +119,14 @@ zoom, and Route Debug visibility after a relaunch. This local session record
 never stores source text, document handles, or filesystem paths; `.c4ml` files
 remain the architecture source of truth.
 
+Open **Help** from the `?` activity or search for **Open C4ML handbook** in the
+command palette. The local handbook groups the currently executable syntax by
+authoring task, can be searched in English or German, and opens beside the
+source editor without closing the diagram. Its **At cursor** card follows the
+syntax owner reported by the C4ML language worker. Press `F1` to open that
+article directly. Help search and navigation never edit the document or alter
+diagram output.
+
 Parsing, compilation, and SVG generation still run in the same browser Web
 Worker as the isolated Angular development path.
 When an edit is invalid, the diagnostic panel updates while the last valid

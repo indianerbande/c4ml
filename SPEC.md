@@ -544,6 +544,11 @@ The first release MUST support:
   and
 - view-local crossing and parallel-path preferences.
 
+Relationship labels MUST NOT show a visible card or banner by default. A
+canvas-colored clearance area MAY interrupt the route beneath a label, but it
+MUST render below elements and Arrowheads so it cannot cover or cut into a
+node's surface.
+
 A manually specified route MUST remain associated with stable relationship and
 view identifiers. Waypoints SHOULD be expressible relative to elements, ports,
 or the view canvas; raw canvas coordinates remain available when exact output
@@ -820,7 +825,7 @@ detection for UI state and keeps parser, semantic, layout, scene, and rendering
 behavior outside Angular components.
 
 The editor communicates with a module Web Worker through a C4ML-owned message
-contract. Compile, completion, syntax-highlight, and wizard-source requests share one
+contract. Compile, completion, syntax-highlight, help-context, and wizard-source requests share one
 monotonically increasing request sequence and carry a protocol version. Each UI
 consumer accepts a response only when it matches that consumer's newest active
 request, so an older compilation, completion list, or generated source can
@@ -987,6 +992,37 @@ source unchanged, and an applied generation has an explicit one-step undo. This
 foundation does not extend or reformat existing documents and does not claim
 the full wizard scope described in Section 14.4.
 
+#### 9.6.1 Local handbook and contextual help
+
+**Status: Accepted and implemented foundation.**
+
+The workbench MUST package an original, offline C4ML handbook in English and
+German. Its primary navigation is a Help activity with local search and
+expandable task-oriented chapters. A Handbook tab in the right editor group
+MUST provide enough width for explanations and source examples without hiding
+the source editor. The diagram remains available as a sibling tab.
+
+The handbook MUST lead with recognizable authoring tasks before introducing C4
+vocabulary. It MUST distinguish executable `draft-1` syntax from proposed or
+planned constructs and MUST NOT present a planned construct as available. Its
+examples are original C4ML assets and MUST require no network content.
+
+Help for the current cursor position MUST come from the language package through
+the versioned compiler-worker contract. Angular and Monaco MUST NOT infer block
+or grammar context independently. Stale cursor-context responses MUST be
+rejected. The Help activity exposes the current topic, and `F1` plus the command
+palette open that topic in the Handbook tab. Reading, searching, or navigating
+help MUST NOT modify source, mark a document dirty, compile a different model,
+or alter canonical diagram output.
+
+The first implemented handbook covers the executable document structure,
+static model hierarchy, relationships, all seven view families, deployment,
+view-local flow, the current Port/corridor/Route subset, and SVG/PNG output.
+Copying or inserting examples, generated reference pages, safe topic links from
+completion details, and documentation for future grammar slices remain later
+extensions. Any insertion command requires a separate undoable, syntax-aware
+source-edit contract.
+
 ### 9.7 Electron desktop shell
 
 **Status: Accepted, implemented, automatically validated, and visually
@@ -1039,8 +1075,8 @@ binary downloads are build/install-time concerns only.
 validated foundation.**
 
 The desktop editor has an extensible settings area with category navigation.
-Its first version owns the local workbench interface language and color scheme
-plus source-editor font family and size. Settings apply live and persist locally
+Its first version owns the local workbench interface language, color scheme,
+and interface font size plus source-editor font family and size. Settings apply live and persist locally
 as a validated, versioned record. Interface language supports `en` and `de`,
 with English as the default. It changes C4ML-owned interface copy, accessibility
 labels, command search, native menu commands, file-dialog labels, and
@@ -1049,11 +1085,28 @@ descriptions, generated source, compiler diagnostics, or diagram content. The
 document root language attribute MUST reflect the current interface language.
 The color scheme supports `system`, `light`, and `dark`;
 `system` tracks operating-system changes while the application is running.
-Source font choice is bounded to the packaged IBM Plex Mono family or a local
-system monospace stack, and source font size is bounded to 11–24 px in 0.5 px
-steps.
+Interface font size is bounded to 9–16 px in 0.5 px steps and scales
+C4ML-owned workbench text through one root typography token.
+Source font choice is bounded to the packaged IBM Plex Mono, Fira Code, Hack,
+Source Code Pro, Intel One Mono, Inconsolata, and Cascadia Code families or a
+local system monospace stack. Source font size is bounded to 11–24 px in 0.5 px
+steps. A newly selected packaged face MUST be loaded locally and Monaco font
+metrics MUST be remeasured after loading.
 
-These are installation-local presentation preferences. They MUST NOT modify
+Programming ligatures are enabled by default and MUST have an independent local
+on/off preference. C4ML MAY select documented family-specific OpenType features
+to expose a family's intended programming ligatures. Ligature presentation MUST
+NOT change source characters, offsets, selections, diagnostics, compiler input,
+diagram output, or exported artifacts.
+
+Monaco completion lists MUST explicitly theme normal, highlighted, selected,
+and keyboard-focused states in both light and dark workbench schemes. Text in
+each normal and selected state MUST retain a contrast ratio of at least 4.5:1
+against its effective background; no selected-state foreground may be inherited
+implicitly from Monaco's base theme.
+
+Interface font size MUST NOT change Monaco source text or any diagram content,
+geometry, SVG, or PNG. These are installation-local presentation preferences. They MUST NOT modify
 `.c4ml` source, mark a source document dirty, enter compiler or language-worker
 requests, or alter diagram theme, geometry, text measurement, SVG, or PNG.
 IBM Plex Sans remains the controlled interface and diagram family. A future
@@ -1078,7 +1131,7 @@ capabilities to the renderer.
 validated foundation.**
 
 The editor uses an original C4ML workbench with C4ML-specific Files, Diagrams,
-and Output activity areas, simultaneous source and preview tabs, a bottom panel
+Output, and Help activity areas, simultaneous source, preview, and Handbook tabs, a bottom panel
 for Problems and Route details, a status bar, and a searchable command palette.
 These concepts provide familiar desktop navigation without adopting another
 product's branding, source, extensions, assets, or distinctive interface.
@@ -1154,10 +1207,13 @@ asset integrity, and PNG font loading require automated and visual evidence.
 
 ### 11.1 Shape contract
 
-Person MUST have a dedicated built-in shape. Other C4 element roles MAY share a
-box shape by default while retaining distinct type labels and semantic theme
-tokens. Shape selection MUST NOT change the element's C4 kind, ownership,
-identity, validation, or view eligibility.
+Person MUST have a dedicated built-in shape. Its compact information card MUST
+show a recognizable head-and-shoulders pictogram, with the explicit type label
+above the pictogram and the element title below it. Description and optional
+technology text MUST remain legible without overlapping the pictogram. Other C4
+element roles MAY share a box shape by default while retaining distinct type
+labels and semantic theme tokens. Shape selection MUST NOT change the element's
+C4 kind, ownership, identity, validation, or view eligibility.
 
 C4ML MUST allow additional shapes to be defined without accepting arbitrary
 SVG or executable drawing code. A shape definition MUST contain:
