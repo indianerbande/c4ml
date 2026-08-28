@@ -13,9 +13,9 @@
   justify-content: space-between;
   min-width: 0;
   padding: 0 22px;
-  border-bottom: 1px solid #cbd6e2;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 2px 14px rgba(26, 44, 68, 0.06);
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--app-bar-bg);
+  box-shadow: var(--app-bar-shadow);
 }
 
 .brand {
@@ -63,7 +63,7 @@
   padding: 7px 11px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #f8fafc;
+  background: var(--surface-subtle);
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
@@ -73,6 +73,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.desktop-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line);
 }
 
 .wizard-action,
@@ -86,26 +94,26 @@
 }
 
 .wizard-action {
-  border: 1px solid #126684;
-  background: #157ca3;
+  border: 1px solid var(--accent-strong);
+  background: var(--accent);
   color: white;
 }
 
 .quiet-action {
-  border: 1px solid #cbd6e2;
-  background: white;
-  color: #52677d;
+  border: 1px solid var(--line-strong);
+  background: var(--control-bg);
+  color: var(--control-ink);
 }
 
 .wizard-action:hover,
 .wizard-action:focus-visible {
-  background: #126684;
+  background: var(--accent-strong);
   outline: 0;
 }
 
 .quiet-action:hover,
 .quiet-action:focus-visible {
-  background: #f1f5f8;
+  background: var(--control-hover);
   outline: 0;
 }
 
@@ -147,7 +155,7 @@
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
-  box-shadow: 0 12px 35px rgba(35, 57, 82, 0.08);
+  box-shadow: var(--panel-shadow);
 }
 
 .pane-heading {
@@ -182,7 +190,7 @@
 .source-pane {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  border-color: #253b52;
+  border-color: var(--source-border);
   background: var(--source);
 }
 
@@ -193,8 +201,8 @@
   justify-content: space-between;
   gap: 14px;
   padding: 0 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.09);
-  background: #12263a;
+  border-top: 1px solid var(--source-border);
+  background: var(--source-status);
   color: var(--source-muted);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -212,7 +220,7 @@
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #d8e4ef;
+  color: var(--source-action);
   cursor: pointer;
   font-size: 10px;
   font-weight: 700;
@@ -222,14 +230,14 @@
 
 .editor-status button:hover,
 .editor-status button:focus-visible {
-  background: #204058;
-  color: #9ee3ec;
+  background: var(--source-action-hover);
+  color: var(--accent);
   outline: 0;
 }
 
 .editor-status small,
 .editor-status > span:last-child {
-  color: #7891a8;
+  color: var(--source-muted);
   font-size: 9px;
 }
 
@@ -238,7 +246,7 @@
 }
 
 .source-heading {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid var(--source-border);
   background: var(--source-panel);
 }
 
@@ -251,6 +259,20 @@
   font-family: "IBM Plex Mono", monospace;
   font-size: 13px;
   font-weight: 600;
+}
+
+.dirty-indicator {
+  margin-left: 7px;
+  color: var(--accent);
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.file-operation-label {
+  max-width: 46%;
+  overflow: hidden;
+  color: var(--accent) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .language-badge,
@@ -293,8 +315,8 @@
   padding: 0 26px 0 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: white;
-  color: #40566b;
+  background: var(--control-bg);
+  color: var(--control-ink);
   font: inherit;
   font-size: 10px;
   letter-spacing: 0;
@@ -311,7 +333,7 @@
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: white;
+  background: var(--control-bg);
 }
 
 .zoom-controls button,
@@ -319,8 +341,8 @@
 .export-button {
   min-height: 30px;
   border: 0;
-  background: white;
-  color: #40566b;
+  background: var(--control-bg);
+  color: var(--control-ink);
   cursor: pointer;
   font: inherit;
   font-size: 10px;
@@ -346,17 +368,17 @@
 .debug-button:focus-visible,
 .export-button:hover,
 .export-button:focus-visible {
-  background: #edf5f8;
-  color: #126684;
+  background: var(--control-hover);
+  color: var(--accent);
   outline: 0;
 }
 
 .export-button {
   padding: 0 10px;
-  border: 1px solid #b8d9e2;
+  border: 1px solid var(--accent-border);
   border-radius: 8px;
   background: var(--accent-soft);
-  color: #126684;
+  color: var(--accent);
 }
 
 .debug-button {
@@ -399,13 +421,13 @@
 
 .preview-heading {
   border-bottom: 1px solid var(--line);
-  background: #fbfcfd;
+  background: var(--surface-subtle);
 }
 
 .preview-note {
   padding: 6px 9px;
   background: var(--accent-soft);
-  color: #126684;
+  color: var(--accent);
 }
 
 .preview-body {
@@ -421,8 +443,8 @@
   place-items: center;
   overflow: auto;
   padding: 28px;
-  background-color: #f4f7fa;
-  background-image: radial-gradient(#cdd7e2 0.7px, transparent 0.7px);
+  background-color: var(--preview-stage);
+  background-image: radial-gradient(var(--preview-grid-dot) 0.7px, transparent 0.7px);
   background-size: 17px 17px;
 }
 
@@ -462,9 +484,9 @@
   margin-bottom: 5px;
   border: 2px solid #92a5b7;
   border-radius: 9px;
-  background: white;
+  background: var(--control-bg);
   box-shadow:
-    15px 10px 0 -8px #f4f7fa,
+    15px 10px 0 -8px var(--preview-stage),
     15px 10px 0 -6px #92a5b7;
 }
 
@@ -553,7 +575,7 @@
   max-height: 200px;
   overflow: auto;
   border-top: 1px solid var(--line);
-  background: white;
+  background: var(--panel);
 }
 
 .diagnostics-heading {
@@ -563,7 +585,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 11px 15px 8px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-bar-bg);
   color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -577,7 +599,7 @@
   place-items: center;
   border-radius: 999px;
   background: #e8eef4;
-  color: #52677d;
+  color: var(--control-ink);
   font-size: 10px;
 }
 
@@ -651,7 +673,7 @@
 
 .diagnostics li p {
   margin: 5px 0 0;
-  color: #3b4b5e;
+  color: var(--ink);
   font-size: 12px;
   line-height: 1.4;
 }

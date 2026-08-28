@@ -1,8 +1,10 @@
-# C4ML desktop editor
+# C4ML editor renderer
 
-This private application is the production-bound C4ML desktop editor. Its
-Angular and Monaco library boundaries are accepted; the product interface and
-the `.c4ml` language are not yet stable or feature-complete.
+This private Angular application is the renderer UI of the production-bound
+C4ML desktop workbench. Electron owns native application and filesystem
+integration in `apps/desktop`; Angular and Monaco remain confined to the
+sandboxed renderer. The product interface and the `.c4ml` language are not yet
+stable or feature-complete.
 
 Implemented:
 
@@ -28,7 +30,11 @@ Implemented:
 - locally packaged IBM Plex Sans for the interface and diagrams, IBM Plex Mono
   for source, and standalone SVG font embedding;
 - vector-preserving zoom without CSS transform scaling, fit, scroll-pan, and
-  local SVG download; and
+  local SVG download;
+- an optional typed desktop bridge for native Open, Save, and Save As without
+  exposing filesystem paths or Node.js APIs to the renderer;
+- a versioned local-preferences service and category-based settings panel for
+  workbench color scheme and source-editor typography; and
 - a three-step new-document System Context wizard with generated-source review,
   cancel, apply, and one explicit undo.
 
@@ -47,14 +53,22 @@ C4ML source rather than hidden editor state.
 From the repository root:
 
 ```shell
+pnpm run desktop:start
 pnpm run editor:start
 pnpm run editor:build
 ```
 
-The built application is written to the ignored `build/editor/` directory and
-requires no runtime network connection. The production build keeps the Angular
+`desktop:start` is the normal desktop application path. `editor:start` keeps a
+browser development path for isolated UI work; native file controls are hidden
+there. The built renderer is written to the ignored `build/editor/` directory
+and requires no runtime network connection. The production build keeps the Angular
 shell small, loads the Monaco runtime, stylesheet, and generic editor worker
 locally when the source pane initializes, and includes generated dependency
 licenses plus Monaco's upstream license and third-party notices. The reviewed
 IBM Plex WOFF2 assets and unchanged OFL-1.1 license are packaged locally; the
 application performs no font-CDN request.
+
+Workbench settings are installation-local presentation state. They are opened
+from the toolbar or the desktop `Cmd/Ctrl+,` command, apply live, and are stored
+under a versioned key. They never enter compiler requests or canonical diagram
+exports. See `SETTINGS.md` for the setting catalogue and extension contract.

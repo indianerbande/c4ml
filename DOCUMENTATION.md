@@ -1,6 +1,6 @@
 # C4ML User Guide
 
-Status: Draft syntax preview with executable language and editor foundation
+Status: Draft syntax preview with executable language and desktop workbench
 
 Date: 2026-08-28
 
@@ -9,7 +9,9 @@ complete syntax proposal. It is written as a user guide so that the language
 can be reviewed through realistic examples rather than grammar fragments.
 
 > **Important:** there is no complete public `.c4ml` parser, release-ready CLI,
-> or feature-complete editor yet. The syntax in this document is non-normative
+> or feature-complete editor yet. A working Electron desktop application now
+> packages the editor, but it is still a development build rather than a signed
+> and notarized public release. The syntax in this document is non-normative
 > and may change after review. An internal experimental language package and
 > the production-bound Angular editor execute the bounded slices in
 > `hello-context.c4ml`,
@@ -79,14 +81,29 @@ compiler-owned model, and exercises the same compiler pipeline through
 deterministic SVG. This is an experimental contributor path, not a frozen
 public language contract.
 
-The Angular desktop editor can be started locally:
+The desktop workbench can be started locally:
 
 ```shell
-pnpm run editor:start
+pnpm run desktop:start
 ```
 
-It presents source on the left and a live SVG preview with diagnostics on the
-right. Parsing, compilation, and SVG generation run in a browser Web Worker.
+It opens as a normal desktop application and presents source on the left and a
+live SVG preview with diagnostics on the right. Use the toolbar or the native
+File menu to open and save `.c4ml` source. The standard shortcuts are
+`Cmd/Ctrl+O`, `Cmd/Ctrl+S`, and `Cmd/Ctrl+Shift+S`. The window title and source
+header mark unsaved changes, and closing a dirty document asks before discarding
+them. The renderer receives only an opaque document handle; native filesystem
+paths and Node.js APIs remain in the Electron main process.
+
+Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
+choose System, Light, or Dark workbench colors and the source editor's
+monospace family and size. Changes apply immediately and are stored locally.
+They do not edit the open `.c4ml` document or alter exported diagram colors,
+fonts, or geometry. **Reset defaults** restores the version-one defaults. The
+settings catalogue and extension rules are documented in `SETTINGS.md`.
+
+Parsing, compilation, and SVG generation still run in the same browser Web
+Worker as the isolated Angular development path.
 When an edit is invalid, the diagnostic panel updates while the last valid
 diagram remains visible. The accepted lazy Monaco adapter presents only the
 tokens, values, or references accepted at the current cursor and applies the
@@ -101,6 +118,21 @@ selector; changing it recompiles the selected projection without duplicating
 the model. Syntax colors come from the C4ML lexer's source spans through the
 same worker, while automatic preview geometry comes from the local ELK.js
 browser worker.
+
+For isolated renderer development, the Angular application can still be opened
+in a browser with `pnpm run editor:start`; native Open/Save controls are absent
+there. A local packaged application and current-platform installers can be
+created with:
+
+```shell
+pnpm run desktop:package
+pnpm run desktop:make
+```
+
+Artifacts are ignored below `build/desktop/`. On macOS, `desktop:make` produces
+an application, DMG, and ZIP. These are ad-hoc signed local development
+artifacts, not notarized releases. The Windows Setup EXE maker is configured but
+still needs a native Windows build and installation test.
 
 Inside a `route` block, IntelliSense first asks for `policy`. Once it is known,
 the editor offers only controls compatible with that policy and hides properties

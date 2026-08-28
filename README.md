@@ -8,13 +8,13 @@ when a diagram needs deliberate placement or routing.
 The intended user experience has two entry points:
 
 - a local command-line compiler for validation and SVG/PNG export; and
-- a two-pane TypeScript editor with source on the left and a hot graphical
-  preview on the right.
+- an installable desktop workbench with C4ML source on the left and a hot
+  graphical preview on the right.
 
-The production-bound editor foundation and experimental CLI use the same
-browser-compatible TypeScript compiler core. The CLI will not launch a browser,
-and neither frontend requires a Python
-service, cloud account, or network connection for the planned normal workflow.
+The Electron desktop shell, Angular/Monaco editor, and experimental CLI use the
+same browser-compatible TypeScript compiler core. The CLI will not launch a
+browser, and neither frontend requires a Python service, cloud account, or
+network connection for the normal installed workflow.
 
 ## Project status
 
@@ -58,6 +58,16 @@ Implemented and automatically validated:
 - an Angular 22 desktop editor foundation with a two-pane source/preview layout,
   local compiler Web Worker, live diagnostics, stale-result rejection, and
   retention of the last valid SVG;
+- an Electron 44 desktop shell with a narrow typed preload bridge, native
+  Open/Save/Save As, normal desktop menus and shortcuts, document titles and
+  dirty-state close protection;
+- an extensible local settings area with live System/Light/Dark workbench
+  schemes and persisted source-editor font family and size;
+- hardened local-only application loading with renderer sandboxing, no Node.js
+  integration, denied navigation/permissions, an application-owned protocol,
+  ASAR integrity checks, and Electron production fuses;
+- local macOS `.app`, `.dmg`, and `.zip` packaging, plus a configured Windows
+  Squirrel installer maker;
 - an accepted lazy Monaco 0.56.0 adapter that presents only the language
   worker's context-valid completions, applies exact source edits, displays
   inline diagnostic markers, supports keyboard undo/redo, and navigates from
@@ -93,8 +103,11 @@ Not implemented yet:
 - a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
 - the remaining production editor capabilities: independently selectable
-  Ports, labels, and corridors, PNG export, persistence, accessibility
-  validation, and graphical source editing; and
+  Ports, labels, and corridors, PNG export, accessibility validation, and
+  graphical source editing;
+- release identity and distribution work: a final product version and icon,
+  Apple Developer ID signing/notarization, Windows code signing, and a Windows
+  build-and-install validation run; and
 - the complete guided modeling wizard for Containers, Components, Code,
   deployments, Visual Groups, and safe extension of existing documents.
 
@@ -149,14 +162,16 @@ text layout rather than from a browser screenshot.
 
 ## Development quick start
 
-Use Node.js 24.15 or a newer supported line and the pnpm version pinned in
-`package.json`.
+Use the pnpm version pinned in `package.json`. During installation pnpm resolves
+the repository's pinned Node.js 24.19 runtime for scripts, so the packaging
+toolchain is reproducible even when a newer supported Node.js is installed on
+the workstation.
 
 ```shell
 pnpm install
 pnpm run check
 pnpm run demo:render
-pnpm run editor:start
+pnpm run desktop:start
 ```
 
 The check builds all current packages, verifies browser bundles in memory,
@@ -164,10 +179,24 @@ type-checks source and tests, and runs the semantic, view-resolution, and
 adapter suites. `demo:render` creates a real SVG and PNG under
 `apps/reference-export/build/reference/` from an in-code original model. It is
 a contributor reference path, not the future `.c4ml` command-line interface.
-`editor:start` opens the production-bound Angular desktop editor for all seven
-bounded executable view types. Angular and Monaco are accepted production
-libraries; the language, layout, and several MVP editor capabilities remain
-under development.
+`desktop:start` builds and opens the real Electron desktop workbench for all
+seven bounded executable view types. Angular, Monaco, and Electron are accepted
+production libraries; the language and several MVP editor capabilities remain
+under development. The browser-only Angular development server remains
+available as `pnpm run editor:start`.
+
+Create local distributable artifacts with:
+
+```shell
+pnpm run desktop:package
+pnpm run desktop:make
+```
+
+On macOS, the packaged application appears below `build/desktop/` and `make`
+adds a DMG and ZIP below `build/desktop/make/`. These development artifacts are
+ad-hoc signed so they can be tested locally; they are not notarized release
+downloads. The Windows Squirrel maker is configured to produce a Setup EXE on
+Windows, but that platform build still requires native Windows validation.
 
 The experimental local CLI builds its required workspace packages and runs
 through the same language and compiler core:

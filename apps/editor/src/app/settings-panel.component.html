@@ -1,0 +1,161 @@
+<div
+  class="settings-backdrop"
+  (click)="onBackdropClick($event)"
+>
+  <section
+    #dialog
+    class="settings-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="settings-title"
+    aria-describedby="settings-description"
+    (keydown)="onDialogKeydown($event)"
+  >
+    <header class="settings-header">
+      <div>
+        <p class="settings-eyebrow">C4ML workbench</p>
+        <h2 id="settings-title">Settings</h2>
+        <p id="settings-description">
+          Local preferences for this installation. Diagram exports stay unchanged.
+        </p>
+      </div>
+      <button
+        #closeButton
+        type="button"
+        class="icon-button"
+        aria-label="Close settings"
+        title="Close settings"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </header>
+
+    <div class="settings-body">
+      <nav class="settings-navigation" aria-label="Settings categories">
+        @for (category of categories; track category.id) {
+          <button
+            type="button"
+            [class.is-active]="activeCategory() === category.id"
+            [attr.aria-current]="activeCategory() === category.id ? 'page' : null"
+            (click)="selectCategory(category.id)"
+          >
+            <strong>{{ category.label }}</strong>
+            <span>{{ category.description }}</span>
+          </button>
+        }
+      </nav>
+
+      <main class="settings-content">
+        @switch (activeCategory()) {
+          @case ("appearance") {
+            <section aria-labelledby="appearance-heading">
+              <div class="section-heading">
+                <p>Appearance</p>
+                <h3 id="appearance-heading">Color scheme</h3>
+                <span>
+                  Choose how the workbench looks. “System” follows the operating
+                  system automatically.
+                </span>
+              </div>
+
+              <fieldset class="scheme-options">
+                <legend>Workbench color scheme</legend>
+                @for (option of colorSchemeOptions; track option.id) {
+                  <label [attr.data-scheme]="option.id">
+                    <input
+                      type="radio"
+                      name="color-scheme"
+                      [value]="option.id"
+                      [checked]="preferences.preferences().colorScheme === option.id"
+                      (change)="setColorScheme(option.id)"
+                    />
+                    <span class="scheme-preview" aria-hidden="true">
+                      <i></i><i></i><i></i>
+                    </span>
+                    <strong>{{ option.label }}</strong>
+                    <small>{{ option.hint }}</small>
+                  </label>
+                }
+              </fieldset>
+            </section>
+          }
+
+          @case ("source-editor") {
+            <section aria-labelledby="editor-heading">
+              <div class="section-heading">
+                <p>Source editor</p>
+                <h3 id="editor-heading">Text</h3>
+                <span>
+                  These settings affect C4ML source only, never diagram labels or
+                  exported files.
+                </span>
+              </div>
+
+              <div class="setting-row">
+                <label for="editor-font-family">
+                  <strong>Font family</strong>
+                  <span>Select a locally available monospace stack.</span>
+                </label>
+                <select
+                  id="editor-font-family"
+                  [value]="preferences.preferences().editorFontFamily"
+                  (change)="setFontFamily($event)"
+                >
+                  <option value="ibm-plex-mono">IBM Plex Mono</option>
+                  <option value="system-monospace">System monospace</option>
+                </select>
+              </div>
+
+              <div class="setting-row font-size-row">
+                <label for="editor-font-size">
+                  <strong>Font size</strong>
+                  <span>Between 11 and 24 pixels, in half-pixel steps.</span>
+                </label>
+                <div class="font-size-control">
+                  <input
+                    id="editor-font-size"
+                    type="range"
+                    min="11"
+                    max="24"
+                    step="0.5"
+                    [value]="preferences.editorFontSize()"
+                    (input)="setFontSize($event)"
+                  />
+                  <output for="editor-font-size">
+                    {{ preferences.editorFontSize() }} px
+                  </output>
+                </div>
+              </div>
+
+              <div
+                class="font-sample"
+                [style.font-family]="preferences.editorFontFamilyCss()"
+                [style.font-size.px]="preferences.editorFontSize()"
+              >
+                view system-landscape main<br />
+                relationship portal -&gt; service
+              </div>
+            </section>
+          }
+        }
+      </main>
+    </div>
+
+    <footer class="settings-footer">
+      <span>Changes are applied and stored immediately.</span>
+      <div>
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="preferences.reset()"
+        >
+          Reset defaults
+        </button>
+        <button type="button" class="primary-button" (click)="close()">
+          Done
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

@@ -8,6 +8,20 @@
   </div>
 
   <div class="app-actions">
+    @if (desktopAvailable) {
+      <div class="desktop-file-actions" aria-label="Desktop file commands">
+        <button type="button" class="quiet-action" (click)="openDocument()">
+          Open
+        </button>
+        <button
+          type="button"
+          class="quiet-action"
+          (click)="saveDocument('save')"
+        >
+          Save
+        </button>
+      </div>
+    }
     @if (canUndoWizard()) {
       <button type="button" class="quiet-action" (click)="undoWizard()">
         Undo wizard
@@ -15,6 +29,15 @@
     }
     <button type="button" class="wizard-action" (click)="startWizard()">
       New from wizard
+    </button>
+    <button
+      #settingsButton
+      type="button"
+      class="quiet-action settings-action"
+      aria-haspopup="dialog"
+      (click)="openSettings()"
+    >
+      Settings
     </button>
     <div class="worker-state" [attr.data-phase]="compiler.state().phase">
       <span class="state-dot" aria-hidden="true"></span>
@@ -28,7 +51,12 @@
     <div class="pane-heading source-heading">
       <div>
         <p class="eyebrow">Source</p>
-        <h1 id="source-heading">architecture.c4ml</h1>
+        <h1 id="source-heading">
+          {{ documentName() }}@if (documentDirty()) {<span
+            class="dirty-indicator"
+            aria-label="Unsaved changes"
+          >•</span>}
+        </h1>
       </div>
       <span class="language-badge">draft-1</span>
     </div>
@@ -40,6 +68,9 @@
       [diagnostics]="compiler.state().diagnostics"
       [completionProvider]="provideCompletions"
       [highlightProvider]="provideHighlights"
+      [colorScheme]="preferences.effectiveColorScheme()"
+      [editorFontFamily]="preferences.editorFontFamilyCss()"
+      [editorFontSize]="preferences.editorFontSize()"
       (valueChanged)="onSourceChange($event)"
       (selectionChanged)="onSourceSelection($event)"
     />
@@ -59,6 +90,8 @@
         <span>Checking context…</span>
       } @else if (compiler.completion().phase === "failed") {
         <span class="completion-error">{{ compiler.completion().message }}</span>
+      } @else if (fileOperationLabel(); as fileLabel) {
+        <span class="file-operation-label">{{ fileLabel }}</span>
       } @else {
         <span>{{ compiler.completion().candidates.length }} suggestions</span>
       }
@@ -239,4 +272,8 @@
     (applied)="applyWizard($event)"
     (cancelled)="cancelWizard()"
   />
+}
+
+@if (settingsOpen()) {
+  <c4ml-settings-panel (closed)="closeSettings()" />
 }

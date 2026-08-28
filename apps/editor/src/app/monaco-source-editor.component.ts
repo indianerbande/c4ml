@@ -15,6 +15,7 @@ import type {
 } from "monaco-editor/editor";
 
 import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
+import type { EffectiveColorScheme } from "./workbench-preferences.js";
 import {
   sourceEditorCompletion,
   sourceEditorMarkers,
@@ -60,6 +61,9 @@ export class C4mlMonacoSourceEditorComponent
   readonly completionProvider =
     input.required<SourceEditorCompletionProvider>();
   readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
+  readonly colorScheme = input.required<EffectiveColorScheme>();
+  readonly editorFontFamily = input.required<string>();
+  readonly editorFontSize = input.required<number>();
   readonly valueChanged = output<string>();
   readonly selectionChanged = output<SourceEditorSelection>();
   readonly loadFailure = signal<string | undefined>(undefined);
@@ -93,6 +97,20 @@ export class C4mlMonacoSourceEditorComponent
         return;
       }
       this.#setMarkers(diagnostics);
+    });
+
+    effect(() => {
+      const colorScheme = this.colorScheme();
+      const fontFamily = this.editorFontFamily();
+      const fontSize = this.editorFontSize();
+      this.#runtime?.editor.setTheme(
+        colorScheme === "dark" ? "c4ml-night" : "c4ml-day",
+      );
+      this.#editor?.updateOptions({
+        fontFamily,
+        fontSize,
+        lineHeight: Math.round(fontSize * 1.68),
+      });
     });
   }
 
@@ -166,14 +184,14 @@ export class C4mlMonacoSourceEditorComponent
     );
     this.#editor = runtime.editor.create(this.editorHost().nativeElement, {
       model: this.#model,
-      theme: "c4ml-night",
+      theme: this.colorScheme() === "dark" ? "c4ml-night" : "c4ml-day",
       ariaLabel: "C4ML source",
       automaticLayout: true,
       bracketPairColorization: { enabled: true },
       editContext: false,
-      fontFamily: '"IBM Plex Mono", monospace',
-      fontSize: 12.5,
-      lineHeight: 21,
+      fontFamily: this.editorFontFamily(),
+      fontSize: this.editorFontSize(),
+      lineHeight: Math.round(this.editorFontSize() * 1.68),
       lineNumbersMinChars: 3,
       minimap: { enabled: false },
       overviewRulerBorder: false,
@@ -343,6 +361,32 @@ function registerC4mlLanguage(runtime: MonacoRuntime): void {
       "editorSuggestWidget.foreground": "#DCE8F2",
       "editorSuggestWidget.highlightForeground": "#7DD8E6",
       "editorSuggestWidget.selectedBackground": "#244A63",
+    },
+  });
+  runtime.editor.defineTheme("c4ml-day", {
+    base: "vs",
+    inherit: true,
+    rules: [
+      { token: "comment", foreground: "607B8F", fontStyle: "italic" },
+      { token: "keyword", foreground: "096D87", fontStyle: "bold" },
+      { token: "number", foreground: "8A570D" },
+      { token: "operator", foreground: "52677D" },
+      { token: "string", foreground: "4D711D" },
+      { token: "variable", foreground: "17263D" },
+    ],
+    colors: {
+      "editor.background": "#FBFCFE",
+      "editor.foreground": "#17263D",
+      "editorLineNumber.foreground": "#8292A3",
+      "editorLineNumber.activeForeground": "#40566B",
+      "editorCursor.foreground": "#157CA3",
+      "editor.selectionBackground": "#B8DDE9",
+      "editor.inactiveSelectionBackground": "#DCEAF0",
+      "editorSuggestWidget.background": "#FFFFFF",
+      "editorSuggestWidget.border": "#B8C5D2",
+      "editorSuggestWidget.foreground": "#26394E",
+      "editorSuggestWidget.highlightForeground": "#096D87",
+      "editorSuggestWidget.selectedBackground": "#DCEFF5",
     },
   });
   languageRegistered = true;

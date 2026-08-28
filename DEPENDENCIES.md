@@ -1,6 +1,6 @@
 # C4ML Dependency Record
 
-Status: Accepted desktop editor and automatic-layout stack with remaining candidates
+Status: Accepted desktop application, editor, and automatic-layout stack with remaining candidates
 
 Date: 2026-08-28
 
@@ -240,6 +240,104 @@ Sources: [Monaco README](https://github.com/microsoft/monaco-editor/blob/main/RE
 [CodeMirror completion guide](https://codemirror.net/examples/autocompletion/),
 and [CodeMirror license](https://github.com/codemirror/dev/blob/main/LICENSE).
 
+## Accepted desktop application and packaging libraries
+
+Electron is accepted as the desktop container for the Angular/Monaco editor.
+It is an application adapter only: the portable compiler and browser worker do
+not depend on Electron.
+
+### Electron 44.0.0
+
+- **Capability:** native macOS/Windows application lifecycle, Chromium renderer,
+  isolated preload, native windows, menus, keyboard shortcuts, file dialogs,
+  and IPC.
+- **Why external:** maintaining a cross-platform native web-runtime container,
+  OS integration, Chromium, and security updates is mature platform work far
+  outside C4ML's architecture compiler.
+- **License:** the npm package is MIT. Electron also bundles Chromium and other
+  third-party software whose notices remain in the distributed framework.
+- **Impact:** installation downloads a platform-specific Electron runtime and
+  desktop artifacts contain that runtime, so packages are substantially larger
+  than the Angular web assets alone. End users do not need a separate Node.js,
+  browser, Python, or compiler service. On the validated macOS arm64 checkout,
+  the installed workspace occupies approximately 839 MB, the unpacked app
+  approximately 294 MB, the DMG 128 MB, and the ZIP 129 MB.
+- **Offline behavior:** dependency installation needs registry/download access;
+  the built application loads only packaged resources and works offline.
+- **Boundary:** `apps/desktop` owns Electron main/preload behavior. The renderer
+  sees only `@c4ml/desktop-contract`; C4ML language/compiler packages know
+  nothing about Electron.
+- **Protecting evidence:** web-preference and protocol tests, IPC request
+  validators, a production boundary check, packaged-application smoke tests,
+  local-only CSP inspection, denied navigation/permissions, and visual
+  inspection of the packaged application.
+
+Source: [Electron application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution)
+and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial/security).
+
+### Electron Forge 7.11.2 and Electron Fuses 2.1.3
+
+- **Capability:** replaceable application packaging and platform makers;
+  production Electron fuse configuration; DMG and ZIP creation on macOS; and a
+  Squirrel Setup EXE maker on Windows.
+- **Why external:** platform application assembly, installer formats, Electron
+  binary mutation, and maker integration are established release engineering
+  concerns rather than C4ML product semantics.
+- **License:** Forge CLI, DMG/Squirrel/ZIP makers, the Forge fuses plugin, and
+  `@electron/fuses` are MIT. `electron-squirrel-startup` 1.0.1 is Apache-2.0
+  and its license is retained in the packaged notices.
+- **Impact:** these are build-time dependencies. The Windows startup helper is
+  bundled into the small main-process artifact; Forge and makers are not copied
+  into application ASAR. The configured outputs are macOS `.app`, DMG, ZIP,
+  and Windows Squirrel installer files.
+- **Offline behavior:** packaging may need Electron release/checksum access
+  until its build cache is complete. Resulting applications and installers
+  require no runtime network service.
+- **Boundary:** `forge.config.cjs` owns packager, maker, signing-hook, and fuse
+  settings. A different packaging system can replace Forge without changing
+  the desktop bridge, Angular renderer, or compiler.
+- **Protecting evidence:** exact version/license checks, ASAR content review,
+  all nine Electron 44 fuse values, strict packaged-app signature verification,
+  packaged launch smoke, DMG verification, and ZIP integrity testing. A native
+  Windows build/install test and release signatures remain required.
+
+The Forge fuses plugin currently declares a peer range that excludes the newer
+`@electron/fuses` 2.x metadata even though Electron 44 exposes a ninth V1 fuse.
+The workspace records a narrow peer allowance for exactly 2.1.3; the production
+check and packaged smoke protect the integration.
+
+Sources: [Electron Forge Squirrel maker](https://www.electronforge.io/config/makers/squirrel.windows),
+[Electron Forge DMG maker](https://www.electronforge.io/config/makers/dmg), and
+[Electron code signing](https://www.electronjs.org/docs/latest/tutorial/code-signing).
+
+### Native maker helpers and build runtime
+
+- **Packages:** `@electron/node-gyp` 10.2.0-electron.2, `node-gyp` 12.3.0,
+  `fs-xattr` 0.3.1, and `macos-alias` 0.2.12, all MIT.
+- **Capability:** compile the native extended-attribute and alias helpers used
+  by the macOS DMG maker against the pinned build runtime.
+- **Why external:** native ABI builds, extended attributes, and Finder aliases
+  are operating-system packaging mechanics.
+- **Impact:** build-only dependencies; a macOS compiler toolchain is required
+  when the native helpers are not already available for the active ABI. They
+  are rebuilt before `desktop:make` and are excluded from the packaged app.
+- **Offline behavior:** after dependency installation and header/toolchain
+  availability, the rebuild and maker operate locally.
+- **Boundary:** `apps/desktop/scripts/rebuild-maker-native.cjs` is used only by
+  the maker lifecycle. No native helper enters runtime or compiler packages.
+- **Protecting evidence:** the macOS make, DMG verification, packaged ASAR
+  inventory, and dependency-license check.
+
+Forge 7.11.2 transitively identifies Electron's `node-gyp` fork through a Git
+reference. The workspace replaces only that exact transitive edge with the
+published npm version `10.2.0-electron.2`, avoiding an unpinned Git install
+while retaining the reviewed MIT Electron fork. Repository scripts run with
+the pnpm-managed Node.js 24.19.0 runtime recorded in `package.json` and the
+lockfile. This exact runtime avoids host-version-dependent packaging behavior;
+it is build tooling, not a runtime requirement for installed C4ML.
+
+Source: [pnpm managed runtime (`devEngines.runtime`)](https://pnpm.io/package_json#devenginesruntime).
+
 ## Experimental CLI application
 
 `apps/cli` adds no external dependency. It depends only on the C4ML compiler and
@@ -265,9 +363,11 @@ remains a Node frontend responsibility and does not enter the compiler core.
 
 Development tools do not define C4ML runtime semantics. Their versions are
 pinned by the root manifest and lockfile and may be upgraded only with a clean
-Only esbuild 0.28.2 is permitted to execute a dependency build script. The
-version-specific `allowBuilds` map in `pnpm-workspace.yaml` records that narrow
-approval; all unreviewed dependency build scripts remain blocked by pnpm.
+validation gate. Only the reviewed esbuild 0.28.2, electron-winstaller 5.4.4,
+fs-xattr 0.3.1, and macos-alias 0.2.12 packages are permitted to execute
+dependency build scripts. The version-specific `allowBuilds` map in
+`pnpm-workspace.yaml` records those narrow approvals; all unreviewed dependency
+build scripts remain blocked by pnpm.
 
 ## Phase 0 results
 
@@ -299,8 +399,8 @@ the following evidence:
   browser-targeted ECMAScript modules without Node.js polyfills. Unminified
   in-memory probe bundle sizes were approximately 2.5 KB, 920 KB, and 3.3 MB
   respectively; production size and worker-loading strategy remain open.
-- The complete current suite contains 136 distinct passing tests. Build, source/test
-  type checking, browser bundling, and tests passed through `pnpm run check`.
+- The complete current suite, including desktop contract and shell tests,
+  passes through the build, type, browser, dependency, and test gates.
 - The installed development tree occupied approximately 113 MB on macOS arm64;
   individual package-store entries were approximately 7.7 MB for ELK.js, 5.4 MB
   for Langium, 3.4 MB for the resvg native binary, and 10 MB for esbuild.
@@ -322,9 +422,9 @@ do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility for the remaining candidates,
 not their permanent acceptance. The complete product grammar and final routing
-architecture remain open. Angular 22, Monaco 0.56.0, ELK.js 0.12.0, and the
-controlled IBM Plex assets are accepted production dependencies behind the
-boundaries recorded above.
+architecture remain open. Angular 22, Monaco 0.56.0, Electron 44.0.0, Electron
+Forge 7.11.2, ELK.js 0.12.0, and the controlled IBM Plex assets are accepted
+production dependencies behind the boundaries recorded above.
 
 Superseded evaluation note (2026-08-28): Direct use of ELK.js's bundled
 CommonJS entry inside the Angular compiler worker failed while constructing the
@@ -341,9 +441,10 @@ loads the matching TTF faces with system fonts disabled. The current artifact
 has been visually inspected; promotion to a committed golden still requires
 the golden-update procedure in `TESTING.md`.
 
-The complete local gate ran on macOS arm64 with Node.js 26.4.0. Node.js 24.15.0
-is the declared minimum but still needs a clean CI or local run before that
-baseline can be claimed as automatically validated.
+The complete local gate and desktop packaging run on macOS arm64 use the exact
+pnpm-managed Node.js 24.19.0 runtime. Node.js 24.15.0 remains the declared
+minimum compatible workspace line, but 24.19.0 is the reproducible repository
+script and packaging runtime.
 
 ## Asset status
 

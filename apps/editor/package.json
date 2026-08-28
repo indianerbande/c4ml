@@ -14,6 +14,7 @@
     "@angular/core": "22.1.4",
     "@angular/platform-browser": "22.1.4",
     "@c4ml/compiler-core": "workspace:*",
+    "@c4ml/desktop-contract": "workspace:*",
     "@c4ml/font-ibm-plex": "workspace:*",
     "@c4ml/language-c4ml": "workspace:*",
     "@c4ml/layout-elk": "workspace:*",

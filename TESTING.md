@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.19
+Status: Draft 0.21
 
 Date: 2026-08-28
 
@@ -19,8 +19,14 @@ commands are:
 - `pnpm run check:editor-production` for the accepted Monaco and ELK.js
   versions, version-sensitive integration points, the unmodified packaged ELK
   worker, reviewed IBM Plex assets, and packaged license notices;
+- `pnpm run check:desktop-production` for pinned desktop dependencies, secure
+  main/preload boundaries, CSP, and required packaged editor resources;
 - `pnpm run check` for the complete current gate;
 - `pnpm run editor:build` for the production-mode Angular editor build;
+- `pnpm run desktop:smoke` for the built Electron shell and live compiler
+  worker;
+- `pnpm run desktop:package` for the unpacked current-platform application;
+- `pnpm run desktop:make` for current-platform installer/archive artifacts;
 - `pnpm run demo:render` for the ignored visual reference export; and
 - `pnpm run c4ml -- version` for the built experimental CLI entry point.
 
@@ -105,6 +111,30 @@ that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
 including regular and bold faces. The preview was visually inspected at 80,
 100, and 120 percent; its rendered box changed size while computed CSS
 `transform` remained `none`.
+
+The local workbench-preference suite verifies default loading, version-one
+round trips, field-level fallback, malformed JSON and unsupported-version
+fallback, bounded half-pixel font sizes, effective system/light/dark resolution,
+and controlled font-stack mapping. Browser and desktop verification MUST also
+cover live scheme changes, Monaco font changes, persistence across relaunch,
+reset, unavailable storage, modal focus containment and return, Escape
+dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
+changes neither dirty source nor change canonical SVG output.
+
+The Electron desktop foundation adds unit and boundary evidence for its
+versioned bridge, runtime request validators, opaque document handles, filename
+normalization, local protocol traversal rejection, and hardened web
+preferences. The production boundary check pins the reviewed Electron/Forge
+stack and licenses, verifies that the preload has no filesystem access, checks
+the local-only CSP, and requires the editor, worker, fonts, and notices before
+packaging. A smoke test from the packaged macOS `.app` verifies the bridge,
+Monaco host, valid compiler state, preview, and controlled Sans/Mono typography.
+The application was
+visually inspected as a native two-pane workbench with its native menu. The
+macOS application passes strict deep code-signature verification after ad-hoc
+signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
+testing. Native file-dialog interaction and the Windows installer remain
+manual/platform-specific evidence.
 
 The experimental CLI suite exercises successful validation, source-located JSON
 diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
@@ -428,6 +458,34 @@ relationship direction, stale-result rejection, cancel without source changes,
 and one explicit undo. Existing-document preservation tests do not apply until
 that separate capability is designed and implemented.
 
+### 2.11 Desktop shell and packaging
+
+Desktop tests MUST cover:
+
+- runtime validation of every privileged renderer request;
+- rejection of IPC from untrusted pages and denial of external navigation,
+  windows, permissions, and webviews;
+- context isolation, renderer sandboxing, disabled Node.js integration, and a
+  preload surface limited to the versioned C4ML bridge;
+- path-traversal rejection for the owned local application protocol;
+- opaque document handles and the configured source-size limit;
+- native Open, Save, Save As, cancellation, failure reporting, dirty titles,
+  and unsaved-close protection;
+- native Settings opening through the application menu and `Cmd/Ctrl+,`;
+- packaging without development sources or an application `node_modules`
+  tree;
+- required editor workers, fonts, licenses, and notices in the application;
+- the configured production Electron fuses;
+- launch and live compilation from the packaged application; and
+- signature, installer/archive integrity, installation, launch, file round
+  trip, and uninstall behavior on every supported release platform.
+
+Automated tests may substitute adapters for native dialogs, but at least one
+manual file round trip and close-protection check is required on each supported
+desktop platform before release. Apple Developer ID signing/notarization and
+Windows signing MUST be checked with release identities; ad-hoc signing is only
+local development evidence.
+
 ## 3. Original fixture catalog
 
 All fixtures below must be designed specifically for C4ML. They must not be
@@ -543,6 +601,13 @@ and third-party notices in the built editor artifact. It also verifies every
 reviewed IBM Plex WOFF2 hash, packaged byte identity, and the unchanged OFL-1.1
 license.
 
+The desktop dependency check pins Electron, Forge, makers, fuses, Windows
+startup handling, and macOS maker helpers to the reviewed versions and licenses.
+It also protects the local CSP, preload/main separation, and packaged resource
+inventory. A release pipeline MUST additionally inventory the complete
+installer payload and verify platform signatures and notarization where
+applicable.
+
 No copied third-party example may be introduced as a test fixture.
 
 ## 8. Golden-update procedure
@@ -588,6 +653,8 @@ Before the MVP may be called complete:
 - CLI and browser-worker compiler contract results are equivalent;
 - editor hot compilation, stale-result rejection, last-valid preview, and
   source/preview navigation pass their integration tests;
+- desktop open/save, dirty-state protection, secure bridge behavior, packaged
+  launch, and native installers pass on every supported platform;
 - the supported-platform PNG policy passes;
 - no network access is required;
 - dependency and asset licenses are documented; and

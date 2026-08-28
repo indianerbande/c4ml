@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.18
+Status: Draft 0.20
 
 Date: 2026-08-28
 
@@ -609,10 +609,12 @@ compiler core. The core MUST run directly under Node.js for the CLI and inside a
 Web Worker for the editor. CLI and editor MUST NOT have separate parser,
 semantic, layout, routing, or scene-generation implementations.
 
-The accepted Phase 0 toolchain is:
+The accepted toolchain baseline is:
 
 - Node.js 24.15.0 or a newer supported line as the minimum workspace build and
   CLI baseline;
+- pnpm-managed Node.js 24.19.0 as the exact runtime used for repository scripts
+  and desktop packaging;
 - a pnpm workspace with the package-manager version pinned in the repository;
 - strict TypeScript using ECMAScript modules; and
 - Vitest for the initial unit and adapter-contract tests.
@@ -626,6 +628,12 @@ C4ML-owned adapter. Neither library may introduce editor-specific semantic,
 layout, routing, scene, or rendering behavior. Compilation and language
 processing remain in a browser Web Worker behind the same C4ML-owned contracts
 used by the CLI.
+
+Electron 44 is the accepted first desktop application shell. Electron owns only
+native application lifecycle, windows, menus, file dialogs, packaging, and the
+small privileged adapter needed for those capabilities. It MUST NOT contain a
+second compiler, parser, language service, semantic model, layout pipeline, or
+renderer.
 
 C4ML is licensed under Apache License 2.0. Third-party dependencies retain
 their own licenses and MUST remain behind the boundaries recorded in
@@ -862,8 +870,9 @@ points, endpoint Ports, label anchor, and all lanes of its selected corridor.
 An adjacent inspector reports the same compiler-owned route facts. This is
 preview-only editor presentation; it does not recalculate geometry, mutate
 source, or enter SVG export. Individual Ports, labels, corridors, and
-Arrowheads are not separate navigation targets yet. Persistence, PNG export,
-graphical editing, and those additional selection targets are not implemented.
+Arrowheads are not separate navigation targets yet. Native source-file
+Open/Save/Save As is implemented by the desktop shell. PNG export, graphical
+editing, and those additional selection targets are not implemented.
 The production preview uses the accepted ELK.js adapter described in Section
 9.5.2; the former deterministic linear preview remains test-only compatibility
 code.
@@ -891,7 +900,7 @@ implemented integration, and acceptable lazy-load cost for C4ML's explicitly
 desktop-only editor led to Monaco's acceptance. CodeMirror is no longer an
 active production-library decision.
 
-The measured production build has a 214.91 KB initial application total,
+The measured production build has a 243.20 KB initial application total,
 a 3.06 MB lazy Monaco runtime, a 304.37 KB generic Monaco worker, and a locally
 loaded 350,112-byte Monaco stylesheet before transfer compression. The compiler
 worker remains a separate 805.64 KB chunk; the unchanged 1,595,334-byte ELK
@@ -967,6 +976,73 @@ preview. The editor displays the proposed source before apply; cancel leaves the
 active source unchanged, and an applied generation has an explicit one-step
 undo. This spike does not extend or reformat existing documents and does not
 claim the future full wizard scope described in Section 14.4.
+
+### 9.7 Electron desktop shell
+
+**Status: Accepted, implemented, automatically validated, and visually
+validated on macOS arm64.**
+
+The first desktop shell is an Electron 44 application under `apps/desktop`.
+It loads the production Angular editor from packaged local resources and keeps
+the existing module Web Worker and C4ML compiler contracts unchanged. The
+interface is an original C4ML workbench; an IDE-like window model does not imply
+copying Visual Studio Code source, extensions, branding, layout, or assets.
+
+The Electron main process owns application lifecycle, one application window,
+native menus and shortcuts, Open/Save/Save As dialogs, source-file reads and
+writes, title updates, and close protection for unsaved source. The renderer
+receives opaque document handles rather than filesystem paths. File operations
+are limited to validated C4ML source documents up to 8 MiB and report stable
+desktop diagnostic codes. Source remains authoritative and saving writes the
+current editor text, not hidden graphical state.
+
+The renderer MUST run sandboxed with context isolation enabled, Node.js
+integration disabled, web security enabled, external navigation and new
+windows denied, and permission requests denied. A C4ML-owned preload exposes
+only the versioned desktop bridge. The main process MUST reject IPC from an
+untrusted sender. Packaged assets are served only through the privileged but
+local `c4ml://app` protocol, with traversal protection and a local-only content
+security policy. Application code is packaged in ASAR; production Electron
+fuses disable RunAsNode, `NODE_OPTIONS`, and command-line inspection, require
+ASAR integrity and ASAR-only application loading, and enable cookie encryption.
+
+Electron Forge is the replaceable packaging adapter. macOS `.app`, DMG, and ZIP
+artifacts are configured and locally validated. The Windows Squirrel maker is
+configured for a Setup EXE, but a native Windows build and install test remain
+required. Current macOS artifacts are ad-hoc signed for local execution only.
+A release MUST add a final product version and icon, Apple Developer ID signing
+and notarization, Windows code signing, and native validation on each supported
+platform. The installed application MUST run offline; dependency and Electron
+binary downloads are build/install-time concerns only.
+
+### 9.8 Local workbench preferences
+
+**Status: Accepted, implemented, automatically validated, and visually
+validated foundation.**
+
+The desktop editor has an extensible settings area with category navigation.
+Its first version owns local workbench color scheme plus source-editor font
+family and size. Settings apply live and persist locally as a validated,
+versioned record. The color scheme supports `system`, `light`, and `dark`;
+`system` tracks operating-system changes while the application is running.
+Source font choice is bounded to the packaged IBM Plex Mono family or a local
+system monospace stack, and source font size is bounded to 11–24 px in 0.5 px
+steps.
+
+These are installation-local presentation preferences. They MUST NOT modify
+`.c4ml` source, mark a source document dirty, enter compiler or language-worker
+requests, or alter diagram theme, geometry, text measurement, SVG, or PNG.
+IBM Plex Sans remains the controlled interface and diagram family. A future
+project-, workspace-, document-, or view-scoped setting requires a separate
+contract and MUST NOT be added silently to the local preference record.
+
+The version-one record MUST validate every value at the storage boundary and
+fall back safely when storage is unavailable, malformed, or from an unsupported
+version. Components MUST consume the preferences service rather than read local
+storage directly. The panel MUST support keyboard operation, contained modal
+focus, Escape dismissal, and return focus to its invoking toolbar control. The
+same panel is opened by the native `Cmd/Ctrl+,` application-menu command.
+`SETTINGS.md` records the current setting catalogue and extension rules.
 
 ## 10. Scene graph and rendering
 
@@ -1154,10 +1230,10 @@ language or release-packaging requirements.
 
 ### 14.1 MVP editor
 
-The first-release editor targets desktop-class browsers or a future desktop
-application shell using the same browser runtime. Mobile-browser and mobile-web
-framework support are outside the first release. The packaging choice MUST NOT
-change the worker, compiler, or source-editor contracts.
+The first-release editor is an Electron desktop application using the same
+browser runtime as the isolated Angular development path. Mobile-browser and
+mobile-web framework support are outside the first release. The desktop shell
+MUST NOT change the worker, compiler, or source-editor contracts.
 
 The MVP editor MUST provide:
 
@@ -1168,6 +1244,8 @@ The MVP editor MUST provide:
 - retention of the last valid preview while the current source is invalid;
 - cancellation or rejection of stale compilation results;
 - zoom, pan, and fit-to-view controls;
+- native Open, Save, and Save As for `.c4ml` source, plus protection against
+  silently discarding unsaved changes;
 - SVG and PNG export through the same compiler/rendering contracts as the CLI;
 - navigation from source declarations to preview elements; and
 - navigation from preview elements to source declarations.

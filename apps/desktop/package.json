@@ -1,0 +1,40 @@
+{
+  "name": "@c4ml/desktop",
+  "productName": "C4ML",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local desktop workbench for C4ML architecture models",
+  "author": "C4ML contributors",
+  "license": "Apache-2.0",
+  "main": "dist/main.cjs",
+  "config": {
+    "forge": "./forge.config.cjs"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && esbuild src/main.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/main.cjs && esbuild src/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload.cjs",
+    "smoke": "node scripts/launch-packaged.cjs --smoke",
+    "start": "node scripts/launch-packaged.cjs",
+    "package": "electron-forge package",
+    "premake": "node scripts/rebuild-maker-native.cjs",
+    "make": "electron-forge make",
+    "test": "tsc -p tsconfig.test.json --noEmit && vitest run --exclude 'dist/**'"
+  },
+  "devDependencies": {
+    "@c4ml/desktop-contract": "workspace:*",
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/maker-dmg": "7.11.2",
+    "@electron-forge/maker-squirrel": "7.11.2",
+    "@electron-forge/maker-zip": "7.11.2",
+    "@electron-forge/plugin-fuses": "7.11.2",
+    "@electron/fuses": "2.1.3",
+    "@electron/node-gyp": "10.2.0-electron.2",
+    "@types/electron-squirrel-startup": "1.0.2",
+    "electron": "44.0.0",
+    "electron-squirrel-startup": "1.0.1",
+    "esbuild": "0.28.2",
+    "fs-xattr": "0.3.1",
+    "macos-alias": "0.2.12",
+    "node-gyp": "12.3.0"
+  }
+}

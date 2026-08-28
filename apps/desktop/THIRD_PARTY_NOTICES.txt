@@ -1,0 +1,11 @@
+C4ML desktop third-party notices
+==================================
+
+electron-squirrel-startup 1.0.1
+Copyright (c) 2015 GitHub Inc.
+Licensed under the Apache License, Version 2.0.
+Source: https://github.com/mongodb-js/electron-squirrel-startup
+
+The application resources include a copy of the Apache License, Version 2.0,
+as LICENSE. Electron and Chromium license material supplied by the Electron
+distribution remains part of the packaged application.

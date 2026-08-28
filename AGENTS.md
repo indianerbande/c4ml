@@ -18,6 +18,25 @@ Parser, rendering, and remaining UI dependencies stay draft unless a recorded
 spike result explicitly accepts them. ELK.js 0.12.0 is now the accepted first
 automatic-layout dependency behind the C4ML-owned `LayoutAdapter`.
 
+Electron 44.0.0 is the accepted desktop shell and Electron Forge 7.11.2 is the
+replaceable packaging adapter. `apps/desktop` owns native lifecycle, menus,
+file dialogs, local source persistence, and distribution artifacts; it MUST NOT
+own compiler semantics. The sandboxed Angular renderer receives only a
+versioned C4ML preload bridge with opaque document handles. Native Open, Save,
+Save As, dirty-title state, and close protection are implemented. Local macOS
+`.app`, DMG, and ZIP artifacts are automatically and visually validated; the
+configured Windows Squirrel installer still requires a native Windows run.
+Current macOS artifacts are ad-hoc signed development builds, not notarized
+releases. The exact pnpm-managed Node.js 24.19.0 runtime is used for repository
+scripts and packaging.
+
+The desktop workbench also has an implemented version-one local settings
+contract and category-based settings panel. System/Light/Dark workbench color,
+source-editor font family, and source-editor font size apply reactively and are
+stored locally. These preferences MUST remain outside `.c4ml`, compiler worker,
+diagram theme, layout, and exported SVG/PNG. `SETTINGS.md` defines the current
+catalogue and extension boundaries.
+
 The production-bound Angular editor foundation is implemented under
 `apps/editor`. It uses Angular standalone components, Signals, zoneless change
 detection, a lazy
@@ -313,6 +332,8 @@ repository:
   production ELK browser adapter without writing bundle artifacts;
 - `pnpm run check:editor-production` verifies the accepted Monaco version, its
   pinned Suggest integration point, and the editor artifact's license notices;
+- `pnpm run check:desktop-production` verifies the pinned Electron/Forge stack,
+  hardened main/preload boundary, local CSP, and required editor resources;
 - `pnpm run typecheck` builds source and type-checks test code;
 - `pnpm run test` runs the semantic, view-resolution, adapter, language,
   editor, and CLI tests;
@@ -323,7 +344,13 @@ repository:
 - `pnpm run editor:build` creates the ignored production-mode Angular editor
   build under `build/editor/`;
 - `pnpm run editor:start` starts the local Angular editor development server;
-  and
+- `pnpm run desktop:start` builds and starts the Electron desktop application;
+- `pnpm run desktop:smoke` builds and smoke-tests the Electron bridge, editor,
+  compiler worker, preview, and controlled typography;
+- `pnpm run desktop:package` creates the ignored unpacked current-platform
+  desktop application under `build/desktop/`;
+- `pnpm run desktop:make` creates the ignored current-platform development
+  installers/archives under `build/desktop/make/`; and
 - `pnpm run c4ml -- version` builds the CLI dependency slice and runs the
   experimental command-line frontend.
 

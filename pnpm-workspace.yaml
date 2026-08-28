@@ -5,9 +5,15 @@ packages:
 
 allowBuilds:
   '@parcel/watcher': false
+  'electron-winstaller@5.4.4': true
   'esbuild@0.28.2': true
+  'fs-xattr@0.3.1': true
   lmdb: false
+  'macos-alias@0.2.12': true
   msgpackr-extract: false
+
+hoistPattern:
+  - '*'
 
 minimumReleaseAgeExclude:
   - '@angular/common@22.1.4'
@@ -15,3 +21,10 @@ minimumReleaseAgeExclude:
   - '@angular/compiler@22.1.4'
   - '@angular/core@22.1.4'
   - '@angular/platform-browser@22.1.4'
+
+overrides:
+  '@electron/rebuild@3.7.2>@electron/node-gyp': '10.2.0-electron.2'
+
+peerDependencyRules:
+  allowedVersions:
+    '@electron/fuses': '2.1.3'

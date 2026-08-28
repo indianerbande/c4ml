@@ -42,6 +42,7 @@ export class CompilerWorkerClient {
   readonly wizard = signal<EditorWizardGenerationState>(
     this.#wizardSession.state,
   );
+  #activeFile = "editor.c4ml";
 
   constructor() {
     this.#worker.addEventListener("message", this.#onMessage);
@@ -53,8 +54,13 @@ export class CompilerWorkerClient {
     });
   }
 
-  compile(source: string, requestedViewId?: string): void {
-    const request = this.#session.begin(source, "editor.c4ml", requestedViewId);
+  compile(
+    source: string,
+    requestedViewId?: string,
+    file = "editor.c4ml",
+  ): void {
+    this.#activeFile = file;
+    const request = this.#session.begin(source, file, requestedViewId);
     this.state.set(this.#session.state);
     this.#worker.postMessage(request);
   }
@@ -66,6 +72,7 @@ export class CompilerWorkerClient {
     const { request, result } = this.#completionSession.beginAsync(
       source,
       offset,
+      this.#activeFile,
     );
     this.completion.set(this.#completionSession.state);
     this.#worker.postMessage(request);
@@ -73,7 +80,10 @@ export class CompilerWorkerClient {
   }
 
   highlight(source: string): Promise<readonly HighlightWorkerSpan[]> {
-    const { request, result } = this.#highlightSession.beginAsync(source);
+    const { request, result } = this.#highlightSession.beginAsync(
+      source,
+      this.#activeFile,
+    );
     this.#worker.postMessage(request);
     return result;
   }
