@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   compileArchitectureDiagram,
+  builtInShapes,
   prepareDiagram,
   resolveArchitectureView,
   type ArchitectureView,
@@ -186,8 +187,19 @@ describe("diagram compiler pipeline", () => {
     expect(svg).toContain("id=\"diagram-route-arrows\"");
     expect(svg).toContain("id=\"diagram-ports\"");
     expect(svg).toContain("class=\"route-arrow");
+    expect(svg).toContain("class=\"route-label-background\"");
+    expect(svg.indexOf("id=\"diagram-routes\"")).toBeLessThan(
+      svg.indexOf("id=\"diagram-route-label-backgrounds\""),
+    );
+    expect(svg.indexOf("id=\"diagram-route-label-backgrounds\"")).toBeLessThan(
+      svg.indexOf("id=\"diagram-elements\""),
+    );
     expect(svg).toContain("data-c4ml-port-side=\"south\"");
     expect(svg).toContain("data-c4ml-shape=\"c4ml-person\"");
+    expect(svg).toContain(
+      "class=\"element-content element-content-person\"",
+    );
+    expect(svg).toContain("class=\"element-type person-type\"");
     expect(svg).toContain("data-c4ml-theme=\"c4ml-blue\"");
     expect(svg).toContain('font-family="IBM Plex Sans"');
     expect(svg).toContain('@font-face { font-family: "IBM Plex Sans";');
@@ -229,6 +241,11 @@ describe("diagram compiler pipeline", () => {
     });
     expect(first.scene?.ports).toHaveLength((first.routes?.length ?? 0) * 2);
     expect(first.scene?.arrowheads).toHaveLength(first.routes?.length ?? 0);
+    expect(
+      first.scene?.routes.every(
+        ({ labelBounds }) => labelBounds.width > 0 && labelBounds.height > 0,
+      ),
+    ).toBe(true);
     expect(first.scene?.arrowheads[0]?.points).toHaveLength(3);
     const firstSceneRoute = first.scene!.routes[0]!;
     const firstTargetPort = first.scene!.ports.find(
@@ -288,6 +305,42 @@ describe("diagram compiler pipeline", () => {
     expect(externalFont.diagnostics.map(({ code }) => code)).toContain(
       "C4ML-SVG-009",
     );
+  });
+
+  it("gives the built-in Person a portrait layout footprint", () => {
+    const contextView = signalGardenViews.find(
+      (view): view is Extract<ArchitectureView, { kind: "system-context" }> =>
+        view.kind === "system-context",
+    )!;
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const person = diagram.layoutRequest.nodes.find(
+      ({ id }) => id === "element:grower",
+    );
+    const system = diagram.layoutRequest.nodes.find(
+      ({ id }) => id === "element:signal-garden",
+    );
+
+    expect(person).toMatchObject({ width: 210, height: 190 });
+    expect(system).toMatchObject({ width: 250, height: 132 });
+    expect(diagram.nodes.find(({ id }) => id === "element:grower")?.shapeId).toBe(
+      "c4ml-person",
+    );
+
+    const personShape = builtInShapes.find(({ id }) => id === "c4ml-person")!;
+    expect(personShape.ports).toEqual({
+      north: { x: 50, y: 0 },
+      east: { x: 100, y: 50 },
+      south: { x: 50, y: 100 },
+      west: { x: 0, y: 50 },
+    });
+    expect(
+      personShape.primitives.map(({ kind, paint }) => ({ kind, paint })),
+    ).toEqual([
+      { kind: "rectangle", paint: "surface" },
+      { kind: "ellipse", paint: "accent" },
+      { kind: "rectangle", paint: "accent" },
+    ]);
   });
 
   it("reports an impossible fixed orthogonal route as a compiler diagnostic", async () => {

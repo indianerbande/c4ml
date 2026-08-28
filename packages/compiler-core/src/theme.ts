@@ -99,6 +99,14 @@ const neutralExternalDark = elementColors({
   metadata: lightMetadata,
   description: lightText,
 });
+const neutralExternalPerson = elementColors({
+  fill: "#4E5966",
+  border: "#333C46",
+  accent: "#FFFFFF",
+  title: lightText,
+  metadata: lightMetadata,
+  description: lightText,
+});
 const neutralExternalMedium = elementColors({
   fill: "#65717E",
   border: "#46515C",
@@ -128,12 +136,12 @@ const c4mlBlueTheme: SceneTheme = {
       internal: elementColors({
         fill: "#173F5F",
         border: "#0E2C45",
-        accent: "#72B7E2",
+        accent: "#FFFFFF",
         title: lightText,
         metadata: lightMetadata,
         description: lightText,
       }),
-      external: neutralExternalDark,
+      external: neutralExternalPerson,
     },
     "software-system": {
       internal: elementColors({

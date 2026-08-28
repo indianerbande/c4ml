@@ -62,8 +62,14 @@ export interface SceneRoute {
   readonly label: string;
   readonly technology?: string;
   readonly labelPoint: Point;
+  readonly labelBounds: SceneBounds;
   readonly labelSegment: number;
   readonly corridor?: EffectiveCorridor;
+}
+
+export interface SceneBounds extends Point {
+  readonly width: number;
+  readonly height: number;
 }
 
 export interface ScenePort {
@@ -183,12 +189,18 @@ function sceneNode(
     y: layout.y + offset.y,
     width: layout.width,
     height: layout.height,
-    title: { lines: wrapText(node.title, 30, 2) },
+    title: {
+      lines: wrapText(node.title, node.elementRole === "person" ? 20 : 30, 2),
+    },
     typeLabel: node.typeLabel,
     description: {
       lines: wrapText(
         node.description,
-        node.kind === "element" || node.kind === "infrastructure-node" ? 38 : 54,
+        node.elementRole === "person"
+          ? 25
+          : node.kind === "element" || node.kind === "infrastructure-node"
+            ? 38
+            : 54,
         node.kind === "element" || node.kind === "infrastructure-node" ? 3 : 2,
       ),
     },
@@ -202,6 +214,10 @@ function sceneNode(
 }
 
 function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
+  const labelPoint = {
+    x: route.labelPoint.x + offset.x,
+    y: route.labelPoint.y + offset.y,
+  };
   return {
     id: `scene-route:${route.edgeId}`,
     relationshipId: route.relationshipId,
@@ -217,14 +233,32 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
     })),
     label: route.label,
     ...(route.technology === undefined ? {} : { technology: route.technology }),
-    labelPoint: {
-      x: route.labelPoint.x + offset.x,
-      y: route.labelPoint.y + offset.y,
-    },
+    labelPoint,
+    labelBounds: routeLabelBounds(route.label, route.technology, labelPoint),
     labelSegment: route.labelSegment,
     ...(route.corridor === undefined
       ? {}
       : { corridor: sceneCorridor(route.corridor, offset) }),
+  };
+}
+
+function routeLabelBounds(
+  label: string,
+  technology: string | undefined,
+  point: Point,
+): SceneBounds {
+  const textWidth = Math.max(
+    48,
+    label.length * 6.4,
+    technology === undefined ? 0 : technology.length * 5.8,
+  );
+  const width = textWidth + 12;
+  const height = technology === undefined ? 20 : 36;
+  return {
+    x: point.x - width / 2,
+    y: point.y - height / 2,
+    width,
+    height,
   };
 }
 

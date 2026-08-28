@@ -72,6 +72,8 @@ export interface PreparedDiagram {
 
 const elementWidth = 250;
 const elementHeight = 132;
+const personWidth = 210;
+const personHeight = 190;
 const boundaryWidth = 420;
 const boundaryHeight = 280;
 
@@ -526,10 +528,11 @@ function toLayoutNode(node: DiagramNode): LayoutNodeRequest {
     node.kind === "scope-boundary" ||
     node.kind === "visual-group" ||
     node.kind === "deployment-node";
+  const person = node.kind === "element" && node.elementRole === "person";
   return {
     id: node.id,
-    width: boundary ? boundaryWidth : elementWidth,
-    height: boundary ? boundaryHeight : elementHeight,
+    width: boundary ? boundaryWidth : person ? personWidth : elementWidth,
+    height: boundary ? boundaryHeight : person ? personHeight : elementHeight,
     ...(node.parentId === undefined ? {} : { parentId: node.parentId }),
     ...(boundary ? { padding: node.kind === "visual-group" ? 34 : 42 } : {}),
   };
