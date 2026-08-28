@@ -1,10 +1,13 @@
 import {
   compileArchitectureDiagram,
   type Diagnostic,
+  type LayoutAdapter,
 } from "@c4ml/compiler-core";
+import { createBrowserElkLayoutAdapter } from "@c4ml/layout-elk/browser";
 import {
   completeC4mlDraft,
   generateSystemContextDraft,
+  highlightC4mlDraft,
   parseC4mlDraft,
 } from "@c4ml/language-c4ml";
 
@@ -18,13 +21,17 @@ import {
   type CompilerWorkerView,
   type CompletionWorkerRequest,
   type CompletionWorkerResponse,
+  type HighlightWorkerRequest,
+  type HighlightWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
-import { LinearPreviewLayoutAdapter } from "./linear-preview-layout.js";
+
+let browserLayoutAdapter: LayoutAdapter | undefined;
 
 export async function compileWorkerRequest(
   request: CompilerWorkerRequest,
+  layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
 ): Promise<CompilerWorkerResponse> {
   try {
     const parsed = await parseC4mlDraft(request.source, { file: request.file });
@@ -52,7 +59,7 @@ export async function compileWorkerRequest(
     const compiled = await compileArchitectureDiagram({
       model: parsed.model,
       view,
-      layoutAdapter: new LinearPreviewLayoutAdapter(),
+      layoutAdapter,
       scene: { fontFamily: "Arial", theme: "c4ml-blue" },
     });
     if (!compiled.valid || compiled.svg === undefined) {
@@ -97,6 +104,16 @@ export async function compileWorkerRequest(
   }
 }
 
+function getBrowserLayoutAdapter(): LayoutAdapter {
+  browserLayoutAdapter ??= createBrowserElkLayoutAdapter({
+    workerUrl: new URL(
+      "third-party/elkjs/elk-worker.min.js",
+      self.location.href,
+    ).href,
+  });
+  return browserLayoutAdapter;
+}
+
 export async function completeWorkerRequest(
   request: CompletionWorkerRequest,
 ): Promise<CompletionWorkerResponse> {
@@ -122,6 +139,31 @@ export async function completeWorkerRequest(
       status: "failed",
       candidates: [],
       message: `Completion failed: ${message}`,
+    };
+  }
+}
+
+export async function highlightWorkerRequest(
+  request: HighlightWorkerRequest,
+): Promise<HighlightWorkerResponse> {
+  try {
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "highlight-result",
+      requestId: request.requestId,
+      status: "complete",
+      highlights: highlightC4mlDraft(request.source),
+      message: undefined,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "highlight-result",
+      requestId: request.requestId,
+      status: "failed",
+      highlights: [],
+      message: `Highlighting failed: ${message}`,
     };
   }
 }
@@ -162,6 +204,8 @@ export function executeWorkerRequest(
       return compileWorkerRequest(request);
     case "complete":
       return completeWorkerRequest(request);
+    case "highlight":
+      return highlightWorkerRequest(request);
     case "generate-system-context":
       return generateWorkerRequest(request);
   }

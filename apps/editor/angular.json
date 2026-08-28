@@ -33,6 +33,16 @@
                 "glob": "ThirdPartyNotices.txt",
                 "input": "node_modules/monaco-editor",
                 "output": "third-party/monaco-editor"
+              },
+              {
+                "glob": "elk-worker.min.js",
+                "input": "node_modules/elkjs/lib",
+                "output": "third-party/elkjs"
+              },
+              {
+                "glob": "LICENSE.md",
+                "input": "node_modules/elkjs",
+                "output": "third-party/elkjs"
               }
             ],
             "loader": {

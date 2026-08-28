@@ -1,6 +1,6 @@
 # C4ML Dependency Record
 
-Status: Accepted desktop editor stack with remaining compiler-adapter candidates
+Status: Accepted desktop editor and automatic-layout stack with remaining candidates
 
 Date: 2026-08-28
 
@@ -50,27 +50,34 @@ the disposable probe artifacts.
 
 ### ELK.js 0.12.0
 
-- **Capability:** candidate automatic layout with layered graphs, compound
+**Status: Accepted for production automatic layout.**
+
+- **Capability:** automatic layout with layered graphs, compound
   nodes, ports, and orthogonal edge routing.
 - **Why external:** high-quality graph layout is a mature algorithmic domain;
   reimplementing the whole layered-layout engine would add risk without
   differentiating C4ML.
 - **License:** `EPL-2.0 OR GPL-3.0-or-later`; C4ML uses the EPL-2.0 option and
   keeps the unmodified package separate.
-- **Impact:** comparatively large JavaScript/GWT layout bundle; usable in Node.js
-  and browsers, with optional Web Worker execution.
+- **Impact:** comparatively large JavaScript/GWT layout bundle. Node.js uses
+  the bundled entry. The editor compiler worker loads the small API-only entry
+  and delegates layout to the separately packaged 1.5 MB minified ELK worker.
 - **Offline behavior:** layout runs locally after installation and requires no
   network access.
 - **Boundary:** an engine-neutral `LayoutAdapter` contract owns C4ML input and
   output types. ELK identifiers, options, coordinates, and objects MUST NOT leak
   beyond the adapter.
-- **Phase 0 evidence:** finite geometry, normalized output, deterministic
+- **Protecting evidence:** finite geometry, normalized output, deterministic
   repeated results, compound-node handling, and explicit failure for invalid
-  adapter input.
+  adapter input. The Angular production build and browser session additionally
+  verify the API-only entry, a real nested Web Worker, local offline loading,
+  and unchanged worker/license packaging.
 
 Redistribution of ELK.js must preserve its notices and satisfy EPL-2.0 source
 availability requirements for the ELK.js program. C4ML MUST NOT modify or copy
 ELK.js source into the repository.
+
+Source: [ELK.js 0.12.0 README](https://github.com/kieler/elkjs/blob/0.12.0/README.md).
 
 ### resvg-js 2.6.2
 
@@ -157,7 +164,7 @@ validated for the desktop editor.**
   DOMPurify entries are approximately 952 KB and 756 KB. Shared pnpm storage
   increased the complete workspace tree from approximately 298 MB to 372 MB on
   the reference macOS arm64 checkout. The production build keeps the app at a
-  195.90 KB initial total and emits Monaco as a 3.05 MB lazy runtime with a
+  198.51 KB initial total and emits Monaco as a 3.06 MB lazy runtime with a
   304.37 KB generic editor worker. Its official 350,112-byte stylesheet is loaded
   lazily from a local build asset. Sizes are before transfer compression.
   Monaco's official README says mobile browsers are unsupported; C4ML's
@@ -168,7 +175,8 @@ validated for the desktop editor.**
   `editor/contrib/suggest` controller entry directly. This version-sensitive
   import is confined to the Monaco runtime adapter. The production dependency
   check pins the reviewed version, verifies that entry point, and forces an
-  explicit revalidation on every upgrade.
+  explicit revalidation on every upgrade. The same check protects the direct
+  semantic-token feature import required by Monaco's selective runtime build.
 - **Offline behavior:** the editor, stylesheet, generic worker, and
   C4ML compiler worker were exercised entirely from the local Angular server;
   no runtime CDN, compiler service, or other network service is used.
@@ -201,8 +209,8 @@ and [CodeMirror license](https://github.com/codemirror/dev/blob/main/LICENSE).
 ## Experimental CLI application
 
 `apps/cli` adds no external dependency. It depends only on the C4ML compiler and
-language workspaces plus the already recorded ELK.js and resvg-js candidate
-adapters. The app owns filesystem, process, argument, and exit-code behavior;
+language workspaces plus the accepted ELK.js adapter and resvg-js candidate
+adapter. The app owns filesystem, process, argument, and exit-code behavior;
 none of those Node.js concerns enter the portable compiler core. Its tests
 protect that boundary through real local files, invocation from an unrelated
 working directory, source validation, view selection, and SVG/PNG output.
@@ -258,7 +266,7 @@ the following evidence:
   browser-targeted ECMAScript modules without Node.js polyfills. Unminified
   in-memory probe bundle sizes were approximately 2.5 KB, 920 KB, and 3.3 MB
   respectively; production size and worker-loading strategy remain open.
-- The complete current suite contained 112 distinct passing tests. Build, source/test
+- The complete current suite contains 122 distinct passing tests. Build, source/test
   type checking, browser bundling, and tests passed through `pnpm run check`.
 - The installed development tree occupied approximately 113 MB on macOS arm64;
   individual package-store entries were approximately 7.7 MB for ELK.js, 5.4 MB
@@ -269,9 +277,9 @@ the following evidence:
 ELK.js 0.12.0's published declaration files are not fully compatible with the
 pinned TypeScript 6.0.3 toolchain: one generic declaration fails and its browser
 `Worker` type is ambient. Phase 0 confines `skipLibCheck` and a local
-CommonJS-constructor cast to the ELK adapter. Permanent adoption requires either
-compatible upstream types or a reviewed adapter-local declaration boundary;
-this workaround MUST NOT spread into the compiler core.
+CommonJS-constructor cast and `skipLibCheck` are confined to the production ELK
+adapter package as a reviewed declaration boundary. This workaround MUST NOT
+spread into the compiler core.
 
 The complete build, browser-bundle check, source and test type checking, test
 suite, and reference export were repeated successfully with TypeScript 6.0.3
@@ -279,20 +287,19 @@ before it became the pinned workspace compiler. The compiler and configuration
 do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility for the remaining candidates,
-not their permanent acceptance. The complete product grammar, production
-bundle strategy beyond the accepted desktop editor baseline, font policy, and
-final layout/routing architecture remain open. Angular 22 and Monaco 0.56.0 are
-accepted production dependencies behind the boundaries recorded above.
+not their permanent acceptance. The complete product grammar, font policy, and
+final routing architecture remain open. Angular 22, Monaco 0.56.0, and ELK.js
+0.12.0 are accepted production dependencies behind the boundaries recorded
+above.
 
-The candidate ELK.js adapter still passes its Node.js behavior tests and
-browser-bundle check. Direct use of its current bundled CommonJS entry from
-inside the Angular compiler worker failed at runtime while constructing the
-bundle's internal worker (`_Worker is not a constructor`). The editor therefore
-uses a deliberately limited local linear adapter. This does not reject
-ELK.js, but permanent browser adoption now requires a tested browser entry or
-worker factory that does not depend on that bundled constructor path.
+Superseded evaluation note (2026-08-28): Direct use of ELK.js's bundled
+CommonJS entry inside the Angular compiler worker failed while constructing the
+bundle's internal worker (`_Worker is not a constructor`). The accepted
+integration instead uses ELK's API-only entry with the published minified ELK
+worker as a real nested browser Worker. The local linear adapter is no longer
+the production preview path.
 
-The Phase 1 reference exporter now invokes the same candidate ELK.js and
+The Phase 1 reference exporter now invokes the accepted ELK.js and candidate
 resvg-js adapters through the C4ML-owned contracts. ELK output is normalized to
 absolute geometry across nested compound nodes before later stages consume it.
 The reference PNG explicitly uses locally available system fonts when no font

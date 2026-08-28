@@ -4,23 +4,43 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const acceptedMonacoVersion = "0.56.0";
+const acceptedElkVersion = "0.12.0";
 const editorRoot = join(repositoryRoot, "apps", "editor");
 const installedMonacoRoot = join(
   editorRoot,
   "node_modules",
   "monaco-editor",
 );
+const installedElkRoot = join(editorRoot, "node_modules", "elkjs");
 const editorBuildRoot = join(repositoryRoot, "build", "editor");
 
 const editorManifest = await readJson(join(editorRoot, "package.json"));
 const installedMonacoManifest = await readJson(
   join(installedMonacoRoot, "package.json"),
 );
+const installedElkManifest = await readJson(
+  join(installedElkRoot, "package.json"),
+);
 
 assertEqual(
   editorManifest.dependencies?.["monaco-editor"],
   acceptedMonacoVersion,
   "apps/editor must pin the accepted Monaco version exactly",
+);
+assertEqual(
+  editorManifest.dependencies?.["elkjs"],
+  acceptedElkVersion,
+  "apps/editor must pin the reviewed ELK.js version exactly",
+);
+assertEqual(
+  installedElkManifest.version,
+  acceptedElkVersion,
+  "the installed ELK.js version must match the reviewed browser version",
+);
+assertEqual(
+  installedElkManifest.license,
+  "EPL-2.0 OR GPL-3.0-or-later",
+  "the reviewed ELK.js dual-license expression must remain unchanged",
 );
 assertEqual(
   installedMonacoManifest.version,
@@ -46,6 +66,19 @@ await requireFile(
   ),
   "the pinned adapter-local Monaco Suggest controller",
 );
+await requireFile(
+  join(
+    installedMonacoRoot,
+    "esm",
+    "vs",
+    "editor",
+    "contrib",
+    "semanticTokens",
+    "browser",
+    "documentSemanticTokens.js",
+  ),
+  "the pinned adapter-local Monaco semantic-token feature",
+);
 
 const upstreamLicense = join(installedMonacoRoot, "LICENSE");
 const upstreamNotices = join(installedMonacoRoot, "ThirdPartyNotices.txt");
@@ -63,11 +96,37 @@ const packagedNotices = join(
   "monaco-editor",
   "ThirdPartyNotices.txt",
 );
+const upstreamElkLicense = join(installedElkRoot, "LICENSE.md");
+const upstreamElkWorker = join(installedElkRoot, "lib", "elk-worker.min.js");
+const packagedElkLicense = join(
+  editorBuildRoot,
+  "browser",
+  "third-party",
+  "elkjs",
+  "LICENSE.md",
+);
+const packagedElkWorker = join(
+  editorBuildRoot,
+  "browser",
+  "third-party",
+  "elkjs",
+  "elk-worker.min.js",
+);
 
 await assertSameFile(
   upstreamLicense,
   packagedLicense,
   "Monaco's license must be copied unchanged into the editor artifact",
+);
+await assertSameFile(
+  upstreamElkLicense,
+  packagedElkLicense,
+  "ELK.js's license must be copied unchanged into the editor artifact",
+);
+await assertSameFile(
+  upstreamElkWorker,
+  packagedElkWorker,
+  "the editor must package the reviewed ELK.js worker unchanged",
 );
 await assertSameFile(
   upstreamNotices,
@@ -84,6 +143,7 @@ for (const packageName of [
   "@angular/core",
   "@angular/platform-browser",
   "monaco-editor",
+  "elkjs",
   "rxjs",
 ]) {
   const entry = `Package: ${packageName}`;
@@ -95,7 +155,7 @@ for (const packageName of [
 }
 
 console.log(
-  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}).`,
+  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}).`,
 );
 
 async function readJson(path) {

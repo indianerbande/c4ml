@@ -18,7 +18,10 @@ import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
 import {
   sourceEditorCompletion,
   sourceEditorMarkers,
+  sourceEditorSemanticTokens,
+  sourceEditorSemanticTokenTypes,
   type SourceEditorCompletionProvider,
+  type SourceEditorHighlightProvider,
 } from "./source-editor.contract.js";
 
 const c4mlLanguageId = "c4ml";
@@ -51,6 +54,7 @@ export class C4mlMonacoSourceEditorComponent
   readonly diagnostics = input<readonly CompilerWorkerDiagnostic[]>([]);
   readonly completionProvider =
     input.required<SourceEditorCompletionProvider>();
+  readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
   readonly valueChanged = output<string>();
   readonly loadFailure = signal<string | undefined>(undefined);
   readonly editorHost =
@@ -59,6 +63,7 @@ export class C4mlMonacoSourceEditorComponent
   #editor: MonacoEditor.IStandaloneCodeEditor | undefined;
   #model: MonacoEditor.ITextModel | undefined;
   #completionRegistration: { dispose(): void } | undefined;
+  #highlightRegistration: { dispose(): void } | undefined;
   #synchronizeExternalValue = false;
   #destroyed = false;
   #runtime: MonacoRuntime | undefined;
@@ -100,6 +105,7 @@ export class C4mlMonacoSourceEditorComponent
   ngOnDestroy(): void {
     this.#destroyed = true;
     this.#completionRegistration?.dispose();
+    this.#highlightRegistration?.dispose();
     this.#editor?.dispose();
     this.#model?.dispose();
   }
@@ -167,6 +173,7 @@ export class C4mlMonacoSourceEditorComponent
       },
       renderValidationDecorations: "on",
       scrollBeyondLastLine: false,
+      "semanticHighlighting.enabled": true,
       smoothScrolling: true,
       suggestOnTriggerCharacters: false,
       tabSize: 2,
@@ -205,6 +212,25 @@ export class C4mlMonacoSourceEditorComponent
           };
         },
       });
+    this.#highlightRegistration =
+      runtime.languages.registerDocumentSemanticTokensProvider(
+        c4mlLanguageId,
+        {
+          getLegend: () => ({
+            tokenTypes: [...sourceEditorSemanticTokenTypes],
+            tokenModifiers: [],
+          }),
+          provideDocumentSemanticTokens: async (model, _lastResultId, token) => {
+            const source = model.getValue();
+            const highlights = await this.highlightProvider()(source);
+            if (token.isCancellationRequested || model.getValue() !== source) {
+              return { data: new Uint32Array() };
+            }
+            return { data: sourceEditorSemanticTokens(highlights) };
+          },
+          releaseDocumentSemanticTokens: () => undefined,
+        },
+      );
     this.#updateMarkers();
   }
 
@@ -274,7 +300,14 @@ function registerC4mlLanguage(runtime: MonacoRuntime): void {
   runtime.editor.defineTheme("c4ml-night", {
     base: "vs-dark",
     inherit: true,
-    rules: [],
+    rules: [
+      { token: "comment", foreground: "7895AA", fontStyle: "italic" },
+      { token: "keyword", foreground: "7DD8E6", fontStyle: "bold" },
+      { token: "number", foreground: "F2C879" },
+      { token: "operator", foreground: "A9C2D8" },
+      { token: "string", foreground: "B8D98A" },
+      { token: "variable", foreground: "E4EEF8" },
+    ],
     colors: {
       "editor.background": "#132132",
       "editor.foreground": "#E4EEF8",

@@ -3,17 +3,20 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 import { defaultSystemContextWizardAnswers } from "@c4ml/language-c4ml";
+import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 
 import {
   compilerWorkerProtocolVersion,
   type CompilerWorkerRequest,
   type CompletionWorkerRequest,
+  type HighlightWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
 import {
   compileWorkerRequest,
   completeWorkerRequest,
   generateWorkerRequest,
+  highlightWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -38,6 +41,11 @@ const deploymentSourceUrl = new URL(
   "../../../examples/draft/hello-deployment.c4ml",
   import.meta.url,
 );
+const nodeLayoutAdapter = createBundledElkLayoutAdapter();
+
+function compile(request: CompilerWorkerRequest) {
+  return compileWorkerRequest(request, nodeLayoutAdapter);
+}
 
 function request(
   source: string,
@@ -78,14 +86,27 @@ function wizardRequest(requestId = 1): WizardWorkerRequest {
   };
 }
 
+function highlightRequest(
+  source: string,
+  requestId = 1,
+): HighlightWorkerRequest {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "highlight",
+    requestId,
+    file: "editor.c4ml",
+    source,
+  };
+}
+
 describe("compiler worker runtime", () => {
   it("keeps the initial editor source aligned with the documented example", async () => {
     expect(initialC4mlSource).toBe(await readFile(documentedSourceUrl, "utf8"));
   });
 
   it("compiles source to deterministic SVG using the shared compiler", async () => {
-    const first = await compileWorkerRequest(request(initialC4mlSource));
-    const second = await compileWorkerRequest(request(initialC4mlSource));
+    const first = await compile(request(initialC4mlSource));
+    const second = await compile(request(initialC4mlSource));
 
     expect(first.status).toBe("valid");
     expect(first.diagnostics).toEqual([]);
@@ -96,7 +117,7 @@ describe("compiler worker runtime", () => {
 
   it("compiles the executable Container slice in the same worker", async () => {
     const source = await readFile(containerSourceUrl, "utf8");
-    const result = await compileWorkerRequest(request(source));
+    const result = await compile(request(source));
 
     expect(result.status).toBe("valid");
     expect(result.diagnostics).toEqual([]);
@@ -107,8 +128,8 @@ describe("compiler worker runtime", () => {
 
   it("returns available views and compiles the selected static zoom level", async () => {
     const source = await readFile(staticZoomSourceUrl, "utf8");
-    const component = await compileWorkerRequest(request(source));
-    const code = await compileWorkerRequest(
+    const component = await compile(request(source));
+    const code = await compile(
       request(source, 2, "arrangement-engine-code"),
     );
 
@@ -129,8 +150,8 @@ describe("compiler worker runtime", () => {
 
   it("compiles Landscape and selected Dynamic Views through the same worker", async () => {
     const source = await readFile(dynamicSourceUrl, "utf8");
-    const landscape = await compileWorkerRequest(request(source));
-    const dynamic = await compileWorkerRequest(
+    const landscape = await compile(request(source));
+    const dynamic = await compile(
       request(source, 2, "finalize-release"),
     );
 
@@ -146,7 +167,7 @@ describe("compiler worker runtime", () => {
 
   it("compiles a Deployment View with nested runtime boundaries", async () => {
     const source = await readFile(deploymentSourceUrl, "utf8");
-    const deployment = await compileWorkerRequest(request(source));
+    const deployment = await compile(request(source));
 
     expect(deployment.status).toBe("valid");
     expect(deployment.activeViewId).toBe("parcel-observer-production");
@@ -162,7 +183,7 @@ describe("compiler worker runtime", () => {
   });
 
   it("returns source-located diagnostics without an SVG for invalid input", async () => {
-    const result = await compileWorkerRequest(
+    const result = await compile(
       request(initialC4mlSource.replace("to = garden-pulse", "to = missing")),
     );
 
@@ -207,6 +228,21 @@ describe("compiler worker runtime", () => {
     });
   });
 
+  it("returns compiler-owned highlighting spans from the language worker", async () => {
+    const result = await highlightWorkerRequest(
+      highlightRequest("c4ml draft-1\n// original\nmodel {}"),
+    );
+
+    expect(result.status).toBe("complete");
+    expect(result.highlights).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "keyword" }),
+        expect.objectContaining({ kind: "comment" }),
+        expect.objectContaining({ kind: "operator" }),
+      ]),
+    );
+  });
+
   it("generates wizard source that compiles through the normal worker path", async () => {
     const generated = await generateWorkerRequest(wizardRequest());
 
@@ -214,7 +250,7 @@ describe("compiler worker runtime", () => {
       status: "valid",
       issues: [],
     });
-    const compiled = await compileWorkerRequest(request(generated.source!, 2));
+    const compiled = await compile(request(generated.source!, 2));
     expect(compiled.status).toBe("valid");
     expect(compiled.svg).toContain("System Context — Field Notes");
   });

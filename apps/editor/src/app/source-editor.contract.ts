@@ -1,12 +1,26 @@
 import type {
   CompilerWorkerDiagnostic,
   CompletionWorkerCandidate,
+  HighlightWorkerSpan,
 } from "./compiler-worker.protocol.js";
 
 export type SourceEditorCompletionProvider = (
   source: string,
   offset: number,
 ) => Promise<readonly CompletionWorkerCandidate[]>;
+
+export type SourceEditorHighlightProvider = (
+  source: string,
+) => Promise<readonly HighlightWorkerSpan[]>;
+
+export const sourceEditorSemanticTokenTypes = [
+  "comment",
+  "variable",
+  "keyword",
+  "number",
+  "operator",
+  "string",
+] as const;
 
 export interface SourceEditorRange {
   readonly startLineNumber: number;
@@ -74,4 +88,42 @@ export function sourceEditorMarkers(
       },
     ];
   });
+}
+
+export function sourceEditorSemanticTokens(
+  highlights: readonly HighlightWorkerSpan[],
+): Uint32Array {
+  const typeIndex = new Map<string, number>(
+    sourceEditorSemanticTokenTypes.map((type, index) => [type, index]),
+  );
+  const data: number[] = [];
+  let previousLine = 0;
+  let previousColumn = 0;
+
+  for (const highlight of highlights) {
+    const start = highlight.range.start;
+    const end = highlight.range.end;
+    if (start.line !== end.line || end.column <= start.column) {
+      continue;
+    }
+    const semanticType =
+      highlight.kind === "identifier" ? "variable" : highlight.kind;
+    const tokenType = typeIndex.get(semanticType);
+    if (tokenType === undefined) {
+      continue;
+    }
+    const deltaLine = start.line - previousLine;
+    const deltaColumn =
+      deltaLine === 0 ? start.column - previousColumn : start.column;
+    data.push(
+      deltaLine,
+      deltaColumn,
+      end.column - start.column,
+      tokenType,
+      0,
+    );
+    previousLine = start.line;
+    previousColumn = start.column;
+  }
+  return Uint32Array.from(data);
 }

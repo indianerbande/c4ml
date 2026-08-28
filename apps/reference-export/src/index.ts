@@ -6,7 +6,7 @@ import {
   type ArchitectureModel,
   type ArchitectureView,
 } from "@c4ml/compiler-core";
-import { ElkLayoutAdapter } from "@c4ml/spike-layout-elk";
+import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
 
 const model: ArchitectureModel = {
@@ -145,7 +145,7 @@ const outputDirectory = resolve(
 const compilerResult = await compileArchitectureDiagram({
   model,
   view,
-  layoutAdapter: new ElkLayoutAdapter(),
+  layoutAdapter: createBundledElkLayoutAdapter(),
   routing: {
     corridors: [
       {

@@ -1,11 +1,12 @@
 import type {
   C4mlCompletionCandidate,
   C4mlCompletionKind,
+  C4mlHighlight,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
 
-export const compilerWorkerProtocolVersion = 3 as const;
+export const compilerWorkerProtocolVersion = 4 as const;
 
 export interface CompilerWorkerView {
   readonly id: string;
@@ -58,6 +59,14 @@ export interface CompletionWorkerRequest {
   readonly offset: number;
 }
 
+export interface HighlightWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "highlight";
+  readonly requestId: number;
+  readonly file: string;
+  readonly source: string;
+}
+
 export interface WizardWorkerRequest {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
   readonly type: "generate-system-context";
@@ -68,6 +77,7 @@ export interface WizardWorkerRequest {
 export type CompilerWorkerInbound =
   | CompilerWorkerRequest
   | CompletionWorkerRequest
+  | HighlightWorkerRequest
   | WizardWorkerRequest;
 
 export interface CompilerWorkerResponse {
@@ -95,6 +105,17 @@ export interface CompletionWorkerResponse {
   readonly message: string | undefined;
 }
 
+export type HighlightWorkerSpan = C4mlHighlight;
+
+export interface HighlightWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "highlight-result";
+  readonly requestId: number;
+  readonly status: "complete" | "failed";
+  readonly highlights: readonly HighlightWorkerSpan[];
+  readonly message: string | undefined;
+}
+
 export interface WizardWorkerResponse {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
   readonly type: "generation-result";
@@ -108,6 +129,7 @@ export interface WizardWorkerResponse {
 export type CompilerWorkerOutbound =
   | CompilerWorkerResponse
   | CompletionWorkerResponse
+  | HighlightWorkerResponse
   | WizardWorkerResponse;
 
 export function isCompilerWorkerRequest(
@@ -148,12 +170,29 @@ export function isCompletionWorkerRequest(
   );
 }
 
+export function isHighlightWorkerRequest(
+  value: unknown,
+): value is HighlightWorkerRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<HighlightWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "highlight" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    typeof candidate.source === "string"
+  );
+}
+
 export function isCompilerWorkerInbound(
   value: unknown,
 ): value is CompilerWorkerInbound {
   return (
     isCompilerWorkerRequest(value) ||
     isCompletionWorkerRequest(value) ||
+    isHighlightWorkerRequest(value) ||
     isWizardWorkerRequest(value)
   );
 }
@@ -222,12 +261,34 @@ export function isCompletionWorkerResponse(
   );
 }
 
+export function isHighlightWorkerResponse(
+  value: unknown,
+): value is HighlightWorkerResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<HighlightWorkerResponse>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "highlight-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "complete" || candidate.status === "failed") &&
+    Array.isArray(candidate.highlights) &&
+    candidate.highlights.every(isHighlightSpan) &&
+    (candidate.message === undefined || typeof candidate.message === "string") &&
+    (candidate.status === "complete"
+      ? candidate.message === undefined
+      : typeof candidate.message === "string")
+  );
+}
+
 export function isCompilerWorkerOutbound(
   value: unknown,
 ): value is CompilerWorkerOutbound {
   return (
     isCompilerWorkerResponse(value) ||
     isCompletionWorkerResponse(value) ||
+    isHighlightWorkerResponse(value) ||
     isWizardWorkerResponse(value)
   );
 }
@@ -314,6 +375,27 @@ function isCompletionEdit(
     edit.range !== null &&
     isPosition(edit.range.start) &&
     isPosition(edit.range.end)
+  );
+}
+
+function isHighlightSpan(value: unknown): value is HighlightWorkerSpan {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const span = value as Partial<HighlightWorkerSpan>;
+  return (
+    (span.kind === "comment" ||
+      span.kind === "identifier" ||
+      span.kind === "keyword" ||
+      span.kind === "number" ||
+      span.kind === "operator" ||
+      span.kind === "string") &&
+    typeof span.range === "object" &&
+    span.range !== null &&
+    isPosition(span.range.start) &&
+    isPosition(span.range.end) &&
+    span.range.start.offset < span.range.end.offset &&
+    span.range.start.line === span.range.end.line
   );
 }
 

@@ -7,6 +7,9 @@ import {
   type CompletionWorkerCandidate,
   type CompletionWorkerRequest,
   type CompletionWorkerResponse,
+  type HighlightWorkerRequest,
+  type HighlightWorkerResponse,
+  type HighlightWorkerSpan,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
@@ -221,6 +224,60 @@ export class EditorCompletionSession {
     const resolve = this.#resolvePending;
     this.#resolvePending = undefined;
     resolve?.(candidates);
+  }
+}
+
+export class EditorHighlightSession {
+  #activeRequestId = 0;
+  #resolvePending:
+    | ((highlights: readonly HighlightWorkerSpan[]) => void)
+    | undefined;
+
+  constructor(
+    readonly sequence = new EditorRequestSequence(),
+  ) {}
+
+  beginAsync(
+    source: string,
+    file = "editor.c4ml",
+  ): {
+    readonly request: HighlightWorkerRequest;
+    readonly result: Promise<readonly HighlightWorkerSpan[]>;
+  } {
+    this.#finishPending([]);
+    const requestId = this.sequence.next();
+    this.#activeRequestId = requestId;
+    const request: HighlightWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "highlight",
+      requestId,
+      file,
+      source,
+    };
+    const result = new Promise<readonly HighlightWorkerSpan[]>((resolve) => {
+      this.#resolvePending = resolve;
+    });
+    return { request, result };
+  }
+
+  accept(response: HighlightWorkerResponse): boolean {
+    if (response.requestId !== this.#activeRequestId) {
+      return false;
+    }
+    this.#finishPending(
+      response.status === "complete" ? response.highlights : [],
+    );
+    return true;
+  }
+
+  failActive(): void {
+    this.#finishPending([]);
+  }
+
+  #finishPending(highlights: readonly HighlightWorkerSpan[]): void {
+    const resolve = this.#resolvePending;
+    this.#resolvePending = undefined;
+    resolve?.(highlights);
   }
 }
 

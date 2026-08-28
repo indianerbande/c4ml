@@ -39,6 +39,7 @@
       [value]="source()"
       [diagnostics]="compiler.state().diagnostics"
       [completionProvider]="provideCompletions"
+      [highlightProvider]="provideHighlights"
       (valueChanged)="onSourceChange($event)"
     />
 

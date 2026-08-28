@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.14
+Status: Draft 0.15
 
 Date: 2026-08-28
 
@@ -16,8 +16,9 @@ commands are:
 - `pnpm run typecheck` for source and test type checking;
 - `pnpm run test` for the current semantic, view, adapter, language, and editor
   test suite;
-- `pnpm run check:editor-production` for the accepted Monaco version, its
-  version-sensitive integration point, and packaged license notices;
+- `pnpm run check:editor-production` for the accepted Monaco and ELK.js
+  versions, version-sensitive integration points, the unmodified packaged ELK
+  worker, and packaged license notices;
 - `pnpm run check` for the complete current gate;
 - `pnpm run editor:build` for the production-mode Angular editor build;
 - `pnpm run demo:render` for the ignored visual reference export; and
@@ -61,18 +62,24 @@ source-editor adapter evidence. It verifies deterministic source-to-SVG
 compilation, invalid-source diagnostics, monotonic request identifiers,
 rejection of deliberately out-of-order results, retention of the last valid
 SVG, context-valid completion ranges, exact completion and marker translation,
-stale asynchronous completion settlement, deterministic wizard source, normal
-compilation of that source, cancel behavior, and explicit undo. The
+lexer-owned syntax-span classification, semantic-token delta encoding, stale
+asynchronous completion and highlight settlement, deterministic wizard source,
+normal compilation of that source, cancel behavior, and explicit undo. The
 production-mode Angular build proves that compiler services and Monaco's
-generic editor service are separate worker chunks and that Monaco's runtime is
-lazy. Browser verification covers the two-pane layout, live preview, an
+generic editor service are separate worker chunks, that Monaco's runtime is
+lazy, and that the reviewed ELK worker and license are packaged locally.
+Browser verification covers the two-pane layout, lexer-owned syntax
+highlighting, ELK-produced live preview, an
 in-place context-only completion popup, exact candidate application, inline
 diagnostic markers, diagnostic-to-source focus, invalid edit diagnostics,
 keyboard undo/redo, visible last-valid-preview state, wizard/Monaco source
 synchronization, visually inspected Component, Code, System Landscape,
 Dynamic, and Deployment previews, view selection, zoom, the three-step wizard,
-generated-source review, apply, and undo. The browser accessibility tree was
-inspected; a real screen-reader pass is not yet complete.
+generated-source review, apply, and undo. The production bundled adapter
+compiles executable slices for all seven view types in worker-runtime tests;
+the current browser-specific ELK pass visually covers System Context and a
+nested Deployment View. The browser accessibility tree was inspected; a real
+screen-reader pass is not yet complete.
 
 The experimental CLI suite exercises successful validation, source-located JSON
 diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,

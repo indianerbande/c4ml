@@ -14,7 +14,10 @@ import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
 import { initialC4mlSource } from "./initial-source.js";
 import { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
-import type { SourceEditorCompletionProvider } from "./source-editor.contract.js";
+import type {
+  SourceEditorCompletionProvider,
+  SourceEditorHighlightProvider,
+} from "./source-editor.contract.js";
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
 
 @Component({
@@ -34,6 +37,8 @@ export class AppComponent {
     source,
     offset,
   ) => this.compiler.complete(source, offset);
+  readonly provideHighlights: SourceEditorHighlightProvider = (source) =>
+    this.compiler.highlight(source);
   readonly previewUrl = signal<string | undefined>(undefined);
   readonly previewZoom = signal(1);
   readonly wizardOpen = signal(false);

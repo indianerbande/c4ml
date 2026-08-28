@@ -21,3 +21,6 @@ import "monaco-editor/features/multicursor/register";
 import "monaco-editor/editor/contrib/suggest/browser/suggestController.js";
 import "monaco-editor/features/toggleTabFocusMode/register";
 import "monaco-editor/features/wordOperations/register";
+// Monaco has no public feature entry for semantic-token painting in 0.56.0.
+// The dependency check pins this adapter-local import beside the suggest path.
+import "monaco-editor/editor/contrib/semanticTokens/browser/documentSemanticTokens.js";

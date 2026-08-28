@@ -14,8 +14,9 @@ Editor 0.56.0 are the accepted desktop editor stack. Angular owns UI composition
 and interaction, while Monaco owns source editing and editor affordances behind
 a C4ML-owned adapter. Compiler and language processing remain in the worker
 behind C4ML-owned contracts. The MVP has no required Python or network service.
-Parser, layout, rendering, and remaining UI dependencies stay draft unless a
-recorded spike result explicitly accepts them.
+Parser, rendering, and remaining UI dependencies stay draft unless a recorded
+spike result explicitly accepts them. ELK.js 0.12.0 is now the accepted first
+automatic-layout dependency behind the C4ML-owned `LayoutAdapter`.
 
 The production-bound Angular editor foundation is implemented under
 `apps/editor`. It uses Angular standalone components, Signals, zoneless change
@@ -24,13 +25,14 @@ Monaco source-editor adapter, and a versioned request/response contract to run
 the experimental language package and shared compiler in a browser Web Worker.
 It rejects stale responses, retains the last valid SVG during invalid edits,
 and displays source-located diagnostics in a two-pane layout. The same worker
-provides the only context-completion and diagnostic source; Monaco presents its
-exact edits in an in-place popup and its ranges as markers without owning C4ML
-syntax or semantics. The UI also exposes diagnostics-to-source navigation,
+provides the only context-completion, syntax-highlighting, and diagnostic
+source; Monaco presents its exact edits, semantic-token spans, and ranges
+without owning C4ML syntax or semantics. The UI also exposes diagnostics-to-source navigation,
 zoom, fit, scroll-pan, SVG download, wizard preview, cancel, apply, one-step
-wizard undo, and selection among declared executable views. Its linear preview
-layout is a temporary bounded adapter, not the accepted automatic-layout
-solution. The editor is not yet feature-complete, but Angular and Monaco are
+wizard undo, and selection among declared executable views. The compiler worker
+uses ELK's API-only entry and a separate local ELK Web Worker for automatic
+layout; the earlier linear adapter remains test-only compatibility code. The
+editor is not yet feature-complete, but Angular and Monaco are
 production dependencies rather than active UI-library experiments. It accepts
 the current executable slices for all seven view types: System Landscape,
 System Context, Container, Component, Code, Dynamic, and Deployment.
@@ -55,14 +57,18 @@ The first Phase 1 rendering slice is also implemented. A resolved view can be
 prepared as an engine-neutral layout request, routed through inspectable
 automatic, guided, or fixed route contracts, converted into a renderer-neutral
 scene, serialized as standalone SVG, and rasterized as PNG through the existing
-resvg candidate adapter. The original Signal Garden Container View reference
+resvg candidate adapter. Automatic geometry is provided by the accepted,
+replaceable ELK.js adapter in both Node.js frontends and the browser compiler
+worker. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
 placement, ELK compound geometry, SVG, and PNG. The separate experimental
 language package can parse and lower the original `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices into these compiler contracts. There is no
 public `.c4ml` frontend or CLI yet, the complete constraint/routing scope is
-not implemented, and the candidate adapters are not permanently accepted.
+not implemented, and the remaining candidate adapters are not permanently
+accepted. ELK.js is the accepted exception recorded in `SPEC.md` and
+`DEPENDENCIES.md`.
 
 The renderer also has an implemented semantic color-theme contract. The
 original `c4ml-blue` and `c4ml-garden` presets distinguish C4 element roles,
@@ -277,8 +283,8 @@ repository:
 - `pnpm install` installs the pinned workspace dependency graph;
 - `pnpm run build` regenerates the disposable Langium probe and builds all
   packages;
-- `pnpm run check:browser` bundles the portable core, Langium services, and ELK
-  adapter for a browser without writing bundle artifacts;
+- `pnpm run check:browser` bundles the portable core, Langium services, and the
+  production ELK browser adapter without writing bundle artifacts;
 - `pnpm run check:editor-production` verifies the accepted Monaco version, its
   pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run typecheck` builds source and type-checks test code;

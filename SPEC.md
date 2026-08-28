@@ -653,11 +653,13 @@ Candidates accepted for validation in the Phase 0 technical spike:
 - a C4ML-owned SVG scene renderer; and
 - resvg-js or an equivalent non-browser renderer for SVG-to-PNG conversion.
 
-Langium, ELK.js, and resvg-js are not yet permanent dependency decisions. The
-spike must verify license, installation footprint, deterministic behavior,
-browser independence, and the ability to override or replace each candidate.
-Passing a Phase 0 spike permits continued prototyping but does not make a
-candidate part of C4ML's public semantic model or freeze the source grammar.
+At the time of Phase 0, Langium, ELK.js, and resvg-js were not permanent
+dependency decisions. The spike had to verify license, installation footprint,
+deterministic behavior, browser independence, and replacement boundaries.
+ELK.js was subsequently accepted for production automatic layout in Section
+9.5.2. Passing the other Phase 0 spikes still permits continued prototyping but
+does not make a candidate part of C4ML's public semantic model or freeze the
+source grammar.
 
 ### 9.2 Phase 1 semantic and view contract
 
@@ -724,9 +726,9 @@ These types are internal compiler contracts, not accepted `.c4ml` grammar. The
 current slice intentionally does not claim complete placement constraints,
 relative waypoints, avoidance regions, locked segments, route-junction
 authorship, complete all-view rendering evidence, a frozen author-facing theme
-grammar, geometry-affecting style tokens, or a bundled font. The ELK.js and
-resvg-js implementations remain candidate adapters behind the accepted
-engine-neutral boundaries.
+grammar, geometry-affecting style tokens, or a bundled font. ELK.js is the
+accepted first automatic-layout adapter behind the engine-neutral boundary;
+resvg-js remains a candidate renderer adapter.
 
 ### 9.4 Experimental `draft-1` language slices
 
@@ -784,7 +786,7 @@ detection for UI state and keeps parser, semantic, layout, scene, and rendering
 behavior outside Angular components.
 
 The editor communicates with a module Web Worker through a C4ML-owned message
-contract. Compile, completion, and wizard-source requests share one
+contract. Compile, completion, syntax-highlight, and wizard-source requests share one
 monotonically increasing request sequence and carry a protocol version. Each UI
 consumer accepts a response only when it matches that consumer's newest active
 request, so an older compilation, completion list, or generated source can
@@ -798,9 +800,10 @@ The worker executes the experimental `draft-1` parser, explicit AST-to-domain
 lowering, shared semantic and view resolution, diagram compiler, scene builder,
 and SVG renderer. The UI displays compiler-produced SVG as an image through a
 local object URL rather than injecting authored markup into the application
-DOM. The same worker uses the language package's completion scopes and wizard
-source generator, so Angular does not contain a parallel set of language or C4
-rules. No compiler service or runtime network connection is required.
+DOM. The same worker uses the language package's lexer spans, completion scopes,
+and wizard source generator, so Angular and Monaco contain no parallel C4ML
+grammar or C4 rules. No compiler service or runtime network connection is
+required.
 
 This is the accepted foundation of the production editor, not a claim that the
 MVP editor is feature-complete. A lazy Monaco 0.56.0 adapter owns text input,
@@ -810,12 +813,13 @@ their exact replacement ranges still come only from the C4ML language worker.
 Compiler diagnostics are mapped to Monaco markers and can be selected in the
 diagnostic list to reveal and focus their source range. Zoom, fit-to-view,
 scroll-pan at enlarged scale, and local SVG download are implemented without
-mutating compiler geometry. C4ML syntax highlighting, preview-to-source and
-source-to-preview element navigation, persistence, PNG export, and graphical
-editing are not implemented. Its deterministic linear preview layout is a
-temporary adapter for the worker-to-preview path and MUST NOT be represented as
-the intended automatic-layout or routing solution. The browser form of the
-candidate ELK adapter remains a separate open evaluation.
+mutating compiler geometry. Syntax highlighting is implemented with spans from
+the authoritative C4ML lexer, transported through the compiler worker and
+encoded as Monaco semantic tokens. Preview-to-source and source-to-preview
+element navigation, persistence, PNG export, and graphical editing are not
+implemented. The production preview uses the accepted ELK.js adapter described
+in Section 9.5.2; the former deterministic linear preview remains test-only
+compatibility code.
 
 #### 9.5.1 Accepted source-editor dependency
 
@@ -828,10 +832,11 @@ replacement ranges translated by a C4ML-owned source-editor contract. Monaco
 MUST remain a replaceable Angular UI adapter: it may own text editing,
 completion presentation, markers, keyboard commands, and undo, but it MUST NOT
 own C4 syntax or semantic rules. The existing C4ML compiler worker remains the
-only source of contextual candidates and diagnostics. Monaco's TypeScript,
+only source of contextual candidates, highlighting spans, and diagnostics. Monaco's TypeScript,
 CSS, HTML, JSON, and native LSP language services are not loaded. C4ML syntax
 highlighting remains C4ML-owned and MUST NOT introduce a second authoritative
-parser or grammar.
+parser or grammar. Monaco only receives already classified, source-located
+semantic-token spans.
 
 Superseded evaluation note (2026-08-28): CodeMirror 6 was considered as a
 smaller modular fallback. Monaco's broad adoption, familiar desktop interaction,
@@ -839,11 +844,13 @@ implemented integration, and acceptable lazy-load cost for C4ML's explicitly
 desktop-only editor led to Monaco's acceptance. CodeMirror is no longer an
 active production-library decision.
 
-The measured production build has a 195.90 KB initial application total,
-a 3.05 MB lazy Monaco runtime, a 304.37 KB generic Monaco worker, and a locally
+The measured production build has a 198.51 KB initial application total,
+a 3.06 MB lazy Monaco runtime, a 304.37 KB generic Monaco worker, and a locally
 loaded 350,112-byte Monaco stylesheet before transfer compression. The compiler
-worker remains a separate 760.92 KB chunk. Automated tests protect exact edit
-and diagnostic-range translation plus stale asynchronous completion handling.
+worker remains a separate 769.01 KB chunk; the unchanged 1,595,334-byte ELK
+worker is a separate local asset. Automated tests protect exact edit,
+diagnostic-range, and semantic-token translation plus stale asynchronous
+completion and highlighting handling.
 Interactive browser evidence covers an in-place context-only popup, exact edit
 application, marker display, diagnostic navigation, keyboard undo/redo, source
 synchronization, last-valid preview retention, and wizard apply/undo. The
@@ -854,9 +861,10 @@ runtime assets were served locally without a compiler service or CDN.
 The first-release editor is explicitly desktop-only, and the measured lazy-load
 and installation costs are accepted for that scope. The production build MUST
 ship Monaco's license and upstream third-party notices. The pinned adapter's
-version-sensitive Suggest controller import MUST be checked on every dependency
-upgrade. A real assistive-technology pass remains required before an accessible
-release claim, but it is not a renewed source-editor selection gate.
+version-sensitive Suggest controller and semantic-token feature imports MUST be
+checked on every dependency upgrade. A real assistive-technology pass remains
+required before an accessible release claim, but it is not a renewed
+source-editor selection gate.
 
 Sources: [Monaco README](https://github.com/microsoft/monaco-editor/blob/main/README.md),
 [Monaco 0.56 changelog](https://github.com/microsoft/monaco-editor/blob/main/CHANGELOG.md),
@@ -864,6 +872,33 @@ Sources: [Monaco README](https://github.com/microsoft/monaco-editor/blob/main/RE
 [CodeMirror completion guide](https://codemirror.net/examples/autocompletion/),
 [CodeMirror reference manual](https://codemirror.net/docs/ref/), and
 [CodeMirror lint guide](https://codemirror.net/examples/lint/).
+
+#### 9.5.2 Accepted automatic-layout dependency
+
+**Status: Accepted and implemented for Node.js and the browser editor.**
+
+ELK.js 0.12.0 is the first production automatic-layout adapter. C4ML owns the
+request and result contracts, validates input before invocation, fixes the
+layout seed, and normalizes compound-node and edge geometry before any later
+compiler stage sees it. ELK identifiers, configuration objects, and relative
+coordinates MUST remain inside `@c4ml/layout-elk`.
+
+Node.js frontends use the reviewed bundled entry behind a dedicated factory.
+The browser compiler worker uses ELK's API-only entry and starts the unmodified
+published `elk-worker.min.js` as a separate local classic Web Worker. This
+avoids the bundled entry's incompatible internal worker constructor, keeps
+layout work off the Angular UI thread, and requires no network service. The
+editor artifact MUST ship the exact reviewed worker and ELK license. The
+browser and bundled factories are separate exports over the same normalization
+adapter so neither frontend can leak environment concerns into compiler-core.
+
+The adapter is replaceable; its acceptance does not make ELK options part of
+the C4ML semantic model or source grammar. C4ML routing, explicit Ports,
+corridors, waypoints, fixed paths, labels, and author constraints remain C4ML
+contracts applied independently of automatic-layout engine selection.
+
+Source:
+[ELK.js README and browser worker guidance](https://github.com/kieler/elkjs/blob/0.12.0/README.md).
 
 ### 9.6 Experimental authoring assistance
 

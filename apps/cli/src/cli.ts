@@ -10,7 +10,7 @@ import {
   c4mlDraftLanguageVersion,
   parseC4mlDraft,
 } from "@c4ml/language-c4ml";
-import { ElkLayoutAdapter } from "@c4ml/spike-layout-elk";
+import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
 
 export const cliVersion = "0.0.0" as const;
@@ -114,7 +114,7 @@ export async function runCli(
     readonly bytes: string | Uint8Array;
     readonly filename: string;
   }> = [];
-  const layoutAdapter = new ElkLayoutAdapter();
+  const layoutAdapter = createBundledElkLayoutAdapter();
   const pngRenderer = new ResvgPngRenderer();
   for (const view of selectedViews) {
     try {

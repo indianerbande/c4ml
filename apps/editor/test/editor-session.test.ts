@@ -8,15 +8,19 @@ import {
   isCompletionWorkerResponse,
   isCompilerWorkerRequest,
   isCompilerWorkerResponse,
+  isHighlightWorkerRequest,
+  isHighlightWorkerResponse,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
   type CompletionWorkerResponse,
+  type HighlightWorkerResponse,
   type WizardWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
   EditorCompilationSession,
   EditorCompletionSession,
+  EditorHighlightSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   WizardSourceSession,
@@ -97,6 +101,28 @@ function wizardResponse(
   };
 }
 
+function highlightResponse(
+  requestId: number,
+  kind: "identifier" | "keyword" = "keyword",
+): HighlightWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "highlight-result",
+    requestId,
+    status: "complete",
+    highlights: [
+      {
+        kind,
+        range: {
+          start: { offset: 0, line: 0, column: 0 },
+          end: { offset: 4, line: 0, column: 4 },
+        },
+      },
+    ],
+    message: undefined,
+  };
+}
+
 describe("editor compilation session", () => {
   it("rejects invalid protocol identities and result payloads", () => {
     expect(
@@ -134,6 +160,29 @@ describe("editor compilation session", () => {
       }),
     ).toBe(false);
     expect(
+      isHighlightWorkerRequest({
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "highlight",
+        requestId: 1,
+        file: "editor.c4ml",
+        source: "model",
+      }),
+    ).toBe(true);
+    expect(
+      isHighlightWorkerResponse({
+        ...highlightResponse(1),
+        highlights: [
+          {
+            kind: "unknown",
+            range: {
+              start: { offset: 0, line: 0, column: 0 },
+              end: { offset: 4, line: 0, column: 4 },
+            },
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
       isWizardWorkerRequest({
         protocolVersion: compilerWorkerProtocolVersion,
         type: "generate-system-context",
@@ -156,12 +205,14 @@ describe("editor compilation session", () => {
     const sequence = new EditorRequestSequence();
     const compilation = new EditorCompilationSession(sequence);
     const completion = new EditorCompletionSession(sequence);
+    const highlighting = new EditorHighlightSession(sequence);
     const wizard = new EditorWizardGenerationSession(sequence);
 
     expect(compilation.begin("source").requestId).toBe(1);
     expect(completion.begin("source", 3).requestId).toBe(2);
-    expect(wizard.begin(defaultSystemContextWizardAnswers).requestId).toBe(3);
-    expect(compilation.begin("new source").requestId).toBe(4);
+    expect(highlighting.beginAsync("source").request.requestId).toBe(3);
+    expect(wizard.begin(defaultSystemContextWizardAnswers).requestId).toBe(4);
+    expect(compilation.begin("new source").requestId).toBe(5);
   });
 
   it("creates monotonically ordered worker requests", () => {
@@ -265,6 +316,32 @@ describe("editor completion session", () => {
       phase: "failed",
       message: "Worker stopped.",
     });
+  });
+});
+
+describe("editor highlighting session", () => {
+  it("settles superseded Monaco requests and accepts only the newest spans", async () => {
+    const session = new EditorHighlightSession();
+    const first = session.beginAsync("mod");
+    const second = session.beginAsync("model");
+
+    await expect(first.result).resolves.toEqual([]);
+    expect(session.accept(highlightResponse(first.request.requestId))).toBe(false);
+    expect(
+      session.accept(highlightResponse(second.request.requestId, "identifier")),
+    ).toBe(true);
+    await expect(second.result).resolves.toMatchObject([
+      { kind: "identifier" },
+    ]);
+  });
+
+  it("settles the active Monaco request when the worker fails", async () => {
+    const session = new EditorHighlightSession();
+    const pending = session.beginAsync("model");
+
+    session.failActive();
+
+    await expect(pending.result).resolves.toEqual([]);
   });
 });
 

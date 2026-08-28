@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   sourceEditorCompletion,
   sourceEditorMarkers,
+  sourceEditorSemanticTokens,
 } from "../src/app/source-editor.contract.js";
 
 describe("C4ML source-editor contract", () => {
@@ -73,6 +74,38 @@ describe("C4ML source-editor contract", () => {
           endColumn: 11,
         },
       },
+    ]);
+  });
+
+  it("encodes compiler-owned spans as Monaco semantic-token deltas", () => {
+    expect(
+      [...sourceEditorSemanticTokens([
+        {
+          kind: "keyword",
+          range: {
+            start: { offset: 0, line: 0, column: 0 },
+            end: { offset: 4, line: 0, column: 4 },
+          },
+        },
+        {
+          kind: "identifier",
+          range: {
+            start: { offset: 5, line: 0, column: 5 },
+            end: { offset: 11, line: 0, column: 11 },
+          },
+        },
+        {
+          kind: "string",
+          range: {
+            start: { offset: 14, line: 2, column: 2 },
+            end: { offset: 20, line: 2, column: 8 },
+          },
+        },
+      ])],
+    ).toEqual([
+      0, 0, 4, 2, 0,
+      0, 5, 6, 1, 0,
+      2, 2, 6, 5, 0,
     ]);
   });
 });

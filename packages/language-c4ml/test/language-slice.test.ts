@@ -13,6 +13,7 @@ import {
   completeC4mlDraft,
   defaultSystemContextWizardAnswers,
   generateSystemContextDraft,
+  highlightC4mlDraft,
   parseC4mlDraft,
 } from "../src/index.js";
 
@@ -327,6 +328,57 @@ describe("C4ML draft-1 completion contract", () => {
     await expect(
       completeC4mlDraft("c4ml draft-1", { offset: 99 }),
     ).rejects.toThrow("Completion offset must be inside the source text.");
+  });
+});
+
+describe("C4ML draft-1 highlighting contract", () => {
+  it("classifies source spans with the authoritative lexer", () => {
+    const source = [
+      "c4ml draft-1",
+      "// Original C4ML fixture",
+      "model {",
+      '  person gardener { name = "Garden Keeper" }',
+      "}",
+    ].join("\n");
+
+    const highlights = highlightC4mlDraft(source);
+    const highlighted = highlights.map(({ kind, range }) => ({
+      kind,
+      text: source.slice(range.start.offset, range.end.offset),
+    }));
+
+    expect(highlighted).toContainEqual({ kind: "keyword", text: "c4ml" });
+    expect(highlighted).toContainEqual({ kind: "keyword", text: "person" });
+    expect(highlighted).toContainEqual({
+      kind: "comment",
+      text: "// Original C4ML fixture",
+    });
+    expect(highlighted).toContainEqual({
+      kind: "identifier",
+      text: "gardener",
+    });
+    expect(highlighted).toContainEqual({ kind: "operator", text: "=" });
+    expect(highlighted).toContainEqual({
+      kind: "string",
+      text: '"Garden Keeper"',
+    });
+  });
+
+  it("keeps recovered tokens available while source is incomplete", () => {
+    const source = 'model { software-system garden { name = "unfinished';
+    const highlights = highlightC4mlDraft(source);
+
+    expect(
+      highlights.map(({ kind, range }) => ({
+        kind,
+        text: source.slice(range.start.offset, range.end.offset),
+      })),
+    ).toEqual(
+      expect.arrayContaining([
+        { kind: "keyword", text: "model" },
+        { kind: "identifier", text: "garden" },
+      ]),
+    );
   });
 });
 

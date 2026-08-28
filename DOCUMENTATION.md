@@ -96,7 +96,9 @@ its source range. Normal Monaco undo/redo remains synchronized with hot
 compilation. The preview can be zoomed, fitted, scrolled while enlarged, and
 downloaded as SVG. Documents with several executable views expose a view
 selector; changing it recompiles the selected projection without duplicating
-the model. C4ML syntax highlighting is a remaining production capability.
+the model. Syntax colors come from the C4ML lexer's source spans through the
+same worker, while automatic preview geometry comes from the local ELK.js
+browser worker.
 
 An original Container View can also be exported through the current internal
 TypeScript-fed reference path:

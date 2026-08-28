@@ -62,6 +62,10 @@ Implemented and automatically validated:
   worker's context-valid completions, applies exact source edits, displays
   inline diagnostic markers, supports keyboard undo/redo, and navigates from
   diagnostics to source;
+- lexer-owned C4ML syntax highlighting presented through Monaco semantic
+  tokens without a second editor grammar;
+- an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
+  browser-worker entry points behind the shared layout contract;
 - selectable views, plus zoom, fit, scroll-pan, and local SVG export;
 - a bounded three-step wizard that previews and generates a new executable
   System Context document with cancel and undo;
@@ -77,8 +81,8 @@ Not implemented yet:
 - complete render validation for all seven view types;
 - a bundled reproducible font and frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
-- the remaining production editor capabilities: C4ML syntax highlighting,
-  bidirectional source/preview element navigation, PNG export, persistence, and
+- the remaining production editor capabilities: bidirectional source/preview
+  element navigation, PNG export, persistence, and
   graphical source editing; and
 - the complete guided modeling wizard for Containers, Components, Code,
   deployments, Visual Groups, and safe extension of existing documents.

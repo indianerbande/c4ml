@@ -3,15 +3,19 @@ import { DestroyRef, Injectable, inject, signal } from "@angular/core";
 import {
   isCompletionWorkerResponse,
   isCompilerWorkerResponse,
+  isHighlightWorkerResponse,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
   type CompletionWorkerCandidate,
   type CompletionWorkerResponse,
+  type HighlightWorkerResponse,
+  type HighlightWorkerSpan,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import {
   EditorCompilationSession,
   EditorCompletionSession,
+  EditorHighlightSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   type EditorCompilationState,
@@ -25,6 +29,7 @@ export class CompilerWorkerClient {
   readonly #sequence = new EditorRequestSequence();
   readonly #session = new EditorCompilationSession(this.#sequence);
   readonly #completionSession = new EditorCompletionSession(this.#sequence);
+  readonly #highlightSession = new EditorHighlightSession(this.#sequence);
   readonly #wizardSession = new EditorWizardGenerationSession(this.#sequence);
   readonly #worker = new Worker(new URL("./compiler.worker", import.meta.url), {
     name: "c4ml-compiler",
@@ -67,6 +72,12 @@ export class CompilerWorkerClient {
     return result;
   }
 
+  highlight(source: string): Promise<readonly HighlightWorkerSpan[]> {
+    const { request, result } = this.#highlightSession.beginAsync(source);
+    this.#worker.postMessage(request);
+    return result;
+  }
+
   generateSystemContext(answers: C4mlSystemContextWizardAnswers): void {
     const request = this.#wizardSession.begin(answers);
     this.wizard.set(this.#wizardSession.state);
@@ -78,6 +89,8 @@ export class CompilerWorkerClient {
       this.#acceptCompilation(event.data);
     } else if (isCompletionWorkerResponse(event.data)) {
       this.#acceptCompletion(event.data);
+    } else if (isHighlightWorkerResponse(event.data)) {
+      this.#acceptHighlight(event.data);
     } else if (isWizardWorkerResponse(event.data)) {
       this.#acceptWizard(event.data);
     }
@@ -88,6 +101,7 @@ export class CompilerWorkerClient {
     this.#completionSession.failActive(
       "The language worker stopped unexpectedly.",
     );
+    this.#highlightSession.failActive();
     this.#wizardSession.failActive("The source generator stopped unexpectedly.");
     this.state.set(this.#session.state);
     this.completion.set(this.#completionSession.state);
@@ -104,6 +118,10 @@ export class CompilerWorkerClient {
     if (this.#completionSession.accept(response)) {
       this.completion.set(this.#completionSession.state);
     }
+  }
+
+  #acceptHighlight(response: HighlightWorkerResponse): void {
+    this.#highlightSession.accept(response);
   }
 
   #acceptWizard(response: WizardWorkerResponse): void {
