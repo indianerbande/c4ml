@@ -161,7 +161,11 @@ export function svgWithNavigationHighlight(
   }
   const style = selectionStyle(target);
   const debug = selectionOverlay(target, options);
-  const overlay = `<style id="c4ml-editor-selection">${style}</style>${debug}`;
+  const selectionCss =
+    style.length === 0
+      ? ""
+      : `<style id="c4ml-editor-selection">${style}</style>`;
+  const overlay = `${selectionCss}${debug}`;
   return svg.includes("</svg>") ? svg.replace("</svg>", `${overlay}</svg>`) : svg;
 }
 
@@ -261,10 +265,6 @@ function distanceToSegment(
   );
 }
 
-function nodeSelectionStyle(svgElementId: string): string {
-  return `#${svgElementId} .element-surface,#${svgElementId} .boundary-surface{stroke:#F59E0B!important;stroke-width:5!important;}`;
-}
-
 function routeSelectionStyle(svgElementIds: readonly string[]): string {
   const [pathId, arrowheadId] = svgElementIds;
   return `#${pathId}{stroke:#F59E0B!important;stroke-width:5!important;}#${arrowheadId}{fill:#F59E0B!important;stroke:#F59E0B!important;}`;
@@ -273,7 +273,7 @@ function routeSelectionStyle(svgElementIds: readonly string[]): string {
 function selectionStyle(target: CompilerWorkerNavigationTarget): string {
   switch (target.kind) {
     case "node":
-      return nodeSelectionStyle(target.svgElementIds[0]!);
+      return "";
     case "route":
       return routeSelectionStyle(target.svgElementIds);
     case "route-label":
@@ -300,8 +300,25 @@ function selectionOverlay(
     case "corridor":
       return `<g id="c4ml-editor-detail-selection" aria-hidden="true" pointer-events="none"><line x1="${number(target.points[0].x)}" y1="${number(target.points[0].y)}" x2="${number(target.points[1].x)}" y2="${number(target.points[1].y)}" stroke="#F59E0B" stroke-width="4" stroke-dasharray="9 5" opacity=".82"/></g>`;
     case "node":
-      return "";
+      return nodeSelectionOverlay(target);
   }
+}
+
+function nodeSelectionOverlay(
+  target: CompilerWorkerNodeNavigationTarget,
+): string {
+  const x = target.bounds.x - 5;
+  const y = target.bounds.y - 5;
+  const right = target.bounds.x + target.bounds.width + 5;
+  const bottom = target.bounds.y + target.bounds.height + 5;
+  const corner = Math.min(18, target.bounds.width / 4, target.bounds.height / 4);
+  const path = [
+    `M ${number(x)} ${number(y + corner)} V ${number(y)} H ${number(x + corner)}`,
+    `M ${number(right - corner)} ${number(y)} H ${number(right)} V ${number(y + corner)}`,
+    `M ${number(right)} ${number(bottom - corner)} V ${number(bottom)} H ${number(right - corner)}`,
+    `M ${number(x + corner)} ${number(bottom)} H ${number(x)} V ${number(bottom - corner)}`,
+  ].join(" ");
+  return `<g id="c4ml-editor-node-selection" aria-hidden="true" pointer-events="none"><path d="${path}" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g>`;
 }
 
 function routeDebugOverlay(

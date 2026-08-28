@@ -51,7 +51,7 @@
 .section-heading p {
   margin: 0;
   color: var(--accent);
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -63,14 +63,14 @@
 }
 
 .settings-header h2 {
-  font-size: 21px;
+  font-size: 2.1rem;
 }
 
 .settings-header p:last-child,
 .section-heading span,
 .settings-footer > span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 1.2rem;
   line-height: 1.45;
 }
 
@@ -90,7 +90,7 @@
   background: var(--control-bg);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 23px;
+  font-size: 2.3rem;
 }
 
 .settings-body {
@@ -135,11 +135,11 @@
 }
 
 .settings-navigation strong {
-  font-size: 12px;
+  font-size: 1.2rem;
 }
 
 .settings-navigation span {
-  font-size: 10px;
+  font-size: 1rem;
 }
 
 .settings-content {
@@ -159,7 +159,7 @@
 }
 
 .section-heading h3 {
-  font-size: 17px;
+  font-size: 1.7rem;
 }
 
 .section-heading span {
@@ -207,12 +207,12 @@
 }
 
 .scheme-options strong {
-  font-size: 12px;
+  font-size: 1.2rem;
 }
 
 .scheme-options small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
 }
 
 .scheme-preview {
@@ -276,12 +276,12 @@ label[data-scheme="system"] .scheme-preview i:last-child {
 }
 
 .setting-row label strong {
-  font-size: 13px;
+  font-size: 1.3rem;
 }
 
 .setting-row label span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 1.1rem;
   line-height: 1.4;
 }
 
@@ -293,7 +293,14 @@ label[data-scheme="system"] .scheme-preview i:last-child {
   background: var(--control-bg);
   color: var(--control-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: 1.2rem;
+}
+
+.setting-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  accent-color: var(--accent);
 }
 
 .font-size-control {
@@ -312,7 +319,7 @@ label[data-scheme="system"] .scheme-preview i:last-child {
   min-width: 58px;
   color: var(--control-ink);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
+  font-size: 1.1rem;
   text-align: right;
 }
 
@@ -344,7 +351,7 @@ label[data-scheme="system"] .scheme-preview i:last-child {
   padding: 0 13px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 

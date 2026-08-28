@@ -48,7 +48,7 @@ input {
   border-radius: 8px;
   background: linear-gradient(145deg, #0d668a, #1598b2);
   color: white;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
   box-shadow: 0 5px 12px rgba(21, 124, 163, 0.2);
 }
@@ -60,14 +60,14 @@ input {
 
 .brand strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 1.3rem;
   letter-spacing: 0.03em;
 }
 
 .brand small {
   overflow: hidden;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.9rem;
   letter-spacing: 0.05em;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -98,12 +98,12 @@ input {
 .command-center > span {
   color: var(--accent);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
 .command-center strong {
-  font-size: 10.5px;
+  font-size: 1.05rem;
   font-weight: 500;
 }
 
@@ -114,7 +114,7 @@ kbd {
   background: var(--surface-subtle);
   color: var(--muted);
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 9px;
+  font-size: 0.9rem;
 }
 
 .title-actions {
@@ -131,7 +131,7 @@ kbd {
   padding: 0 10px;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -162,7 +162,7 @@ kbd {
   min-height: 30px;
   padding: 0 9px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -197,7 +197,7 @@ kbd {
 
 .activity-bar {
   display: grid;
-  grid-template-rows: repeat(3, 48px) 1fr 48px;
+  grid-template-rows: repeat(4, 48px) 1fr 48px;
   min-height: 0;
   border-right: 1px solid var(--line-strong);
   background: var(--navigation-bg);
@@ -232,7 +232,7 @@ kbd {
   place-items: center;
   border: 1px solid currentColor;
   border-radius: 8px 8px 8px 3px;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -268,7 +268,7 @@ kbd {
 .side-bar > header p {
   margin: 0 0 2px;
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -277,7 +277,7 @@ kbd {
 .side-bar > header h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 1.3rem;
   font-weight: 650;
 }
 
@@ -289,7 +289,7 @@ kbd {
 .side-section h3 {
   margin: 7px 7px;
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -308,7 +308,7 @@ kbd {
   border-radius: 5px;
   background: transparent;
   color: var(--control-ink);
-  font-size: 10.5px;
+  font-size: 1.05rem;
   text-align: left;
 }
 
@@ -330,7 +330,7 @@ button.tree-row {
 
 .tree-row i {
   color: var(--accent);
-  font-size: 6px;
+  font-size: 0.6rem;
   font-style: normal;
 }
 
@@ -342,7 +342,7 @@ button.tree-row {
   border-radius: 4px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 7px;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -372,7 +372,7 @@ button.tree-row {
   background: var(--control-bg);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
   text-align: left;
 }
@@ -414,19 +414,19 @@ button.tree-row {
   border: 1px solid var(--line-strong);
   border-radius: 50%;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.9rem;
 }
 
 .diagram-row strong {
   overflow: hidden;
-  font-size: 10.5px;
+  font-size: 1.05rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .diagram-row small {
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
 }
 
 .diagram-row:hover,
@@ -445,8 +445,137 @@ button.tree-row {
 .side-empty {
   margin: 8px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
   line-height: 1.45;
+}
+
+.help-search {
+  padding: 8px 10px 11px;
+}
+
+.help-search input {
+  width: 100%;
+  height: 31px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  outline: 0;
+}
+
+.help-search input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.context-help {
+  display: grid;
+  gap: 4px;
+}
+
+.context-help button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+  padding: 8px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--control-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.context-help button > span {
+  grid-row: 1 / 3;
+  color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+}
+
+.context-help button strong {
+  color: var(--accent-strong);
+  font-size: 1rem;
+}
+
+.context-help button small {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.context-help button:hover,
+.context-help button:focus-visible {
+  background: var(--control-hover);
+  outline: 2px solid var(--focus-ring);
+}
+
+.help-tree {
+  padding-bottom: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.help-tree details {
+  border-bottom: 1px solid var(--line);
+}
+
+.help-tree summary {
+  padding: 9px 13px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  list-style-position: inside;
+  text-transform: uppercase;
+}
+
+.help-tree summary:hover,
+.help-tree summary:focus-visible {
+  background: var(--control-hover);
+  color: var(--accent);
+  outline: 0;
+}
+
+.help-tree details > button {
+  display: grid;
+  width: calc(100% - 12px);
+  gap: 2px;
+  margin: 0 6px 5px;
+  padding: 7px 8px 8px 21px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--control-ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.help-tree details > button strong {
+  font-size: 0.96rem;
+}
+
+.help-tree details > button small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.help-tree details > button:hover,
+.help-tree details > button:focus-visible,
+.help-tree details > button.is-selected {
+  background: var(--control-hover);
+  color: var(--accent-strong);
+  outline: 0;
+}
+
+.help-tree details > button.is-selected {
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .export-card {
@@ -461,7 +590,7 @@ button.tree-row {
 
 .export-card > span {
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -469,13 +598,13 @@ button.tree-row {
 
 .export-card > strong {
   color: var(--ink);
-  font-size: 16px;
+  font-size: 1.6rem;
 }
 
 .export-card p {
   margin: 0 0 2px;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
@@ -484,7 +613,7 @@ button.tree-row {
   align-items: center;
   justify-content: space-between;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 0.95rem;
 }
 
 .export-card select {
@@ -560,7 +689,7 @@ button.tree-row {
   border-right: 1px solid var(--line);
   background: var(--surface-subtle);
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 1.05rem;
 }
 
 button.editor-tab {
@@ -581,7 +710,7 @@ button.editor-tab {
 
 .dirty-indicator {
   color: var(--accent);
-  font-size: 6px;
+  font-size: 0.6rem;
   font-style: normal;
 }
 
@@ -597,7 +726,7 @@ button.editor-tab {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -609,6 +738,23 @@ button.editor-tab {
   border: 1px solid var(--accent);
   border-radius: 4px;
   box-shadow: 4px 4px 0 -2px var(--panel), 4px 4px 0 -1px var(--accent-border);
+}
+
+.help-tab {
+  max-width: 320px;
+}
+
+.help-tab-mark {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .source-editor-host {
@@ -630,7 +776,7 @@ button.editor-tab {
   border-top: 1px solid var(--source-border);
   background: var(--source-status);
   color: var(--source-muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -655,7 +801,7 @@ button.editor-tab {
   background: transparent;
   color: var(--source-action);
   cursor: pointer;
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: inherit;
   text-transform: inherit;
@@ -670,7 +816,7 @@ button.editor-tab {
 
 .editor-status small {
   color: var(--source-muted);
-  font-size: 8px;
+  font-size: 0.8rem;
 }
 
 .completion-error {
@@ -703,7 +849,7 @@ button.editor-tab {
   border: 1px solid var(--line);
   background: var(--control-bg);
   color: var(--control-ink);
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
@@ -761,7 +907,7 @@ button.editor-tab {
   position: relative;
   display: grid;
   min-height: 0;
-  place-items: center;
+  place-items: start;
   overflow: auto;
   padding: 24px;
   background-color: var(--preview-stage);
@@ -773,6 +919,7 @@ button.editor-tab {
   display: block;
   width: 100%;
   height: 100%;
+  margin: auto;
   object-fit: contain;
   transition: width 130ms ease-out, height 130ms ease-out;
   filter: drop-shadow(0 8px 15px rgba(28, 50, 72, 0.1));
@@ -789,12 +936,12 @@ button.editor-tab {
   gap: 7px;
   color: var(--muted);
   text-align: center;
-  font-size: 11px;
+  font-size: 1.1rem;
 }
 
 .empty-preview strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 1.3rem;
 }
 
 .empty-glyph {
@@ -814,7 +961,7 @@ button.editor-tab {
   margin: 0;
   padding: 6px 9px;
   border-radius: 6px;
-  font-size: 9.5px;
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
@@ -855,7 +1002,7 @@ button.editor-tab {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -874,7 +1021,7 @@ button.editor-tab {
 }
 
 .panel-tabs .panel-close {
-  font-size: 15px;
+  font-size: 1.5rem;
   font-weight: 400;
 }
 
@@ -886,7 +1033,7 @@ button.editor-tab {
 .diagnostics-empty {
   margin: 18px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
 }
 
 .diagnostics ol {
@@ -925,7 +1072,7 @@ button.editor-tab {
 
 .diagnostics code {
   color: var(--danger);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
@@ -933,14 +1080,14 @@ button.editor-tab {
   margin: 0;
   overflow: hidden;
   color: var(--ink);
-  font-size: 9.5px;
+  font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .diagnostics small {
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
 }
 
 .route-inspector {
@@ -951,7 +1098,7 @@ button.editor-tab {
   overflow: auto;
   padding: 12px 16px;
   color: var(--control-ink);
-  font-size: 9.5px;
+  font-size: 0.95rem;
 }
 
 .route-inspector-title {
@@ -963,7 +1110,7 @@ button.editor-tab {
 .route-inspector-title span,
 .route-inspector dt {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -971,7 +1118,7 @@ button.editor-tab {
 
 .route-inspector-title strong {
   color: var(--ink);
-  font-size: 11px;
+  font-size: 1.1rem;
 }
 
 .route-inspector dl {
@@ -1003,7 +1150,7 @@ button.editor-tab {
   border-top: 1px solid var(--accent-strong);
   background: var(--accent);
   color: white;
-  font-size: 8.5px;
+  font-size: 0.85rem;
   letter-spacing: 0.02em;
 }
 
@@ -1067,7 +1214,7 @@ button.editor-tab {
   outline: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 1.2rem;
 }
 
 .command-results {
@@ -1102,12 +1249,12 @@ button.editor-tab {
 .command-results button > span {
   display: grid;
   gap: 1px;
-  font-size: 10.5px;
+  font-size: 1.05rem;
 }
 
 .command-results small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1116,7 +1263,7 @@ button.editor-tab {
 .command-results p {
   margin: 14px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
 }
 
 .sr-only {

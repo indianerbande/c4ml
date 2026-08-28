@@ -15,6 +15,7 @@ import type {
   WorkbenchEditorFontFamily,
   WorkbenchUiLanguage,
 } from "./workbench-preferences.js";
+import { workbenchEditorFontFamilyOptions } from "./workbench-preferences.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 
@@ -42,6 +43,7 @@ export class SettingsPanelComponent {
   readonly preferences = inject(WorkbenchPreferencesService);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly closed = output<void>();
+  readonly editorFontFamilyOptions = workbenchEditorFontFamilyOptions;
   readonly categories = computed<readonly SettingsCategory[]>(() => [
     {
       id: "appearance",
@@ -109,6 +111,22 @@ export class SettingsPanelComponent {
     this.preferences.setEditorFontFamily(
       target.value as WorkbenchEditorFontFamily,
     );
+  }
+
+  setFontLigatures(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    this.preferences.setEditorFontLigatures(target.checked);
+  }
+
+  setInterfaceFontSize(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    this.preferences.setInterfaceFontSize(target.valueAsNumber);
   }
 
   setFontSize(event: Event): void {

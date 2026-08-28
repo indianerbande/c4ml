@@ -11,6 +11,8 @@ import {
   type HighlightWorkerRequest,
   type HighlightWorkerResponse,
   type HighlightWorkerSpan,
+  type HelpWorkerRequest,
+  type HelpWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
@@ -18,6 +20,7 @@ import type {
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
+import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
 
 export class EditorRequestSequence {
   #nextRequestId = 0;
@@ -285,6 +288,80 @@ export class EditorHighlightSession {
     const resolve = this.#resolvePending;
     this.#resolvePending = undefined;
     resolve?.(highlights);
+  }
+}
+
+export type EditorHelpPhase = "failed" | "idle" | "loading" | "ready";
+
+export interface EditorHelpState {
+  readonly phase: EditorHelpPhase;
+  readonly activeRequestId: number;
+  readonly offset: number;
+  readonly topicId: C4mlHelpTopicId;
+  readonly message: string | undefined;
+}
+
+const initialHelpState: EditorHelpState = {
+  phase: "idle",
+  activeRequestId: 0,
+  offset: 0,
+  topicId: "getting-started",
+  message: undefined,
+};
+
+export class EditorHelpSession {
+  #state = initialHelpState;
+
+  constructor(
+    readonly sequence = new EditorRequestSequence(),
+  ) {}
+
+  get state(): EditorHelpState {
+    return this.#state;
+  }
+
+  begin(
+    source: string,
+    offset: number,
+    file = "editor.c4ml",
+  ): HelpWorkerRequest {
+    const requestId = this.sequence.next();
+    this.#state = {
+      ...this.#state,
+      phase: "loading",
+      activeRequestId: requestId,
+      offset,
+      message: undefined,
+    };
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "help-context",
+      requestId,
+      file,
+      source,
+      offset,
+    };
+  }
+
+  accept(response: HelpWorkerResponse): boolean {
+    if (response.requestId !== this.#state.activeRequestId) {
+      return false;
+    }
+    this.#state = {
+      ...this.#state,
+      phase: response.status === "complete" ? "ready" : "failed",
+      topicId: response.topicId,
+      message: response.message,
+    };
+    return true;
+  }
+
+  failActive(message: string): void {
+    this.#state = {
+      ...this.#state,
+      phase: "failed",
+      message,
+    };
   }
 }
 

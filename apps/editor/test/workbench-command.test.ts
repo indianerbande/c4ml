@@ -18,6 +18,8 @@ describe("workbench command catalogue", () => {
     expect(
       filterWorkbenchCommands("settings", true).map(({ id }) => id),
     ).toEqual(["settings.open"]);
+    expect(filterWorkbenchCommands("help cursor", true).map(({ id }) => id))
+      .toEqual(["help.context"]);
   });
 
   it("does not offer native-only commands in the browser path", () => {
@@ -36,5 +38,8 @@ describe("workbench command catalogue", () => {
         ({ id }) => id,
       ),
     ).toEqual(["settings.open"]);
+    expect(
+      filterWorkbenchCommands("hilfe cursor", true, "de").map(({ id }) => id),
+    ).toEqual(["help.context"]);
   });
 });

@@ -11,6 +11,7 @@ import {
   type CompilerWorkerRequest,
   type CompletionWorkerRequest,
   type HighlightWorkerRequest,
+  type HelpWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -18,6 +19,7 @@ import {
   completeWorkerRequest,
   generateWorkerRequest,
   highlightWorkerRequest,
+  helpWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -109,6 +111,21 @@ function highlightRequest(
     requestId,
     file: "editor.c4ml",
     source,
+  };
+}
+
+function helpRequest(
+  source: string,
+  offset: number,
+  requestId = 1,
+): HelpWorkerRequest {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "help-context",
+    requestId,
+    file: "editor.c4ml",
+    source,
+    offset,
   };
 }
 
@@ -323,6 +340,22 @@ describe("compiler worker runtime", () => {
         expect.objectContaining({ kind: "operator" }),
       ]),
     );
+  });
+
+  it("returns a stable help topic from the language worker", async () => {
+    const offset = initialC4mlSource.indexOf("route caretaker-reviews-plan") + 8;
+    const result = await helpWorkerRequest(
+      helpRequest(initialC4mlSource, offset),
+    );
+
+    expect(result).toEqual({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "help-context-result",
+      requestId: 1,
+      status: "complete",
+      topicId: "routes",
+      message: undefined,
+    });
   });
 
   it("generates wizard source that compiles through the normal worker path", async () => {

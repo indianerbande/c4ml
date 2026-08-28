@@ -70,6 +70,17 @@
       >
         <span aria-hidden="true">X</span>
       </button>
+      <button
+        type="button"
+        [class.is-active]="activeActivity() === 'help'"
+        [attr.aria-current]="activeActivity() === 'help' ? 'page' : null"
+        data-activity="help"
+        [attr.aria-label]="i18n.t('area.help')"
+        [title]="i18n.t('area.help')"
+        (click)="selectActivity('help')"
+      >
+        <span aria-hidden="true">?</span>
+      </button>
       <span class="activity-spacer"></span>
       <button
         #settingsButton
@@ -194,6 +205,52 @@
             </section>
           }
         }
+
+        @case ("help") {
+          <header>
+            <p>{{ i18n.t("help.eyebrow") }}</p>
+            <h2>{{ i18n.t("help.title") }}</h2>
+          </header>
+          <section class="side-section help-search">
+            <label>
+              <span class="sr-only">{{ i18n.t("help.search") }}</span>
+              <input
+                type="search"
+                [value]="helpQuery()"
+                (input)="updateHelpQuery($event)"
+                [placeholder]="i18n.t('help.search')"
+                [attr.aria-label]="i18n.t('help.search')"
+              />
+            </label>
+          </section>
+          <section class="side-section context-help">
+            <h3>{{ i18n.t("help.atCursor") }}</h3>
+            <button type="button" (click)="openContextHelp()">
+              <span aria-hidden="true">›_</span>
+              <strong>{{ contextHelpTopic().title }}</strong>
+              <small>{{ i18n.t("help.atCursorHint") }}</small>
+            </button>
+          </section>
+          <nav class="help-tree" [attr.aria-label]="i18n.t('help.title')">
+            @for (category of filteredHelpCategories(); track category.id) {
+              <details [open]="helpQuery().trim().length > 0 || category.id === 'start'">
+                <summary>{{ category.title }}</summary>
+                @for (topic of category.topics; track topic.id) {
+                  <button
+                    type="button"
+                    [class.is-selected]="activeHelpTopicId() === topic.id && rightPaneMode() === 'help'"
+                    (click)="openHelpTopic(topic.id)"
+                  >
+                    <strong>{{ topic.title }}</strong>
+                    <small>{{ topic.summary }}</small>
+                  </button>
+                }
+              </details>
+            } @empty {
+              <p class="side-empty">{{ i18n.t("help.noResults") }}</p>
+            }
+          </nav>
+        }
       }
     </aside>
 
@@ -221,6 +278,7 @@
             [highlightProvider]="provideHighlights"
             [colorScheme]="preferences.effectiveColorScheme()"
             [editorFontFamily]="preferences.editorFontFamilyCss()"
+            [editorFontLigatures]="preferences.editorFontLigatures()"
             [editorFontSize]="preferences.editorFontSize()"
             (valueChanged)="onSourceChange($event)"
             (selectionChanged)="onSourceSelection($event)"
@@ -250,13 +308,32 @@
         </section>
 
         <section class="editor-group preview-group" aria-labelledby="preview-heading">
-          <div class="tab-strip preview-tab-strip">
-            <div class="editor-tab is-active">
+          <div class="tab-strip preview-tab-strip" role="tablist">
+            <button
+              type="button"
+              class="editor-tab"
+              role="tab"
+              [class.is-active]="rightPaneMode() === 'diagram'"
+              [attr.aria-selected]="rightPaneMode() === 'diagram'"
+              (click)="showDiagram()"
+            >
               <span class="diagram-tab-mark" aria-hidden="true"></span>
               <span id="preview-heading">{{ activeViewTitle() }}</span>
-            </div>
+            </button>
+            <button
+              type="button"
+              class="editor-tab help-tab"
+              role="tab"
+              [class.is-active]="rightPaneMode() === 'help'"
+              [attr.aria-selected]="rightPaneMode() === 'help'"
+              (click)="openHelpTopic(activeHelpTopicId())"
+            >
+              <span class="help-tab-mark" aria-hidden="true">?</span>
+              <span>{{ i18n.t("help.handbookTab") }} · {{ activeHelpTopic().title }}</span>
+            </button>
             <span class="tab-fill"></span>
-            <div class="preview-actions" [attr.aria-label]="i18n.t('preview.controls')">
+            @if (rightPaneMode() === "diagram") {
+              <div class="preview-actions" [attr.aria-label]="i18n.t('preview.controls')">
               @if (compiler.state().views.length > 1) {
                 <label class="view-picker">
                   <span class="sr-only">{{ i18n.t("preview.selectView") }}</span>
@@ -288,10 +365,19 @@
               >
                 {{ i18n.t("preview.routes") }}
               </button>
-            </div>
+              </div>
+            }
           </div>
 
-          <div class="preview-stage">
+          @if (rightPaneMode() === "help") {
+            <c4ml-help-article
+              [topic]="activeHelpTopic()"
+              [availabilityLabel]="i18n.t('help.available')"
+              role="tabpanel"
+              [attr.aria-label]="i18n.t('help.articleLabel')"
+            />
+          } @else {
+            <div class="preview-stage" role="tabpanel">
             @if (previewUrl(); as url) {
               <img
                 class="diagram"
@@ -323,7 +409,8 @@
                 {{ i18n.t("preview.selected", { kind: selectedKindLabel(), label }) }}
               </p>
             }
-          </div>
+            </div>
+          }
         </section>
       </div>
 

@@ -7,6 +7,7 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const acceptedMonacoVersion = "0.56.0";
 const acceptedElkVersion = "0.12.0";
 const acceptedPlexVersion = "0.0.0";
+const acceptedEditorMonoVersion = "0.0.0";
 const editorRoot = join(repositoryRoot, "apps", "editor");
 const installedMonacoRoot = join(
   editorRoot,
@@ -20,6 +21,12 @@ const installedPlexRoot = join(
   "@c4ml",
   "font-ibm-plex",
 );
+const installedEditorMonoRoot = join(
+  editorRoot,
+  "node_modules",
+  "@c4ml",
+  "font-editor-mono",
+);
 const editorBuildRoot = join(repositoryRoot, "build", "editor");
 
 const editorManifest = await readJson(join(editorRoot, "package.json"));
@@ -31,6 +38,9 @@ const installedElkManifest = await readJson(
 );
 const installedPlexManifest = await readJson(
   join(installedPlexRoot, "package.json"),
+);
+const installedEditorMonoManifest = await readJson(
+  join(installedEditorMonoRoot, "package.json"),
 );
 
 assertEqual(
@@ -47,6 +57,11 @@ assertEqual(
   editorManifest.dependencies?.["@c4ml/font-ibm-plex"],
   "workspace:*",
   "apps/editor must use the reviewed local IBM Plex asset package",
+);
+assertEqual(
+  editorManifest.dependencies?.["@c4ml/font-editor-mono"],
+  "workspace:*",
+  "apps/editor must use the reviewed local editor font asset package",
 );
 assertEqual(
   installedElkManifest.version,
@@ -77,6 +92,16 @@ assertEqual(
   installedPlexManifest.license,
   "OFL-1.1",
   "the reviewed IBM Plex asset package must remain OFL-1.1",
+);
+assertEqual(
+  installedEditorMonoManifest.version,
+  acceptedEditorMonoVersion,
+  "the installed editor font asset package must match the reviewed workspace version",
+);
+assertEqual(
+  installedEditorMonoManifest.license,
+  "OFL-1.1 AND MIT AND Bitstream-Vera",
+  "the editor font package must retain its reviewed aggregate license expression",
 );
 
 await requireFile(
@@ -212,6 +237,64 @@ for (const [relativePath, expectedHash] of Object.entries(reviewedPlexAssets)) {
   );
 }
 
+const reviewedEditorMonoAssets = {
+  "fira-code/FiraCode-Regular.woff2":
+    "a6ce59520b90e15d7062ffef214f94c8add5a4085c0bbb1683602ef227a4d1fe",
+  "hack/hack-regular.woff2":
+    "0b0ef254dfc7afc172528e3166eace813989e1cf77f576ddae5f5e8fb2897c06",
+  "source-code-pro/SourceCodePro-Regular.ttf.woff2":
+    "714eee29b70d191f5bf4b3a06b68f2c50522b1303d31c7d44dcefdcc5f9defd0",
+  "intel-one-mono/IntelOneMono-Regular.woff2":
+    "cf33e6d7cc78ea0f159a311bf7f5cc9d0a64b324c28b6a8919986d748d86e458",
+  "inconsolata/Inconsolata-Regular.ttf":
+    "127875d255d4c5973ca57267a43bb9d1c04397e6c7d236984a595b6cdcb12b7c",
+  "cascadia-code/CascadiaCode-Regular.woff2":
+    "55e460d6c9345a4769ed28fc9f01ecc2160a10e95080523f3d340a0d208288c8",
+};
+for (const [relativePath, expectedHash] of Object.entries(
+  reviewedEditorMonoAssets,
+)) {
+  const upstreamAsset = join(installedEditorMonoRoot, "fonts", relativePath);
+  const packagedAsset = join(
+    editorBuildRoot,
+    "browser",
+    "fonts",
+    "editor-mono",
+    relativePath,
+  );
+  await assertHash(
+    upstreamAsset,
+    expectedHash,
+    `Reviewed editor font asset changed: ${relativePath}`,
+  );
+  await assertSameFile(
+    upstreamAsset,
+    packagedAsset,
+    `Editor packaging changed editor font asset ${relativePath}`,
+  );
+}
+
+for (const filename of [
+  "FiraCode-LICENSE.txt",
+  "Hack-LICENSE.md",
+  "SourceCodePro-LICENSE.md",
+  "IntelOneMono-OFL.txt",
+  "Inconsolata-OFL.txt",
+  "CascadiaCode-LICENSE.txt",
+]) {
+  await assertSameFile(
+    join(installedEditorMonoRoot, "licenses", filename),
+    join(
+      editorBuildRoot,
+      "browser",
+      "third-party",
+      "editor-mono",
+      filename,
+    ),
+    `Editor packaging changed editor font license ${filename}`,
+  );
+}
+
 const generatedLicenseInventory = await readFile(
   join(editorBuildRoot, "3rdpartylicenses.txt"),
   "utf8",
@@ -233,7 +316,7 @@ for (const packageName of [
 }
 
 console.log(
-  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets).`,
+  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts).`,
 );
 
 async function readJson(path) {

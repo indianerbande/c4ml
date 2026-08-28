@@ -16,6 +16,7 @@ import type {
   CompilerWorkerNavigationTarget,
   CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
+import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
 import { initialC4mlSource } from "./initial-source.js";
@@ -36,6 +37,11 @@ import type {
 } from "./source-editor.contract.js";
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
+import { HelpArticleComponent } from "./help-article.component.js";
+import {
+  helpCategories,
+  helpTopic,
+} from "./help-content.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import {
@@ -55,6 +61,7 @@ import type {
   styleUrl: "./app.component.css",
   imports: [
     C4mlMonacoSourceEditorComponent,
+    HelpArticleComponent,
     SettingsPanelComponent,
     SystemContextWizardComponent,
   ],
@@ -78,6 +85,10 @@ export class AppComponent {
   readonly settingsOpen = signal(false);
   readonly commandPaletteOpen = signal(false);
   readonly commandQuery = signal("");
+  readonly helpQuery = signal("");
+  readonly activeHelpTopicId = signal<C4mlHelpTopicId>("getting-started");
+  readonly rightPaneMode = signal<"diagram" | "help">("diagram");
+  readonly sourceCursorOffset = signal(0);
   readonly canUndoWizard = signal(false);
   readonly settingsButton = viewChild<ElementRef<HTMLButtonElement>>(
     "settingsButton",
@@ -154,6 +165,15 @@ export class AppComponent {
       this.desktopAvailable,
       this.preferences.uiLanguage(),
     ),
+  );
+  readonly filteredHelpCategories = computed(() =>
+    helpCategories(this.i18n.language(), this.helpQuery()),
+  );
+  readonly activeHelpTopic = computed(() =>
+    helpTopic(this.i18n.language(), this.activeHelpTopicId()),
+  );
+  readonly contextHelpTopic = computed(() =>
+    helpTopic(this.i18n.language(), this.compiler.help().topicId),
   );
   readonly activeViewTitle = computed(
     () =>
@@ -262,6 +282,7 @@ export class AppComponent {
       this.#desktop?.setUiLanguage(this.preferences.uiLanguage());
     });
     this.compiler.compile(this.source(), undefined, this.documentName());
+    this.compiler.resolveHelpContext(this.source(), 0);
   }
 
   @HostListener("document:keydown", ["$event"])
@@ -273,6 +294,14 @@ export class AppComponent {
     } else if (event.key === "Escape" && this.commandPaletteOpen()) {
       event.preventDefault();
       this.closeCommandPalette();
+    } else if (
+      event.key === "F1" &&
+      !this.commandPaletteOpen() &&
+      !this.settingsOpen() &&
+      !this.wizardOpen()
+    ) {
+      event.preventDefault();
+      this.openContextHelp();
     }
   }
 
@@ -283,6 +312,7 @@ export class AppComponent {
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
     this.documentDirty.set(true);
+    this.#refreshHelpContext(source);
     this.#scheduleCompile();
   }
 
@@ -316,6 +346,7 @@ export class AppComponent {
           undefined,
           result.document.displayName,
         );
+        this.#refreshHelpContext(result.document.source);
         this.fileOperationLabel.set(
           this.i18n.t("operation.opened", {
             name: result.document.displayName,
@@ -371,6 +402,8 @@ export class AppComponent {
   }
 
   onSourceSelection(selection: SourceEditorSelection): void {
+    this.sourceCursorOffset.set(selection.startOffset);
+    this.compiler.resolveHelpContext(this.source(), selection.startOffset);
     const target = navigationTargetForOffset(
       this.navigation()?.targets ?? [],
       selection.startOffset,
@@ -499,6 +532,30 @@ export class AppComponent {
 
   selectActivity(activity: WorkbenchActivity): void {
     this.session.setActivity(activity);
+    if (activity === "help") {
+      this.rightPaneMode.set("help");
+    }
+  }
+
+  updateHelpQuery(event: Event): void {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      this.helpQuery.set(target.value);
+    }
+  }
+
+  openHelpTopic(topicId: C4mlHelpTopicId): void {
+    this.activeHelpTopicId.set(topicId);
+    this.rightPaneMode.set("help");
+  }
+
+  openContextHelp(): void {
+    this.session.setActivity("help");
+    this.openHelpTopic(this.compiler.help().topicId);
+  }
+
+  showDiagram(): void {
+    this.rightPaneMode.set("diagram");
   }
 
   showBottomPanel(panel: WorkbenchPanel): void {
@@ -565,6 +622,13 @@ export class AppComponent {
       case "panel.problems":
         this.toggleBottomPanel();
         break;
+      case "help.open":
+        this.session.setActivity("help");
+        this.rightPaneMode.set("help");
+        break;
+      case "help.context":
+        this.openContextHelp();
+        break;
       case "wizard.new":
         this.startWizard();
         break;
@@ -609,6 +673,7 @@ export class AppComponent {
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardOpen.set(false);
     this.compiler.compile(next, undefined, this.documentName());
+    this.#refreshHelpContext(next);
   }
 
   undoWizard(): void {
@@ -624,6 +689,7 @@ export class AppComponent {
     this.selectedSceneObjectId.set(undefined);
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.compiler.compile(restored, undefined, this.documentName());
+    this.#refreshHelpContext(restored);
   }
 
   #scheduleCompile(): void {
@@ -637,6 +703,12 @@ export class AppComponent {
         this.documentName(),
       );
     }, 180);
+  }
+
+  #refreshHelpContext(source: string): void {
+    const offset = Math.min(this.sourceCursorOffset(), source.length);
+    this.sourceCursorOffset.set(offset);
+    this.compiler.resolveHelpContext(source, offset);
   }
 
   #selectTarget(

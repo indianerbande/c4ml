@@ -10,17 +10,21 @@ import {
   isCompilerWorkerResponse,
   isHighlightWorkerRequest,
   isHighlightWorkerResponse,
+  isHelpWorkerRequest,
+  isHelpWorkerResponse,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
   type CompletionWorkerResponse,
   type HighlightWorkerResponse,
+  type HelpWorkerResponse,
   type WizardWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
   EditorCompilationSession,
   EditorCompletionSession,
   EditorHighlightSession,
+  EditorHelpSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   WizardSourceSession,
@@ -121,6 +125,20 @@ function wizardResponse(
     status: "valid",
     source,
     issues: [],
+    message: undefined,
+  };
+}
+
+function helpResponse(
+  requestId: number,
+  topicId: HelpWorkerResponse["topicId"],
+): HelpWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "help-context-result",
+    requestId,
+    status: "complete",
+    topicId,
     message: undefined,
   };
 }
@@ -369,6 +387,25 @@ describe("editor highlighting session", () => {
     session.failActive();
 
     await expect(pending.result).resolves.toEqual([]);
+  });
+});
+
+describe("editor help session", () => {
+  it("rejects stale cursor context and accepts only the newest topic", () => {
+    const session = new EditorHelpSession();
+    const first = session.begin("person caretaker {}", 8);
+    const second = session.begin("route connection {}", 8);
+
+    expect(isHelpWorkerRequest(second)).toBe(true);
+    expect(session.accept(helpResponse(first.requestId, "people"))).toBe(false);
+    const current = helpResponse(second.requestId, "routes");
+    expect(isHelpWorkerResponse(current)).toBe(true);
+    expect(session.accept(current)).toBe(true);
+    expect(session.state).toMatchObject({
+      phase: "ready",
+      offset: 8,
+      topicId: "routes",
+    });
   });
 });
 

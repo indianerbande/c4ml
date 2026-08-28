@@ -4,22 +4,26 @@ import {
   isCompletionWorkerResponse,
   isCompilerWorkerResponse,
   isHighlightWorkerResponse,
+  isHelpWorkerResponse,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
   type CompletionWorkerCandidate,
   type CompletionWorkerResponse,
   type HighlightWorkerResponse,
   type HighlightWorkerSpan,
+  type HelpWorkerResponse,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import {
   EditorCompilationSession,
   EditorCompletionSession,
   EditorHighlightSession,
+  EditorHelpSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   type EditorCompilationState,
   type EditorCompletionState,
+  type EditorHelpState,
   type EditorWizardGenerationState,
 } from "./editor-session.js";
 import type { C4mlSystemContextWizardAnswers } from "@c4ml/language-c4ml";
@@ -30,6 +34,7 @@ export class CompilerWorkerClient {
   readonly #session = new EditorCompilationSession(this.#sequence);
   readonly #completionSession = new EditorCompletionSession(this.#sequence);
   readonly #highlightSession = new EditorHighlightSession(this.#sequence);
+  readonly #helpSession = new EditorHelpSession(this.#sequence);
   readonly #wizardSession = new EditorWizardGenerationSession(this.#sequence);
   readonly #worker = new Worker(new URL("./compiler.worker", import.meta.url), {
     name: "c4ml-compiler",
@@ -42,6 +47,7 @@ export class CompilerWorkerClient {
   readonly wizard = signal<EditorWizardGenerationState>(
     this.#wizardSession.state,
   );
+  readonly help = signal<EditorHelpState>(this.#helpSession.state);
   #activeFile = "editor.c4ml";
 
   constructor() {
@@ -88,6 +94,12 @@ export class CompilerWorkerClient {
     return result;
   }
 
+  resolveHelpContext(source: string, offset: number): void {
+    const request = this.#helpSession.begin(source, offset, this.#activeFile);
+    this.help.set(this.#helpSession.state);
+    this.#worker.postMessage(request);
+  }
+
   generateSystemContext(answers: C4mlSystemContextWizardAnswers): void {
     const request = this.#wizardSession.begin(answers);
     this.wizard.set(this.#wizardSession.state);
@@ -101,6 +113,8 @@ export class CompilerWorkerClient {
       this.#acceptCompletion(event.data);
     } else if (isHighlightWorkerResponse(event.data)) {
       this.#acceptHighlight(event.data);
+    } else if (isHelpWorkerResponse(event.data)) {
+      this.#acceptHelp(event.data);
     } else if (isWizardWorkerResponse(event.data)) {
       this.#acceptWizard(event.data);
     }
@@ -112,10 +126,12 @@ export class CompilerWorkerClient {
       "The language worker stopped unexpectedly.",
     );
     this.#highlightSession.failActive();
+    this.#helpSession.failActive("The language worker stopped unexpectedly.");
     this.#wizardSession.failActive("The source generator stopped unexpectedly.");
     this.state.set(this.#session.state);
     this.completion.set(this.#completionSession.state);
     this.wizard.set(this.#wizardSession.state);
+    this.help.set(this.#helpSession.state);
   };
 
   #acceptCompilation(response: CompilerWorkerResponse): void {
@@ -132,6 +148,12 @@ export class CompilerWorkerClient {
 
   #acceptHighlight(response: HighlightWorkerResponse): void {
     this.#highlightSession.accept(response);
+  }
+
+  #acceptHelp(response: HelpWorkerResponse): void {
+    if (this.#helpSession.accept(response)) {
+      this.help.set(this.#helpSession.state);
+    }
   }
 
   #acceptWizard(response: WizardWorkerResponse): void {

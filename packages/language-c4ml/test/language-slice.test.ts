@@ -14,6 +14,7 @@ import {
   defaultSystemContextWizardAnswers,
   generateSystemContextDraft,
   highlightC4mlDraft,
+  helpContextAtC4mlDraft,
   parseC4mlDraft,
 } from "../src/index.js";
 
@@ -1252,6 +1253,45 @@ describe("C4ML draft-1 System Context wizard source", () => {
         { field: "relationshipIntent", code: "C4ML-WIZARD-002" },
       ],
     });
+  });
+});
+
+describe("draft help context", () => {
+  it("maps executable syntax owners to stable help topics", async () => {
+    const source = await readFile(helloContextUrl, "utf8");
+
+    expect(
+      helpContextAtC4mlDraft(source, source.indexOf("person caretaker") + 8)
+        .topicId,
+    ).toBe("people");
+    expect(
+      helpContextAtC4mlDraft(
+        source,
+        source.indexOf("relation caretaker-reviews-plan") + 12,
+      ).topicId,
+    ).toBe("relationships");
+    expect(
+      helpContextAtC4mlDraft(
+        source,
+        source.indexOf("route caretaker-reviews-plan") + 8,
+      ).topicId,
+    ).toBe("routes");
+    expect(
+      helpContextAtC4mlDraft(
+        source,
+        source.indexOf("view garden-pulse-context") + 6,
+      )
+        .topicId,
+    ).toBe("views");
+  });
+
+  it("falls back safely and rejects offsets outside the source", () => {
+    expect(helpContextAtC4mlDraft("c4ml draft-1", 0).topicId).toBe(
+      "getting-started",
+    );
+    expect(() => helpContextAtC4mlDraft("c4ml draft-1", 99)).toThrow(
+      "Help offset must be inside the source text.",
+    );
   });
 });
 

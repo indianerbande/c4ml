@@ -15,6 +15,10 @@ import type {
 } from "monaco-editor/editor";
 
 import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
+import {
+  c4mlDaySuggestionColors,
+  c4mlNightSuggestionColors,
+} from "./monaco-theme.js";
 import type { EffectiveColorScheme } from "./workbench-preferences.js";
 import {
   sourceEditorCompletion,
@@ -63,6 +67,7 @@ export class C4mlMonacoSourceEditorComponent
   readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
   readonly colorScheme = input.required<EffectiveColorScheme>();
   readonly editorFontFamily = input.required<string>();
+  readonly editorFontLigatures = input.required<boolean | string>();
   readonly editorFontSize = input.required<number>();
   readonly valueChanged = output<string>();
   readonly selectionChanged = output<SourceEditorSelection>();
@@ -102,15 +107,18 @@ export class C4mlMonacoSourceEditorComponent
     effect(() => {
       const colorScheme = this.colorScheme();
       const fontFamily = this.editorFontFamily();
+      const fontLigatures = this.editorFontLigatures();
       const fontSize = this.editorFontSize();
       this.#runtime?.editor.setTheme(
         colorScheme === "dark" ? "c4ml-night" : "c4ml-day",
       );
       this.#editor?.updateOptions({
         fontFamily,
+        fontLigatures,
         fontSize,
         lineHeight: Math.round(fontSize * 1.68),
       });
+      this.#remeasureFontAfterLoad(fontFamily, fontSize);
     });
   }
 
@@ -190,6 +198,7 @@ export class C4mlMonacoSourceEditorComponent
       bracketPairColorization: { enabled: true },
       editContext: false,
       fontFamily: this.editorFontFamily(),
+      fontLigatures: this.editorFontLigatures(),
       fontSize: this.editorFontSize(),
       lineHeight: Math.round(this.editorFontSize() * 1.68),
       lineNumbersMinChars: 3,
@@ -210,6 +219,10 @@ export class C4mlMonacoSourceEditorComponent
       wordBasedSuggestions: "off",
       wordWrap: "off",
     });
+    this.#remeasureFontAfterLoad(
+      this.editorFontFamily(),
+      this.editorFontSize(),
+    );
     this.#editor.onDidChangeModelContent(() => {
       if (!this.#synchronizeExternalValue && this.#model !== undefined) {
         this.valueChanged.emit(this.#model.getValue());
@@ -272,6 +285,24 @@ export class C4mlMonacoSourceEditorComponent
         },
       );
     this.#updateMarkers();
+  }
+
+  #remeasureFontAfterLoad(fontFamily: string, fontSize: number): void {
+    const runtime = this.#runtime;
+    if (runtime === undefined) {
+      return;
+    }
+    const fontSet = this.editorHost().nativeElement.ownerDocument.fonts;
+    void fontSet
+      .load(`${fontSize}px ${fontFamily}`)
+      .then(() => {
+        if (!this.#destroyed && this.#runtime === runtime) {
+          runtime.editor.remeasureFonts();
+        }
+      })
+      .catch(() => {
+        // The CSS fallback remains usable when a packaged face cannot load.
+      });
   }
 
   #updateMarkers(): void {
@@ -356,11 +387,7 @@ function registerC4mlLanguage(runtime: MonacoRuntime): void {
       "editorCursor.foreground": "#7DD8E6",
       "editor.selectionBackground": "#24516E",
       "editor.inactiveSelectionBackground": "#203F57",
-      "editorSuggestWidget.background": "#182B3F",
-      "editorSuggestWidget.border": "#3B5C76",
-      "editorSuggestWidget.foreground": "#DCE8F2",
-      "editorSuggestWidget.highlightForeground": "#7DD8E6",
-      "editorSuggestWidget.selectedBackground": "#244A63",
+      ...c4mlNightSuggestionColors,
     },
   });
   runtime.editor.defineTheme("c4ml-day", {
@@ -382,11 +409,7 @@ function registerC4mlLanguage(runtime: MonacoRuntime): void {
       "editorCursor.foreground": "#157CA3",
       "editor.selectionBackground": "#B8DDE9",
       "editor.inactiveSelectionBackground": "#DCEAF0",
-      "editorSuggestWidget.background": "#FFFFFF",
-      "editorSuggestWidget.border": "#B8C5D2",
-      "editorSuggestWidget.foreground": "#26394E",
-      "editorSuggestWidget.highlightForeground": "#096D87",
-      "editorSuggestWidget.selectedBackground": "#DCEFF5",
+      ...c4mlDaySuggestionColors,
     },
   });
   languageRegistered = true;

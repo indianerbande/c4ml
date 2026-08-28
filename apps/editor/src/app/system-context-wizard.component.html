@@ -149,7 +149,7 @@
         </div>
 
         <div class="part-list">
-          @for (part of answers().parts; track part.id; let index = $index) {
+          @for (part of answers().parts; track $index; let index = $index) {
             <article class="part-card">
               <header>
                 <span>{{ index + 1 }}</span>

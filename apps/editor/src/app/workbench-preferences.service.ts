@@ -10,9 +10,12 @@ import {
 
 import {
   defaultWorkbenchPreferences,
+  editorFontFeatureSettingsCss,
   editorFontFamilyCss,
+  editorFontLigaturesOption,
   loadWorkbenchPreferences,
   normalizeEditorFontSize,
+  normalizeInterfaceFontSize,
   resolveEffectiveColorScheme,
   storeWorkbenchPreferences,
   type WorkbenchColorScheme,
@@ -37,8 +40,23 @@ export class WorkbenchPreferencesService {
   readonly editorFontFamilyCss = computed(() =>
     editorFontFamilyCss(this.preferences().editorFontFamily),
   );
+  readonly editorFontLigatures = computed(() =>
+    editorFontLigaturesOption(
+      this.preferences().editorFontFamily,
+      this.preferences().editorFontLigatures,
+    ),
+  );
+  readonly editorFontFeatureSettingsCss = computed(() =>
+    editorFontFeatureSettingsCss(
+      this.preferences().editorFontFamily,
+      this.preferences().editorFontLigatures,
+    ),
+  );
   readonly editorFontSize = computed(
     () => this.preferences().editorFontSize,
+  );
+  readonly interfaceFontSize = computed(
+    () => this.preferences().interfaceFontSize,
   );
   readonly uiLanguage = computed(() => this.preferences().uiLanguage);
 
@@ -60,6 +78,10 @@ export class WorkbenchPreferencesService {
       this.#document.documentElement.dataset["colorScheme"] =
         effectiveColorScheme;
       this.#document.documentElement.lang = preferences.uiLanguage;
+      this.#document.documentElement.style.setProperty(
+        "--c4ml-interface-font-size",
+        `${preferences.interfaceFontSize}px`,
+      );
       storeWorkbenchPreferences(this.#readStorage(), preferences);
     });
   }
@@ -82,6 +104,20 @@ export class WorkbenchPreferencesService {
     this.preferences.update((preferences) => ({
       ...preferences,
       editorFontFamily,
+    }));
+  }
+
+  setEditorFontLigatures(editorFontLigatures: boolean): void {
+    this.preferences.update((preferences) => ({
+      ...preferences,
+      editorFontLigatures,
+    }));
+  }
+
+  setInterfaceFontSize(interfaceFontSize: number): void {
+    this.preferences.update((preferences) => ({
+      ...preferences,
+      interfaceFontSize: normalizeInterfaceFontSize(interfaceFontSize),
     }));
   }
 

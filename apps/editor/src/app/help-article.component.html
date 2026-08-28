@@ -1,0 +1,26 @@
+<article class="help-article">
+  <header>
+    <span>{{ availabilityLabel() }}</span>
+    <h1>{{ topic().title }}</h1>
+    <p>{{ topic().summary }}</p>
+  </header>
+
+  @for (paragraph of topic().paragraphs; track $index) {
+    <p>{{ paragraph }}</p>
+  }
+
+  @if (topic().points.length > 0) {
+    <ul>
+      @for (point of topic().points; track $index) {
+        <li>{{ point }}</li>
+      }
+    </ul>
+  }
+
+  @if (topic().example; as example) {
+    <section>
+      <h2>{{ topic().exampleTitle }}</h2>
+      <pre><code>{{ example }}</code></pre>
+    </section>
+  }
+</article>

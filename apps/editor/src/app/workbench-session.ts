@@ -1,6 +1,11 @@
 export const workbenchSessionStorageKey = "c4ml.workbench.session.v1";
 
-export const workbenchActivities = ["files", "diagrams", "export"] as const;
+export const workbenchActivities = [
+  "files",
+  "diagrams",
+  "export",
+  "help",
+] as const;
 export type WorkbenchActivity = (typeof workbenchActivities)[number];
 
 export const workbenchPanels = ["problems", "route"] as const;

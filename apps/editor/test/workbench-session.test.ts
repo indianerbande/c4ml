@@ -39,6 +39,17 @@ describe("workbench session", () => {
     expect(parsed).not.toHaveProperty("path");
   });
 
+  it("persists the local help activity like the other workbench areas", () => {
+    expect(
+      parseWorkbenchSession(
+        JSON.stringify({
+          ...defaultWorkbenchSession,
+          activeActivity: "help",
+        }),
+      ).activeActivity,
+    ).toBe("help");
+  });
+
   it("rejects unsupported values field by field", () => {
     expect(
       parseWorkbenchSession(

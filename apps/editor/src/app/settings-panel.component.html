@@ -73,6 +73,27 @@
                 </select>
               </div>
 
+              <div class="setting-row font-size-row">
+                <label for="interface-font-size">
+                  <strong>{{ i18n.t("settings.interfaceFontSize") }}</strong>
+                  <span>{{ i18n.t("settings.interfaceFontSizeHint") }}</span>
+                </label>
+                <div class="font-size-control">
+                  <input
+                    id="interface-font-size"
+                    type="range"
+                    min="9"
+                    max="16"
+                    step="0.5"
+                    [value]="preferences.interfaceFontSize()"
+                    (input)="setInterfaceFontSize($event)"
+                  />
+                  <output for="interface-font-size">
+                    {{ preferences.interfaceFontSize() }} px
+                  </output>
+                </div>
+              </div>
+
               <div class="section-heading">
                 <h3>{{ i18n.t("settings.colorScheme") }}</h3>
                 <span>{{ i18n.t("settings.colorDescription") }}</span>
@@ -120,9 +141,25 @@
                   [value]="preferences.preferences().editorFontFamily"
                   (change)="setFontFamily($event)"
                 >
-                  <option value="ibm-plex-mono">IBM Plex Mono</option>
+                  @for (option of editorFontFamilyOptions; track option.id) {
+                    <option [value]="option.id">{{ option.label }}</option>
+                  }
                   <option value="system-monospace">{{ i18n.t("settings.systemMonospace") }}</option>
                 </select>
+              </div>
+
+              <div class="setting-row">
+                <label for="editor-font-ligatures">
+                  <strong>{{ i18n.t("settings.fontLigatures") }}</strong>
+                  <span>{{ i18n.t("settings.fontLigaturesHint") }}</span>
+                </label>
+                <input
+                  id="editor-font-ligatures"
+                  class="setting-checkbox"
+                  type="checkbox"
+                  [checked]="preferences.preferences().editorFontLigatures"
+                  (change)="setFontLigatures($event)"
+                />
               </div>
 
               <div class="setting-row font-size-row">
@@ -149,10 +186,11 @@
               <div
                 class="font-sample"
                 [style.font-family]="preferences.editorFontFamilyCss()"
+                [style.font-feature-settings]="preferences.editorFontFeatureSettingsCss()"
                 [style.font-size.px]="preferences.editorFontSize()"
               >
                 view system-landscape main<br />
-                relationship portal -&gt; service
+                portal -&gt; compiler =&gt; scene != output &lt;= preview
               </div>
             </section>
           }

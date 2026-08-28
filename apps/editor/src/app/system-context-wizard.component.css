@@ -39,7 +39,7 @@ nav {
 .step-intro p {
   margin: 0 0 4px;
   color: var(--accent);
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -52,14 +52,14 @@ nav {
 }
 
 .wizard > header h2 {
-  font-size: 19px;
+  font-size: 1.9rem;
 }
 
 .wizard > header > div > span {
   display: block;
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 1.05rem;
 }
 
 .close-button {
@@ -73,7 +73,7 @@ nav {
   background: var(--control-hover);
   color: var(--muted);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 2rem;
 }
 
 nav {
@@ -92,7 +92,7 @@ nav span {
   border-radius: 999px;
   background: var(--surface-subtle);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -103,7 +103,7 @@ nav i {
   place-items: center;
   border: 1px solid var(--line-strong);
   border-radius: 50%;
-  font-size: 7px;
+  font-size: 0.7rem;
   font-style: normal;
 }
 
@@ -130,7 +130,7 @@ nav span.complete i {
 }
 
 .step-intro h3 {
-  font-size: 17px;
+  font-size: 1.7rem;
 }
 
 .step-intro > span,
@@ -138,7 +138,7 @@ nav span.complete i {
   display: block;
   margin-top: 5px;
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 1.05rem;
   line-height: 1.45;
 }
 
@@ -179,21 +179,21 @@ nav span.complete i {
 }
 
 .goal-options strong {
-  font-size: 13px;
+  font-size: 1.3rem;
   line-height: 1.35;
 }
 
 .goal-options p {
   margin: 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 
 .goal-options small {
   align-self: end;
   color: var(--control-ink);
-  font-size: 9px;
+  font-size: 0.9rem;
 }
 
 .goal-picture {
@@ -251,13 +251,13 @@ nav span.complete i {
 
 .term-note strong {
   color: var(--accent-strong);
-  font-size: 10px;
+  font-size: 1rem;
 }
 
 .term-note p {
   margin: 3px 0 0;
   color: var(--control-ink);
-  font-size: 9.5px;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
@@ -279,7 +279,7 @@ nav span.complete i {
   align-content: start;
   gap: 5px;
   color: var(--control-ink);
-  font-size: 9.5px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -297,7 +297,7 @@ select {
   background: var(--control-bg);
   color: var(--ink);
   font: inherit;
-  font-size: 10.5px;
+  font-size: 1.05rem;
   font-weight: 500;
 }
 
@@ -322,7 +322,7 @@ select:focus {
 
 .issue {
   color: var(--danger);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
@@ -343,7 +343,7 @@ select:focus {
   padding: 9px 11px;
   color: var(--muted);
   cursor: pointer;
-  font-size: 9.5px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -353,7 +353,7 @@ select:focus {
 
 .advanced-fields label > small:not(.issue) {
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
@@ -365,7 +365,7 @@ select:focus {
   background: var(--accent-soft);
   color: var(--accent);
   cursor: pointer;
-  font-size: 9.5px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -398,13 +398,13 @@ select:focus {
   border-radius: 6px;
   background: var(--accent);
   color: white;
-  font-size: 8px;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 .part-card > header strong {
   align-self: center;
-  font-size: 10.5px;
+  font-size: 1.05rem;
 }
 
 .part-card > header button,
@@ -463,12 +463,12 @@ select:focus {
 }
 
 .connection-heading strong {
-  font-size: 11px;
+  font-size: 1.1rem;
 }
 
 .connection-heading span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.9rem;
 }
 
 .connection-path {
@@ -483,7 +483,7 @@ select:focus {
   align-self: center;
   padding-top: 16px;
   color: var(--accent);
-  font-size: 16px;
+  font-size: 1.6rem;
 }
 
 .empty-connections {
@@ -492,7 +492,7 @@ select:focus {
   border: 1px dashed var(--line-strong);
   border-radius: 8px;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 0.95rem;
 }
 
 .result-details {
@@ -518,7 +518,7 @@ select:focus {
 
 .source-preview summary span {
   color: var(--source-muted);
-  font-size: 8px;
+  font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -534,7 +534,7 @@ select:focus {
   padding: 13px;
   color: var(--source-ink);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 9px;
+  font-size: 0.9rem;
   line-height: 1.5;
   white-space: pre;
 }
@@ -544,7 +544,7 @@ select:focus {
   margin: 0;
   padding: 13px;
   color: var(--danger);
-  font-size: 9.5px;
+  font-size: 0.95rem;
 }
 
 footer {
@@ -561,7 +561,7 @@ footer button {
   padding: 0 13px;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 9.5px;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -586,7 +586,7 @@ footer button:disabled,
 .validation-state {
   align-self: center;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 0.9rem;
 }
 
 .validation-state[data-phase="valid"] {

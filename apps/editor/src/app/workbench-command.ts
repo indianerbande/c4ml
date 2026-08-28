@@ -6,6 +6,8 @@ export type WorkbenchCommandId =
   | "file.open"
   | "file.save"
   | "file.save-as"
+  | "help.context"
+  | "help.open"
   | "panel.problems"
   | "settings.open"
   | "wizard.new";
@@ -79,6 +81,17 @@ const workbenchCommandDefinitions: readonly WorkbenchCommandDefinition[] = [
     id: "wizard.new",
     label: "command.wizard.new",
     category: "command.category.help",
+  },
+  {
+    id: "help.open",
+    label: "command.help.open",
+    category: "command.category.help",
+  },
+  {
+    id: "help.context",
+    label: "command.help.context",
+    category: "command.category.help",
+    shortcut: "F1",
   },
   {
     id: "settings.open",

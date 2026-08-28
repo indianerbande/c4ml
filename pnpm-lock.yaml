@@ -116,6 +116,9 @@ importers:
       '@c4ml/desktop-contract':
         specifier: workspace:*
         version: link:../../packages/desktop-contract
+      '@c4ml/font-editor-mono':
+        specifier: workspace:*
+        version: link:../../packages/font-editor-mono
       '@c4ml/font-ibm-plex':
         specifier: workspace:*
         version: link:../../packages/font-ibm-plex
@@ -169,6 +172,8 @@ importers:
   packages/compiler-core: {}
 
   packages/desktop-contract: {}
+
+  packages/font-editor-mono: {}
 
   packages/font-ibm-plex: {}
 

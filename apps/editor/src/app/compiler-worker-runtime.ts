@@ -19,6 +19,7 @@ import { createBrowserElkLayoutAdapter } from "@c4ml/layout-elk/browser";
 import {
   completeC4mlDraft,
   generateSystemContextDraft,
+  helpContextAtC4mlDraft,
   highlightC4mlDraft,
   parseC4mlDraft,
 } from "@c4ml/language-c4ml";
@@ -36,6 +37,8 @@ import {
   type CompletionWorkerResponse,
   type HighlightWorkerRequest,
   type HighlightWorkerResponse,
+  type HelpWorkerRequest,
+  type HelpWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
@@ -203,6 +206,31 @@ export async function highlightWorkerRequest(
   }
 }
 
+export async function helpWorkerRequest(
+  request: HelpWorkerRequest,
+): Promise<HelpWorkerResponse> {
+  try {
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "help-context-result",
+      requestId: request.requestId,
+      status: "complete",
+      topicId: helpContextAtC4mlDraft(request.source, request.offset).topicId,
+      message: undefined,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "help-context-result",
+      requestId: request.requestId,
+      status: "failed",
+      topicId: "getting-started",
+      message: `Help context failed: ${message}`,
+    };
+  }
+}
+
 export async function generateWorkerRequest(
   request: WizardWorkerRequest,
 ): Promise<WizardWorkerResponse> {
@@ -241,6 +269,8 @@ export function executeWorkerRequest(
       return completeWorkerRequest(request);
     case "highlight":
       return highlightWorkerRequest(request);
+    case "help-context":
+      return helpWorkerRequest(request);
     case "generate-system-context":
       return generateWorkerRequest(request);
   }
@@ -374,10 +404,6 @@ function toWorkerNavigation(
                     laneSpacing: route.corridor.laneSpacing,
                   },
           };
-        const labelWidth = Math.max(
-          48,
-          Math.min(260, route.label.length * 6.6),
-        );
         const commonDetail = {
           referenceId: route.relationshipId,
           source: detailSource,
@@ -412,12 +438,7 @@ function toWorkerNavigation(
             svgElementIds: [svgSceneObjectId(`${route.id}:label`)],
             label: route.label,
             point: route.labelPoint,
-            bounds: {
-              x: route.labelPoint.x - labelWidth / 2,
-              y: route.labelPoint.y - 22,
-              width: labelWidth,
-              height: route.technology === undefined ? 22 : 38,
-            },
+            bounds: route.labelBounds,
           },
         ];
         const corridorTarget =

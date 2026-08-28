@@ -47,6 +47,54 @@
 }
 
 @font-face {
+  font-family: "Fira Code";
+  src: url("/fonts/editor-mono/fira-code/FiraCode-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Hack";
+  src: url("/fonts/editor-mono/hack/hack-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/fonts/editor-mono/source-code-pro/SourceCodePro-Regular.ttf.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Intel One Mono";
+  src: url("/fonts/editor-mono/intel-one-mono/IntelOneMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Inconsolata";
+  src: url("/fonts/editor-mono/inconsolata/Inconsolata-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Cascadia Code";
+  src: url("/fonts/editor-mono/cascadia-code/CascadiaCode-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
   font-family: "IBM Plex Mono";
   src: url("/fonts/ibm-plex/mono/IBMPlexMono-Bold.woff2") format("woff2");
   font-style: normal;
@@ -64,6 +112,7 @@
 
 :root {
   color-scheme: light;
+  font-size: var(--c4ml-interface-font-size, 10px);
   font-family: "IBM Plex Sans", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -1,12 +1,13 @@
 import type {
   C4mlCompletionCandidate,
   C4mlCompletionKind,
+  C4mlHelpTopicId,
   C4mlHighlight,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
 
-export const compilerWorkerProtocolVersion = 7 as const;
+export const compilerWorkerProtocolVersion = 8 as const;
 
 export interface CompilerWorkerView {
   readonly id: string;
@@ -173,6 +174,15 @@ export interface HighlightWorkerRequest {
   readonly source: string;
 }
 
+export interface HelpWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "help-context";
+  readonly requestId: number;
+  readonly file: string;
+  readonly source: string;
+  readonly offset: number;
+}
+
 export interface WizardWorkerRequest {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
   readonly type: "generate-system-context";
@@ -183,6 +193,7 @@ export interface WizardWorkerRequest {
 export type CompilerWorkerInbound =
   | CompilerWorkerRequest
   | CompletionWorkerRequest
+  | HelpWorkerRequest
   | HighlightWorkerRequest
   | WizardWorkerRequest;
 
@@ -223,6 +234,15 @@ export interface HighlightWorkerResponse {
   readonly message: string | undefined;
 }
 
+export interface HelpWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "help-context-result";
+  readonly requestId: number;
+  readonly status: "complete" | "failed";
+  readonly topicId: C4mlHelpTopicId;
+  readonly message: string | undefined;
+}
+
 export interface WizardWorkerResponse {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
   readonly type: "generation-result";
@@ -236,6 +256,7 @@ export interface WizardWorkerResponse {
 export type CompilerWorkerOutbound =
   | CompilerWorkerResponse
   | CompletionWorkerResponse
+  | HelpWorkerResponse
   | HighlightWorkerResponse
   | WizardWorkerResponse;
 
@@ -293,12 +314,32 @@ export function isHighlightWorkerRequest(
   );
 }
 
+export function isHelpWorkerRequest(
+  value: unknown,
+): value is HelpWorkerRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<HelpWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "help-context" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    typeof candidate.source === "string" &&
+    Number.isSafeInteger(candidate.offset) &&
+    (candidate.offset ?? -1) >= 0 &&
+    (candidate.offset ?? Number.POSITIVE_INFINITY) <= candidate.source.length
+  );
+}
+
 export function isCompilerWorkerInbound(
   value: unknown,
 ): value is CompilerWorkerInbound {
   return (
     isCompilerWorkerRequest(value) ||
     isCompletionWorkerRequest(value) ||
+    isHelpWorkerRequest(value) ||
     isHighlightWorkerRequest(value) ||
     isWizardWorkerRequest(value)
   );
@@ -390,12 +431,33 @@ export function isHighlightWorkerResponse(
   );
 }
 
+export function isHelpWorkerResponse(
+  value: unknown,
+): value is HelpWorkerResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<HelpWorkerResponse>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "help-context-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "complete" || candidate.status === "failed") &&
+    isHelpTopicId(candidate.topicId) &&
+    (candidate.message === undefined || typeof candidate.message === "string") &&
+    (candidate.status === "complete"
+      ? candidate.message === undefined
+      : typeof candidate.message === "string")
+  );
+}
+
 export function isCompilerWorkerOutbound(
   value: unknown,
 ): value is CompilerWorkerOutbound {
   return (
     isCompilerWorkerResponse(value) ||
     isCompletionWorkerResponse(value) ||
+    isHelpWorkerResponse(value) ||
     isHighlightWorkerResponse(value) ||
     isWizardWorkerResponse(value)
   );
@@ -699,6 +761,23 @@ function isHighlightSpan(value: unknown): value is HighlightWorkerSpan {
     isPosition(span.range.end) &&
     span.range.start.offset < span.range.end.offset &&
     span.range.start.line === span.range.end.line
+  );
+}
+
+function isHelpTopicId(value: unknown): value is C4mlHelpTopicId {
+  return (
+    value === "getting-started" ||
+    value === "model" ||
+    value === "people" ||
+    value === "systems" ||
+    value === "containers" ||
+    value === "components-code" ||
+    value === "relationships" ||
+    value === "views" ||
+    value === "deployments" ||
+    value === "layout" ||
+    value === "routes" ||
+    value === "export"
   );
 }
 

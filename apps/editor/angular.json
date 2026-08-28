@@ -53,6 +53,16 @@
                 "glob": "LICENSE.txt",
                 "input": "node_modules/@c4ml/font-ibm-plex",
                 "output": "third-party/ibm-plex"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@c4ml/font-editor-mono/fonts",
+                "output": "fonts/editor-mono"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@c4ml/font-editor-mono/licenses",
+                "output": "third-party/editor-mono"
               }
             ],
             "loader": {

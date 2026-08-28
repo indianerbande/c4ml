@@ -234,10 +234,10 @@ describe("preview navigation", () => {
     const svg = '<svg><g id="c4ml-scene-node-element-garden-pulse"></g></svg>';
     const highlighted = svgWithNavigationHighlight(svg, elementTarget);
 
-    expect(highlighted).toContain('id="c4ml-editor-selection"');
-    expect(highlighted).toContain(
-      "#c4ml-scene-node-element-garden-pulse .element-surface",
-    );
+    expect(highlighted).toContain('id="c4ml-editor-node-selection"');
+    expect(highlighted).toContain("M 495 93 V 75 H 513");
+    expect(highlighted).not.toContain('id="c4ml-editor-selection"');
+    expect(highlighted).not.toContain(".element-surface{stroke:");
     expect(svg).not.toContain("c4ml-editor-selection");
   });
 

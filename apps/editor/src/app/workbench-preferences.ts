@@ -10,20 +10,44 @@ export type WorkbenchUiLanguage = (typeof workbenchUiLanguages)[number];
 
 export const workbenchEditorFontFamilies = [
   "ibm-plex-mono",
+  "fira-code",
+  "hack",
+  "source-code-pro",
+  "intel-one-mono",
+  "inconsolata",
+  "cascadia-code",
   "system-monospace",
 ] as const;
 export type WorkbenchEditorFontFamily =
   (typeof workbenchEditorFontFamilies)[number];
 
+export const workbenchEditorFontFamilyOptions: readonly {
+  readonly id: WorkbenchEditorFontFamily;
+  readonly label: string;
+}[] = [
+  { id: "ibm-plex-mono", label: "IBM Plex Mono" },
+  { id: "fira-code", label: "Fira Code" },
+  { id: "hack", label: "Hack" },
+  { id: "source-code-pro", label: "Source Code Pro" },
+  { id: "intel-one-mono", label: "Intel One Mono" },
+  { id: "inconsolata", label: "Inconsolata" },
+  { id: "cascadia-code", label: "Cascadia Code" },
+];
+
 export const minimumEditorFontSize = 11;
 export const maximumEditorFontSize = 24;
 export const editorFontSizeStep = 0.5;
+export const minimumInterfaceFontSize = 9;
+export const maximumInterfaceFontSize = 16;
+export const interfaceFontSizeStep = 0.5;
 
 export interface WorkbenchPreferences {
   readonly version: 1;
   readonly uiLanguage: WorkbenchUiLanguage;
   readonly colorScheme: WorkbenchColorScheme;
+  readonly interfaceFontSize: number;
   readonly editorFontFamily: WorkbenchEditorFontFamily;
+  readonly editorFontLigatures: boolean;
   readonly editorFontSize: number;
 }
 
@@ -36,7 +60,9 @@ export const defaultWorkbenchPreferences: WorkbenchPreferences = {
   version: 1,
   uiLanguage: "en",
   colorScheme: "system",
+  interfaceFontSize: 10,
   editorFontFamily: "ibm-plex-mono",
+  editorFontLigatures: true,
   editorFontSize: 12.5,
 };
 
@@ -59,9 +85,16 @@ export function parseWorkbenchPreferences(
       colorScheme: isColorScheme(value["colorScheme"])
         ? value["colorScheme"]
         : defaultWorkbenchPreferences.colorScheme,
+      interfaceFontSize: normalizeInterfaceFontSize(
+        value["interfaceFontSize"],
+      ),
       editorFontFamily: isEditorFontFamily(value["editorFontFamily"])
         ? value["editorFontFamily"]
         : defaultWorkbenchPreferences.editorFontFamily,
+      editorFontLigatures:
+        typeof value["editorFontLigatures"] === "boolean"
+          ? value["editorFontLigatures"]
+          : defaultWorkbenchPreferences.editorFontLigatures,
       editorFontSize: normalizeEditorFontSize(value["editorFontSize"]),
     };
   } catch {
@@ -113,6 +146,17 @@ export function normalizeEditorFontSize(value: unknown): number {
   return Math.round(clamped / editorFontSizeStep) * editorFontSizeStep;
 }
 
+export function normalizeInterfaceFontSize(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return defaultWorkbenchPreferences.interfaceFontSize;
+  }
+  const clamped = Math.min(
+    maximumInterfaceFontSize,
+    Math.max(minimumInterfaceFontSize, value),
+  );
+  return Math.round(clamped / interfaceFontSizeStep) * interfaceFontSizeStep;
+}
+
 export function resolveEffectiveColorScheme(
   preference: WorkbenchColorScheme,
   systemPrefersDark: boolean,
@@ -127,9 +171,49 @@ export function resolveEffectiveColorScheme(
 export function editorFontFamilyCss(
   family: WorkbenchEditorFontFamily,
 ): string {
-  return family === "ibm-plex-mono"
-    ? '"IBM Plex Mono", monospace'
-    : 'ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace';
+  const bundledFamilies: Partial<
+    Readonly<Record<WorkbenchEditorFontFamily, string>>
+  > = {
+    "ibm-plex-mono": "IBM Plex Mono",
+    "fira-code": "Fira Code",
+    hack: "Hack",
+    "source-code-pro": "Source Code Pro",
+    "intel-one-mono": "Intel One Mono",
+    inconsolata: "Inconsolata",
+    "cascadia-code": "Cascadia Code",
+  };
+  const bundled = bundledFamilies[family];
+  return bundled === undefined
+    ? 'ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace'
+    : `"${bundled}", monospace`;
+}
+
+export function editorFontLigaturesOption(
+  family: WorkbenchEditorFontFamily,
+  enabled: boolean,
+): boolean | string {
+  if (!enabled) {
+    return false;
+  }
+  if (family === "intel-one-mono") {
+    return '"liga" 1, "calt" 1, "ss01" 1';
+  }
+  if (family === "inconsolata") {
+    return '"liga" 1, "calt" 1, "dlig" 1';
+  }
+  return true;
+}
+
+export function editorFontFeatureSettingsCss(
+  family: WorkbenchEditorFontFamily,
+  enabled: boolean,
+): string {
+  const option = editorFontLigaturesOption(family, enabled);
+  return option === false
+    ? "normal"
+    : option === true
+      ? '"liga" 1, "calt" 1'
+      : option;
 }
 
 function isColorScheme(value: unknown): value is WorkbenchColorScheme {

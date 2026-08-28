@@ -1,1 +1,3 @@
 packages/font-ibm-plex/LICENSE.txt -text -diff
+packages/font-editor-mono/fonts/** -text -diff
+packages/font-editor-mono/licenses/** -text -diff
