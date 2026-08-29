@@ -102,11 +102,16 @@
           </header>
           <section class="side-section">
             <h3>{{ i18n.t("files.openEditors") }}</h3>
-            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+            @for (
+              projectDocument of projectDocuments();
+              track projectDocument.uri
+            ) {
               <button
                 type="button"
                 class="tree-row"
-                [class.is-selected]="activeDocumentUri() === projectDocument.uri"
+                [class.is-selected]="
+                  activeDocumentUri() === projectDocument.uri
+                "
                 (click)="selectDocument(projectDocument.uri)"
               >
                 <span class="file-badge" aria-hidden="true">C4</span>
@@ -123,11 +128,16 @@
               <span class="tree-caret" aria-hidden="true">⌄</span>
               <strong>{{ workspaceName() }}</strong>
             </div>
-            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+            @for (
+              projectDocument of projectDocuments();
+              track projectDocument.uri
+            ) {
               <button
                 type="button"
                 class="tree-row nested-row"
-                [class.is-selected]="activeDocumentUri() === projectDocument.uri"
+                [class.is-selected]="
+                  activeDocumentUri() === projectDocument.uri
+                "
                 [title]="projectDocument.uri"
                 (click)="selectDocument(projectDocument.uri)"
               >
@@ -142,11 +152,25 @@
           @if (desktopAvailable) {
             <section class="side-section quick-actions">
               <h3>{{ i18n.t("files.actions") }}</h3>
-              <button type="button" (click)="openDocument()">{{ i18n.t("files.open") }}</button>
-              <button type="button" (click)="openProject()">{{ i18n.t("files.openProject") }}</button>
-              <button type="button" (click)="saveDocument('save')">{{ i18n.t("files.save") }}</button>
-              <button type="button" [disabled]="!projectDirty()" (click)="saveAllDocuments()">{{ i18n.t("files.saveAll") }}</button>
-              <button type="button" (click)="saveDocument('save-as')">{{ i18n.t("files.saveAs") }}</button>
+              <button type="button" (click)="openDocument()">
+                {{ i18n.t("files.open") }}
+              </button>
+              <button type="button" (click)="openProject()">
+                {{ i18n.t("files.openProject") }}
+              </button>
+              <button type="button" (click)="saveDocument('save')">
+                {{ i18n.t("files.save") }}
+              </button>
+              <button
+                type="button"
+                [disabled]="!projectDirty()"
+                (click)="saveAllDocuments()"
+              >
+                {{ i18n.t("files.saveAll") }}
+              </button>
+              <button type="button" (click)="saveDocument('save-as')">
+                {{ i18n.t("files.saveAs") }}
+              </button>
             </section>
           }
         }
@@ -253,12 +277,19 @@
           </section>
           <nav class="help-tree" [attr.aria-label]="i18n.t('help.title')">
             @for (category of filteredHelpCategories(); track category.id) {
-              <details [open]="helpQuery().trim().length > 0 || category.id === 'start'">
+              <details
+                [open]="
+                  helpQuery().trim().length > 0 || category.id === 'start'
+                "
+              >
                 <summary>{{ category.title }}</summary>
                 @for (topic of category.topics; track topic.id) {
                   <button
                     type="button"
-                    [class.is-selected]="activeHelpTopicId() === topic.id && rightPaneMode() === 'help'"
+                    [class.is-selected]="
+                      activeHelpTopicId() === topic.id &&
+                      rightPaneMode() === 'help'
+                    "
                     (click)="openHelpTopic(topic.id)"
                   >
                     <strong>{{ topic.title }}</strong>
@@ -276,24 +307,46 @@
 
     <main class="editor-area">
       <div class="editor-groups">
-        <section class="editor-group source-group" aria-labelledby="source-heading">
-          <div class="tab-strip" role="tablist" [attr.aria-label]="i18n.t('editor.sourceEditors')">
-            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+        <section
+          class="editor-group source-group"
+          aria-labelledby="source-heading"
+        >
+          <div
+            class="tab-strip"
+            role="tablist"
+            [attr.aria-label]="i18n.t('editor.sourceEditors')"
+          >
+            @for (
+              projectDocument of projectDocuments();
+              track projectDocument.uri
+            ) {
               <button
                 type="button"
                 class="editor-tab"
                 [class.is-active]="activeDocumentUri() === projectDocument.uri"
                 role="tab"
-                [attr.aria-selected]="activeDocumentUri() === projectDocument.uri"
+                [attr.aria-selected]="
+                  activeDocumentUri() === projectDocument.uri
+                "
                 [title]="projectDocument.uri"
                 (click)="selectDocument(projectDocument.uri)"
               >
                 <span class="file-badge" aria-hidden="true">C4</span>
-                <span [id]="activeDocumentUri() === projectDocument.uri ? 'source-heading' : null">
+                <span
+                  [id]="
+                    activeDocumentUri() === projectDocument.uri
+                      ? 'source-heading'
+                      : null
+                  "
+                >
                   {{ projectDocument.displayName }}
                 </span>
                 @if (projectDocument.dirty) {
-                  <i class="dirty-indicator" [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+                  <i
+                    class="dirty-indicator"
+                    [attr.aria-label]="i18n.t('files.unsaved')"
+                    >●</i
+                  >
                 }
               </button>
             }
@@ -334,16 +387,25 @@
             @if (compiler.completion().phase === "loading") {
               <span>{{ i18n.t("editor.checkingContext") }}</span>
             } @else if (compiler.completion().phase === "failed") {
-              <span class="completion-error">{{ compiler.completion().message }}</span>
+              <span class="completion-error">{{
+                compiler.completion().message
+              }}</span>
             } @else if (fileOperationLabel(); as fileLabel) {
               <span class="file-operation-label">{{ fileLabel }}</span>
             } @else {
-              <span>{{ i18n.t("editor.suggestionCount", { count: compiler.completion().candidates.length }) }}</span>
+              <span>{{
+                i18n.t("editor.suggestionCount", {
+                  count: compiler.completion().candidates.length,
+                })
+              }}</span>
             }
           </aside>
         </section>
 
-        <section class="editor-group preview-group" aria-labelledby="preview-heading">
+        <section
+          class="editor-group preview-group"
+          aria-labelledby="preview-heading"
+        >
           <div class="tab-strip preview-tab-strip" role="tablist">
             <button
               type="button"
@@ -365,42 +427,66 @@
               (click)="openHelpTopic(activeHelpTopicId())"
             >
               <span class="help-tab-mark" aria-hidden="true">?</span>
-              <span>{{ i18n.t("help.handbookTab") }} · {{ activeHelpTopic().title }}</span>
+              <span
+                >{{ i18n.t("help.handbookTab") }} ·
+                {{ activeHelpTopic().title }}</span
+              >
             </button>
             <span class="tab-fill"></span>
             @if (rightPaneMode() === "diagram") {
-              <div class="preview-actions" [attr.aria-label]="i18n.t('preview.controls')">
-              @if (compiler.state().views.length > 1) {
-                <label class="view-picker">
-                  <span class="sr-only">{{ i18n.t("preview.selectView") }}</span>
-                  <select
-                    [value]="compiler.state().activeViewId ?? ''"
-                    (change)="onViewSelection($event)"
-                    [attr.aria-label]="i18n.t('preview.selectView')"
-                  >
-                    @for (view of compiler.state().views; track view.id) {
-                      <option [value]="view.id">{{ view.title }}</option>
-                    }
-                  </select>
-                </label>
-              }
-              <div class="zoom-controls">
-                <button type="button" (click)="zoomOut()" [attr.aria-label]="i18n.t('preview.zoomOut')">−</button>
-                <button type="button" (click)="fitPreview()" [title]="i18n.t('preview.fit')">
-                  {{ zoomLabel() }}
-                </button>
-                <button type="button" (click)="zoomIn()" [attr.aria-label]="i18n.t('preview.zoomIn')">+</button>
-              </div>
-              <button
-                type="button"
-                class="debug-button"
-                [class.is-active]="routingDebugEnabled()"
-                [attr.aria-pressed]="routingDebugEnabled()"
-                (click)="toggleRoutingDebug()"
-                [title]="i18n.t('preview.routeGeometry')"
+              <div
+                class="preview-actions"
+                [attr.aria-label]="i18n.t('preview.controls')"
               >
-                {{ i18n.t("preview.routes") }}
-              </button>
+                @if (compiler.state().views.length > 1) {
+                  <label class="view-picker">
+                    <span class="sr-only">{{
+                      i18n.t("preview.selectView")
+                    }}</span>
+                    <select
+                      [value]="compiler.state().activeViewId ?? ''"
+                      (change)="onViewSelection($event)"
+                      [attr.aria-label]="i18n.t('preview.selectView')"
+                    >
+                      @for (view of compiler.state().views; track view.id) {
+                        <option [value]="view.id">{{ view.title }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+                <div class="zoom-controls">
+                  <button
+                    type="button"
+                    (click)="zoomOut()"
+                    [attr.aria-label]="i18n.t('preview.zoomOut')"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    (click)="fitPreview()"
+                    [title]="i18n.t('preview.fit')"
+                  >
+                    {{ zoomLabel() }}
+                  </button>
+                  <button
+                    type="button"
+                    (click)="zoomIn()"
+                    [attr.aria-label]="i18n.t('preview.zoomIn')"
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  class="debug-button"
+                  [class.is-active]="routingDebugEnabled()"
+                  [attr.aria-pressed]="routingDebugEnabled()"
+                  (click)="toggleRoutingDebug()"
+                  [title]="i18n.t('preview.routeGeometry')"
+                >
+                  {{ i18n.t("preview.routes") }}
+                </button>
               </div>
             }
           </div>
@@ -414,37 +500,42 @@
             />
           } @else {
             <div class="preview-stage" role="tabpanel">
-            @if (previewUrl(); as url) {
-              <img
-                class="diagram"
-                [class.is-navigable]="compiler.state().phase === 'valid'"
-                [src]="url"
-                [style.width]="previewSize()"
-                [style.height]="previewSize()"
-                (click)="onPreviewClick($event)"
-                [alt]="i18n.t('preview.alt')"
-                [title]="i18n.t('preview.reveal')"
-              />
-            } @else {
-              <div class="empty-preview">
-                <span class="empty-glyph" aria-hidden="true"></span>
-                <strong>{{ i18n.t("preview.building") }}</strong>
-                <span>{{ i18n.t("preview.worker") }}</span>
-              </div>
-            }
+              @if (previewUrl(); as url) {
+                <img
+                  class="diagram"
+                  [class.is-navigable]="compiler.state().phase === 'valid'"
+                  [src]="url"
+                  [style.width]="previewSize()"
+                  [style.height]="previewSize()"
+                  (click)="onPreviewClick($event)"
+                  [alt]="i18n.t('preview.alt')"
+                  [title]="i18n.t('preview.reveal')"
+                />
+              } @else {
+                <div class="empty-preview">
+                  <span class="empty-glyph" aria-hidden="true"></span>
+                  <strong>{{ i18n.t("preview.building") }}</strong>
+                  <span>{{ i18n.t("preview.worker") }}</span>
+                </div>
+              }
 
-            @if (
-              compiler.state().phase === "invalid" &&
-              compiler.state().lastValidSvg !== undefined
-            ) {
-              <p class="stale-note">{{ i18n.t("preview.stale") }}</p>
-            }
+              @if (
+                compiler.state().phase === "invalid" &&
+                compiler.state().lastValidSvg !== undefined
+              ) {
+                <p class="stale-note">{{ i18n.t("preview.stale") }}</p>
+              }
 
-            @if (selectedLabel(); as label) {
-              <p class="selection-note" aria-live="polite">
-                {{ i18n.t("preview.selected", { kind: selectedKindLabel(), label }) }}
-              </p>
-            }
+              @if (selectedLabel(); as label) {
+                <p class="selection-note" aria-live="polite">
+                  {{
+                    i18n.t("preview.selected", {
+                      kind: selectedKindLabel(),
+                      label,
+                    })
+                  }}
+                </p>
+              }
             </div>
           }
         </section>
@@ -458,67 +549,247 @@
               [class.is-active]="bottomPanel() === 'problems'"
               (click)="showBottomPanel('problems')"
             >
-              {{ i18n.t("panel.problems") }} <span>{{ compiler.state().diagnostics.length }}</span>
+              {{ i18n.t("panel.problems") }}
+              <span>{{ compiler.state().diagnostics.length }}</span>
             </button>
-            @if (selectedRoute() !== undefined) {
+            @if (
+              selectedRoute() !== undefined ||
+              selectedNode()?.geometry !== undefined
+            ) {
               <button
                 type="button"
                 [class.is-active]="bottomPanel() === 'route'"
                 (click)="showBottomPanel('route')"
               >
-                {{ i18n.t("panel.routeDetails") }}
+                {{
+                  selectedNode() === undefined
+                    ? i18n.t("panel.routeDetails")
+                    : i18n.t("panel.geometryDetails")
+                }}
               </button>
             }
             <span></span>
-            <button type="button" class="panel-close" (click)="toggleBottomPanel()" [attr.aria-label]="i18n.t('panel.hide')">×</button>
+            <button
+              type="button"
+              class="panel-close"
+              (click)="toggleBottomPanel()"
+              [attr.aria-label]="i18n.t('panel.hide')"
+            >
+              ×
+            </button>
           </header>
 
           @if (bottomPanel() === "route") {
-            @if (selectedRoute(); as route) {
+            @if (selectedNode(); as node) {
+              @if (node.geometry; as geometry) {
+                <div class="route-inspector geometry-inspector">
+                  <div class="route-inspector-title">
+                    <span>{{
+                      i18n.t("panel.effectiveGeometry", {
+                        kind: selectedKindLabel(),
+                      })
+                    }}</span>
+                    <strong>{{ node.label }}</strong>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>{{ i18n.t("panel.candidateGeometry") }}</dt>
+                      <dd>
+                        x {{ formatGeometry(geometry.candidate.x) }} · y
+                        {{ formatGeometry(geometry.candidate.y) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{{ i18n.t("panel.finalGeometry") }}</dt>
+                      <dd>
+                        x {{ formatGeometry(geometry.final.x) }} · y
+                        {{ formatGeometry(geometry.final.y) }}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{{ i18n.t("panel.movement") }}</dt>
+                      <dd>
+                        Δx {{ formatGeometry(geometry.delta.x) }} · Δy
+                        {{ formatGeometry(geometry.delta.y) }}
+                      </dd>
+                    </div>
+                    <div class="geometry-intent-list">
+                      <dt>{{ i18n.t("panel.placementIntent") }}</dt>
+                      <dd>
+                        @for (
+                          explanation of geometry.explanations;
+                          track explanation.id
+                        ) {
+                          <button
+                            type="button"
+                            class="geometry-intent"
+                            [attr.data-state]="explanation.state"
+                            [attr.data-strength]="explanation.strength"
+                            (click)="
+                              onInspectorSourceSelected(explanation.source)
+                            "
+                          >
+                            <strong>{{
+                              explanation.kind === "automatic"
+                                ? i18n.t("panel.automaticChoice")
+                                : explanation.id
+                            }}</strong>
+                            <span>{{ explanation.summary }}</span>
+                            <small>
+                              @if (explanation.strength === "automatic") {
+                                {{ i18n.t("panel.applied") }}
+                              } @else {
+                                {{
+                                  i18n.t(
+                                    explanation.strength === "hard"
+                                      ? "panel.hard"
+                                      : "panel.soft"
+                                  )
+                                }}
+                                ·
+                                {{
+                                  i18n.t(
+                                    explanation.state === "relaxed"
+                                      ? "panel.relaxed"
+                                      : "panel.applied"
+                                  )
+                                }}
+                              }
+                            </small>
+                          </button>
+                        }
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              }
+            } @else if (selectedRoute(); as route) {
               <div class="route-inspector">
                 <div class="route-inspector-title">
-                  <span>{{ i18n.t("panel.effectiveRoute", { kind: selectedKindLabel() }) }}</span>
+                  <span>{{
+                    i18n.t("panel.effectiveRoute", {
+                      kind: selectedKindLabel(),
+                    })
+                  }}</span>
                   <strong>{{ route.label }}</strong>
+                  <button
+                    type="button"
+                    class="inspector-source"
+                    (click)="
+                      onInspectorSourceSelected(
+                        route.relatedSources[0] ?? route.source
+                      )
+                    "
+                  >
+                    {{ i18n.t("panel.openRouteSource") }}
+                  </button>
                 </div>
                 <dl>
-                  <div><dt>{{ i18n.t("panel.policy") }}</dt><dd>{{ route.policy }}</dd></div>
-                  <div><dt>{{ i18n.t("panel.style") }}</dt><dd>{{ route.style }}</dd></div>
-                  <div><dt>{{ i18n.t("panel.ports") }}</dt><dd>{{ route.sourcePort.side }} → {{ route.targetPort.side }}</dd></div>
-                  <div><dt>{{ i18n.t("panel.points") }}</dt><dd>{{ route.points.length }}</dd></div>
-                  <div><dt>{{ i18n.t("panel.waypoints") }}</dt><dd>{{ route.waypoints.length }}</dd></div>
-                  <div><dt>{{ i18n.t("panel.lockedSegments") }}</dt><dd>{{ route.lockedSegments.length }}</dd></div>
+                  <div>
+                    <dt>{{ i18n.t("panel.policy") }}</dt>
+                    <dd>{{ route.policy }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.style") }}</dt>
+                    <dd>{{ route.style }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.ports") }}</dt>
+                    <dd>
+                      {{ route.sourcePort.side }} → {{ route.targetPort.side }}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.points") }}</dt>
+                    <dd>{{ route.points.length }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.waypoints") }}</dt>
+                    <dd>{{ route.waypoints.length }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.lockedSegments") }}</dt>
+                    <dd>{{ route.lockedSegments.length }}</dd>
+                  </div>
                   <div>
                     <dt>{{ i18n.t("panel.avoidance") }}</dt>
                     <dd>
                       @if (route.avoidanceRegions.length === 0) {
                         {{ i18n.t("panel.none") }}
                       } @else {
-                        @for (region of route.avoidanceRegions; track region.id) {
-                          <span>{{ region.id }} · {{ region.strength }}{{ region.relaxed ? " · " + i18n.t("panel.relaxed") : "" }}</span>
+                        @for (
+                          region of route.avoidanceRegions;
+                          track region.id
+                        ) {
+                          <button
+                            type="button"
+                            class="inspector-source"
+                            (click)="onInspectorSourceSelected(region.source)"
+                          >
+                            {{ region.id }} · {{ region.strength
+                            }}{{
+                              region.relaxed
+                                ? " · " + i18n.t("panel.relaxed")
+                                : ""
+                            }}
+                          </button>
                         }
                       }
                     </dd>
                   </div>
-                  <div><dt>{{ i18n.t("panel.labelSegment") }}</dt><dd>{{ route.labelSegment + 1 }}</dd></div>
+                  <div>
+                    <dt>{{ i18n.t("panel.labelSegment") }}</dt>
+                    <dd>{{ route.labelSegment + 1 }}</dd>
+                  </div>
                   @if (route.corridor; as corridor) {
-                    <div><dt>{{ i18n.t("panel.corridor") }}</dt><dd>{{ corridor.id }} · {{ i18n.t("panel.lane") }} {{ corridor.lane + 1 }} / {{ corridor.lanes }}</dd></div>
+                    <div>
+                      <dt>{{ i18n.t("panel.corridor") }}</dt>
+                      <dd>
+                        <button
+                          type="button"
+                          class="inspector-source"
+                          (click)="onInspectorSourceSelected(corridor.source)"
+                        >
+                          {{ corridor.id }} · {{ i18n.t("panel.lane") }}
+                          {{ corridor.lane + 1 }} / {{ corridor.lanes }}
+                        </button>
+                      </dd>
+                    </div>
                   }
                 </dl>
               </div>
             }
           } @else {
-            <div class="diagnostics" [class.has-errors]="compiler.state().diagnostics.length > 0" aria-live="polite">
+            <div
+              class="diagnostics"
+              [class.has-errors]="compiler.state().diagnostics.length > 0"
+              aria-live="polite"
+            >
               @if (compiler.state().diagnostics.length === 0) {
-                <p class="diagnostics-empty">{{ i18n.t("panel.noProblems") }}</p>
+                <p class="diagnostics-empty">
+                  {{ i18n.t("panel.noProblems") }}
+                </p>
               } @else {
                 <ol>
-                  @for (diagnostic of compiler.state().diagnostics; track $index) {
+                  @for (
+                    diagnostic of compiler.state().diagnostics;
+                    track $index
+                  ) {
                     <li [attr.data-severity]="diagnostic.severity">
-                      <button type="button" (click)="onDiagnosticSelected(diagnostic)" [disabled]="diagnostic.source === undefined">
+                      <button
+                        type="button"
+                        (click)="onDiagnosticSelected(diagnostic)"
+                        [disabled]="diagnostic.source === undefined"
+                      >
                         <code>{{ diagnostic.code }}</code>
                         <p>{{ diagnostic.message }}</p>
                         @if (diagnostic.source; as sourceLocation) {
-                          <small>{{ i18n.t("panel.location", { line: sourceLocation.start.line + 1, column: sourceLocation.start.column + 1 }) }}</small>
+                          <small>{{
+                            i18n.t("panel.location", {
+                              line: sourceLocation.start.line + 1,
+                              column: sourceLocation.start.column + 1,
+                            })
+                          }}</small>
                         }
                       </button>
                     </li>
@@ -534,19 +805,36 @@
 
   <footer class="status-bar">
     <button type="button" (click)="openCommandPalette()">C4ML · draft-1</button>
-    <span>{{ documentName() }}@if (projectDirty()) { · {{ i18n.t("status.modified") }}}</span>
+    <span
+      >{{ documentName() }}
+      @if (projectDirty()) {
+        · {{ i18n.t("status.modified") }}
+      }
+    </span>
     <span class="status-spacer"></span>
     <button type="button" (click)="showBottomPanel('problems')">
-      {{ i18n.t("status.problemCount", { count: compiler.state().diagnostics.length }) }}
+      {{
+        i18n.t("status.problemCount", {
+          count: compiler.state().diagnostics.length,
+        })
+      }}
     </button>
-    <button type="button" (click)="selectActivity('diagrams')">{{ activeViewTitle() }}</button>
+    <button type="button" (click)="selectActivity('diagrams')">
+      {{ activeViewTitle() }}
+    </button>
     <span>{{ zoomLabel() }}</span>
   </footer>
 </div>
 
 @if (commandPaletteOpen()) {
   <div class="command-backdrop" (click)="closeCommandPalette()">
-    <section class="command-palette" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('command.palette')" (click)="$event.stopPropagation()">
+    <section
+      class="command-palette"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="i18n.t('command.palette')"
+      (click)="$event.stopPropagation()"
+    >
       <label>
         <span aria-hidden="true">›</span>
         <input
@@ -559,11 +847,20 @@
           [attr.aria-label]="i18n.t('command.search')"
         />
       </label>
-      <div class="command-results" role="listbox" [attr.aria-label]="i18n.t('command.available')">
+      <div
+        class="command-results"
+        role="listbox"
+        [attr.aria-label]="i18n.t('command.available')"
+      >
         @for (command of filteredCommands(); track command.id) {
           <button type="button" role="option" (click)="executeCommand(command)">
-            <span><small>{{ command.category }}</small>{{ command.label }}</span>
-            @if (command.shortcut) { <kbd>{{ command.shortcut }}</kbd> }
+            <span
+              ><small>{{ command.category }}</small
+              >{{ command.label }}</span
+            >
+            @if (command.shortcut) {
+              <kbd>{{ command.shortcut }}</kbd>
+            }
           </button>
         } @empty {
           <p>{{ i18n.t("command.none") }}</p>

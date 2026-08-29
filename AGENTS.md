@@ -73,7 +73,11 @@ preview-only routing overlay exposes effective points, endpoint Ports, the
 label anchor, and corridor lanes, while an inspector reports the selected
 route's policy and geometry. Ports, route labels, and corridors are separate
 preview navigation targets that reveal the owning route-control source;
-Arrowheads are not separate targets yet. The desktop UI and diagrams use the
+Arrowheads are not separate targets yet. A read-only geometry inspector also
+reports the selected node's automatic candidate, final position, movement, and
+effective automatic/hard/soft/relaxed placement explanations. Those
+explanations, route controls, avoidance regions, and corridors navigate to their
+owning source ranges. The desktop UI and diagrams use the
 locally packaged
 IBM Plex family: Sans for interface and diagrams, Mono only for source. SVG
 exports embed the controlled Sans WOFF2 faces, and browser zoom changes actual

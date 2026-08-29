@@ -201,6 +201,37 @@ describe("compiler worker runtime", () => {
             file: "editor.c4ml",
             start: expect.objectContaining({ line: 11, column: 2 }),
           }),
+          geometry: expect.objectContaining({
+            candidate: expect.objectContaining({
+              x: expect.any(Number),
+              y: expect.any(Number),
+            }),
+            final: expect.objectContaining({ x: 560, y: 246 }),
+            delta: expect.objectContaining({
+              x: expect.any(Number),
+              y: expect.any(Number),
+            }),
+            explanations: expect.arrayContaining([
+              expect.objectContaining({
+                id: "automatic-layout",
+                kind: "automatic",
+                strength: "automatic",
+                state: "applied",
+                summary: "Automatic layout candidate",
+                source: expect.objectContaining({ file: "editor.c4ml" }),
+              }),
+              expect.objectContaining({
+                kind: "pin",
+                strength: "hard",
+                state: "applied",
+                summary: "garden-pulse · x 520du · y 120du",
+                source: expect.objectContaining({
+                  file: "editor.c4ml",
+                  start: expect.objectContaining({ line: 70 }),
+                }),
+              }),
+            ]),
+          }),
         }),
         expect.objectContaining({
           kind: "route",
@@ -227,6 +258,9 @@ describe("compiler worker runtime", () => {
               id: "sensor-clearance",
               strength: "soft",
               relaxed: false,
+              source: expect.objectContaining({
+                start: expect.objectContaining({ line: 76 }),
+              }),
             }),
           ],
         }),
@@ -253,6 +287,9 @@ describe("compiler worker runtime", () => {
             lanes: 3,
             coordinate: 687,
             laneCoordinate: 687,
+            source: expect.objectContaining({
+              start: expect.objectContaining({ line: 82 }),
+            }),
           }),
         }),
         expect.objectContaining({

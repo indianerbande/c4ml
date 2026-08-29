@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal } from "@angular/core";
 
 import type {
   CompilerWorkerNavigationTarget,
+  CompilerWorkerNodeNavigationTarget,
   CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
@@ -47,6 +48,12 @@ export class WorkbenchPreviewFacade {
         candidate.referenceId === target.referenceId,
     );
   });
+  readonly selectedNode = computed<
+    CompilerWorkerNodeNavigationTarget | undefined
+  >(() => {
+    const target = this.selectedTarget();
+    return target?.kind === "node" ? target : undefined;
+  });
   readonly selectedKindLabel = computed(() => {
     switch (this.selectedTarget()?.kind) {
       case "corridor":
@@ -66,9 +73,10 @@ export class WorkbenchPreviewFacade {
   readonly selectedLabel = computed(() => this.selectedTarget()?.label);
   readonly activeViewTitle = computed(
     () =>
-      this.#compiler.state().views.find(
-        ({ id }) => id === this.#compiler.state().activeViewId,
-      )?.title ?? this.#i18n.t("view.none"),
+      this.#compiler
+        .state()
+        .views.find(({ id }) => id === this.#compiler.state().activeViewId)
+        ?.title ?? this.#i18n.t("view.none"),
   );
   readonly displaySvg = computed(() => {
     const svg = this.lastValidSvg();
@@ -87,12 +95,8 @@ export class WorkbenchPreviewFacade {
               },
         );
   });
-  readonly displaySize = computed(
-    () => `${Math.round(this.zoom() * 100)}%`,
-  );
-  readonly zoomLabel = computed(
-    () => `${Math.round(this.zoom() * 100)}%`,
-  );
+  readonly displaySize = computed(() => `${Math.round(this.zoom() * 100)}%`);
+  readonly zoomLabel = computed(() => `${Math.round(this.zoom() * 100)}%`);
 
   constructor() {
     effect((onCleanup) => {
@@ -118,7 +122,7 @@ export class WorkbenchPreviewFacade {
     showRoutePanel = true,
   ): CompilerWorkerNavigationTarget | undefined {
     this.selectedSceneObjectId.set(target?.sceneObjectId);
-    if (showRoutePanel && target !== undefined && target.kind !== "node") {
+    if (showRoutePanel && target !== undefined) {
       this.#session.showPanel("route");
     }
     return target;

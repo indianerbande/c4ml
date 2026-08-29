@@ -23,7 +23,10 @@ input {
   position: relative;
   z-index: 3;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(280px, 520px) minmax(340px, 1fr);
+  grid-template-columns: minmax(180px, 1fr) minmax(280px, 520px) minmax(
+      340px,
+      1fr
+    );
   align-items: center;
   gap: 18px;
   padding: 0 12px;
@@ -739,7 +742,9 @@ button.editor-tab {
   height: 13px;
   border: 1px solid var(--accent);
   border-radius: 4px;
-  box-shadow: 4px 4px 0 -2px var(--panel), 4px 4px 0 -1px var(--accent-border);
+  box-shadow:
+    4px 4px 0 -2px var(--panel),
+    4px 4px 0 -1px var(--accent-border);
 }
 
 .help-tab {
@@ -913,7 +918,10 @@ button.editor-tab {
   overflow: auto;
   padding: 24px;
   background-color: var(--preview-stage);
-  background-image: radial-gradient(var(--preview-grid-dot) 0.7px, transparent 0.7px);
+  background-image: radial-gradient(
+    var(--preview-grid-dot) 0.7px,
+    transparent 0.7px
+  );
   background-size: 17px 17px;
 }
 
@@ -923,7 +931,9 @@ button.editor-tab {
   height: 100%;
   margin: auto;
   object-fit: contain;
-  transition: width 130ms ease-out, height 130ms ease-out;
+  transition:
+    width 130ms ease-out,
+    height 130ms ease-out;
   filter: drop-shadow(0 8px 15px rgba(28, 50, 72, 0.1));
 }
 
@@ -953,7 +963,9 @@ button.editor-tab {
   border: 2px solid #92a5b7;
   border-radius: 8px;
   background: var(--control-bg);
-  box-shadow: 13px 9px 0 -7px var(--preview-stage), 13px 9px 0 -5px #92a5b7;
+  box-shadow:
+    13px 9px 0 -7px var(--preview-stage),
+    13px 9px 0 -5px #92a5b7;
 }
 
 .stale-note,
@@ -1146,6 +1158,85 @@ button.editor-tab {
   display: block;
 }
 
+.inspector-source {
+  padding: 2px 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.inspector-source:hover,
+.inspector-source:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  outline: none;
+}
+
+.geometry-inspector {
+  align-items: stretch;
+}
+
+.geometry-inspector dl {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.geometry-intent-list {
+  min-width: 360px !important;
+}
+
+.geometry-intent-list dd {
+  display: flex;
+  gap: 6px;
+}
+
+.geometry-intent {
+  display: grid;
+  min-width: 140px;
+  padding: 6px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  gap: 2px;
+  text-align: left;
+}
+
+.geometry-intent:hover,
+.geometry-intent:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.geometry-intent[data-strength="hard"] {
+  border-left: 4px solid var(--accent-strong);
+}
+
+.geometry-intent[data-strength="soft"] {
+  border-left: 4px solid var(--accent);
+}
+
+.geometry-intent[data-state="relaxed"] {
+  border-style: dashed;
+  opacity: 0.72;
+}
+
+.geometry-intent span,
+.geometry-intent small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.geometry-intent small {
+  color: var(--control-ink);
+}
+
 .status-bar {
   display: flex;
   min-width: 0;
@@ -1285,7 +1376,10 @@ button.editor-tab {
 
 @media (max-width: 1120px) {
   .title-bar {
-    grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1fr) minmax(220px, 0.8fr);
+    grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1fr) minmax(
+        220px,
+        0.8fr
+      );
   }
 
   .worker-state span:last-child,

@@ -9,8 +9,12 @@ import {
   type ArchitectureView,
   type Diagnostic,
   type DiagramScene,
+  type DiagramPlacementOptions,
   type DiagramRoutingOptions,
   type LayoutAdapter,
+  type LayoutResult,
+  type PlacementResult,
+  type PlacementConstraint,
   type SceneNode,
   type ScenePort,
   type SceneRoute,
@@ -188,6 +192,9 @@ export async function compileWorkerRequest(
         view,
         compiled.scene!,
         parsed.routingByViewId?.[view.id],
+        compiled.candidateLayout,
+        compiled.placement,
+        parsed.placementByViewId?.[view.id],
       ),
       views,
       view.id,
@@ -530,6 +537,9 @@ function toWorkerNavigation(
   view: ArchitectureView,
   scene: DiagramScene,
   routing: DiagramRoutingOptions | undefined,
+  candidateLayout: LayoutResult | undefined,
+  placement: PlacementResult | undefined,
+  placementOptions: DiagramPlacementOptions | undefined,
 ): CompilerWorkerNavigation {
   const portById = new Map(scene.ports.map((port) => [port.id, port]));
   return {
@@ -538,6 +548,14 @@ function toWorkerNavigation(
     targets: [
       ...scene.nodes.flatMap((node) => {
         const source = sourceForSceneNode(model, view, node);
+        const geometry = toWorkerNodeGeometry(
+          node,
+          source,
+          view.source,
+          candidateLayout,
+          placement,
+          placementOptions,
+        );
         return source === undefined
           ? []
           : [
@@ -559,6 +577,7 @@ function toWorkerNavigation(
                   width: node.width,
                   height: node.height,
                 },
+                ...(geometry === undefined ? {} : { geometry }),
               },
             ];
       }),
@@ -578,6 +597,9 @@ function toWorkerNavigation(
         )?.source;
         const relationshipSource = toWorkerSource(source);
         const detailSource = toWorkerSource(controlSource ?? source);
+        const sourceForRoutingDetail = (
+          detailSourceReference?: SourceReference,
+        ) => toWorkerSource(detailSourceReference ?? controlSource ?? source);
         const routeTarget = {
           kind: "route" as const,
           sceneObjectId: route.id,
@@ -608,6 +630,11 @@ function toWorkerNavigation(
                   lane: route.corridor.lane,
                   lanes: route.corridor.lanes,
                   laneSpacing: route.corridor.laneSpacing,
+                  source: sourceForRoutingDetail(
+                    routing?.corridors?.find(
+                      ({ id }) => id === route.corridor?.corridorId,
+                    )?.source,
+                  ),
                 },
           waypoints: route.waypoints.map((waypoint) => ({
             anchorKind: waypoint.anchor.kind,
@@ -622,7 +649,13 @@ function toWorkerNavigation(
             point: waypoint.point,
           })),
           lockedSegments: route.lockedSegments,
-          avoidanceRegions: route.avoidanceRegions,
+          avoidanceRegions: route.avoidanceRegions.map((region) => ({
+            ...region,
+            source: sourceForRoutingDetail(
+              routing?.avoidanceRegions?.find(({ id }) => id === region.id)
+                ?.source,
+            ),
+          })),
         };
         const commonDetail = {
           referenceId: route.relationshipId,
@@ -696,6 +729,97 @@ function toWorkerNavigation(
       }),
     ],
   };
+}
+
+function toWorkerNodeGeometry(
+  node: SceneNode,
+  nodeSource: SourceReference | undefined,
+  viewSource: SourceReference | undefined,
+  candidateLayout: LayoutResult | undefined,
+  placement: PlacementResult | undefined,
+  placementOptions: DiagramPlacementOptions | undefined,
+) {
+  const candidate = candidateLayout?.nodes.find(
+    ({ id }) => `scene-node:${id}` === node.id,
+  );
+  if (candidate === undefined || nodeSource === undefined) {
+    return undefined;
+  }
+  const finalLayoutNode = placement?.layout.nodes.find(
+    ({ id }) => id === candidate.id,
+  );
+  const sceneOffset = {
+    x: finalLayoutNode === undefined ? 0 : node.x - finalLayoutNode.x,
+    y: finalLayoutNode === undefined ? 0 : node.y - finalLayoutNode.y,
+  };
+  const fallbackSource = viewSource ?? nodeSource;
+  const effective =
+    placement?.constraints.filter(({ nodeIds }) =>
+      nodeIds.includes(candidate.id),
+    ) ?? [];
+  const explanations = [
+    {
+      id: "automatic-layout",
+      kind: "automatic" as const,
+      strength: "automatic" as const,
+      state: "applied" as const,
+      summary: "Automatic layout candidate",
+      source: toWorkerSource(fallbackSource),
+    },
+    ...effective.map((constraint) => {
+      const authored = placementOptions?.constraints.find(
+        ({ id }) => id === constraint.id,
+      );
+      return {
+        id: constraint.id,
+        kind: constraint.kind,
+        strength: constraint.strength,
+        state: constraint.relaxed ? ("relaxed" as const) : ("applied" as const),
+        summary:
+          authored === undefined
+            ? constraint.kind
+            : placementConstraintSummary(authored),
+        source: toWorkerSource(authored?.source ?? fallbackSource),
+      };
+    }),
+  ];
+  const final = {
+    x: node.x,
+    y: node.y,
+    width: node.width,
+    height: node.height,
+  };
+  return {
+    candidate: {
+      x: candidate.x + sceneOffset.x,
+      y: candidate.y + sceneOffset.y,
+      width: candidate.width,
+      height: candidate.height,
+    },
+    final,
+    delta: {
+      x: final.x - candidate.x - sceneOffset.x,
+      y: final.y - candidate.y - sceneOffset.y,
+    },
+    explanations,
+  };
+}
+
+function placementConstraintSummary(constraint: PlacementConstraint): string {
+  switch (constraint.kind) {
+    case "relative":
+      return `${constraint.subjectId} ${constraint.relation} ${constraint.targetId} · gap ${constraint.gap}du`;
+    case "alignment":
+      return `${constraint.subjectId} ${constraint.alignment} ${constraint.targetId}`;
+    case "align":
+      return `${constraint.alignment} [${constraint.nodeIds.join(", ")}] · anchor ${constraint.anchorId}`;
+    case "distribute":
+      return `${constraint.orientation} [${constraint.nodeIds.join(", ")}] · gap ${constraint.gap}du`;
+    case "adjust":
+      return `${constraint.targetId} from automatic${constraint.offsetX === undefined ? "" : ` · Δx ${constraint.offsetX}du`}${constraint.offsetY === undefined ? "" : ` · Δy ${constraint.offsetY}du`}`;
+    case "pin":
+      return `${constraint.targetId} · x ${constraint.x}du · y ${constraint.y}du`;
+  }
 }
 
 function toWorkerPort(port: ScenePort) {
