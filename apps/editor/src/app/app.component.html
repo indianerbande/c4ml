@@ -46,7 +46,11 @@
         [title]="i18n.t('area.files')"
         (click)="selectActivity('files')"
       >
-        <span aria-hidden="true">F</span>
+        <span
+          class="activity-icon"
+          data-symbol="folder-open"
+          aria-hidden="true"
+        ></span>
       </button>
       <button
         type="button"
@@ -57,7 +61,11 @@
         [title]="i18n.t('area.diagrams')"
         (click)="selectActivity('diagrams')"
       >
-        <span aria-hidden="true">D</span>
+        <span
+          class="activity-icon"
+          data-symbol="schema"
+          aria-hidden="true"
+        ></span>
       </button>
       <button
         type="button"
@@ -68,7 +76,11 @@
         [title]="i18n.t('area.output')"
         (click)="selectActivity('export')"
       >
-        <span aria-hidden="true">X</span>
+        <span
+          class="activity-icon"
+          data-symbol="download"
+          aria-hidden="true"
+        ></span>
       </button>
       <button
         type="button"
@@ -79,7 +91,11 @@
         [title]="i18n.t('area.help')"
         (click)="selectActivity('help')"
       >
-        <span aria-hidden="true">?</span>
+        <span
+          class="activity-icon"
+          data-symbol="menu-book"
+          aria-hidden="true"
+        ></span>
       </button>
       <span class="activity-spacer"></span>
       <button
@@ -89,7 +105,11 @@
         [title]="i18n.t('area.settings')"
         (click)="openSettings()"
       >
-        <span aria-hidden="true">⚙</span>
+        <span
+          class="activity-icon"
+          data-symbol="settings"
+          aria-hidden="true"
+        ></span>
       </button>
     </nav>
 

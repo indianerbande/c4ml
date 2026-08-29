@@ -1379,6 +1379,11 @@ Output, and Help activity areas, simultaneous source, preview, and Handbook tabs
 for Problems and Route details, a status bar, and a searchable command palette.
 These concepts provide familiar desktop navigation without adopting another
 product's branding, source, extensions, assets, or distinctive interface.
+The activity areas and Settings use a fixed, locally packaged subset of
+Material Symbols Outlined. Symbols are decorative inside already named buttons;
+localized accessible names and tooltips remain C4ML-owned text. The icon assets
+MUST load offline, follow the active workbench color, and MUST NOT enter diagram
+themes or exported SVG/PNG.
 
 A versioned session record may persist only installation-local presentation
 state: the active activity area, bottom-panel visibility and tab, preview zoom,

@@ -653,6 +653,8 @@ Desktop tests MUST cover:
 - packaging without development sources or an application `node_modules`
   tree;
 - required editor workers, fonts, licenses, and notices in the application;
+- exact locally packaged activity-icon SVGs, their source notice and license,
+  localized accessible button names, and visible light/dark theme states;
 - the configured production Electron fuses;
 - launch and live compilation from the packaged application; and
 - signature, installer/archive integrity, installation, launch, file round

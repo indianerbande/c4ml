@@ -183,6 +183,37 @@ Sources: [Fira Code](https://github.com/tonsky/FiraCode/releases/tag/6.2),
 [Inconsolata](https://github.com/googlefonts/Inconsolata/releases/tag/v3.000),
 and [Cascadia Code](https://github.com/microsoft/cascadia-code/releases/tag/v2407.24).
 
+### Google Material Symbols activity icons
+
+**Status: accepted and implemented as a fixed local SVG subset.**
+
+- **Capability:** recognizable, consistent activity-bar symbols for Files,
+  Diagrams, Output, Help, and Settings.
+- **Why external:** maintaining a coherent general-purpose interface icon set
+  is specialist visual-design work outside C4ML's compiler and editor logic.
+- **License:** Apache License 2.0. The production editor copies the repository's
+  complete Apache-2.0 text beside the Material Symbols source notice.
+- **Provenance:** five exact Material Symbols Outlined 24 px SVGs from Google's
+  official `google/material-design-icons` repository at commit
+  `84ccef280841abfac506afc4ad4a2782f6d0a1d0`. Their individual SHA-256 hashes
+  are enforced by the editor production check.
+- **Impact:** five static SVG files totaling 2,572 bytes; no npm dependency,
+  JavaScript, icon font, installation hook, telemetry, or runtime service is
+  added.
+- **Offline behavior:** the SVGs are copied into the production editor and
+  loaded through the existing local application protocol. No Google Fonts or
+  other network request is made.
+- **Boundary:** the files under
+  `apps/editor/src/assets/material-symbols` are presentation-only workbench
+  assets. CSS masks apply the current workbench color. They never enter the C4
+  model, compiler worker, scene graph, authored source, or diagram export.
+- **Protecting evidence:** pinned source hashes, packaged byte identity, source
+  notice and license checks, accessible button names, theme-state tests, and
+  visual inspection in light and dark workbench themes.
+
+Sources: [Google Material Symbols guide](https://developers.google.com/fonts/docs/material_symbols)
+and the [official Material Design Icons repository](https://github.com/google/material-design-icons/tree/84ccef280841abfac506afc4ad4a2782f6d0a1d0).
+
 ## Accepted desktop editor libraries
 
 The editor pins `@angular/core`, `@angular/common`, and
@@ -497,6 +528,7 @@ script and packaging runtime.
 
 ## Asset status
 
-C4ML includes only the documented IBM Plex font binaries as third-party visual
-assets. It contains no third-party icons, themes, or sample architectures. All
-probe data and test fixtures remain original C4ML material.
+C4ML includes the documented IBM Plex and optional editor font binaries plus
+five pinned Google Material Symbols SVGs as third-party visual assets. It
+contains no third-party themes or sample architectures. All probe data and test
+fixtures remain original C4ML material.

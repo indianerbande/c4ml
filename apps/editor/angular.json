@@ -63,6 +63,16 @@
                 "glob": "**/*",
                 "input": "node_modules/@c4ml/font-editor-mono/licenses",
                 "output": "third-party/editor-mono"
+              },
+              {
+                "glob": "*.svg",
+                "input": "src/assets/material-symbols",
+                "output": "icons/material-symbols"
+              },
+              {
+                "glob": "{LICENSE,SOURCE.md}",
+                "input": "src/assets/material-symbols",
+                "output": "third-party/material-symbols"
               }
             ],
             "loader": {
