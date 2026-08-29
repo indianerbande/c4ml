@@ -1,7 +1,4 @@
-<div
-  class="settings-backdrop"
-  (click)="onBackdropClick($event)"
->
+<div class="settings-backdrop" (click)="onBackdropClick($event)">
   <section
     #dialog
     class="settings-dialog"
@@ -32,12 +29,17 @@
     </header>
 
     <div class="settings-body">
-      <nav class="settings-navigation" [attr.aria-label]="i18n.t('settings.categories')">
+      <nav
+        class="settings-navigation"
+        [attr.aria-label]="i18n.t('settings.categories')"
+      >
         @for (category of categories(); track category.id) {
           <button
             type="button"
             [class.is-active]="activeCategory() === category.id"
-            [attr.aria-current]="activeCategory() === category.id ? 'page' : null"
+            [attr.aria-current]="
+              activeCategory() === category.id ? 'page' : null
+            "
             (click)="selectCategory(category.id)"
           >
             <strong>{{ category.label }}</strong>
@@ -52,7 +54,9 @@
             <section aria-labelledby="appearance-heading">
               <div class="section-heading">
                 <p>{{ i18n.t("settings.appearance") }}</p>
-                <h3 id="appearance-heading">{{ i18n.t("settings.appearance") }}</h3>
+                <h3 id="appearance-heading">
+                  {{ i18n.t("settings.appearance") }}
+                </h3>
                 <span>
                   {{ i18n.t("settings.appearanceHint") }}
                 </span>
@@ -107,7 +111,9 @@
                       type="radio"
                       name="color-scheme"
                       [value]="option.id"
-                      [checked]="preferences.preferences().colorScheme === option.id"
+                      [checked]="
+                        preferences.preferences().colorScheme === option.id
+                      "
                       (change)="setColorScheme(option.id)"
                     />
                     <span class="scheme-preview" aria-hidden="true">
@@ -115,6 +121,30 @@
                     </span>
                     <strong>{{ option.label }}</strong>
                     <small>{{ option.hint }}</small>
+                  </label>
+                }
+              </fieldset>
+
+              <div class="section-heading compact-heading">
+                <h3>{{ i18n.t("settings.colorPalette") }}</h3>
+                <span>{{ i18n.t("settings.colorPaletteDescription") }}</span>
+              </div>
+
+              <fieldset class="palette-options">
+                <legend>{{ i18n.t("settings.colorPaletteLegend") }}</legend>
+                @for (option of colorPaletteOptions(); track option.id) {
+                  <label [attr.data-palette]="option.id">
+                    <input
+                      type="radio"
+                      name="color-palette"
+                      [value]="option.id"
+                      [checked]="
+                        preferences.preferences().colorPalette === option.id
+                      "
+                      (change)="setColorPalette(option.id)"
+                    />
+                    <span class="palette-swatch" aria-hidden="true"></span>
+                    <strong>{{ option.label }}</strong>
                   </label>
                 }
               </fieldset>
@@ -132,6 +162,22 @@
               </div>
 
               <div class="setting-row">
+                <label for="editor-syntax-theme">
+                  <strong>{{ i18n.t("settings.syntaxTheme") }}</strong>
+                  <span>{{ i18n.t("settings.syntaxThemeHint") }}</span>
+                </label>
+                <select
+                  id="editor-syntax-theme"
+                  [value]="preferences.preferences().syntaxTheme"
+                  (change)="setSyntaxTheme($event)"
+                >
+                  @for (option of syntaxThemeOptions(); track option.id) {
+                    <option [value]="option.id">{{ option.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="setting-row">
                 <label for="editor-font-family">
                   <strong>{{ i18n.t("settings.fontFamily") }}</strong>
                   <span>{{ i18n.t("settings.fontFamilyHint") }}</span>
@@ -144,7 +190,9 @@
                   @for (option of editorFontFamilyOptions; track option.id) {
                     <option [value]="option.id">{{ option.label }}</option>
                   }
-                  <option value="system-monospace">{{ i18n.t("settings.systemMonospace") }}</option>
+                  <option value="system-monospace">
+                    {{ i18n.t("settings.systemMonospace") }}
+                  </option>
                 </select>
               </div>
 
@@ -186,7 +234,9 @@
               <div
                 class="font-sample"
                 [style.font-family]="preferences.editorFontFamilyCss()"
-                [style.font-feature-settings]="preferences.editorFontFeatureSettingsCss()"
+                [style.font-feature-settings]="
+                  preferences.editorFontFeatureSettingsCss()
+                "
                 [style.font-size.px]="preferences.editorFontSize()"
               >
                 view system-landscape main<br />

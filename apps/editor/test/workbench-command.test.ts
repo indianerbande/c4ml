@@ -25,8 +25,18 @@ describe("workbench command catalogue", () => {
   it("does not offer native-only commands in the browser path", () => {
     const browserIds = filterWorkbenchCommands("", false).map(({ id }) => id);
     expect(browserIds).not.toContain("file.open");
+    expect(browserIds).not.toContain("file.save-all");
     expect(browserIds).not.toContain("diagram.export-png");
     expect(browserIds).toContain("diagram.export-svg");
+  });
+
+  it("offers Save All in the desktop command catalogue", () => {
+    expect(
+      filterWorkbenchCommands("save all", true).map(({ id }) => id),
+    ).toEqual(["file.save-all"]);
+    expect(
+      filterWorkbenchCommands("alle speichern", true, "de").map(({ id }) => id),
+    ).toEqual(["file.save-all"]);
   });
 
   it("searches the localized German command catalogue", () => {

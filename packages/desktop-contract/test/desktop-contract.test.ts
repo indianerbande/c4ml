@@ -25,7 +25,7 @@ describe("desktop bridge contract", () => {
     };
 
     expect(isC4mlDesktopApi(api)).toBe(true);
-    expect(isC4mlDesktopApi({ ...api, protocolVersion: 5 })).toBe(false);
+    expect(isC4mlDesktopApi({ ...api, protocolVersion: 999 })).toBe(false);
     expect(isC4mlDesktopApi({ ...api, openDocument: undefined })).toBe(false);
   });
 
@@ -85,11 +85,12 @@ describe("desktop bridge contract", () => {
     ).toBe(false);
   });
 
-  it("accepts only the six owned desktop commands", () => {
+  it("accepts only the seven owned desktop commands", () => {
     expect(isDesktopCommand("export-png")).toBe(true);
     expect(isDesktopCommand("open-document")).toBe(true);
     expect(isDesktopCommand("open-project")).toBe(true);
     expect(isDesktopCommand("open-settings")).toBe(true);
+    expect(isDesktopCommand("save-all-documents")).toBe(true);
     expect(isDesktopCommand("save-document")).toBe(true);
     expect(isDesktopCommand("save-as-document")).toBe(true);
     expect(isDesktopCommand("open-terminal")).toBe(false);

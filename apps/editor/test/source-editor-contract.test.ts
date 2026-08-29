@@ -101,11 +101,35 @@ describe("C4ML source-editor contract", () => {
             end: { offset: 20, line: 2, column: 8 },
           },
         },
+        {
+          kind: "declaration",
+          range: {
+            start: { offset: 21, line: 3, column: 0 },
+            end: { offset: 27, line: 3, column: 6 },
+          },
+        },
+        {
+          kind: "property",
+          range: {
+            start: { offset: 28, line: 3, column: 7 },
+            end: { offset: 32, line: 3, column: 11 },
+          },
+        },
+        {
+          kind: "value",
+          range: {
+            start: { offset: 33, line: 3, column: 12 },
+            end: { offset: 41, line: 3, column: 20 },
+          },
+        },
       ])],
     ).toEqual([
       0, 0, 4, 2, 0,
       0, 5, 6, 1, 0,
       2, 2, 6, 5, 0,
+      1, 0, 6, 6, 0,
+      0, 7, 4, 7, 0,
+      0, 5, 8, 8, 0,
     ]);
   });
 });

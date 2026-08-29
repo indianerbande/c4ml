@@ -77,6 +77,7 @@ export class AppComponent {
   readonly projectDirty = this.documents.projectDirty;
   readonly projectDocuments = this.documents.projectDocuments;
   readonly activeDocumentUri = this.documents.activeDocumentUri;
+  readonly documentSetRevision = this.documents.documentSetRevision;
   readonly workspaceName = this.documents.workspaceName;
   readonly fileOperationLabel = this.documents.fileOperationLabel;
   readonly pngScale = this.documents.pngScale;
@@ -167,6 +168,9 @@ export class AppComponent {
         case "save-document":
           void this.saveDocument("save");
           break;
+        case "save-all-documents":
+          void this.saveAllDocuments();
+          break;
         case "save-as-document":
           void this.saveDocument("save-as");
           break;
@@ -243,6 +247,10 @@ export class AppComponent {
 
   async saveDocument(mode: "save" | "save-as"): Promise<void> {
     await this.documents.saveDocument(mode);
+  }
+
+  async saveAllDocuments(): Promise<void> {
+    await this.documents.saveAllDocuments();
   }
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
@@ -421,6 +429,9 @@ export class AppComponent {
         break;
       case "file.save":
         void this.saveDocument("save");
+        break;
+      case "file.save-all":
+        void this.saveAllDocuments();
         break;
       case "file.save-as":
         void this.saveDocument("save-as");

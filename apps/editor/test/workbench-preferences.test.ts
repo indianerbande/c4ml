@@ -14,6 +14,7 @@ import {
   storeWorkbenchPreferences,
   workbenchEditorFontFamilies,
   workbenchEditorFontFamilyOptions,
+  workbenchColorPalettes,
 } from "../src/app/workbench-preferences.js";
 
 describe("workbench preferences", () => {
@@ -28,6 +29,8 @@ describe("workbench preferences", () => {
       version: 1,
       uiLanguage: "de",
       colorScheme: "dark",
+      colorPalette: "violet",
+      syntaxTheme: "vivid",
       interfaceFontSize: 12.5,
       editorFontFamily: "system-monospace",
       editorFontLigatures: false,
@@ -41,14 +44,16 @@ describe("workbench preferences", () => {
       version: 1,
       uiLanguage: "de",
       colorScheme: "dark",
+      colorPalette: "violet",
+      syntaxTheme: "vivid",
       interfaceFontSize: 12.5,
       editorFontFamily: "system-monospace",
       editorFontLigatures: false,
       editorFontSize: 15.5,
     });
-    expect(JSON.parse(serializeWorkbenchPreferences(parsed))).not.toHaveProperty(
-      "futureSetting",
-    );
+    expect(
+      JSON.parse(serializeWorkbenchPreferences(parsed)),
+    ).not.toHaveProperty("futureSetting");
   });
 
   it("falls back field by field for malformed version-one settings", () => {
@@ -58,6 +63,8 @@ describe("workbench preferences", () => {
           version: 1,
           uiLanguage: "fr",
           colorScheme: "blue",
+          colorPalette: "ultraviolet",
+          syntaxTheme: "rainbow",
           interfaceFontSize: "huge",
           editorFontFamily: 42,
           editorFontLigatures: "sometimes",
@@ -81,6 +88,8 @@ describe("workbench preferences", () => {
       version: 1,
       uiLanguage: "en",
       colorScheme: "dark",
+      colorPalette: "blue",
+      syntaxTheme: "balanced",
       interfaceFontSize: 10,
       editorFontFamily: "system-monospace",
       editorFontLigatures: true,
@@ -89,9 +98,7 @@ describe("workbench preferences", () => {
   });
 
   it("ignores malformed JSON and unsupported schema versions", () => {
-    expect(parseWorkbenchPreferences("{")).toEqual(
-      defaultWorkbenchPreferences,
-    );
+    expect(parseWorkbenchPreferences("{")).toEqual(defaultWorkbenchPreferences);
     expect(parseWorkbenchPreferences('{"version":2}')).toEqual(
       defaultWorkbenchPreferences,
     );
@@ -116,6 +123,36 @@ describe("workbench preferences", () => {
     expect(resolveEffectiveColorScheme("system", false)).toBe("light");
     expect(resolveEffectiveColorScheme("light", true)).toBe("light");
     expect(resolveEffectiveColorScheme("dark", false)).toBe("dark");
+  });
+
+  it("accepts all eight workbench color families", () => {
+    expect(workbenchColorPalettes).toHaveLength(8);
+    for (const colorPalette of workbenchColorPalettes) {
+      expect(
+        parseWorkbenchPreferences(
+          JSON.stringify({
+            ...defaultWorkbenchPreferences,
+            colorPalette,
+          }),
+        ).colorPalette,
+      ).toBe(colorPalette);
+    }
+  });
+
+  it("accepts every syntax presentation preset", async () => {
+    const { c4mlSyntaxThemePresets } =
+      await import("../src/app/syntax-theme.js");
+    expect(c4mlSyntaxThemePresets).toHaveLength(5);
+    for (const syntaxTheme of c4mlSyntaxThemePresets) {
+      expect(
+        parseWorkbenchPreferences(
+          JSON.stringify({
+            ...defaultWorkbenchPreferences,
+            syntaxTheme,
+          }),
+        ).syntaxTheme,
+      ).toBe(syntaxTheme);
+    }
   });
 
   it("maps stored font identifiers to controlled CSS stacks", () => {

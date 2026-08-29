@@ -145,6 +145,7 @@
               <button type="button" (click)="openDocument()">{{ i18n.t("files.open") }}</button>
               <button type="button" (click)="openProject()">{{ i18n.t("files.openProject") }}</button>
               <button type="button" (click)="saveDocument('save')">{{ i18n.t("files.save") }}</button>
+              <button type="button" [disabled]="!projectDirty()" (click)="saveAllDocuments()">{{ i18n.t("files.saveAll") }}</button>
               <button type="button" (click)="saveDocument('save-as')">{{ i18n.t("files.saveAs") }}</button>
             </section>
           }
@@ -304,10 +305,14 @@
             #sourceEditor
             class="source-editor-host"
             [value]="source()"
+            [documentUri]="activeDocumentUri()"
+            [documentSetRevision]="documentSetRevision()"
             [diagnostics]="activeDiagnostics()"
             [completionProvider]="provideCompletions"
             [highlightProvider]="provideHighlights"
             [colorScheme]="preferences.effectiveColorScheme()"
+            [colorPalette]="preferences.preferences().colorPalette"
+            [syntaxTheme]="preferences.preferences().syntaxTheme"
             [editorFontFamily]="preferences.editorFontFamilyCss()"
             [editorFontLigatures]="preferences.editorFontLigatures()"
             [editorFontSize]="preferences.editorFontSize()"

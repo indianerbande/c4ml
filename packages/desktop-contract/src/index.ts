@@ -1,4 +1,4 @@
-export const desktopBridgeProtocolVersion = 4 as const;
+export const desktopBridgeProtocolVersion = 5 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
@@ -20,6 +20,7 @@ export type DesktopCommand =
   | "open-document"
   | "open-project"
   | "open-settings"
+  | "save-all-documents"
   | "save-as-document"
   | "save-document";
 export type DesktopSaveMode = "save" | "save-as";
@@ -118,6 +119,7 @@ export function isDesktopCommand(value: unknown): value is DesktopCommand {
     value === "open-document" ||
     value === "open-project" ||
     value === "open-settings" ||
+    value === "save-all-documents" ||
     value === "save-document" ||
     value === "save-as-document"
   );

@@ -19,10 +19,12 @@ import {
   resolveEffectiveColorScheme,
   storeWorkbenchPreferences,
   type WorkbenchColorScheme,
+  type WorkbenchColorPalette,
   type WorkbenchEditorFontFamily,
   type WorkbenchPreferences,
   type WorkbenchUiLanguage,
 } from "./workbench-preferences.js";
+import type { C4mlSyntaxThemePreset } from "./syntax-theme.js";
 
 @Injectable({ providedIn: "root" })
 export class WorkbenchPreferencesService {
@@ -52,18 +54,14 @@ export class WorkbenchPreferencesService {
       this.preferences().editorFontLigatures,
     ),
   );
-  readonly editorFontSize = computed(
-    () => this.preferences().editorFontSize,
-  );
+  readonly editorFontSize = computed(() => this.preferences().editorFontSize);
   readonly interfaceFontSize = computed(
     () => this.preferences().interfaceFontSize,
   );
   readonly uiLanguage = computed(() => this.preferences().uiLanguage);
 
   constructor() {
-    const mediaQuery = this.#window?.matchMedia(
-      "(prefers-color-scheme: dark)",
-    );
+    const mediaQuery = this.#window?.matchMedia("(prefers-color-scheme: dark)");
     const handleSystemSchemeChange = (event: MediaQueryListEvent): void => {
       this.#systemPrefersDark.set(event.matches);
     };
@@ -77,6 +75,8 @@ export class WorkbenchPreferencesService {
       const effectiveColorScheme = this.effectiveColorScheme();
       this.#document.documentElement.dataset["colorScheme"] =
         effectiveColorScheme;
+      this.#document.documentElement.dataset["colorPalette"] =
+        preferences.colorPalette;
       this.#document.documentElement.lang = preferences.uiLanguage;
       this.#document.documentElement.style.setProperty(
         "--c4ml-interface-font-size",
@@ -97,6 +97,20 @@ export class WorkbenchPreferencesService {
     this.preferences.update((preferences) => ({
       ...preferences,
       colorScheme,
+    }));
+  }
+
+  setColorPalette(colorPalette: WorkbenchColorPalette): void {
+    this.preferences.update((preferences) => ({
+      ...preferences,
+      colorPalette,
+    }));
+  }
+
+  setSyntaxTheme(syntaxTheme: C4mlSyntaxThemePreset): void {
+    this.preferences.update((preferences) => ({
+      ...preferences,
+      syntaxTheme,
     }));
   }
 

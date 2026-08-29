@@ -1,9 +1,25 @@
-export const workbenchPreferencesStorageKey =
-  "c4ml.workbench.preferences.v1";
+import {
+  c4mlSyntaxThemePresets,
+  type C4mlSyntaxThemePreset,
+} from "./syntax-theme.js";
+
+export const workbenchPreferencesStorageKey = "c4ml.workbench.preferences.v1";
 
 export const workbenchColorSchemes = ["system", "light", "dark"] as const;
 export type WorkbenchColorScheme = (typeof workbenchColorSchemes)[number];
 export type EffectiveColorScheme = Exclude<WorkbenchColorScheme, "system">;
+
+export const workbenchColorPalettes = [
+  "blue",
+  "gray",
+  "yellow",
+  "green",
+  "violet",
+  "red",
+  "orange",
+  "turquoise",
+] as const;
+export type WorkbenchColorPalette = (typeof workbenchColorPalettes)[number];
 
 export const workbenchUiLanguages = ["en", "de"] as const;
 export type WorkbenchUiLanguage = (typeof workbenchUiLanguages)[number];
@@ -45,6 +61,8 @@ export interface WorkbenchPreferences {
   readonly version: 1;
   readonly uiLanguage: WorkbenchUiLanguage;
   readonly colorScheme: WorkbenchColorScheme;
+  readonly colorPalette: WorkbenchColorPalette;
+  readonly syntaxTheme: C4mlSyntaxThemePreset;
   readonly interfaceFontSize: number;
   readonly editorFontFamily: WorkbenchEditorFontFamily;
   readonly editorFontLigatures: boolean;
@@ -60,6 +78,8 @@ export const defaultWorkbenchPreferences: WorkbenchPreferences = {
   version: 1,
   uiLanguage: "en",
   colorScheme: "system",
+  colorPalette: "blue",
+  syntaxTheme: "balanced",
   interfaceFontSize: 10,
   editorFontFamily: "ibm-plex-mono",
   editorFontLigatures: true,
@@ -85,9 +105,13 @@ export function parseWorkbenchPreferences(
       colorScheme: isColorScheme(value["colorScheme"])
         ? value["colorScheme"]
         : defaultWorkbenchPreferences.colorScheme,
-      interfaceFontSize: normalizeInterfaceFontSize(
-        value["interfaceFontSize"],
-      ),
+      colorPalette: isColorPalette(value["colorPalette"])
+        ? value["colorPalette"]
+        : defaultWorkbenchPreferences.colorPalette,
+      syntaxTheme: isSyntaxTheme(value["syntaxTheme"])
+        ? value["syntaxTheme"]
+        : defaultWorkbenchPreferences.syntaxTheme,
+      interfaceFontSize: normalizeInterfaceFontSize(value["interfaceFontSize"]),
       editorFontFamily: isEditorFontFamily(value["editorFontFamily"])
         ? value["editorFontFamily"]
         : defaultWorkbenchPreferences.editorFontFamily,
@@ -168,9 +192,7 @@ export function resolveEffectiveColorScheme(
     : preference;
 }
 
-export function editorFontFamilyCss(
-  family: WorkbenchEditorFontFamily,
-): string {
+export function editorFontFamilyCss(family: WorkbenchEditorFontFamily): string {
   const bundledFamilies: Partial<
     Readonly<Record<WorkbenchEditorFontFamily, string>>
   > = {
@@ -218,6 +240,14 @@ export function editorFontFeatureSettingsCss(
 
 function isColorScheme(value: unknown): value is WorkbenchColorScheme {
   return workbenchColorSchemes.some((candidate) => candidate === value);
+}
+
+function isColorPalette(value: unknown): value is WorkbenchColorPalette {
+  return workbenchColorPalettes.some((candidate) => candidate === value);
+}
+
+function isSyntaxTheme(value: unknown): value is C4mlSyntaxThemePreset {
+  return c4mlSyntaxThemePresets.some((candidate) => candidate === value);
 }
 
 function isUiLanguage(value: unknown): value is WorkbenchUiLanguage {

@@ -568,6 +568,11 @@ function installApplicationMenu(): void {
             click: () => send("save-document"),
           },
           {
+            label: desktopMessage(uiLanguage, "menu.saveAll"),
+            accelerator: "CmdOrCtrl+Alt+S",
+            click: () => send("save-all-documents"),
+          },
+          {
             label: desktopMessage(uiLanguage, "menu.saveAs"),
             accelerator: "CmdOrCtrl+Shift+S",
             click: () => send("save-as-document"),

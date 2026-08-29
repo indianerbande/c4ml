@@ -6,6 +6,7 @@ export type WorkbenchCommandId =
   | "file.open"
   | "file.open-project"
   | "file.save"
+  | "file.save-all"
   | "file.save-as"
   | "help.context"
   | "help.open"
@@ -50,6 +51,13 @@ const workbenchCommandDefinitions: readonly WorkbenchCommandDefinition[] = [
     category: "command.category.file",
     desktopOnly: true,
     shortcut: "⌘S",
+  },
+  {
+    id: "file.save-all",
+    label: "command.file.saveAll",
+    category: "command.category.file",
+    desktopOnly: true,
+    shortcut: "⌥⌘S",
   },
   {
     id: "file.save-as",
