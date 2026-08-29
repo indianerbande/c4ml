@@ -1,19 +1,23 @@
 import { DestroyRef, Injectable, inject, signal } from "@angular/core";
 
 import {
-  isCompletionWorkerResponse,
   isCompilerWorkerResponse,
+  type CompilerWorkerResponse,
+} from "./compiler-worker.compile.protocol.js";
+import {
+  isCompletionWorkerResponse,
   isHighlightWorkerResponse,
   isHelpWorkerResponse,
-  isWizardWorkerResponse,
-  type CompilerWorkerResponse,
   type CompletionWorkerCandidate,
   type CompletionWorkerResponse,
   type HighlightWorkerResponse,
   type HighlightWorkerSpan,
   type HelpWorkerResponse,
+} from "./compiler-worker.language.protocol.js";
+import {
+  isWizardWorkerResponse,
   type WizardWorkerResponse,
-} from "./compiler-worker.protocol.js";
+} from "./compiler-worker.authoring.protocol.js";
 import {
   EditorCompilationSession,
   EditorCompletionSession,

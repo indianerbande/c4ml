@@ -17,7 +17,7 @@ import {
   parseC4mlDraft,
 } from "@c4ml/language-c4ml";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
-import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
+import { ResvgPngRenderer } from "@c4ml/render-resvg";
 
 export const cliVersion = "0.0.0" as const;
 

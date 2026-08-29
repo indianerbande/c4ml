@@ -1,8 +1,8 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.23
+Status: Draft 0.24
 
-Date: 2026-08-28
+Date: 2026-08-29
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
@@ -113,6 +113,13 @@ that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
 including regular and bold faces. The preview was visually inspected at 80,
 100, and 120 percent; its rendered box changed size while computed CSS
 `transform` remained `none`.
+
+The editor architecture suite additionally protects the independent Compile,
+Language, and Authoring worker-contract modules and their small composed
+transport boundary. Production build validation covers the focused workbench
+facades for document/export, preview, help, and command-palette state. Existing
+runtime and session suites continue to exercise the unchanged public protocol
+barrel and stale-response behavior.
 
 The English workbench and the live German switch were visually inspected in the
 packaged macOS application. The Settings panel, activity and output areas,
@@ -431,6 +438,10 @@ PNG tests MUST verify:
 - consistency with SVG bounds;
 - explicit controlled TTF files with system-font discovery disabled; and
 - visually equivalent content to the SVG source.
+
+The production `@c4ml/render-resvg` adapter suite MUST also assert its stable
+adapter identity, stable `C4ML-PNG-*` input diagnostics, and rejection of
+unresolved external image resources.
 
 On the reference platform, deterministic PNGs SHOULD be byte-stable. Across
 supported platforms, image comparison MAY allow a small documented

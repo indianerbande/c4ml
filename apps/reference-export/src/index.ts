@@ -12,7 +12,7 @@ import {
   loadIbmPlexSansSvgFontFaces,
 } from "@c4ml/font-ibm-plex/node";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
-import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
+import { ResvgPngRenderer } from "@c4ml/render-resvg";
 
 const model: ArchitectureModel = {
   elements: [

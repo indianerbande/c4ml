@@ -33,7 +33,7 @@ import {
   type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
-import { ResvgPngRenderer } from "@c4ml/spike-render-resvg";
+import { ResvgPngRenderer } from "@c4ml/render-resvg";
 
 import {
   DesktopDocumentRegistry,

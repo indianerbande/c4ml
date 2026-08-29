@@ -4,8 +4,9 @@
 
 C4ML has completed its initial Phase 0 feasibility implementation and entered
 Phase 1 semantic-core work. The local Git repository and GitHub remote exist.
-An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium, ELK.js,
-and resvg-js technical spikes are authorized.
+An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium and ELK.js
+technical spikes are authorized. The accepted resvg-js adapter has moved from
+its historical spike into the production `packages/render-resvg` boundary.
 
 The runtime architecture is accepted: one browser-compatible TypeScript
 compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
@@ -80,6 +81,12 @@ production dependencies rather than active UI-library experiments. It accepts
 the current executable slices for all seven view types: System Landscape,
 System Context, Container, Component, Code, Dynamic, and Deployment.
 
+The workbench root component delegates document/export, preview, help, and
+command-palette state to focused Angular facades. The versioned worker transport
+is composed from independent Compile, Language, and Authoring contracts plus a
+small shared protocol core; the compatibility barrel remains the only combined
+transport boundary.
+
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
 (System Landscape, Dynamic, Deployment), their required model elements, and the
@@ -100,7 +107,8 @@ The first Phase 1 rendering slice is also implemented. A resolved view can be
 prepared as an engine-neutral layout request, routed through inspectable
 automatic, guided, or fixed route contracts, converted into a renderer-neutral
 scene, serialized as standalone SVG, and rasterized as PNG through the accepted
-resvg-js Node adapter. Automatic geometry is provided by the accepted,
+resvg-js Node adapter in `packages/render-resvg`. Automatic geometry is
+provided by the accepted,
 replaceable ELK.js adapter in both Node.js frontends and the browser compiler
 worker. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label

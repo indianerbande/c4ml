@@ -5,7 +5,6 @@ import {
   ElementRef,
   HostListener,
   computed,
-  effect,
   inject,
   signal,
   viewChild,
@@ -14,22 +13,18 @@ import {
 import type {
   CompilerWorkerDiagnostic,
   CompilerWorkerNavigationTarget,
-  CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
-import { initialC4mlSource } from "./initial-source.js";
 import {
   C4mlMonacoSourceEditorComponent,
   type SourceEditorSelection,
 } from "./monaco-source-editor.component.js";
-import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
 import {
   clientPointToScene,
   navigationTargetAtPoint,
   navigationTargetForOffset,
-  svgWithNavigationHighlight,
 } from "./preview-navigation.js";
 import type {
   SourceEditorCompletionProvider,
@@ -38,16 +33,13 @@ import type {
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
 import { HelpArticleComponent } from "./help-article.component.js";
-import {
-  helpCategories,
-  helpTopic,
-} from "./help-content.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
-import {
-  filterWorkbenchCommands,
-  type WorkbenchCommand,
-} from "./workbench-command.js";
+import type { WorkbenchCommand } from "./workbench-command.js";
+import { WorkbenchCommandFacade } from "./workbench-command.facade.js";
+import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
+import { WorkbenchHelpFacade } from "./workbench-help.facade.js";
+import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
 import type {
   WorkbenchActivity,
@@ -70,24 +62,45 @@ export class AppComponent {
   readonly sourceEditor = viewChild<C4mlMonacoSourceEditorComponent>(
     "sourceEditor",
   );
-  readonly source = signal(initialC4mlSource);
   readonly compiler = inject(CompilerWorkerClient);
+  readonly documents = inject(WorkbenchDocumentFacade);
+  readonly preview = inject(WorkbenchPreviewFacade);
+  readonly help = inject(WorkbenchHelpFacade);
+  readonly commands = inject(WorkbenchCommandFacade);
+  readonly source = this.documents.source;
+  readonly documentName = this.documents.documentName;
+  readonly documentHandle = this.documents.documentHandle;
+  readonly documentDirty = this.documents.documentDirty;
+  readonly fileOperationLabel = this.documents.fileOperationLabel;
+  readonly pngScale = this.documents.pngScale;
+  readonly desktopAvailable = this.documents.desktopAvailable;
+  readonly previewUrl = this.preview.previewUrl;
+  readonly lastValidSvg = this.preview.lastValidSvg;
+  readonly navigation = this.preview.navigation;
+  readonly selectedRoute = this.preview.selectedRoute;
+  readonly selectedKindLabel = this.preview.selectedKindLabel;
+  readonly selectedLabel = this.preview.selectedLabel;
+  readonly activeViewTitle = this.preview.activeViewTitle;
+  readonly previewSize = this.preview.displaySize;
+  readonly zoomLabel = this.preview.zoomLabel;
+  readonly routingDebugEnabled = this.preview.routingDebugEnabled;
+  readonly commandPaletteOpen = this.commands.open;
+  readonly commandQuery = this.commands.query;
+  readonly filteredCommands = this.commands.commands;
+  readonly helpQuery = this.help.query;
+  readonly activeHelpTopicId = this.help.activeTopicId;
+  readonly rightPaneMode = this.help.pane;
+  readonly filteredHelpCategories = this.help.categories;
+  readonly activeHelpTopic = this.help.activeTopic;
+  readonly contextHelpTopic = this.help.contextTopic;
   readonly provideCompletions: SourceEditorCompletionProvider = (
     source,
     offset,
   ) => this.compiler.complete(source, offset);
   readonly provideHighlights: SourceEditorHighlightProvider = (source) =>
     this.compiler.highlight(source);
-  readonly previewUrl = signal<string | undefined>(undefined);
-  readonly pngScale = signal(2);
-  readonly selectedSceneObjectId = signal<string | undefined>(undefined);
   readonly wizardOpen = signal(false);
   readonly settingsOpen = signal(false);
-  readonly commandPaletteOpen = signal(false);
-  readonly commandQuery = signal("");
-  readonly helpQuery = signal("");
-  readonly activeHelpTopicId = signal<C4mlHelpTopicId>("getting-started");
-  readonly rightPaneMode = signal<"diagram" | "help">("diagram");
   readonly sourceCursorOffset = signal(0);
   readonly canUndoWizard = signal(false);
   readonly settingsButton = viewChild<ElementRef<HTMLButtonElement>>(
@@ -97,10 +110,6 @@ export class AppComponent {
   readonly preferences = inject(WorkbenchPreferencesService);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly session = inject(WorkbenchSessionService);
-  readonly previewZoom = computed(() => this.session.state().previewZoom);
-  readonly routingDebugEnabled = computed(
-    () => this.session.state().routingDebugEnabled,
-  );
   readonly activeActivity = computed(
     () => this.session.state().activeActivity,
   );
@@ -108,102 +117,6 @@ export class AppComponent {
     () => this.session.state().bottomPanelOpen,
   );
   readonly bottomPanel = computed(() => this.session.state().bottomPanel);
-  readonly desktopAvailable: boolean;
-  readonly documentName = signal("architecture.c4ml");
-  readonly documentHandle = signal<string | undefined>(undefined);
-  readonly documentDirty = signal(false);
-  readonly fileOperationLabel = signal<string | undefined>(undefined);
-  readonly lastValidSvg = computed(
-    () => this.compiler.state().lastValidSvg,
-  );
-  readonly navigation = computed(
-    () => this.compiler.state().lastValidNavigation,
-  );
-  readonly selectedTarget = computed(() =>
-    this.navigation()?.targets.find(
-      ({ sceneObjectId }) => sceneObjectId === this.selectedSceneObjectId(),
-    ),
-  );
-  readonly selectedRoute = computed<
-    CompilerWorkerRouteNavigationTarget | undefined
-  >(() => {
-    const target = this.selectedTarget();
-    if (target?.kind === "route") {
-      return target;
-    }
-    if (target === undefined || target.kind === "node") {
-      return undefined;
-    }
-    return this.navigation()?.targets.find(
-      (candidate): candidate is CompilerWorkerRouteNavigationTarget =>
-        candidate.kind === "route" &&
-        candidate.referenceId === target.referenceId,
-    );
-  });
-  readonly selectedKindLabel = computed(() => {
-    switch (this.selectedTarget()?.kind) {
-      case "corridor":
-        return this.i18n.t("selection.corridor");
-      case "node":
-        return this.i18n.t("selection.node");
-      case "port":
-        return this.i18n.t("selection.port");
-      case "route":
-        return this.i18n.t("selection.route");
-      case "route-label":
-        return this.i18n.t("selection.routeLabel");
-      default:
-        return this.i18n.t("selection.object");
-    }
-  });
-  readonly selectedLabel = computed(
-    () => this.selectedTarget()?.label,
-  );
-  readonly filteredCommands = computed(() =>
-    filterWorkbenchCommands(
-      this.commandQuery(),
-      this.desktopAvailable,
-      this.preferences.uiLanguage(),
-    ),
-  );
-  readonly filteredHelpCategories = computed(() =>
-    helpCategories(this.i18n.language(), this.helpQuery()),
-  );
-  readonly activeHelpTopic = computed(() =>
-    helpTopic(this.i18n.language(), this.activeHelpTopicId()),
-  );
-  readonly contextHelpTopic = computed(() =>
-    helpTopic(this.i18n.language(), this.compiler.help().topicId),
-  );
-  readonly activeViewTitle = computed(
-    () =>
-      this.compiler.state().views.find(
-        ({ id }) => id === this.compiler.state().activeViewId,
-      )?.title ?? this.i18n.t("view.none"),
-  );
-  readonly previewSvg = computed(() => {
-    const svg = this.lastValidSvg();
-    const navigation = this.navigation();
-    return svg === undefined
-      ? undefined
-      : svgWithNavigationHighlight(
-          svg,
-          this.selectedTarget(),
-          navigation === undefined
-            ? undefined
-            : {
-                showRouteDebug: this.routingDebugEnabled(),
-                width: navigation.width,
-                height: navigation.height,
-              },
-        );
-  });
-  readonly previewSize = computed(
-    () => `${Math.round(this.previewZoom() * 100)}%`,
-  );
-  readonly zoomLabel = computed(
-    () => `${Math.round(this.previewZoom() * 100)}%`,
-  );
   readonly statusLabel = computed(() => {
     switch (this.compiler.state().phase) {
       case "compiling":
@@ -221,7 +134,6 @@ export class AppComponent {
 
   #compileTimer: ReturnType<typeof setTimeout> | undefined;
   readonly #wizardSourceSession = new WizardSourceSession();
-  readonly #desktop = resolveC4mlDesktopApi();
   #wizardDocumentBefore:
     | {
         readonly handle: string | undefined;
@@ -231,9 +143,8 @@ export class AppComponent {
     | undefined;
 
   constructor() {
-    this.desktopAvailable = this.#desktop !== undefined;
     const destroyRef = inject(DestroyRef);
-    const unsubscribeDesktopCommands = this.#desktop?.onCommand((command) => {
+    const unsubscribeDesktopCommands = this.documents.onDesktopCommand((command) => {
       switch (command) {
         case "export-png":
           void this.exportPng();
@@ -257,29 +168,6 @@ export class AppComponent {
         clearTimeout(this.#compileTimer);
       }
       unsubscribeDesktopCommands?.();
-    });
-    effect((onCleanup) => {
-      const svg = this.previewSvg();
-      if (svg === undefined) {
-        this.previewUrl.set(undefined);
-        return;
-      }
-      const url = URL.createObjectURL(
-        new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
-      );
-      this.previewUrl.set(url);
-      onCleanup(() => URL.revokeObjectURL(url));
-    });
-    effect(() => {
-      const handle = this.documentHandle();
-      this.#desktop?.setDocumentState({
-        displayName: this.documentName(),
-        dirty: this.documentDirty(),
-        ...(handle === undefined ? {} : { handle }),
-      });
-    });
-    effect(() => {
-      this.#desktop?.setUiLanguage(this.preferences.uiLanguage());
     });
     this.compiler.compile(this.source(), undefined, this.documentName());
     this.compiler.resolveHelpContext(this.source(), 0);
@@ -306,95 +194,29 @@ export class AppComponent {
   }
 
   onSourceChange(source: string): void {
-    this.source.set(source);
-    this.selectedSceneObjectId.set(undefined);
+    this.documents.replaceSource(source, true);
+    this.preview.clearSelection();
     this.#wizardSourceSession.invalidateUndo();
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
-    this.documentDirty.set(true);
     this.#refreshHelpContext(source);
     this.#scheduleCompile();
   }
 
   async openDocument(): Promise<void> {
-    const desktop = this.#desktop;
-    if (desktop === undefined) {
-      return;
-    }
-    if (
-      this.documentDirty() &&
-      !window.confirm(
-        this.i18n.t("operation.discard", { name: this.documentName() }),
-      )
-    ) {
-      return;
-    }
-    this.fileOperationLabel.set(this.i18n.t("operation.opening"));
-    try {
-      const result = await desktop.openDocument();
-      if (result.status === "opened") {
-        this.source.set(result.document.source);
-        this.documentHandle.set(result.document.handle);
-        this.documentName.set(result.document.displayName);
-        this.documentDirty.set(false);
-        this.selectedSceneObjectId.set(undefined);
-        this.#wizardSourceSession.invalidateUndo();
-        this.#wizardDocumentBefore = undefined;
-        this.canUndoWizard.set(false);
-        this.compiler.compile(
-          result.document.source,
-          undefined,
-          result.document.displayName,
-        );
-        this.#refreshHelpContext(result.document.source);
-        this.fileOperationLabel.set(
-          this.i18n.t("operation.opened", {
-            name: result.document.displayName,
-          }),
-        );
-      } else if (result.status === "failed") {
-        this.fileOperationLabel.set(`${result.code}: ${result.message}`);
-      } else {
-        this.fileOperationLabel.set(undefined);
-      }
-    } catch {
-      this.fileOperationLabel.set(this.i18n.t("operation.openFailed"));
+    const opened = await this.documents.openDocument();
+    if (opened !== undefined) {
+      this.preview.clearSelection();
+      this.#wizardSourceSession.invalidateUndo();
+      this.#wizardDocumentBefore = undefined;
+      this.canUndoWizard.set(false);
+      this.compiler.compile(opened.source, undefined, opened.displayName);
+      this.#refreshHelpContext(opened.source);
     }
   }
 
   async saveDocument(mode: "save" | "save-as"): Promise<void> {
-    const desktop = this.#desktop;
-    if (desktop === undefined) {
-      return;
-    }
-    this.fileOperationLabel.set(
-      this.i18n.t(
-        mode === "save-as" ? "operation.choosingSave" : "operation.saving",
-      ),
-    );
-    try {
-      const handle = this.documentHandle();
-      const result = await desktop.saveDocument({
-        suggestedName: this.documentName(),
-        source: this.source(),
-        mode,
-        ...(handle === undefined ? {} : { handle }),
-      });
-      if (result.status === "saved") {
-        this.documentHandle.set(result.handle);
-        this.documentName.set(result.displayName);
-        this.documentDirty.set(false);
-        this.fileOperationLabel.set(
-          this.i18n.t("operation.saved", { name: result.displayName }),
-        );
-      } else if (result.status === "failed") {
-        this.fileOperationLabel.set(`${result.code}: ${result.message}`);
-      } else {
-        this.fileOperationLabel.set(undefined);
-      }
-    } catch {
-      this.fileOperationLabel.set(this.i18n.t("operation.saveFailed"));
-    }
+    await this.documents.saveDocument(mode);
   }
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
@@ -408,7 +230,7 @@ export class AppComponent {
       this.navigation()?.targets ?? [],
       selection.startOffset,
     );
-    this.selectedSceneObjectId.set(target?.sceneObjectId);
+    this.preview.select(target, false);
   }
 
   onPreviewClick(event: MouseEvent): void {
@@ -438,19 +260,19 @@ export class AppComponent {
   }
 
   zoomIn(): void {
-    this.session.setPreviewZoom(this.previewZoom() + 0.2);
+    this.preview.zoomIn();
   }
 
   zoomOut(): void {
-    this.session.setPreviewZoom(this.previewZoom() - 0.2);
+    this.preview.zoomOut();
   }
 
   fitPreview(): void {
-    this.session.setPreviewZoom(1);
+    this.preview.fit();
   }
 
   toggleRoutingDebug(): void {
-    this.session.toggleRoutingDebug();
+    this.preview.toggleRoutingDebug();
   }
 
   exportSvg(): void {
@@ -458,51 +280,19 @@ export class AppComponent {
     if (svg === undefined) {
       return;
     }
-    const url = URL.createObjectURL(
-      new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
-    );
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${this.compiler.state().activeViewId ?? "architecture"}.svg`;
-    anchor.click();
-    queueMicrotask(() => URL.revokeObjectURL(url));
+    this.documents.downloadSvg(svg, this.compiler.state().activeViewId);
   }
 
   async exportPng(): Promise<void> {
-    const desktop = this.#desktop;
     const svg = this.lastValidSvg();
     if (
-      desktop === undefined ||
+      !this.desktopAvailable ||
       svg === undefined ||
       this.compiler.state().phase !== "valid"
     ) {
       return;
     }
-    this.fileOperationLabel.set(this.i18n.t("operation.renderingPng"));
-    try {
-      const result = await desktop.exportPng({
-        svg,
-        scale: this.pngScale(),
-        suggestedName: `${
-          this.compiler.state().activeViewId ?? "architecture"
-        }.png`,
-      });
-      if (result.status === "exported") {
-        this.fileOperationLabel.set(
-          this.i18n.t("operation.exportedPng", {
-            name: result.displayName,
-            width: result.width,
-            height: result.height,
-          }),
-        );
-      } else if (result.status === "failed") {
-        this.fileOperationLabel.set(`${result.code}: ${result.message}`);
-      } else {
-        this.fileOperationLabel.set(undefined);
-      }
-    } catch {
-      this.fileOperationLabel.set(this.i18n.t("operation.pngFailed"));
-    }
+    await this.documents.exportPng(svg, this.compiler.state().activeViewId);
   }
 
   onPngScaleSelection(event: Event): void {
@@ -510,10 +300,7 @@ export class AppComponent {
     if (!(target instanceof HTMLSelectElement)) {
       return;
     }
-    const scale = Number(target.value);
-    if (Number.isFinite(scale) && scale >= 0.25 && scale <= 8) {
-      this.pngScale.set(scale);
-    }
+    this.documents.setPngScale(target.value);
   }
 
   onViewSelection(event: Event): void {
@@ -521,41 +308,39 @@ export class AppComponent {
     if (!(target instanceof HTMLSelectElement) || target.value.length === 0) {
       return;
     }
-    this.selectedSceneObjectId.set(undefined);
+    this.preview.clearSelection();
     this.compiler.compile(this.source(), target.value, this.documentName());
   }
 
   selectView(viewId: string): void {
-    this.selectedSceneObjectId.set(undefined);
+    this.preview.clearSelection();
     this.compiler.compile(this.source(), viewId, this.documentName());
   }
 
   selectActivity(activity: WorkbenchActivity): void {
     this.session.setActivity(activity);
     if (activity === "help") {
-      this.rightPaneMode.set("help");
+      this.help.pane.set("help");
     }
   }
 
   updateHelpQuery(event: Event): void {
     const target = event.target;
     if (target instanceof HTMLInputElement) {
-      this.helpQuery.set(target.value);
+      this.help.setQuery(target.value);
     }
   }
 
   openHelpTopic(topicId: C4mlHelpTopicId): void {
-    this.activeHelpTopicId.set(topicId);
-    this.rightPaneMode.set("help");
+    this.help.openTopic(topicId);
   }
 
   openContextHelp(): void {
-    this.session.setActivity("help");
-    this.openHelpTopic(this.compiler.help().topicId);
+    this.help.openContext();
   }
 
   showDiagram(): void {
-    this.rightPaneMode.set("diagram");
+    this.help.showDiagram();
   }
 
   showBottomPanel(panel: WorkbenchPanel): void {
@@ -567,20 +352,18 @@ export class AppComponent {
   }
 
   openCommandPalette(): void {
-    this.commandQuery.set("");
-    this.commandPaletteOpen.set(true);
+    this.commands.show();
     queueMicrotask(() => this.commandInput()?.nativeElement.focus());
   }
 
   closeCommandPalette(): void {
-    this.commandPaletteOpen.set(false);
-    this.commandQuery.set("");
+    this.commands.close();
   }
 
   updateCommandQuery(event: Event): void {
     const target = event.target;
     if (target instanceof HTMLInputElement) {
-      this.commandQuery.set(target.value);
+      this.commands.setQuery(target.value);
     }
   }
 
@@ -624,7 +407,7 @@ export class AppComponent {
         break;
       case "help.open":
         this.session.setActivity("help");
-        this.rightPaneMode.set("help");
+        this.help.pane.set("help");
         break;
       case "help.context":
         this.openContextHelp();
@@ -665,11 +448,8 @@ export class AppComponent {
 
   applyWizard(source: string): void {
     const next = this.#wizardSourceSession.apply(source);
-    this.source.set(next);
-    this.documentHandle.set(undefined);
-    this.documentName.set("architecture.c4ml");
-    this.documentDirty.set(true);
-    this.selectedSceneObjectId.set(undefined);
+    this.documents.resetAsGeneratedDocument(next);
+    this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardOpen.set(false);
     this.compiler.compile(next, undefined, this.documentName());
@@ -678,15 +458,13 @@ export class AppComponent {
 
   undoWizard(): void {
     const restored = this.#wizardSourceSession.undo(this.source());
-    this.source.set(restored);
+    this.documents.replaceSource(restored, this.documentDirty());
     const previousDocument = this.#wizardDocumentBefore;
     if (previousDocument !== undefined) {
-      this.documentHandle.set(previousDocument.handle);
-      this.documentName.set(previousDocument.name);
-      this.documentDirty.set(previousDocument.dirty);
+      this.documents.restoreDocumentState(previousDocument);
     }
     this.#wizardDocumentBefore = undefined;
-    this.selectedSceneObjectId.set(undefined);
+    this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.compiler.compile(restored, undefined, this.documentName());
     this.#refreshHelpContext(restored);
@@ -715,10 +493,7 @@ export class AppComponent {
     target: CompilerWorkerNavigationTarget | undefined,
     revealSource: boolean,
   ): void {
-    this.selectedSceneObjectId.set(target?.sceneObjectId);
-    if (target !== undefined && target.kind !== "node") {
-      this.showBottomPanel("route");
-    }
+    this.preview.select(target);
     if (revealSource && target !== undefined) {
       this.sourceEditor()?.revealSource(target.source);
     }
