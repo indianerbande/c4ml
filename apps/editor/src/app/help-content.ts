@@ -350,26 +350,43 @@ code priority-rule inside scheduler {
   {
     id: "layout",
     categoryId: "layout",
-    title: text("Automatic layout", "Automatisches Layout"),
+    title: text("Automatic layout and placement", "Automatisches Layout und Platzierung"),
     summary: text(
-      "Choose the main reading direction while leaving geometry to the layout adapter.",
-      "Wähle die Hauptleserichtung und überlasse die Geometrie dem Layoutadapter.",
+      "Start automatically, then constrain only positions that need deliberate control.",
+      "Starte automatisch und steuere danach nur die Positionen, die bewusste Kontrolle brauchen.",
     ),
     paragraphs: [
       text(
-        "Layout belongs to a view and never changes architecture semantics. The executable slice currently supports flow in all four cardinal directions.",
-        "Layout gehört zu einer Ansicht und verändert niemals die Architektursemantik. Der ausführbare Teil unterstützt derzeit flow in allen vier Himmelsrichtungen.",
+        "Layout belongs to a view and never changes architecture semantics. The executable slice supports four flow directions, relative above/below/left/right placement, center-axis alignment, and individual pins.",
+        "Layout gehört zu einer Ansicht und verändert niemals die Architektursemantik. Der ausführbare Teil unterstützt vier Flussrichtungen, relative Platzierung oberhalb, unterhalb, links und rechts, Achsenausrichtung sowie einzelne Pins.",
+      ),
+      text(
+        "Hard rules must be satisfied or compilation fails with every conflicting source location. Soft preferences may be relaxed, but only with an explicit warning.",
+        "Harte Regeln müssen erfüllt werden, sonst schlägt die Kompilierung mit allen beteiligten Quellstellen fehl. Weiche Wünsche dürfen nur mit einer ausdrücklichen Warnung gelockert werden.",
       ),
     ],
     points: [
       text("Use right or down for common reading directions.", "Verwende right oder down für übliche Leserichtungen."),
+      text("constraint positions elements without inventing an architecture relationship.", "constraint positioniert Elemente, ohne eine Architekturbeziehung zu erfinden."),
+      text("pin fixes one element while the rest remains automatic.", "pin fixiert ein Element, während der Rest automatisch bleibt."),
       text("Source declaration order has no layout meaning.", "Die Deklarationsreihenfolge hat keine Layoutbedeutung."),
     ],
-    exampleTitle: text("View-local flow", "Ansichtslokale Leserichtung"),
+    exampleTitle: text("Automatic flow with local control", "Automatischer Fluss mit lokaler Kontrolle"),
     example: `layout {
   flow = right
+
+  constraint left-of(caretaker, garden-pulse) {
+    strength = hard
+    gap = 120
+  }
+
+  pin garden-pulse {
+    x = 520
+    y = 120
+    strength = hard
+  }
 }`,
-    keywords: text("layout flow automatic direction", "layout fluss automatisch richtung"),
+    keywords: text("layout flow constraint alignment pin hard soft", "layout fluss constraint ausrichtung pin hart weich"),
   },
   {
     id: "routes",
@@ -388,30 +405,36 @@ code priority-rule inside scheduler {
         "Named corridors reserve parallel lanes and help prevent dense connections from collapsing into a line web.",
         "Benannte Korridore reservieren parallele Spuren und verhindern, dass dichte Verbindungen zu einem Liniennetz zusammenfallen.",
       ),
+      text(
+        "Relative guide anchors follow Ports or element sides after automatic layout. Hard avoidance must be satisfied; soft avoidance may be relaxed only with a compiler warning.",
+        "Relative guide-Anker folgen Ports oder Elementseiten nach dem automatischen Layout. Harte Meidezonen müssen eingehalten werden; weiche dürfen nur mit Compilerwarnung aufgeweicht werden.",
+      ),
     ],
     points: [
-      text("guided may set Ports, via points, corridor, and lane.", "guided kann Ports, via-Punkte, Korridor und Spur setzen."),
+      text("guided may use absolute via points, one corridor, or an ordered relative guide.", "guided kann absolute via-Punkte, einen Korridor oder einen geordneten relativen guide verwenden."),
+      text("guide supports waypoints and locked segments; avoid selects view-local regions.", "guide unterstützt Wegpunkte und gesperrte Segmente; avoid wählt ansichtslokale Meidezonen."),
       text("fixed requires the complete points list.", "fixed benötigt die vollständige points-Liste."),
       text("Hard impossible routes fail visibly.", "Nicht erfüllbare feste Routen schlagen sichtbar fehl."),
     ],
     exampleTitle: text("Guided orthogonal route", "Geführte orthogonale Route"),
-    example: `corridor lower-entry {
-  orientation = vertical
-  coordinate = 687
-  lanes = 3
-  lane-gap = 18
+    example: `avoidance sensor-clearance {
+  strength = soft
+  around = sensor-post
+  padding = 24
 }
 
-route sensor-publishes-observations {
+route caretaker-reviews-plan {
   policy = guided
   style = orthogonal
   source-port = east
   target-port = west
-  corridor = lower-entry
-  lane = 1
-  label-shift = (0, 16)
+  guide = [
+    lock source-port shift (36, 0) to source-port shift (92, 0),
+    via element garden-pulse west shift (-36, 0)
+  ]
+  avoid = [sensor-clearance]
 }`,
-    keywords: text("route port connector corridor lane waypoint guided fixed", "route port connector korridor spur wegpunkt geführt fest"),
+    keywords: text("route port connector corridor lane waypoint guide lock avoidance guided fixed", "route port connector korridor spur wegpunkt guide sperren meidezone geführt fest"),
   },
   {
     id: "export",

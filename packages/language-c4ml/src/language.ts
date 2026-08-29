@@ -10,19 +10,29 @@ import {
   sortDiagnostics,
   type ArchitectureModel,
   type ArchitectureView,
+  type DiagramPlacementOptions,
   type DiagramRoutingOptions,
   type DeploymentModel,
   type Diagnostic,
   type Point,
+  type PlacementConstraint,
   type RelatedDiagnosticInformation,
+  type RelativePlacementRelation,
   type ResolvedView,
   type RouteControl,
   type RouteCorridor,
+  type RouteAnchor,
+  type RouteAvoidanceRegion,
+  type RouteGuidance,
   type SourceReference,
   type StaticElement,
 } from "@c4ml/compiler-core";
 
 import type {
+  AvoidanceAroundProperty,
+  AvoidanceBoundsProperty,
+  AvoidancePaddingProperty,
+  AvoidanceStrengthProperty,
   C4mlDocument,
   ClassificationProperty,
   CodeElementDeclaration,
@@ -53,6 +63,12 @@ import type {
   InteractionToProperty,
   InfrastructureNodeDeclaration,
   LanguageProperty,
+  PlacementConstraintDeclaration,
+  PlacementGapProperty,
+  PlacementPinDeclaration,
+  PlacementStrengthProperty,
+  PlacementXProperty,
+  PlacementYProperty,
   RelationshipDeclaration,
   RelationshipFromProperty,
   RelationshipIntentProperty,
@@ -61,6 +77,10 @@ import type {
   ResponsibilityProperty,
   RouteCorridorDeclaration,
   RouteCorridorSelectionProperty,
+  RouteAnchorLiteral,
+  RouteAvoidanceDeclaration,
+  RouteAvoidProperty,
+  RouteGuideProperty,
   RouteDeclaration,
   RouteLabelSegmentProperty,
   RouteLabelShiftProperty,
@@ -100,6 +120,7 @@ export interface C4mlDraftResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly model?: ArchitectureModel;
   readonly views?: readonly ArchitectureView[];
+  readonly placementByViewId?: Readonly<Record<string, DiagramPlacementOptions>>;
   readonly routingByViewId?: Readonly<Record<string, DiagramRoutingOptions>>;
   readonly resolvedViews?: readonly ResolvedView[];
 }
@@ -107,6 +128,7 @@ export interface C4mlDraftResult {
 interface LoweredDocument {
   readonly model: ArchitectureModel;
   readonly views: readonly ArchitectureView[];
+  readonly placementByViewId: Readonly<Record<string, DiagramPlacementOptions>>;
   readonly routingByViewId: Readonly<Record<string, DiagramRoutingOptions>>;
 }
 
@@ -177,6 +199,7 @@ export async function parseC4mlDraft(
     diagnostics,
     model: lowered.model,
     views: lowered.views,
+    placementByViewId: lowered.placementByViewId,
     routingByViewId: lowered.routingByViewId,
     resolvedViews: resolution.views,
   };
@@ -208,6 +231,12 @@ function lowerDocument(
       return routing === undefined ? [] : [[view.name, routing] as const];
     }),
   );
+  const placementByViewId = Object.fromEntries(
+    document.views.flatMap((view) => {
+      const placement = lowerViewPlacement(view, file, diagnostics);
+      return placement === undefined ? [] : [[view.name, placement] as const];
+    }),
+  );
 
   if (hasErrors(diagnostics)) {
     return undefined;
@@ -219,6 +248,7 @@ function lowerDocument(
       ...(deployment === undefined ? {} : { deployment }),
     },
     views,
+    placementByViewId,
     routingByViewId,
   };
 }
@@ -873,11 +903,272 @@ function lowerViewRouting(
     .map((route) => lowerRouteControl(route, file, diagnostics))
     .filter((control): control is RouteControl => control !== undefined);
 
-  diagnoseDuplicateRoutingIds(layout.corridors, layout.routes, file, diagnostics);
-  if (corridors.length === 0 && controls.length === 0) {
+  const avoidanceRegions = layout.avoidanceRegions
+    .map((region) => lowerRouteAvoidance(region, file, diagnostics))
+    .filter((region): region is RouteAvoidanceRegion => region !== undefined);
+
+  diagnoseDuplicateRoutingIds(
+    layout.avoidanceRegions,
+    layout.corridors,
+    layout.routes,
+    file,
+    diagnostics,
+  );
+  if (
+    avoidanceRegions.length === 0 &&
+    corridors.length === 0 &&
+    controls.length === 0
+  ) {
     return undefined;
   }
-  return { corridors, controls };
+  return {
+    ...(avoidanceRegions.length === 0 ? {} : { avoidanceRegions }),
+    corridors,
+    controls,
+  };
+}
+
+function lowerViewPlacement(
+  declaration: ViewDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): DiagramPlacementOptions | undefined {
+  const layout = declaration.layout;
+  if (layout === undefined) {
+    return undefined;
+  }
+  const constraints = [
+    ...layout.constraints.map((constraint) =>
+      lowerPlacementConstraint(constraint, file, diagnostics),
+    ),
+    ...layout.pins.map((pin) => lowerPlacementPin(pin, file, diagnostics)),
+  ].filter((constraint): constraint is PlacementConstraint => constraint !== undefined);
+
+  diagnoseDuplicateDeclarations(
+    [...layout.constraints, ...layout.pins],
+    placementDeclarationId,
+    "placement control",
+    "C4ML-LANG-120",
+    file,
+    diagnostics,
+  );
+  return constraints.length === 0 ? undefined : { constraints };
+}
+
+function lowerPlacementConstraint(
+  declaration: PlacementConstraintDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const gap = optionalProperty<PlacementGapProperty>(
+    declaration.properties,
+    "PlacementGapProperty",
+    "gap",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const subjectId = declaration.subject.ref?.name;
+  const targetId = declaration.target.ref?.name;
+  if (strength === undefined || subjectId === undefined || targetId === undefined) {
+    return undefined;
+  }
+  const id = placementDeclarationId(declaration);
+  const relative = isRelativePlacementRelation(declaration.relation);
+  if ((relative && gap === undefined) || (!relative && gap !== undefined)) {
+    diagnostics.push(
+      createDiagnostic({
+        code: "C4ML-LANG-121",
+        severity: "error",
+        message: relative
+          ? `Relative placement constraint "${id}" requires gap.`
+          : `Alignment constraint "${id}" does not accept gap.`,
+        source: sourceReference(declaration, file),
+        correction: relative
+          ? "Add a finite non-negative gap inside the constraint block."
+          : "Remove gap from the alignment constraint.",
+      }),
+    );
+    return undefined;
+  }
+  const base = {
+    id,
+    subjectId,
+    targetId,
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+  if (relative) {
+    return {
+      ...base,
+      kind: "relative",
+      relation: declaration.relation as RelativePlacementRelation,
+      gap: gap!.value,
+    };
+  }
+  return {
+    ...base,
+    kind: "alignment",
+    alignment:
+      declaration.relation === "align-center-x" ? "center-x" : "center-y",
+  };
+}
+
+function isRelativePlacementRelation(
+  relation: PlacementConstraintDeclaration["relation"],
+): relation is RelativePlacementRelation {
+  return (
+    relation === "above" ||
+    relation === "below" ||
+    relation === "left-of" ||
+    relation === "right-of"
+  );
+}
+
+function lowerPlacementPin(
+  declaration: PlacementPinDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const x = requiredProperty<PlacementXProperty>(
+    declaration.properties,
+    "PlacementXProperty",
+    "x",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const y = requiredProperty<PlacementYProperty>(
+    declaration.properties,
+    "PlacementYProperty",
+    "y",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const targetId = declaration.target.ref?.name;
+  if (
+    x === undefined ||
+    y === undefined ||
+    strength === undefined ||
+    targetId === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    id: placementDeclarationId(declaration),
+    kind: "pin",
+    targetId,
+    x: x.value,
+    y: y.value,
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function placementDeclarationId(
+  declaration: PlacementConstraintDeclaration | PlacementPinDeclaration,
+): string {
+  if ("relation" in declaration) {
+    return `${declaration.relation}:${declaration.subject.$refText}:${declaration.target.$refText}`;
+  }
+  return `pin:${declaration.target.$refText}`;
+}
+
+function lowerRouteAvoidance(
+  declaration: RouteAvoidanceDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): RouteAvoidanceRegion | undefined {
+  const strength = requiredProperty<AvoidanceStrengthProperty>(
+    declaration.properties,
+    "AvoidanceStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const bounds = optionalProperty<AvoidanceBoundsProperty>(
+    declaration.properties,
+    "AvoidanceBoundsProperty",
+    "bounds",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const around = optionalProperty<AvoidanceAroundProperty>(
+    declaration.properties,
+    "AvoidanceAroundProperty",
+    "around",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const padding = optionalProperty<AvoidancePaddingProperty>(
+    declaration.properties,
+    "AvoidancePaddingProperty",
+    "padding",
+    declaration,
+    file,
+    diagnostics,
+  );
+  if (strength === undefined) {
+    return undefined;
+  }
+  const absolute =
+    bounds !== undefined && around === undefined && padding === undefined;
+  const relative =
+    bounds === undefined && around !== undefined && padding !== undefined;
+  if (!absolute && !relative) {
+    diagnostics.push(
+      createDiagnostic({
+        code: "C4ML-LANG-114",
+        severity: "error",
+        message: `Avoidance region "${declaration.name}" must use either bounds or around with padding.`,
+        source: sourceReference(declaration, file),
+        correction:
+          "Choose absolute bounds, or reference one model element and provide non-negative padding.",
+      }),
+    );
+    return undefined;
+  }
+  return {
+    id: declaration.name,
+    strength: strength.value,
+    geometry:
+      bounds !== undefined
+        ? {
+            kind: "absolute",
+            bounds: {
+              x: signedInteger(bounds.value.x),
+              y: signedInteger(bounds.value.y),
+              width: bounds.value.width,
+              height: bounds.value.height,
+            },
+          }
+        : {
+            kind: "node",
+            referenceId: around!.value.ref!.name,
+            padding: padding!.value,
+          },
+    source: sourceReference(declaration, file),
+  };
 }
 
 function lowerRouteCorridor(
@@ -992,6 +1283,22 @@ function lowerRouteControl(
     file,
     diagnostics,
   );
+  const guide = optionalProperty<RouteGuideProperty>(
+    declaration.properties,
+    "RouteGuideProperty",
+    "guide",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const avoid = optionalProperty<RouteAvoidProperty>(
+    declaration.properties,
+    "RouteAvoidProperty",
+    "avoid",
+    declaration,
+    file,
+    diagnostics,
+  );
   const corridor = optionalProperty<RouteCorridorSelectionProperty>(
     declaration.properties,
     "RouteCorridorSelectionProperty",
@@ -1038,6 +1345,8 @@ function lowerRouteControl(
 
   const invalidCombination = routeCombinationError(policy.value, {
     corridor: corridor !== undefined,
+    avoid: avoid !== undefined,
+    guide: guide !== undefined,
     lane: lane !== undefined,
     points: points !== undefined,
     sourcePort: sourcePort !== undefined,
@@ -1065,6 +1374,14 @@ function lowerRouteControl(
     ...(sourcePort === undefined ? {} : { sourcePort: sourcePort.value }),
     ...(targetPort === undefined ? {} : { targetPort: targetPort.value }),
     ...(via === undefined ? {} : { waypoints: pointsOf(via.value.points) }),
+    ...(guide === undefined
+      ? {}
+      : { guidance: guide.items.map(lowerRouteGuidance) }),
+    ...(avoid === undefined
+      ? {}
+      : {
+          avoidanceRegionIds: avoid.regions.map((region) => region.ref!.name),
+        }),
     ...(corridor === undefined || lane === undefined
       ? {}
       : {
@@ -1084,10 +1401,42 @@ function lowerRouteControl(
   };
 }
 
+function lowerRouteGuidance(
+  item: RouteGuideProperty["items"][number],
+): RouteGuidance {
+  return item.$type === "RouteWaypointGuide"
+    ? { kind: "waypoint", anchor: lowerRouteAnchor(item.anchor) }
+    : {
+        kind: "locked-segment",
+        start: lowerRouteAnchor(item.start),
+        end: lowerRouteAnchor(item.end),
+      };
+}
+
+function lowerRouteAnchor(anchor: RouteAnchorLiteral): RouteAnchor {
+  if (anchor.$type === "RouteCanvasAnchor") {
+    return { kind: "canvas", point: pointOf(anchor.point) };
+  }
+  if (anchor.$type === "RouteElementAnchor") {
+    return {
+      kind: "node",
+      referenceId: anchor.element.ref!.name,
+      side: anchor.side,
+      ...(anchor.offset === undefined ? {} : { offset: pointOf(anchor.offset) }),
+    };
+  }
+  return {
+    kind: anchor.kind,
+    ...(anchor.offset === undefined ? {} : { offset: pointOf(anchor.offset) }),
+  };
+}
+
 function routeCombinationError(
   policy: RoutePolicyProperty["value"],
   present: Readonly<{
+    avoid: boolean;
     corridor: boolean;
+    guide: boolean;
     lane: boolean;
     points: boolean;
     sourcePort: boolean;
@@ -1100,14 +1449,23 @@ function routeCombinationError(
     return "corridor and lane must be declared together.";
   }
   if (policy === "automatic") {
-    return present.corridor || present.points || present.sourcePort ||
-      present.style || present.targetPort || present.via
+    return present.avoid ||
+      present.corridor ||
+      present.guide ||
+      present.points ||
+      present.sourcePort ||
+      present.style ||
+      present.targetPort ||
+      present.via
       ? "automatic policy accepts only label placement controls."
       : undefined;
   }
   if (policy === "guided") {
     if (present.points) {
       return "guided policy uses via, not a complete points list.";
+    }
+    if (present.guide && (present.corridor || present.via)) {
+      return "ordered guide items cannot be combined with a corridor or absolute via points.";
     }
     if (present.corridor && present.via) {
       return "the current guided slice cannot combine a corridor with via points.";
@@ -1117,17 +1475,31 @@ function routeCombinationError(
   if (!present.points) {
     return "fixed policy requires a complete points list.";
   }
-  return present.corridor || present.sourcePort || present.targetPort || present.via
-    ? "fixed policy accepts its complete points list instead of ports, via points, or a corridor."
+  return present.avoid ||
+    present.corridor ||
+    present.guide ||
+    present.sourcePort ||
+    present.targetPort ||
+    present.via
+    ? "fixed policy accepts its complete points list instead of ports, guides, avoidance, via points, or a corridor."
     : undefined;
 }
 
 function diagnoseDuplicateRoutingIds(
+  avoidanceRegions: readonly RouteAvoidanceDeclaration[],
   corridors: readonly RouteCorridorDeclaration[],
   routes: readonly RouteDeclaration[],
   file: string,
   diagnostics: Diagnostic[],
 ): void {
+  diagnoseDuplicateDeclarations(
+    avoidanceRegions,
+    (region) => region.name,
+    "route avoidance region",
+    "C4ML-LANG-115",
+    file,
+    diagnostics,
+  );
   diagnoseDuplicateDeclarations(
     corridors,
     (corridor) => corridor.name,

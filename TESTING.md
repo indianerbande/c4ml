@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.24
+Status: Draft 0.25
 
 Date: 2026-08-29
 
@@ -42,6 +42,9 @@ groups, collaboration/sequence equivalence, nested Deployment Nodes, relevant
 Infrastructure Nodes, and declaration-order independence. Rendering and visual
 evidence now also covers deterministic diagram preparation, semantic and Visual
 Group parentage, automatic/guided/fixed route policies, fixed-route rejection,
+hard and soft relative placement, center-axis alignment, individual pinning,
+multi-location hard-conflict diagnostics, deterministic declaration-order
+handling, inspectable relaxed soft constraints,
 explicit source/target Ports, scene-owned Arrowheads, safe custom-shape
 validation and assignment, renderer-neutral scene construction, semantic theme
 roles and presets, stable SVG, ELK absolute compound geometry, SVG-to-PNG
@@ -62,11 +65,23 @@ relationships, all seven view types, static Relationship references,
 environment-scoped completion references, exact source locations, stable
 diagnostics for unresolved references and invalid property cardinality,
 semantic stability across comments and whitespace, view-local route lowering,
+view-local relative placement, alignment, and pin lowering,
 absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
-label placement, policy-combination diagnostics, route-context completion,
+relative Port/element/canvas anchors, ordered locked segments, hard and soft
+avoidance declarations and selection, label placement, policy-combination
+diagnostics, route-context completion,
 browser bundling without Node.js polyfills, and deterministic SVG through the
 shared compiler pipeline. This evidence does not claim coverage of the complete
 preview grammar.
+
+The current constraint-solver foundation covers the first executable subset in
+`SPEC.md`: left/right/above/below placement, horizontal/vertical center
+alignment, and individual pins. It verifies coexistence with automatic
+candidate geometry, hard pins, soft relaxation warnings, hard failures with all
+source locations, and deterministic results independent of constraint
+declaration order. Row/column membership, ordered sets, grouped minimum gaps,
+preferred proximity, bounded movement, constrained size, and group-spanning
+constraints still require the remaining Section 2.5 evidence.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -82,7 +97,8 @@ source/scene/SVG mappings, smallest-range source selection, smallest-bound
 preview hit testing, object-fit coordinate conversion, last-valid navigation
 retention, route-control source mapping, polyline-distance hit testing with
 node/route/boundary precedence, effective corridor geometry, and preview-only
-node, Route, Port, route-label, and corridor highlighting plus distinct detail
+node, Route, Port, route-label, and corridor highlighting, preview-only relative
+waypoint, locked-segment, and avoidance overlays, plus distinct detail
 navigation targets. The production-mode Angular build
 proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is

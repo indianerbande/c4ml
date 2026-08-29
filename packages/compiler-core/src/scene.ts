@@ -12,8 +12,11 @@ import {
 import { compareText } from "./ordering.js";
 import type { CardinalPortSide, PortRole } from "./ports.js";
 import type {
+  EffectiveAvoidanceRegion,
   EffectiveCorridor,
+  EffectiveLockedSegment,
   EffectiveRoute,
+  EffectiveRouteWaypoint,
   RoutePolicy,
   RouteStyle,
 } from "./routing.js";
@@ -65,6 +68,9 @@ export interface SceneRoute {
   readonly labelBounds: SceneBounds;
   readonly labelSegment: number;
   readonly corridor?: EffectiveCorridor;
+  readonly waypoints: readonly EffectiveRouteWaypoint[];
+  readonly lockedSegments: readonly EffectiveLockedSegment[];
+  readonly avoidanceRegions: readonly EffectiveAvoidanceRegion[];
 }
 
 export interface SceneBounds extends Point {
@@ -239,7 +245,28 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
     ...(route.corridor === undefined
       ? {}
       : { corridor: sceneCorridor(route.corridor, offset) }),
+    waypoints: route.waypoints.map((waypoint) => ({
+      ...waypoint,
+      point: offsetPoint(waypoint.point, offset),
+    })),
+    lockedSegments: route.lockedSegments.map((segment) => ({
+      ...segment,
+      start: offsetPoint(segment.start, offset),
+      end: offsetPoint(segment.end, offset),
+    })),
+    avoidanceRegions: route.avoidanceRegions.map((region) => ({
+      ...region,
+      bounds: {
+        ...offsetPoint(region.bounds, offset),
+        width: region.bounds.width,
+        height: region.bounds.height,
+      },
+    })),
   };
+}
+
+function offsetPoint(point: Point, offset: Point): Point {
+  return { x: point.x + offset.x, y: point.y + offset.y };
 }
 
 function routeLabelBounds(

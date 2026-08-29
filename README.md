@@ -34,8 +34,11 @@ Implemented and automatically validated:
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,
-  absolute waypoints, named corridors and lanes, selected label segments, and
-  label offsets;
+  absolute and relative waypoints, locked segments, hard or soft avoidance,
+  named corridors and lanes, selected label segments, and label offsets;
+- an engine-neutral placement stage that combines automatic layout with hard
+  or soft relative position, center-axis alignment, and individual pin rules,
+  including multi-location hard-conflict diagnostics;
 - explicit Port, Route, and Arrowhead objects through the scene graph, using
   consistent `north`, `east`, `south`, and `west` attachment names;
 - an original built-in Person shape and a validated custom-shape contract with
@@ -91,8 +94,12 @@ Implemented and automatically validated:
 - distinct preview selection of Ports, route labels, and corridors, resolving
   each detail back to its owning route-control source;
 - executable, view-local `draft-1` route controls for automatic, guided, and
-  fixed policies, cardinal Ports, absolute waypoints, named corridors and
-  exclusive lanes, complete fixed point lists, and label placement;
+  fixed policies, cardinal Ports, relative anchors, locked segments, hard and
+  soft avoidance, named corridors and exclusive lanes, complete fixed point
+  lists, and label placement;
+- executable, view-local `draft-1` placement controls for relative
+  above/below/left/right position, center-axis alignment, and single-element
+  pinning while the remaining layout stays automatic;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   browser-worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
@@ -111,8 +118,9 @@ Not implemented yet:
 
 - the complete public `.c4ml` parser and formatter;
 - the production CLI contract and packaging;
-- relative placement constraints, pinning, avoidance regions, locked route
-  segments, and the remaining full routing contract;
+- row and column membership, ordering, minimum-gap groups, preferred
+  proximity, bounded movement, constrained size, and the remaining full
+  placement/routing contract;
 - complete render validation for all seven view types;
 - a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
@@ -128,10 +136,9 @@ The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
 [`examples/draft`](examples/draft) remains a **design preview**. Bounded System
 Context, Container, Component, Code, System Landscape, Dynamic, and Deployment
 slices are executable through an internal package; they are not a public or
-frozen grammar. The first absolute route- and Port-control slice is executable.
-Visual Groups, relative routing, avoidance regions, locked segments, themes,
-custom shapes, and the remaining preview syntax are not accepted by the source
-compiler yet.
+frozen grammar. The first placement slice and the current relative route- and
+Port-control slice are executable. Visual Groups, themes, custom shapes, and
+the remaining preview syntax are not accepted by the source compiler yet.
 
 ## C4 scope
 
@@ -149,11 +156,12 @@ C4ML keeps the semantic architecture model separate from view selection,
 presentation, layout, scene construction, and output rendering. A model element
 retains the same stable identity when it appears in different diagrams.
 
-Automatic routing is a starting point rather than an irreversible result. The
-current draft source can already select view-local Ports, absolute waypoints,
-named corridors and exclusive lanes, label placement, or a fully fixed route.
-Relative waypoints, avoidance regions, and locked segments remain planned. None
-of these controls creates a fake architecture relationship.
+Automatic layout and routing are starting points rather than irreversible
+results. The current draft source can already apply relative placement,
+center-axis alignment, one-element pins, view-local Ports, relative waypoints,
+avoidance regions, locked segments, named corridors and exclusive lanes, label
+placement, or a fully fixed route. None of these controls creates a fake
+architecture relationship.
 
 ## Intended compiler pipeline
 

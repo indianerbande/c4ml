@@ -140,6 +140,9 @@ export async function runCli(
         model: parsed.model,
         view,
         layoutAdapter,
+        ...(parsed.placementByViewId?.[view.id] === undefined
+          ? {}
+          : { placement: parsed.placementByViewId[view.id] }),
         ...(parsed.routingByViewId?.[view.id] === undefined
           ? {}
           : { routing: parsed.routingByViewId[view.id] }),

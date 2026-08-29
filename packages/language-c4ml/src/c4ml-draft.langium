@@ -269,6 +269,9 @@ InteractionRelationshipProperty:
 LayoutBlock:
     'layout' '{'
         properties+=LayoutProperty*
+        constraints+=PlacementConstraintDeclaration*
+        pins+=PlacementPinDeclaration*
+        avoidanceRegions+=RouteAvoidanceDeclaration*
         corridors+=RouteCorridorDeclaration*
         routes+=RouteDeclaration*
     '}';
@@ -278,6 +281,67 @@ LayoutProperty:
 
 FlowProperty:
     'flow' '=' value=('down' | 'left' | 'right' | 'up');
+
+PlacementConstraintDeclaration:
+    'constraint'
+    relation=(
+        'above'
+        | 'align-center-x'
+        | 'align-center-y'
+        | 'below'
+        | 'left-of'
+        | 'right-of'
+    )
+    '(' subject=[ElementDeclaration:ID] ',' target=[ElementDeclaration:ID] ')'
+    '{'
+        properties+=PlacementConstraintProperty*
+    '}';
+
+PlacementConstraintProperty:
+    PlacementStrengthProperty | PlacementGapProperty;
+
+PlacementStrengthProperty:
+    'strength' '=' value=('hard' | 'soft');
+
+PlacementGapProperty:
+    'gap' '=' value=INT;
+
+PlacementPinDeclaration:
+    'pin' target=[ElementDeclaration:ID] '{'
+        properties+=PlacementPinProperty*
+    '}';
+
+PlacementPinProperty:
+    PlacementXProperty | PlacementYProperty | PlacementStrengthProperty;
+
+PlacementXProperty:
+    'x' '=' value=INT;
+
+PlacementYProperty:
+    'y' '=' value=INT;
+
+RouteAvoidanceDeclaration:
+    'avoidance' name=ID '{'
+        properties+=RouteAvoidanceSetting*
+    '}';
+
+RouteAvoidanceSetting:
+    AvoidanceStrengthProperty
+    | AvoidanceBoundsProperty
+    | AvoidanceAroundProperty
+    | AvoidancePaddingProperty;
+
+AvoidanceStrengthProperty:
+    'strength' '=' value=('hard' | 'soft');
+
+AvoidanceBoundsProperty:
+    'bounds' '=' value=BoundsLiteral;
+
+AvoidanceAroundProperty:
+    'around' '=' value=[ElementDeclaration:ID];
+
+AvoidancePaddingProperty:
+    'padding' '=' value=INT;
 
 RouteCorridorDeclaration:
     'corridor' name=ID '{'
@@ -313,6 +377,8 @@ RouteProperty:
     | RouteSourcePortProperty
     | RouteTargetPortProperty
     | RouteViaProperty
+    | RouteGuideProperty
+    | RouteAvoidProperty
     | RouteCorridorSelectionProperty
     | RouteLaneProperty
     | RoutePointsProperty
@@ -334,6 +400,36 @@ RouteTargetPortProperty:
 RouteViaProperty:
     'via' '=' value=PointList;
 
+RouteGuideProperty:
+    'guide' '=' '[' items+=RouteGuideItem (',' items+=RouteGuideItem)* ']';
+
+RouteGuideItem:
+    RouteWaypointGuide | RouteLockedSegmentGuide;
+
+RouteWaypointGuide:
+    'via' anchor=RouteAnchorLiteral;
+
+RouteLockedSegmentGuide:
+    'lock' start=RouteAnchorLiteral 'to' end=RouteAnchorLiteral;
+
+RouteAnchorLiteral:
+    RoutePortAnchor | RouteElementAnchor | RouteCanvasAnchor;
+
+RoutePortAnchor:
+    kind=('source-port' | 'target-port') ('shift' offset=PointLiteral)?;
+
+RouteElementAnchor:
+    'element' element=[ElementDeclaration:ID]
+    side=('north' | 'east' | 'south' | 'west')
+    ('shift' offset=PointLiteral)?;
+
+RouteCanvasAnchor:
+    'canvas' 'at' point=PointLiteral;
+
+RouteAvoidProperty:
+    'avoid' '=' '[' regions+=[RouteAvoidanceDeclaration:ID]
+        (',' regions+=[RouteAvoidanceDeclaration:ID])* ']';
+
 RouteCorridorSelectionProperty:
     'corridor' '=' value=[RouteCorridorDeclaration:ID];
 
@@ -354,6 +450,9 @@ PointList:
 
 PointLiteral:
     '(' x=SignedInteger ',' y=SignedInteger ')';
+
+BoundsLiteral:
+    '(' x=SignedInteger ',' y=SignedInteger ',' width=INT ',' height=INT ')';
 
 SignedInteger:
     (negative?='-')? value=INT;

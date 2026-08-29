@@ -62,6 +62,31 @@ export interface CompilerWorkerRouteCorridor {
   readonly laneSpacing: number;
 }
 
+export interface CompilerWorkerRouteWaypoint {
+  readonly anchorKind: "canvas" | "node" | "source-port" | "target-port";
+  readonly referenceId: string | undefined;
+  readonly side: "east" | "north" | "south" | "west" | undefined;
+  readonly point: CompilerWorkerNavigationPoint;
+}
+
+export interface CompilerWorkerLockedSegment {
+  readonly start: CompilerWorkerNavigationPoint;
+  readonly end: CompilerWorkerNavigationPoint;
+  readonly segmentIndex: number;
+}
+
+export interface CompilerWorkerAvoidanceRegion {
+  readonly id: string;
+  readonly strength: "hard" | "soft";
+  readonly bounds: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+  readonly relaxed: boolean;
+}
+
 export interface CompilerWorkerRouteNavigationTarget
   extends CompilerWorkerNavigationTargetBase {
   readonly kind: "route";
@@ -73,6 +98,9 @@ export interface CompilerWorkerRouteNavigationTarget
   readonly labelPoint: CompilerWorkerNavigationPoint;
   readonly labelSegment: number;
   readonly corridor: CompilerWorkerRouteCorridor | undefined;
+  readonly waypoints: readonly CompilerWorkerRouteWaypoint[];
+  readonly lockedSegments: readonly CompilerWorkerLockedSegment[];
+  readonly avoidanceRegions: readonly CompilerWorkerAvoidanceRegion[];
 }
 
 interface CompilerWorkerRouteDetailNavigationTargetBase
@@ -317,7 +345,13 @@ function isCompilerWorkerNavigationTarget(
     Number.isSafeInteger(route.labelSegment) &&
     (route.labelSegment ?? -1) >= 0 &&
     (route.labelSegment ?? Number.POSITIVE_INFINITY) < route.points.length - 1 &&
-    (route.corridor === undefined || isRouteCorridor(route.corridor))
+    (route.corridor === undefined || isRouteCorridor(route.corridor)) &&
+    Array.isArray(route.waypoints) &&
+    route.waypoints.every(isRouteWaypoint) &&
+    Array.isArray(route.lockedSegments) &&
+    route.lockedSegments.every(isLockedSegment) &&
+    Array.isArray(route.avoidanceRegions) &&
+    route.avoidanceRegions.every(isAvoidanceRegion)
   );
 }
 
@@ -394,5 +428,52 @@ function isRouteCorridor(
     (corridor.lane ?? Number.POSITIVE_INFINITY) <
       (corridor.lanes ?? Number.NEGATIVE_INFINITY) &&
     isPositiveFinite(corridor.laneSpacing)
+  );
+}
+
+function isRouteWaypoint(value: unknown): value is CompilerWorkerRouteWaypoint {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const waypoint = value as Partial<CompilerWorkerRouteWaypoint>;
+  const kindValid =
+    waypoint.anchorKind === "canvas" ||
+    waypoint.anchorKind === "node" ||
+    waypoint.anchorKind === "source-port" ||
+    waypoint.anchorKind === "target-port";
+  return (
+    kindValid &&
+    isNavigationPoint(waypoint.point) &&
+    (waypoint.anchorKind === "node"
+      ? typeof waypoint.referenceId === "string" && isCardinalSide(waypoint.side)
+      : waypoint.referenceId === undefined && waypoint.side === undefined)
+  );
+}
+
+function isLockedSegment(value: unknown): value is CompilerWorkerLockedSegment {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const segment = value as Partial<CompilerWorkerLockedSegment>;
+  return (
+    isNavigationPoint(segment.start) &&
+    isNavigationPoint(segment.end) &&
+    Number.isSafeInteger(segment.segmentIndex) &&
+    (segment.segmentIndex ?? -1) >= 0
+  );
+}
+
+function isAvoidanceRegion(
+  value: unknown,
+): value is CompilerWorkerAvoidanceRegion {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const region = value as Partial<CompilerWorkerAvoidanceRegion>;
+  return (
+    typeof region.id === "string" &&
+    (region.strength === "hard" || region.strength === "soft") &&
+    isNavigationBounds(region.bounds) &&
+    typeof region.relaxed === "boolean"
   );
 }

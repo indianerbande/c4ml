@@ -162,6 +162,7 @@ describe("C4ML draft-1 language slice", () => {
       model: parsed.model!,
       view: parsed.views![0]!,
       layoutAdapter: new RowLayoutAdapter(),
+      placement: parsed.placementByViewId!["garden-pulse-context"]!,
       routing: parsed.routingByViewId!["garden-pulse-context"]!,
     };
 
@@ -235,6 +236,99 @@ describe("C4ML draft-1 language slice", () => {
     const second = await parseC4mlDraft(variant);
 
     expect(semanticSnapshot(first)).toEqual(semanticSnapshot(second));
+  });
+
+  it("lowers relative placement, alignment, and pin controls into the shared solver", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "",
+      "    constraint left-of(caretaker, garden-pulse) {",
+      "      strength = hard",
+      "      gap = 120",
+      "    }",
+      "",
+      "    constraint align-center-y(caretaker, garden-pulse) {",
+      "      strength = soft",
+      "    }",
+      "",
+      "    pin garden-pulse {",
+      "      x = 520",
+      "      y = 180",
+      "      strength = hard",
+      "    }",
+      "  }",
+    ]);
+    const parsed = await parseC4mlDraft(source, {
+      file: "constraint-grid.c4ml",
+    });
+
+    expect(parsed.valid).toBe(true);
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.placementByViewId?.["garden-pulse-context"]).toMatchObject({
+      constraints: [
+        {
+          id: "left-of:caretaker:garden-pulse",
+          kind: "relative",
+          relation: "left-of",
+          subjectId: "caretaker",
+          targetId: "garden-pulse",
+          gap: 120,
+          strength: "hard",
+        },
+        {
+          id: "align-center-y:caretaker:garden-pulse",
+          kind: "alignment",
+          alignment: "center-y",
+          strength: "soft",
+        },
+        {
+          id: "pin:garden-pulse",
+          kind: "pin",
+          targetId: "garden-pulse",
+          x: 520,
+          y: 180,
+          strength: "hard",
+        },
+      ],
+    });
+
+    const compiled = await compileArchitectureDiagram({
+      model: parsed.model!,
+      view: parsed.views![0]!,
+      layoutAdapter: new RowLayoutAdapter(),
+      placement: parsed.placementByViewId!["garden-pulse-context"]!,
+    });
+    expect(compiled.valid).toBe(true);
+    expect(
+      compiled.layout?.nodes.find(({ id }) => id === "element:garden-pulse"),
+    ).toMatchObject({ x: 520, y: 180 });
+    expect(compiled.placement?.constraints).toHaveLength(3);
+  });
+
+  it("rejects duplicate placement controls and missing relative gaps", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    constraint left-of(caretaker, garden-pulse) {",
+      "      strength = hard",
+      "    }",
+      "    constraint left-of(caretaker, garden-pulse) {",
+      "      strength = soft",
+      "      gap = 20",
+      "    }",
+      "  }",
+    ]);
+    const parsed = await parseC4mlDraft(source, {
+      file: "invalid-placement.c4ml",
+    });
+
+    expect(parsed.valid).toBe(false);
+    expect(parsed.diagnostics.map(({ code }) => code)).toEqual([
+      "C4ML-LANG-121",
+      "C4ML-LANG-120",
+    ]);
+    expect(parsed.diagnostics[1]?.related).toHaveLength(1);
   });
 
   it("lowers view-local corridors, ports, guided routes, fixed routes, and label placement", async () => {
@@ -351,6 +445,87 @@ describe("C4ML draft-1 language slice", () => {
     ]);
     expect(result.diagnostics[0]?.source.file).toBe("invalid-routes.c4ml");
     expect(result.diagnostics[1]?.related).toHaveLength(1);
+  });
+
+  it("lowers relative guidance, locked segments, and hard or soft avoidance regions", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "",
+      "    avoidance caretaker-space {",
+      "      strength = soft",
+      "      around = caretaker",
+      "      padding = 24",
+      "    }",
+      "",
+      "    avoidance fixed-zone {",
+      "      strength = hard",
+      "      bounds = (500, 40, 80, 100)",
+      "    }",
+      "",
+      "    route caretaker-reviews-plan {",
+      "      policy = guided",
+      "      style = orthogonal",
+      "      source-port = east",
+      "      target-port = west",
+      "      guide = [",
+      "        via source-port shift (18, 0),",
+      "        lock canvas at (300, 40) to canvas at (360, 40),",
+      "        via element garden-pulse north shift (0, -20)",
+      "      ]",
+      "      avoid = [caretaker-space, fixed-zone]",
+      "    }",
+      "  }",
+    ]);
+    const result = await parseC4mlDraft(source, {
+      file: "relative-guidance.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.routingByViewId?.["garden-pulse-context"]).toMatchObject({
+      avoidanceRegions: [
+        {
+          id: "caretaker-space",
+          strength: "soft",
+          geometry: { kind: "node", referenceId: "caretaker", padding: 24 },
+        },
+        {
+          id: "fixed-zone",
+          strength: "hard",
+          geometry: {
+            kind: "absolute",
+            bounds: { x: 500, y: 40, width: 80, height: 100 },
+          },
+        },
+      ],
+      controls: [
+        {
+          relationshipId: "caretaker-reviews-plan",
+          avoidanceRegionIds: ["caretaker-space", "fixed-zone"],
+          guidance: [
+            {
+              kind: "waypoint",
+              anchor: { kind: "source-port", offset: { x: 18, y: 0 } },
+            },
+            {
+              kind: "locked-segment",
+              start: { kind: "canvas", point: { x: 300, y: 40 } },
+              end: { kind: "canvas", point: { x: 360, y: 40 } },
+            },
+            {
+              kind: "waypoint",
+              anchor: {
+                kind: "node",
+                referenceId: "garden-pulse",
+                side: "north",
+                offset: { x: 0, y: -20 },
+              },
+            },
+          ],
+        },
+      ],
+    });
   });
 });
 
@@ -475,6 +650,28 @@ describe("C4ML draft-1 completion contract", () => {
     ]);
   });
 
+  it("offers only missing properties inside a pin", async () => {
+    const source = (await helloContextSource()).replace(
+      [
+        "    pin garden-pulse {",
+        "      x = 520",
+        "      y = 120",
+        "      strength = hard",
+        "    }",
+      ].join("\n"),
+      ["    pin garden-pulse {", "      ", "    }"].join("\n"),
+    );
+    const offset = source.indexOf("    pin garden-pulse {") +
+      "    pin garden-pulse {\n      ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(
+      result.candidates
+        .filter(({ kind }) => kind === "property")
+        .map(({ label }) => label),
+    ).toEqual(["strength", "x", "y"]);
+  });
+
   it("limits route-block properties to the active routing context", async () => {
     const source = (await helloContextSource()).replace(
       "    flow = right",
@@ -494,7 +691,9 @@ describe("C4ML draft-1 completion contract", () => {
         .filter(({ kind }) => kind === "property")
         .map(({ label }) => label),
     ).toEqual([
+      "avoid",
       "corridor",
+      "guide",
       "label-segment",
       "label-shift",
       "lane",
@@ -1270,6 +1469,12 @@ describe("draft help context", () => {
         source.indexOf("relation caretaker-reviews-plan") + 12,
       ).topicId,
     ).toBe("relationships");
+    expect(
+      helpContextAtC4mlDraft(
+        source,
+        source.indexOf("constraint left-of") + 8,
+      ).topicId,
+    ).toBe("layout");
     expect(
       helpContextAtC4mlDraft(
         source,

@@ -3,6 +3,7 @@ export * from "./diagram-compiler.js";
 export * from "./diagram-preparation.js";
 export * from "./layout.js";
 export * from "./model.js";
+export * from "./placement.js";
 export * from "./ports.js";
 export * from "./routing.js";
 export * from "./scene.js";

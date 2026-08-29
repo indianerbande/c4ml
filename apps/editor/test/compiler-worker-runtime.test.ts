@@ -171,7 +171,20 @@ describe("compiler worker runtime", () => {
           }),
           relatedSources: [
             expect.objectContaining({
-              start: expect.objectContaining({ line: 56, column: 4 }),
+              start: expect.objectContaining({ line: 82, column: 4 }),
+            }),
+          ],
+          waypoints: [
+            expect.objectContaining({ anchorKind: "target-port" }),
+          ],
+          lockedSegments: [
+            expect.objectContaining({ segmentIndex: expect.any(Number) }),
+          ],
+          avoidanceRegions: [
+            expect.objectContaining({
+              id: "sensor-clearance",
+              strength: "soft",
+              relaxed: false,
             }),
           ],
         }),

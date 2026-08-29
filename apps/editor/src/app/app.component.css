@@ -1140,6 +1140,10 @@ button.editor-tab {
   font-weight: 650;
 }
 
+.route-inspector dd span {
+  display: block;
+}
+
 .status-bar {
   display: flex;
   min-width: 0;

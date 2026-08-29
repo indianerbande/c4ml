@@ -449,6 +449,20 @@
                   <div><dt>{{ i18n.t("panel.style") }}</dt><dd>{{ route.style }}</dd></div>
                   <div><dt>{{ i18n.t("panel.ports") }}</dt><dd>{{ route.sourcePort.side }} → {{ route.targetPort.side }}</dd></div>
                   <div><dt>{{ i18n.t("panel.points") }}</dt><dd>{{ route.points.length }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.waypoints") }}</dt><dd>{{ route.waypoints.length }}</dd></div>
+                  <div><dt>{{ i18n.t("panel.lockedSegments") }}</dt><dd>{{ route.lockedSegments.length }}</dd></div>
+                  <div>
+                    <dt>{{ i18n.t("panel.avoidance") }}</dt>
+                    <dd>
+                      @if (route.avoidanceRegions.length === 0) {
+                        {{ i18n.t("panel.none") }}
+                      } @else {
+                        @for (region of route.avoidanceRegions; track region.id) {
+                          <span>{{ region.id }} · {{ region.strength }}{{ region.relaxed ? " · " + i18n.t("panel.relaxed") : "" }}</span>
+                        }
+                      }
+                    </dd>
+                  </div>
                   <div><dt>{{ i18n.t("panel.labelSegment") }}</dt><dd>{{ route.labelSegment + 1 }}</dd></div>
                   @if (route.corridor; as corridor) {
                     <div><dt>{{ i18n.t("panel.corridor") }}</dt><dd>{{ corridor.id }} · {{ i18n.t("panel.lane") }} {{ corridor.lane + 1 }} / {{ corridor.lanes }}</dd></div>

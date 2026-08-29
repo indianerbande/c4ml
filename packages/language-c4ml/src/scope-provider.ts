@@ -37,7 +37,9 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
       context.property !== "container" &&
       context.property !== "node" &&
       context.property !== "parent" &&
-      context.property !== "relationship"
+      context.property !== "relationship" &&
+      context.property !== "subject" &&
+      context.property !== "target"
     ) {
       return super.getScope(context);
     }

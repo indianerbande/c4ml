@@ -47,6 +47,32 @@ view garden-pulse-context {
   layout {
     flow = right
 
+    constraint left-of(caretaker, garden-pulse) {
+      strength = hard
+      gap = 120
+    }
+
+    constraint below(sensor-post, garden-pulse) {
+      strength = hard
+      gap = 150
+    }
+
+    constraint align-center-y(caretaker, garden-pulse) {
+      strength = soft
+    }
+
+    pin garden-pulse {
+      x = 520
+      y = 120
+      strength = hard
+    }
+
+    avoidance sensor-clearance {
+      strength = soft
+      around = sensor-post
+      padding = 24
+    }
+
     corridor lower-entry {
       orientation = vertical
       coordinate = 647
@@ -59,6 +85,11 @@ view garden-pulse-context {
       style = orthogonal
       source-port = east
       target-port = west
+      guide = [
+        lock source-port shift (36, 0) to source-port shift (92, 0),
+        via target-port shift (-36, 0)
+      ]
+      avoid = [sensor-clearance]
       label-shift = (0, -14)
     }
 

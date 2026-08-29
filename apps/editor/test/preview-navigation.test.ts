@@ -99,6 +99,29 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
     lanes: 3,
     laneSpacing: 8,
   },
+  waypoints: [
+    {
+      anchorKind: "node",
+      referenceId: "garden-pulse",
+      side: "west",
+      point: { x: 460, y: 300 },
+    },
+  ],
+  lockedSegments: [
+    {
+      start: { x: 460, y: 300 },
+      end: { x: 460, y: 140 },
+      segmentIndex: 1,
+    },
+  ],
+  avoidanceRegions: [
+    {
+      id: "quiet-zone",
+      strength: "soft",
+      bounds: { x: 360, y: 180, width: 70, height: 60 },
+      relaxed: true,
+    },
+  ],
 };
 
 const sourcePortTarget: CompilerWorkerPortNavigationTarget = {
@@ -253,6 +276,10 @@ describe("preview navigation", () => {
     expect(highlighted).toContain("editor-route-port-source");
     expect(highlighted).toContain("editor-route-port-target");
     expect(highlighted).toContain("editor-corridor-selected");
+    expect(highlighted).toContain("editor-relative-waypoint");
+    expect(highlighted).toContain("editor-locked-segment");
+    expect(highlighted).toContain("editor-avoidance-soft");
+    expect(highlighted).toContain("editor-avoidance-relaxed");
     expect(highlighted).toContain('x1="460"');
     expect(svg).not.toContain("c4ml-editor-routing-debug");
   });

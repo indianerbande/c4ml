@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.23
+Status: Draft 0.24
 
 Date: 2026-08-29
 
@@ -725,6 +725,15 @@ selection, explicit label-segment selection, view-local label offsets, and an
 original semantic color theme. Fixed orthogonal routes are structurally
 validated in the compiler-core suite.
 
+The compiler-owned placement stage now also accepts the automatic adapter result
+as candidate geometry and applies an initial engine-neutral constraint slice.
+That slice implements hard or soft relative `left-of`, `right-of`, `above`, and
+`below` placement, horizontal or vertical center alignment, and an individual
+hard or soft pin. Hard conflicts fail before routing and preserve every involved
+constraint source; relaxed soft rules remain inspectable and emit a stable
+warning. Final constrained geometry and the original candidate layout are both
+compiler-visible.
+
 The implemented internal contract represents every effective relationship
 appearance as two explicit Ports, one Route, and one Arrowhead. The Route owns
 the path and label placement; the Arrowhead owns its final geometry. The SVG
@@ -737,11 +746,14 @@ explicit text content box, four cardinal port anchors, semantic paint roles,
 and a restricted primitive set. The original `c4ml-person` and `c4ml-box`
 shapes exercise this contract. The author-facing shape grammar remains draft.
 
-These types are internal compiler contracts, not accepted `.c4ml` grammar. The
-current slice intentionally does not claim complete placement constraints,
-relative waypoints, avoidance regions, locked segments, route-junction
-authorship, complete all-view rendering evidence, a frozen author-facing theme
-grammar, or geometry-affecting style tokens. ELK.js is the accepted first
+These types are internal compiler contracts, not accepted public `.c4ml`
+grammar. The current slice implements the initial placement controls described
+above, relative route anchors, hard and soft avoidance regions, and locked
+segments, but intentionally does not claim row/column membership, ordering,
+minimum-gap groups, preferred proximity, bounded movement, constrained size,
+route-junction authorship, relative corridors,
+complete all-view rendering evidence, a frozen author-facing theme grammar, or
+geometry-affecting style tokens. ELK.js is the accepted first
 automatic-layout adapter behind the engine-neutral boundary; resvg-js is the
 accepted replaceable Node.js PNG adapter behind `PngRenderer`.
 
@@ -778,6 +790,24 @@ An internal, browser-compatible language package implements the executable
   Systems; and
 - line comments and formatting-only whitespace changes.
 
+The first executable view-local placement subset additionally recognizes:
+
+- hard or soft relative `left-of`, `right-of`, `above`, and `below`
+  constraints between visible static elements, with a non-negative integer gap;
+- hard or soft horizontal and vertical center alignment between visible static
+  elements; and
+- one view-local pin per visible static element with non-negative integer x/y
+  coordinates.
+
+These controls lower into compiler-owned `DiagramPlacementOptions`, are applied
+after automatic candidate layout and before routing, and are passed identically
+by the CLI and browser worker. Duplicate placement identities, missing relative
+gaps, inappropriate alignment gaps, unknown or non-visible items, invalid
+coordinates, conflicting hard pins, and contradictory hard constraints fail
+with stable source-located diagnostics. Soft constraints may be relaxed only
+with a warning. Rows, columns, ordered sets, grouped minimum gaps, proximity,
+bounded movement, and constrained size remain outside this executable slice.
+
 The first executable view-local routing subset additionally recognizes:
 
 - named horizontal or vertical corridors at an absolute integer canvas
@@ -788,18 +818,27 @@ The first executable view-local routing subset additionally recognizes:
 - independent automatic or cardinal source and target Ports;
 - absolute integer waypoints for guided routes and complete point lists for
   fixed routes;
+- ordered guided waypoints relative to source or target Ports, cardinal sides
+  of visible elements, or absolute canvas points, with optional integer shifts;
+- ordered locked segments whose endpoints use the same anchor forms;
+- reusable view-local hard or soft avoidance regions using absolute bounds or
+  the padded effective bounds of a visible element;
+- explicit selection of avoidance regions by guided routes;
 - a named corridor plus a zero-based exclusive lane for guided routes; and
 - a zero-based effective label segment and an integer x/y label offset.
 
 These controls lower into the compiler-owned `DiagramRoutingOptions` for their
 own view and are passed identically by the CLI and browser worker. They do not
 alter the semantic Relationship or the resolved view. The lowering stage
-rejects duplicate corridor identities, duplicate controls for one Relationship,
+rejects duplicate corridor or avoidance identities, duplicate controls for one Relationship,
 missing required corridor properties, non-positive corridor capacity or lane
 spacing, and policy-incompatible combinations. The routing stage rejects an
 unknown or non-visible Relationship, unknown corridors, out-of-capacity lanes,
 shared exclusive lanes, invalid point geometry, obstacle crossings, invalid
-label segments, and fixed endpoints that do not attach to their nodes.
+label segments, unknown relative anchors or avoidance regions, impossible hard
+avoidance, loss of locked geometry, and fixed endpoints that do not attach to
+their nodes. A soft avoidance conflict remains valid but emits a stable warning
+and is retained as a relaxed effective region.
 
 The Langium-generated syntax types remain private to the language package. An
 explicit lowering stage translates them into the parser-independent C4ML model
@@ -810,8 +849,8 @@ pipeline without introducing a second compiler implementation.
 
 These slices are an implemented feasibility boundary, not an accepted public
 grammar or compatibility promise. They do not yet cover Visual Groups,
-complete selection, styling, shapes, relative route anchors, avoidance regions,
-locked segments, route controls for Dynamic Interactions or Deployment
+complete selection, styling, shapes, route junctions, relative corridors,
+route controls for Dynamic Interactions or Deployment
 Relationships, formatting, incremental documents, or complete editor language
 services. They expose context-completion for the executable subsets, including
 only valid properties and references inside route and corridor blocks. The rest
@@ -873,16 +912,18 @@ output. Invalid edits retain the last valid navigation map with the last valid
 preview, but preview clicks are disabled until current source compiles again.
 The navigation map also preserves every effective Route's Relationship source,
 optional view-local route-control source, stable scene/SVG identities, final
-polyline, endpoint Ports, policy, style, label anchor and segment, and effective
-corridor lane. Relationship or route-control selection therefore highlights
+polyline, endpoint Ports, policy, style, label anchor and segment, effective
+corridor lane, relative waypoints, locked segments, and effective avoidance
+regions including soft relaxation. Relationship or route-control selection therefore highlights
 the corresponding Route; path hit testing reveals the semantic Relationship,
 Dynamic Interaction, or Deployment Relationship declaration. Element interiors
 take precedence over Routes, Routes take precedence over enclosing boundaries,
 and nearby path selection uses a bounded scene-space tolerance.
 
 A toggleable routing-debug overlay displays the selected Route's effective
-points, endpoint Ports, label anchor, and all lanes of its selected corridor.
-An adjacent inspector reports the same compiler-owned route facts. This is
+points, relative waypoints, locked segments, avoidance bounds, endpoint Ports,
+label anchor, and all lanes of its selected corridor. An adjacent inspector
+reports the same compiler-owned route facts. This is
 preview-only editor presentation; it does not recalculate geometry, mutate
 source, or enter SVG export. Ports, route labels, and corridors are distinct
 preview navigation targets. Selecting one identifies its owning Route and
@@ -1480,7 +1521,8 @@ The following decisions remain deliberately open:
 - namespace and multi-file merge rules;
 - whether custom element kinds are allowed in strict C4 mode;
 - precise units and coordinate systems;
-- the first constraint-solving strategy;
+- the complete constraint-solving strategy beyond the implemented first
+  relative/alignment/pin slice;
 - whether C4ML owns the full orthogonal router in the MVP or initially wraps a
   replaceable routing engine;
 - the accessibility target for generated SVG.

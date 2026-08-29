@@ -2,7 +2,7 @@
 
 Status: Draft syntax preview with executable language and desktop workbench
 
-Date: 2026-08-28
+Date: 2026-08-29
 
 This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
@@ -21,8 +21,8 @@ can be reviewed through realistic examples rather than grammar fragments.
 > path are implemented today.
 > The internal path also carries explicit Ports, Routes, Arrowheads, and
 > restricted renderer-neutral shape definitions. `hello-context.c4ml` now
-> exercises the first executable, view-local route-control slice through both
-> the CLI and the editor worker.
+> exercises the first executable placement-constraint slice and the current
+> view-local route-control slice through both the CLI and the editor worker.
 
 `SPEC.md` remains the normative definition of product behavior. If this guide
 and `SPEC.md` disagree, `SPEC.md` wins.
@@ -217,9 +217,10 @@ usage, source/view selection, layout/render compilation, and filesystem or
 environment failures.
 
 The CLI is contributor evidence, not a frozen public command contract. It
-accepts the current absolute route-control slice, but not Visual Groups,
-relative route guidance, avoidance regions, locked segments, shapes, or themes
-from source. SVG and PNG use the same locally packaged IBM Plex Sans files;
+accepts the current placement and route-control slices, including relative
+position, alignment, pins, relative route guidance, avoidance regions, and
+locked segments, but not Visual Groups, shapes, or themes from source. SVG and
+PNG use the same locally packaged IBM Plex Sans files;
 SVG embeds WOFF2 faces and PNG supplies the matching TTF faces to the renderer
 with system-font discovery disabled.
 
@@ -233,10 +234,11 @@ live preview, so an exported SVG remains the canonical compiler result.
 Relationship declarations and view-local `route` blocks also select their
 effective connection; clicking close to that path reveals the underlying
 Relationship, Dynamic Interaction, or Deployment Relationship declaration.
-The optional Route Debug overlay shows effective route points, source and
-target Ports, the label anchor, and every lane of a selected corridor. Its
-adjacent inspector reports policy, style, Port sides, point count, selected
-label segment, and corridor lane. The overlay and selection styling exist only
+The optional Route Debug overlay shows effective route points, relative
+waypoints, locked segments, avoidance regions, source and target Ports, the
+label anchor, and every lane of a selected corridor. Its adjacent inspector
+reports policy, style, Port sides, point count, relative guidance, avoidance
+state, selected label segment, and corridor lane. The overlay and selection styling exist only
 in the live preview. Ports, route labels, and corridors can also be selected
 directly. Each reveals the source of its owning route control; none becomes a
 second architectural relationship. Arrowheads are not separate targets yet.
@@ -932,6 +934,9 @@ layout {
 
 ### 9.2 Relative constraints
 
+The current executable `draft-1` slice supports `left-of`, `right-of`,
+`above`, and `below`, plus `align-center-x` and `align-center-y`.
+
 ```c4ml
 layout {
   constraint left-of(grower, signal-garden) {
@@ -945,9 +950,10 @@ layout {
 }
 ```
 
-Constraints are layout objects, not semantic relationships. Hard constraints
+Constraints are layout objects, not semantic relationships. `hard` constraints
 must either be satisfied or produce a diagnostic naming every conflicting
-source location.
+source location. A `soft` constraint may be relaxed only with an explicit
+compiler warning.
 
 ### 9.3 Pinning one element
 
@@ -962,6 +968,9 @@ layout {
 ```
 
 Pinning one element does not disable automatic layout for the rest of the view.
+The current executable slice requires non-negative integer `x` and `y` values.
+Rows, columns, ordered sets, bounded movement, proximity, and constrained sizes
+remain planned rather than executable.
 
 ### 9.4 Ports and guided routes
 
@@ -989,9 +998,9 @@ path and fails if that path is invalid.
 
 The current executable `draft-1` slice accepts cardinal Ports, integer canvas
 coordinates, absolute `via` points, corridors, lanes, a zero-based label
-segment, and an x/y label shift. It deliberately does not pretend to support
-relative anchors, avoidance regions, constraint strengths, or locked segments
-yet.
+segment, and an x/y label shift. An ordered `guide` may also anchor waypoints
+to the source Port, target Port, a named element side, or the canvas, and may
+lock selected segments. Every non-canvas anchor can carry an x/y shift.
 
 ```c4ml
 layout {
@@ -1008,9 +1017,46 @@ layout {
 ```
 
 Explicit waypoints refine a route after automatic placement. They do not create
-or redirect the underlying semantic relationship. Relative forms such as
-“right of an element”, plus `avoid` and `strength`, remain part of the planned
-full routing model rather than the executable grammar.
+or redirect the underlying semantic relationship. The ordered relative form is:
+
+```c4ml
+guide = [
+  via source-port shift (36, 0),
+  lock canvas at (520, 260) to canvas at (620, 260),
+  via element cultivation-api north shift (0, -24),
+  via target-port shift (-36, 0)
+]
+```
+
+`guide` cannot be combined with the older absolute `via` list or a corridor in
+the current slice. A locked segment is hard: if orthogonalization, obstacle
+handling, or another hard rule would change it, compilation fails visibly.
+
+Avoidance regions are reusable inside one view:
+
+```c4ml
+avoidance service-clearance {
+  strength = hard
+  around = cultivation-api
+  padding = 24
+}
+
+avoidance reserved-note-area {
+  strength = soft
+  bounds = (720, 120, 180, 90)
+}
+
+route ui-calls-api {
+  policy = guided
+  style = orthogonal
+  avoid = [service-clearance, reserved-note-area]
+}
+```
+
+Use either `around` plus non-negative `padding`, or absolute `bounds = (x, y,
+width, height)`. A hard region that cannot be respected fails compilation. A
+soft region may be crossed only with diagnostic `C4ML-ROUTE-030`; the effective
+region is then marked `relaxed` in the inspector and debug overlay.
 
 ### 9.5 Named corridors and lanes
 
@@ -1091,8 +1137,8 @@ A guided route may instead lock only selected segments and leave its other
 segments automatic. Hard guidance is never ignored or silently downgraded. If
 it cannot be satisfied, compilation fails with all relevant source locations.
 
-The future editor should display ports, corridors, lanes, waypoints, locked
-segments, and relaxed soft rules in a routing-debug overlay. Moving a waypoint
+The editor displays Ports, corridors, lanes, waypoints, locked segments, and
+relaxed soft rules in its routing-debug overlay. Moving a waypoint
 or selecting a lane should create an explicit source edit rather than hidden
 editor state.
 
