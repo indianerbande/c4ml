@@ -13,6 +13,7 @@ import {
 import type {
   CompilerWorkerDiagnostic,
   CompilerWorkerNavigationTarget,
+  CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
@@ -44,10 +45,7 @@ import {
 import { WorkbenchHelpFacade } from "./workbench-help.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
-import type {
-  WorkbenchActivity,
-  WorkbenchPanel,
-} from "./workbench-session.js";
+import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
 
 @Component({
   selector: "c4ml-root",
@@ -62,9 +60,8 @@ import type {
   ],
 })
 export class AppComponent {
-  readonly sourceEditor = viewChild<C4mlMonacoSourceEditorComponent>(
-    "sourceEditor",
-  );
+  readonly sourceEditor =
+    viewChild<C4mlMonacoSourceEditorComponent>("sourceEditor");
   readonly compiler = inject(CompilerWorkerClient);
   readonly documents = inject(WorkbenchDocumentFacade);
   readonly preview = inject(WorkbenchPreviewFacade);
@@ -86,6 +83,7 @@ export class AppComponent {
   readonly lastValidSvg = this.preview.lastValidSvg;
   readonly navigation = this.preview.navigation;
   readonly selectedRoute = this.preview.selectedRoute;
+  readonly selectedNode = this.preview.selectedNode;
   readonly selectedKindLabel = this.preview.selectedKindLabel;
   readonly selectedLabel = this.preview.selectedLabel;
   readonly activeViewTitle = this.preview.activeViewTitle;
@@ -111,16 +109,14 @@ export class AppComponent {
   readonly settingsOpen = signal(false);
   readonly sourceCursorOffset = signal(0);
   readonly canUndoWizard = signal(false);
-  readonly settingsButton = viewChild<ElementRef<HTMLButtonElement>>(
-    "settingsButton",
-  );
-  readonly commandInput = viewChild<ElementRef<HTMLInputElement>>("commandInput");
+  readonly settingsButton =
+    viewChild<ElementRef<HTMLButtonElement>>("settingsButton");
+  readonly commandInput =
+    viewChild<ElementRef<HTMLInputElement>>("commandInput");
   readonly preferences = inject(WorkbenchPreferencesService);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly session = inject(WorkbenchSessionService);
-  readonly activeActivity = computed(
-    () => this.session.state().activeActivity,
-  );
+  readonly activeActivity = computed(() => this.session.state().activeActivity);
   readonly bottomPanelOpen = computed(
     () => this.session.state().bottomPanelOpen,
   );
@@ -154,31 +150,33 @@ export class AppComponent {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
-    const unsubscribeDesktopCommands = this.documents.onDesktopCommand((command) => {
-      switch (command) {
-        case "export-png":
-          void this.exportPng();
-          break;
-        case "open-document":
-          void this.openDocument();
-          break;
-        case "open-project":
-          void this.openProject();
-          break;
-        case "save-document":
-          void this.saveDocument("save");
-          break;
-        case "save-all-documents":
-          void this.saveAllDocuments();
-          break;
-        case "save-as-document":
-          void this.saveDocument("save-as");
-          break;
-        case "open-settings":
-          this.openSettings();
-          break;
-      }
-    });
+    const unsubscribeDesktopCommands = this.documents.onDesktopCommand(
+      (command) => {
+        switch (command) {
+          case "export-png":
+            void this.exportPng();
+            break;
+          case "open-document":
+            void this.openDocument();
+            break;
+          case "open-project":
+            void this.openProject();
+            break;
+          case "save-document":
+            void this.saveDocument("save");
+            break;
+          case "save-all-documents":
+            void this.saveAllDocuments();
+            break;
+          case "save-as-document":
+            void this.saveDocument("save-as");
+            break;
+          case "open-settings":
+            this.openSettings();
+            break;
+        }
+      },
+    );
     destroyRef.onDestroy(() => {
       if (this.#compileTimer !== undefined) {
         clearTimeout(this.#compileTimer);
@@ -262,6 +260,14 @@ export class AppComponent {
     queueMicrotask(() => this.sourceEditor()?.revealDiagnostic(diagnostic));
   }
 
+  onInspectorSourceSelected(source: CompilerWorkerSource): void {
+    if (source.file !== this.activeDocumentUri()) {
+      this.documents.selectDocument(source.file);
+      this.#compileCurrentProject(this.compiler.state().activeViewId);
+    }
+    queueMicrotask(() => this.sourceEditor()?.revealSource(source));
+  }
+
   onSourceSelection(selection: SourceEditorSelection): void {
     this.sourceCursorOffset.set(selection.startOffset);
     this.compiler.resolveHelpContext(this.source(), selection.startOffset);
@@ -313,6 +319,10 @@ export class AppComponent {
 
   toggleRoutingDebug(): void {
     this.preview.toggleRoutingDebug();
+  }
+
+  formatGeometry(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
 
   exportSvg(): void {
@@ -542,7 +552,9 @@ export class AppComponent {
     }
   }
 
-  #compileCurrentProject(requestedViewId = this.compiler.state().activeViewId): void {
+  #compileCurrentProject(
+    requestedViewId = this.compiler.state().activeViewId,
+  ): void {
     this.compiler.compileProject(
       this.documents.projectSnapshot(),
       this.activeDocumentUri(),
@@ -556,5 +568,4 @@ export class AppComponent {
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
   }
-
 }

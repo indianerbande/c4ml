@@ -132,23 +132,23 @@ The initial review is intentionally limited to public documentation and
 observable behavior of C4, Structurizr, C4-PlantUML, Mermaid, LikeC4, D2,
 Graphviz, ELK, and Penrose.
 
-| Observation | C4ML requirement |
-| --- | --- |
-| C4 is notation-independent, but diagrams still need explicit scope, types, descriptions, relationships, and a legend. | C4 semantics and diagram readability are validated independently of the chosen visual theme. |
-| Some model-as-code systems keep manual layout outside the authored DSL. | Layout decisions MUST be representable as reviewable text associated with a stable view. |
-| Some systems require choosing between locked automatic layout and manual editing. | Automatic and manual mechanisms MUST coexist within one view. |
-| Direction hints used as invisible relationships are difficult to reason about. | Layout constraints MUST be first-class and MUST NOT masquerade as architecture relationships. |
-| Statement order is sometimes used implicitly to affect placement. | Source order MUST have no layout meaning unless a construct explicitly declares ordered placement. |
-| Model-based projections avoid repeating the architecture for every diagram. | Views MUST select from a shared semantic model. |
-| Rank and alignment constraints improve automatic results but do not provide exact routing. | C4ML MUST support both relational placement constraints and explicit route controls. |
-| Generic graph engines expose useful ranks, ports, compound graphs, and routing modes, but engine-specific limitations leak into output. | The internal layout contract MUST normalize engine results and allow C4ML-owned post-processing. |
-| Graph-layout systems use ports as explicit edge attachment points, while vector formats separate paths from their markers or arrow geometry. | C4ML MUST keep relationship semantics, endpoint ports, route geometry, and arrowheads as separate inspectable compiler objects. |
-| Scalable vector formats map a stable local coordinate space onto varying output sizes. | Custom C4ML shapes MUST use a normalized renderer-neutral canvas with explicit content and port geometry. |
-| Constraint-based systems demonstrate the value of separating meaning from visual realization. | Semantic objects, view selection, visual style, and geometry MUST be separate compiler stages. |
-| Browser-screenshot PNG export adds a large and variable runtime dependency. | PNG SHOULD be derived directly from the canonical SVG without a headless browser. |
-| Users of model-as-code tools request graphical control without losing changes, fighting stale connection controls, or abandoning automatic layout. | Graphical operations MUST become explicit source intent, and C4ML SHOULD explain the effective controls behind geometry. |
-| Architecture authors request before/after, migration, and Git-oriented visual comparisons, while text and pixel diffs obscure semantic change. | C4ML SHOULD compare normalized architecture states by stable identity and separate architectural change from layout movement. |
-| Existing tools can highlight tagged perspectives, but visual classification alone does not prove that architecture constraints hold. | C4ML SHOULD provide deterministic, source-located rules and impact queries over the validated architecture graph. |
+| Observation                                                                                                                                        | C4ML requirement                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| C4 is notation-independent, but diagrams still need explicit scope, types, descriptions, relationships, and a legend.                              | C4 semantics and diagram readability are validated independently of the chosen visual theme.                                    |
+| Some model-as-code systems keep manual layout outside the authored DSL.                                                                            | Layout decisions MUST be representable as reviewable text associated with a stable view.                                        |
+| Some systems require choosing between locked automatic layout and manual editing.                                                                  | Automatic and manual mechanisms MUST coexist within one view.                                                                   |
+| Direction hints used as invisible relationships are difficult to reason about.                                                                     | Layout constraints MUST be first-class and MUST NOT masquerade as architecture relationships.                                   |
+| Statement order is sometimes used implicitly to affect placement.                                                                                  | Source order MUST have no layout meaning unless a construct explicitly declares ordered placement.                              |
+| Model-based projections avoid repeating the architecture for every diagram.                                                                        | Views MUST select from a shared semantic model.                                                                                 |
+| Rank and alignment constraints improve automatic results but do not provide exact routing.                                                         | C4ML MUST support both relational placement constraints and explicit route controls.                                            |
+| Generic graph engines expose useful ranks, ports, compound graphs, and routing modes, but engine-specific limitations leak into output.            | The internal layout contract MUST normalize engine results and allow C4ML-owned post-processing.                                |
+| Graph-layout systems use ports as explicit edge attachment points, while vector formats separate paths from their markers or arrow geometry.       | C4ML MUST keep relationship semantics, endpoint ports, route geometry, and arrowheads as separate inspectable compiler objects. |
+| Scalable vector formats map a stable local coordinate space onto varying output sizes.                                                             | Custom C4ML shapes MUST use a normalized renderer-neutral canvas with explicit content and port geometry.                       |
+| Constraint-based systems demonstrate the value of separating meaning from visual realization.                                                      | Semantic objects, view selection, visual style, and geometry MUST be separate compiler stages.                                  |
+| Browser-screenshot PNG export adds a large and variable runtime dependency.                                                                        | PNG SHOULD be derived directly from the canonical SVG without a headless browser.                                               |
+| Users of model-as-code tools request graphical control without losing changes, fighting stale connection controls, or abandoning automatic layout. | Graphical operations MUST become explicit source intent, and C4ML SHOULD explain the effective controls behind geometry.        |
+| Architecture authors request before/after, migration, and Git-oriented visual comparisons, while text and pixel diffs obscure semantic change.     | C4ML SHOULD compare normalized architecture states by stable identity and separate architectural change from layout movement.   |
+| Existing tools can highlight tagged perspectives, but visual classification alone does not prove that architecture constraints hold.               | C4ML SHOULD provide deterministic, source-located rules and impact queries over the validated architecture graph.               |
 
 This table records requirements only. It does not define or endorse another
 tool's syntax or implementation.
@@ -1090,7 +1090,17 @@ preview navigation targets. Selecting one identifies its owning Route and
 reveals the route-control source range; it does not invent a separate semantic
 relationship. Arrowheads are not separate navigation targets yet. Native
 source-file Open/Save/Save As and PNG export are implemented by the desktop
-shell. Graphical source editing remains unimplemented.
+shell.
+
+The implemented read-only geometry inspector extends each selectable node with
+its automatic candidate bounds, final scene bounds, movement delta, and every
+effective placement constraint that references it. Automatic engine choice,
+applied hard intent, applied soft intent, and relaxed soft intent are distinct
+states. Automatic choice navigates to the owning view declaration; placement
+constraints, route controls, avoidance regions, and corridors navigate to their
+own source declarations. The inspector consumes compiler-owned candidate and
+final geometry and MUST NOT recalculate or persist either. Graphical source
+editing remains unimplemented.
 The production preview uses the accepted ELK.js adapter described in Section
 9.5.2; the former deterministic linear preview remains test-only compatibility
 code.

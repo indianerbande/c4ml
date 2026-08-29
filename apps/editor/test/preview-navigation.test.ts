@@ -98,6 +98,11 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
     lane: 1,
     lanes: 3,
     laneSpacing: 8,
+    source: {
+      file: "editor.c4ml",
+      start: { offset: 760, line: 38, column: 4 },
+      end: { offset: 798, line: 39, column: 5 },
+    },
   },
   waypoints: [
     {
@@ -120,6 +125,11 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
       strength: "soft",
       bounds: { x: 360, y: 180, width: 70, height: 60 },
       relaxed: true,
+      source: {
+        file: "editor.c4ml",
+        start: { offset: 720, line: 36, column: 4 },
+        end: { offset: 758, line: 37, column: 5 },
+      },
     },
   ],
 };

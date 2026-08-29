@@ -33,16 +33,44 @@ interface CompilerWorkerNavigationTargetBase {
   readonly relatedSources: readonly CompilerWorkerSource[];
 }
 
-export interface CompilerWorkerNodeNavigationTarget
-  extends CompilerWorkerNavigationTargetBase {
+export interface CompilerWorkerNodeNavigationTarget extends CompilerWorkerNavigationTargetBase {
   readonly kind: "node";
   readonly nodeRole: "boundary" | "element";
-  readonly bounds: {
+  readonly bounds: CompilerWorkerGeometryBounds;
+  readonly geometry?: CompilerWorkerNodeGeometry;
+}
+
+export interface CompilerWorkerGeometryBounds {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface CompilerWorkerPlacementExplanation {
+  readonly id: string;
+  readonly kind:
+    | "adjust"
+    | "align"
+    | "alignment"
+    | "automatic"
+    | "distribute"
+    | "pin"
+    | "relative";
+  readonly strength: "automatic" | "hard" | "soft";
+  readonly state: "applied" | "relaxed";
+  readonly summary: string;
+  readonly source: CompilerWorkerSource;
+}
+
+export interface CompilerWorkerNodeGeometry {
+  readonly candidate: CompilerWorkerGeometryBounds;
+  readonly final: CompilerWorkerGeometryBounds;
+  readonly delta: {
     readonly x: number;
     readonly y: number;
-    readonly width: number;
-    readonly height: number;
   };
+  readonly explanations: readonly CompilerWorkerPlacementExplanation[];
 }
 
 export interface CompilerWorkerRoutePort {
@@ -60,6 +88,7 @@ export interface CompilerWorkerRouteCorridor {
   readonly lane: number;
   readonly lanes: number;
   readonly laneSpacing: number;
+  readonly source: CompilerWorkerSource;
 }
 
 export interface CompilerWorkerRouteWaypoint {
@@ -85,10 +114,10 @@ export interface CompilerWorkerAvoidanceRegion {
     readonly height: number;
   };
   readonly relaxed: boolean;
+  readonly source: CompilerWorkerSource;
 }
 
-export interface CompilerWorkerRouteNavigationTarget
-  extends CompilerWorkerNavigationTargetBase {
+export interface CompilerWorkerRouteNavigationTarget extends CompilerWorkerNavigationTargetBase {
   readonly kind: "route";
   readonly policy: "automatic" | "fixed" | "guided";
   readonly style: "direct" | "orthogonal";
@@ -103,21 +132,18 @@ export interface CompilerWorkerRouteNavigationTarget
   readonly avoidanceRegions: readonly CompilerWorkerAvoidanceRegion[];
 }
 
-interface CompilerWorkerRouteDetailNavigationTargetBase
-  extends CompilerWorkerNavigationTargetBase {
+interface CompilerWorkerRouteDetailNavigationTargetBase extends CompilerWorkerNavigationTargetBase {
   readonly routeSceneObjectId: string;
 }
 
-export interface CompilerWorkerPortNavigationTarget
-  extends CompilerWorkerRouteDetailNavigationTargetBase {
+export interface CompilerWorkerPortNavigationTarget extends CompilerWorkerRouteDetailNavigationTargetBase {
   readonly kind: "port";
   readonly portRole: "source" | "target";
   readonly side: "east" | "north" | "south" | "west";
   readonly point: CompilerWorkerNavigationPoint;
 }
 
-export interface CompilerWorkerRouteLabelNavigationTarget
-  extends CompilerWorkerRouteDetailNavigationTargetBase {
+export interface CompilerWorkerRouteLabelNavigationTarget extends CompilerWorkerRouteDetailNavigationTargetBase {
   readonly kind: "route-label";
   readonly point: CompilerWorkerNavigationPoint;
   readonly bounds: {
@@ -128,8 +154,7 @@ export interface CompilerWorkerRouteLabelNavigationTarget
   };
 }
 
-export interface CompilerWorkerCorridorNavigationTarget
-  extends CompilerWorkerRouteDetailNavigationTargetBase {
+export interface CompilerWorkerCorridorNavigationTarget extends CompilerWorkerRouteDetailNavigationTargetBase {
   readonly kind: "corridor";
   readonly orientation: "horizontal" | "vertical";
   readonly points: readonly [
@@ -212,7 +237,8 @@ export function isCompilerWorkerRequest(
     (candidate.project === undefined ||
       (isCompilerWorkerProject(candidate.project) &&
         candidate.project.documents.some(
-          ({ uri, source }) => uri === candidate.file && source === candidate.source,
+          ({ uri, source }) =>
+            uri === candidate.file && source === candidate.source,
         ))) &&
     (candidate.requestedViewId === undefined ||
       typeof candidate.requestedViewId === "string")
@@ -235,11 +261,14 @@ export function isCompilerWorkerProject(
       typeof candidate.description === "string") &&
     Array.isArray(candidate.documents) &&
     candidate.documents.length > 0 &&
-    candidate.documents.every((document) =>
-      typeof document === "object" &&
-      document !== null &&
-      typeof (document as Partial<CompilerWorkerProjectDocument>).uri === "string" &&
-      typeof (document as Partial<CompilerWorkerProjectDocument>).source === "string",
+    candidate.documents.every(
+      (document) =>
+        typeof document === "object" &&
+        document !== null &&
+        typeof (document as Partial<CompilerWorkerProjectDocument>).uri ===
+          "string" &&
+        typeof (document as Partial<CompilerWorkerProjectDocument>).source ===
+          "string",
     )
   );
 }
@@ -335,7 +364,8 @@ function isCompilerWorkerNavigationTarget(
       Number.isFinite(bounds.x) &&
       Number.isFinite(bounds.y) &&
       isPositiveFinite(bounds.width) &&
-      isPositiveFinite(bounds.height)
+      isPositiveFinite(bounds.height) &&
+      (node.geometry === undefined || isNodeGeometry(node.geometry))
     );
   }
   if (candidate.kind === "port") {
@@ -348,7 +378,8 @@ function isCompilerWorkerNavigationTarget(
     );
   }
   if (candidate.kind === "route-label") {
-    const label = candidate as Partial<CompilerWorkerRouteLabelNavigationTarget>;
+    const label =
+      candidate as Partial<CompilerWorkerRouteLabelNavigationTarget>;
     return (
       typeof label.routeSceneObjectId === "string" &&
       isNavigationPoint(label.point) &&
@@ -356,7 +387,8 @@ function isCompilerWorkerNavigationTarget(
     );
   }
   if (candidate.kind === "corridor") {
-    const corridor = candidate as Partial<CompilerWorkerCorridorNavigationTarget>;
+    const corridor =
+      candidate as Partial<CompilerWorkerCorridorNavigationTarget>;
     return (
       typeof corridor.routeSceneObjectId === "string" &&
       (corridor.orientation === "horizontal" ||
@@ -388,7 +420,8 @@ function isCompilerWorkerNavigationTarget(
     isNavigationPoint(route.labelPoint) &&
     Number.isSafeInteger(route.labelSegment) &&
     (route.labelSegment ?? -1) >= 0 &&
-    (route.labelSegment ?? Number.POSITIVE_INFINITY) < route.points.length - 1 &&
+    (route.labelSegment ?? Number.POSITIVE_INFINITY) <
+      route.points.length - 1 &&
     (route.corridor === undefined || isRouteCorridor(route.corridor)) &&
     Array.isArray(route.waypoints) &&
     route.waypoints.every(isRouteWaypoint) &&
@@ -396,6 +429,43 @@ function isCompilerWorkerNavigationTarget(
     route.lockedSegments.every(isLockedSegment) &&
     Array.isArray(route.avoidanceRegions) &&
     route.avoidanceRegions.every(isAvoidanceRegion)
+  );
+}
+
+function isNodeGeometry(value: unknown): value is CompilerWorkerNodeGeometry {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const geometry = value as Partial<CompilerWorkerNodeGeometry>;
+  return (
+    isNavigationBounds(geometry.candidate) &&
+    isNavigationBounds(geometry.final) &&
+    isNavigationPoint(geometry.delta) &&
+    Array.isArray(geometry.explanations) &&
+    geometry.explanations.length > 0 &&
+    geometry.explanations.every((explanation) => {
+      if (typeof explanation !== "object" || explanation === null) {
+        return false;
+      }
+      const item = explanation as Partial<CompilerWorkerPlacementExplanation>;
+      return (
+        typeof item.id === "string" &&
+        (item.kind === "adjust" ||
+          item.kind === "align" ||
+          item.kind === "alignment" ||
+          item.kind === "automatic" ||
+          item.kind === "distribute" ||
+          item.kind === "pin" ||
+          item.kind === "relative") &&
+        (item.strength === "automatic" ||
+          item.strength === "hard" ||
+          item.strength === "soft") &&
+        (item.state === "applied" || item.state === "relaxed") &&
+        typeof item.summary === "string" &&
+        item.summary.length > 0 &&
+        isWorkerSource(item.source)
+      );
+    })
   );
 }
 
@@ -452,9 +522,7 @@ function isRoutePort(
   );
 }
 
-function isRouteCorridor(
-  value: unknown,
-): value is CompilerWorkerRouteCorridor {
+function isRouteCorridor(value: unknown): value is CompilerWorkerRouteCorridor {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -471,7 +539,8 @@ function isRouteCorridor(
     (corridor.lanes ?? 0) > 0 &&
     (corridor.lane ?? Number.POSITIVE_INFINITY) <
       (corridor.lanes ?? Number.NEGATIVE_INFINITY) &&
-    isPositiveFinite(corridor.laneSpacing)
+    isPositiveFinite(corridor.laneSpacing) &&
+    isWorkerSource(corridor.source)
   );
 }
 
@@ -489,7 +558,8 @@ function isRouteWaypoint(value: unknown): value is CompilerWorkerRouteWaypoint {
     kindValid &&
     isNavigationPoint(waypoint.point) &&
     (waypoint.anchorKind === "node"
-      ? typeof waypoint.referenceId === "string" && isCardinalSide(waypoint.side)
+      ? typeof waypoint.referenceId === "string" &&
+        isCardinalSide(waypoint.side)
       : waypoint.referenceId === undefined && waypoint.side === undefined)
   );
 }
@@ -518,6 +588,7 @@ function isAvoidanceRegion(
     typeof region.id === "string" &&
     (region.strength === "hard" || region.strength === "soft") &&
     isNavigationBounds(region.bounds) &&
-    typeof region.relaxed === "boolean"
+    typeof region.relaxed === "boolean" &&
+    isWorkerSource(region.source)
   );
 }

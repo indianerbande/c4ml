@@ -167,6 +167,16 @@ including regular and bold faces. The preview was visually inspected at 80,
 100, and 120 percent; its rendered box changed size while computed CSS
 `transform` remained `none`.
 
+The first intent-authoring inspector evidence verifies that the worker returns
+automatic candidate bounds, final scene bounds, movement delta, and stable
+source-located placement explanations for a selected node. Protocol validation
+distinguishes automatic, hard, soft, applied, and relaxed states and preserves
+separate source locations for route controls, avoidance regions, and corridors.
+The inspector was visually checked in the light and dark blue workbench themes;
+its automatic and authored placement cards remained readable, selection did not
+change canonical SVG, and clicking the automatic choice revealed the owning
+view declaration in Monaco.
+
 The editor architecture suite additionally protects the independent Compile,
 Language, and Authoring worker-contract modules and their small composed
 transport boundary. Production build validation covers the focused workbench

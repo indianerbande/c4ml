@@ -14,6 +14,14 @@ const foregroundPairs = [
     "editorSuggestWidget.selectedForeground",
     "editorSuggestWidget.selectedBackground",
   ],
+  [
+    "editorSuggestWidget.selectedIconForeground",
+    "editorSuggestWidget.selectedBackground",
+  ],
+  [
+    "editorSuggestWidget.focusHighlightForeground",
+    "editorSuggestWidget.selectedBackground",
+  ],
   ["editorSuggestWidget.highlightForeground", "editorSuggestWidget.background"],
 ] as const;
 
@@ -40,9 +48,6 @@ describe("Monaco suggestion themes", () => {
           4.5,
         );
       }
-      expect(
-        colors["editorSuggestWidget.selectedIconForeground"],
-      ).toBeDefined();
       expect(colors["list.focusOutline"]).toBeDefined();
 
       const syntaxKinds = [

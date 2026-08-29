@@ -79,6 +79,7 @@ function createTheme(
 ): C4mlMonacoThemeDefinition {
   const dark = scheme === "dark";
   const foreground = dark ? "#E4EEF8" : "#17263D";
+  const selectedForeground = dark ? "#FFFFFF" : "#17263D";
   const syntax = resolveC4mlSyntaxTheme(syntaxTheme, scheme, colors.accent);
 
   return {
@@ -109,8 +110,9 @@ function createTheme(
       "editorSuggestWidget.foreground": dark ? "#DCE8F2" : "#26394E",
       "editorSuggestWidget.highlightForeground": colors.accent,
       "editorSuggestWidget.selectedBackground": colors.selection,
-      "editorSuggestWidget.selectedForeground": dark ? "#FFFFFF" : "#17263D",
-      "editorSuggestWidget.selectedIconForeground": colors.accent,
+      "editorSuggestWidget.selectedForeground": selectedForeground,
+      "editorSuggestWidget.selectedIconForeground": selectedForeground,
+      "editorSuggestWidget.focusHighlightForeground": selectedForeground,
       "list.focusOutline": colors.cursor,
     },
   };
