@@ -87,6 +87,15 @@ is composed from independent Compile, Language, and Authoring contracts plus a
 small shared protocol core; the compatibility barrel remains the only combined
 transport boundary.
 
+The portable compiler core also owns implemented version-one foundation
+contracts for proposed source change sets, canonical architecture snapshots,
+kind-qualified architecture graph traversal, and analysis findings/query
+evidence. Source changes use deterministic revisions and non-overlapping text
+edits; snapshots exclude source formatting and parser objects; graph keys keep
+identity namespaces distinct; observed evidence requires adapter attribution.
+Syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
+semantic diffing, and executable policy rules remain later slices.
+
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
 (System Landscape, Dynamic, Deployment), their required model elements, and the

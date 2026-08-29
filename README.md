@@ -31,6 +31,9 @@ Implemented and automatically validated:
 - deterministic projection of all seven C4 view types;
 - deterministic, nested, view-local Visual Groups that do not alter C4 scope;
 - source-aware diagnostics with stable codes;
+- portable version-one contracts for revision-protected source change sets,
+  canonical architecture snapshots, kind-qualified graph traversal, and
+  source-located analysis findings and query evidence;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,
