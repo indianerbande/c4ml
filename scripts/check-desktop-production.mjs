@@ -11,7 +11,7 @@ const repositoryRoot = resolve(
 const desktopRoot = join(repositoryRoot, "apps", "desktop");
 const requireFromDesktop = createRequire(join(desktopRoot, "package.json"));
 const requireFromResvgAdapter = createRequire(
-  join(repositoryRoot, "spikes", "render-resvg", "package.json"),
+  join(repositoryRoot, "packages", "render-resvg", "package.json"),
 );
 
 const rootManifest = JSON.parse(readRequired("package.json"));
@@ -28,7 +28,7 @@ assert.equal(
   "desktop runtime dependencies must be bundled rather than copied as node_modules",
 );
 assert.equal(
-  desktopManifest.devDependencies?.["@c4ml/spike-render-resvg"],
+  desktopManifest.devDependencies?.["@c4ml/render-resvg"],
   "workspace:*",
   "desktop PNG export must use the replaceable C4ML renderer adapter",
 );

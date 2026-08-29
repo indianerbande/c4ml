@@ -41,9 +41,9 @@ importers:
       '@c4ml/layout-elk':
         specifier: workspace:*
         version: link:../../packages/layout-elk
-      '@c4ml/spike-render-resvg':
+      '@c4ml/render-resvg':
         specifier: workspace:*
-        version: link:../../spikes/render-resvg
+        version: link:../../packages/render-resvg
 
   apps/desktop:
     devDependencies:
@@ -53,9 +53,9 @@ importers:
       '@c4ml/font-ibm-plex':
         specifier: workspace:*
         version: link:../../packages/font-ibm-plex
-      '@c4ml/spike-render-resvg':
+      '@c4ml/render-resvg':
         specifier: workspace:*
-        version: link:../../spikes/render-resvg
+        version: link:../../packages/render-resvg
       '@electron-forge/cli':
         specifier: 7.11.2
         version: 7.11.2(bluebird@3.7.2)(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.26)(supports-color@8.1.1)
@@ -165,9 +165,9 @@ importers:
       '@c4ml/layout-elk':
         specifier: workspace:*
         version: link:../../packages/layout-elk
-      '@c4ml/spike-render-resvg':
+      '@c4ml/render-resvg':
         specifier: workspace:*
-        version: link:../../spikes/render-resvg
+        version: link:../../packages/render-resvg
 
   packages/compiler-core: {}
 
@@ -199,6 +199,15 @@ importers:
         specifier: 0.12.0
         version: 0.12.0
 
+  packages/render-resvg:
+    dependencies:
+      '@c4ml/compiler-core':
+        specifier: workspace:*
+        version: link:../compiler-core
+      '@resvg/resvg-js':
+        specifier: 2.6.2
+        version: 2.6.2
+
   spikes/language-langium:
     dependencies:
       langium:
@@ -217,15 +226,6 @@ importers:
       elkjs:
         specifier: 0.12.0
         version: 0.12.0
-
-  spikes/render-resvg:
-    dependencies:
-      '@c4ml/compiler-core':
-        specifier: workspace:*
-        version: link:../../packages/compiler-core
-      '@resvg/resvg-js':
-        specifier: 2.6.2
-        version: 2.6.2
 
 packages:
 

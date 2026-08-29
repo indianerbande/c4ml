@@ -40,7 +40,8 @@ Implemented and automatically validated:
   consistent `north`, `east`, `south`, and `west` attachment names;
 - an original built-in Person shape and a validated custom-shape contract with
   a normalized canvas, content box, cardinal Ports, and safe vector primitives;
-- a Node.js PNG adapter that rasterizes the canonical SVG;
+- a production `@c4ml/render-resvg` Node.js PNG adapter that rasterizes the
+  canonical SVG behind a replaceable compiler-owned contract;
 - original semantic `c4ml-blue` and `c4ml-garden` color presets with deep,
   role-specific overrides;
 - experimental browser-compatible `draft-1` language slices that parse and
@@ -59,6 +60,9 @@ Implemented and automatically validated:
   C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
   panel, status bar, command palette, local compiler Web Worker, live
   diagnostics, stale-result rejection, and retention of the last valid SVG;
+- focused workbench facades for document/export, preview, help, and command
+  state, plus independent Compile, Language, and Authoring worker contract
+  modules behind one combined transport boundary;
 - an Electron 44 desktop shell with a narrow typed preload bridge, native
   Open/Save/Save As, normal desktop menus and shortcuts, document titles and
   dirty-state close protection;

@@ -25,22 +25,30 @@ import {
 } from "@c4ml/language-c4ml";
 
 import {
-  compilerWorkerProtocolVersion,
   type CompilerWorkerDiagnostic,
-  type CompilerWorkerInbound,
   type CompilerWorkerNavigation,
-  type CompilerWorkerOutbound,
   type CompilerWorkerRequest,
   type CompilerWorkerResponse,
   type CompilerWorkerView,
+} from "./compiler-worker.compile.protocol.js";
+import {
   type CompletionWorkerRequest,
   type CompletionWorkerResponse,
   type HighlightWorkerRequest,
   type HighlightWorkerResponse,
   type HelpWorkerRequest,
   type HelpWorkerResponse,
+} from "./compiler-worker.language.protocol.js";
+import {
   type WizardWorkerRequest,
   type WizardWorkerResponse,
+} from "./compiler-worker.authoring.protocol.js";
+import {
+  compilerWorkerProtocolVersion,
+} from "./compiler-worker.shared.js";
+import type {
+  CompilerWorkerInbound,
+  CompilerWorkerOutbound,
 } from "./compiler-worker.protocol.js";
 
 let browserLayoutAdapter: LayoutAdapter | undefined;

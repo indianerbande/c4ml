@@ -4,7 +4,7 @@ const { createRequire } = require("node:module");
 
 const desktopRoot = path.resolve(__dirname, "..");
 const rendererRoot = fs.realpathSync(
-  path.join(desktopRoot, "node_modules/@c4ml/spike-render-resvg"),
+  path.join(desktopRoot, "node_modules/@c4ml/render-resvg"),
 );
 const rendererRequire = createRequire(path.join(rendererRoot, "package.json"));
 const resvgEntry = rendererRequire.resolve("@resvg/resvg-js");

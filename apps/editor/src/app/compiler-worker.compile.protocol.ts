@@ -1,0 +1,398 @@
+import {
+  compilerWorkerProtocolVersion,
+  isPositiveFinite,
+  isPositiveRequestId,
+  isWorkerSource,
+  type CompilerWorkerSource,
+} from "./compiler-worker.shared.js";
+
+export interface CompilerWorkerView {
+  readonly id: string;
+  readonly kind:
+    | "code"
+    | "component"
+    | "container"
+    | "deployment"
+    | "dynamic"
+    | "system-context"
+    | "system-landscape";
+  readonly title: string;
+}
+
+export interface CompilerWorkerNavigationPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+interface CompilerWorkerNavigationTargetBase {
+  readonly sceneObjectId: string;
+  readonly svgElementIds: readonly string[];
+  readonly referenceId: string;
+  readonly label: string;
+  readonly source: CompilerWorkerSource;
+  readonly relatedSources: readonly CompilerWorkerSource[];
+}
+
+export interface CompilerWorkerNodeNavigationTarget
+  extends CompilerWorkerNavigationTargetBase {
+  readonly kind: "node";
+  readonly nodeRole: "boundary" | "element";
+  readonly bounds: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
+export interface CompilerWorkerRoutePort {
+  readonly id: string;
+  readonly role: "source" | "target";
+  readonly side: "east" | "north" | "south" | "west";
+  readonly point: CompilerWorkerNavigationPoint;
+}
+
+export interface CompilerWorkerRouteCorridor {
+  readonly id: string;
+  readonly orientation: "horizontal" | "vertical";
+  readonly coordinate: number;
+  readonly laneCoordinate: number;
+  readonly lane: number;
+  readonly lanes: number;
+  readonly laneSpacing: number;
+}
+
+export interface CompilerWorkerRouteNavigationTarget
+  extends CompilerWorkerNavigationTargetBase {
+  readonly kind: "route";
+  readonly policy: "automatic" | "fixed" | "guided";
+  readonly style: "direct" | "orthogonal";
+  readonly points: readonly CompilerWorkerNavigationPoint[];
+  readonly sourcePort: CompilerWorkerRoutePort;
+  readonly targetPort: CompilerWorkerRoutePort;
+  readonly labelPoint: CompilerWorkerNavigationPoint;
+  readonly labelSegment: number;
+  readonly corridor: CompilerWorkerRouteCorridor | undefined;
+}
+
+interface CompilerWorkerRouteDetailNavigationTargetBase
+  extends CompilerWorkerNavigationTargetBase {
+  readonly routeSceneObjectId: string;
+}
+
+export interface CompilerWorkerPortNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "port";
+  readonly portRole: "source" | "target";
+  readonly side: "east" | "north" | "south" | "west";
+  readonly point: CompilerWorkerNavigationPoint;
+}
+
+export interface CompilerWorkerRouteLabelNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "route-label";
+  readonly point: CompilerWorkerNavigationPoint;
+  readonly bounds: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
+export interface CompilerWorkerCorridorNavigationTarget
+  extends CompilerWorkerRouteDetailNavigationTargetBase {
+  readonly kind: "corridor";
+  readonly orientation: "horizontal" | "vertical";
+  readonly points: readonly [
+    CompilerWorkerNavigationPoint,
+    CompilerWorkerNavigationPoint,
+  ];
+  readonly lane: number;
+  readonly lanes: number;
+}
+
+export type CompilerWorkerNavigationTarget =
+  | CompilerWorkerNodeNavigationTarget
+  | CompilerWorkerRouteNavigationTarget
+  | CompilerWorkerPortNavigationTarget
+  | CompilerWorkerRouteLabelNavigationTarget
+  | CompilerWorkerCorridorNavigationTarget;
+
+export interface CompilerWorkerNavigation {
+  readonly width: number;
+  readonly height: number;
+  readonly targets: readonly CompilerWorkerNavigationTarget[];
+}
+
+export interface CompilerWorkerDiagnostic {
+  readonly code: string;
+  readonly severity: "error" | "information" | "warning";
+  readonly message: string;
+  readonly source: CompilerWorkerSource | undefined;
+  readonly correction: string | undefined;
+}
+
+export interface CompilerWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "compile";
+  readonly requestId: number;
+  readonly file: string;
+  readonly source: string;
+  readonly requestedViewId?: string;
+}
+
+export interface CompilerWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "compile-result";
+  readonly requestId: number;
+  readonly status: "failed" | "invalid" | "valid";
+  readonly diagnostics: readonly CompilerWorkerDiagnostic[];
+  readonly svg: string | undefined;
+  readonly navigation: CompilerWorkerNavigation | undefined;
+  readonly views: readonly CompilerWorkerView[];
+  readonly activeViewId: string | undefined;
+}
+
+export function isCompilerWorkerRequest(
+  value: unknown,
+): value is CompilerWorkerRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "compile" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    typeof candidate.source === "string" &&
+    (candidate.requestedViewId === undefined ||
+      typeof candidate.requestedViewId === "string")
+  );
+}
+
+export function isCompilerWorkerResponse(
+  value: unknown,
+): value is CompilerWorkerResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerResponse>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "compile-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "failed" ||
+      candidate.status === "invalid" ||
+      candidate.status === "valid") &&
+    Array.isArray(candidate.diagnostics) &&
+    Array.isArray(candidate.views) &&
+    candidate.views.every(isCompilerWorkerView) &&
+    (candidate.activeViewId === undefined ||
+      typeof candidate.activeViewId === "string") &&
+    (candidate.status === "valid"
+      ? typeof candidate.svg === "string" &&
+        isCompilerWorkerNavigation(candidate.navigation) &&
+        typeof candidate.activeViewId === "string" &&
+        candidate.views.some(({ id }) => id === candidate.activeViewId)
+      : candidate.svg === undefined && candidate.navigation === undefined)
+  );
+}
+
+function isCompilerWorkerView(value: unknown): value is CompilerWorkerView {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerView>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.title === "string" &&
+    (candidate.kind === "code" ||
+      candidate.kind === "component" ||
+      candidate.kind === "container" ||
+      candidate.kind === "deployment" ||
+      candidate.kind === "dynamic" ||
+      candidate.kind === "system-context" ||
+      candidate.kind === "system-landscape")
+  );
+}
+
+function isCompilerWorkerNavigation(
+  value: unknown,
+): value is CompilerWorkerNavigation {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerNavigation>;
+  return (
+    isPositiveFinite(candidate.width) &&
+    isPositiveFinite(candidate.height) &&
+    Array.isArray(candidate.targets) &&
+    candidate.targets.every(isCompilerWorkerNavigationTarget)
+  );
+}
+
+function isCompilerWorkerNavigationTarget(
+  value: unknown,
+): value is CompilerWorkerNavigationTarget {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerNavigationTarget>;
+  const baseValid =
+    typeof candidate.sceneObjectId === "string" &&
+    Array.isArray(candidate.svgElementIds) &&
+    candidate.svgElementIds.length > 0 &&
+    candidate.svgElementIds.every((id) => typeof id === "string") &&
+    typeof candidate.referenceId === "string" &&
+    typeof candidate.label === "string" &&
+    isWorkerSource(candidate.source) &&
+    Array.isArray(candidate.relatedSources) &&
+    candidate.relatedSources.every(isWorkerSource);
+  if (!baseValid) {
+    return false;
+  }
+  if (candidate.kind === "node") {
+    const node = candidate as Partial<CompilerWorkerNodeNavigationTarget>;
+    const bounds = node.bounds;
+    return (
+      (node.nodeRole === "boundary" || node.nodeRole === "element") &&
+      typeof bounds === "object" &&
+      bounds !== null &&
+      Number.isFinite(bounds.x) &&
+      Number.isFinite(bounds.y) &&
+      isPositiveFinite(bounds.width) &&
+      isPositiveFinite(bounds.height)
+    );
+  }
+  if (candidate.kind === "port") {
+    const port = candidate as Partial<CompilerWorkerPortNavigationTarget>;
+    return (
+      typeof port.routeSceneObjectId === "string" &&
+      (port.portRole === "source" || port.portRole === "target") &&
+      isCardinalSide(port.side) &&
+      isNavigationPoint(port.point)
+    );
+  }
+  if (candidate.kind === "route-label") {
+    const label = candidate as Partial<CompilerWorkerRouteLabelNavigationTarget>;
+    return (
+      typeof label.routeSceneObjectId === "string" &&
+      isNavigationPoint(label.point) &&
+      isNavigationBounds(label.bounds)
+    );
+  }
+  if (candidate.kind === "corridor") {
+    const corridor = candidate as Partial<CompilerWorkerCorridorNavigationTarget>;
+    return (
+      typeof corridor.routeSceneObjectId === "string" &&
+      (corridor.orientation === "horizontal" ||
+        corridor.orientation === "vertical") &&
+      Array.isArray(corridor.points) &&
+      corridor.points.length === 2 &&
+      corridor.points.every(isNavigationPoint) &&
+      Number.isSafeInteger(corridor.lane) &&
+      (corridor.lane ?? -1) >= 0 &&
+      Number.isSafeInteger(corridor.lanes) &&
+      (corridor.lanes ?? 0) > (corridor.lane ?? Number.POSITIVE_INFINITY)
+    );
+  }
+  if (candidate.kind !== "route") {
+    return false;
+  }
+  const route = candidate as Partial<CompilerWorkerRouteNavigationTarget>;
+  return (
+    route.svgElementIds?.length === 2 &&
+    (route.policy === "automatic" ||
+      route.policy === "fixed" ||
+      route.policy === "guided") &&
+    (route.style === "direct" || route.style === "orthogonal") &&
+    Array.isArray(route.points) &&
+    route.points.length >= 2 &&
+    route.points.every(isNavigationPoint) &&
+    isRoutePort(route.sourcePort, "source") &&
+    isRoutePort(route.targetPort, "target") &&
+    isNavigationPoint(route.labelPoint) &&
+    Number.isSafeInteger(route.labelSegment) &&
+    (route.labelSegment ?? -1) >= 0 &&
+    (route.labelSegment ?? Number.POSITIVE_INFINITY) < route.points.length - 1 &&
+    (route.corridor === undefined || isRouteCorridor(route.corridor))
+  );
+}
+
+function isNavigationBounds(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const bounds = value as {
+    readonly x?: unknown;
+    readonly y?: unknown;
+    readonly width?: unknown;
+    readonly height?: unknown;
+  };
+  return (
+    Number.isFinite(bounds.x) &&
+    Number.isFinite(bounds.y) &&
+    isPositiveFinite(bounds.width) &&
+    isPositiveFinite(bounds.height)
+  );
+}
+
+function isNavigationPoint(
+  value: unknown,
+): value is CompilerWorkerNavigationPoint {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const point = value as Partial<CompilerWorkerNavigationPoint>;
+  return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
+function isCardinalSide(value: unknown): boolean {
+  return (
+    value === "east" ||
+    value === "north" ||
+    value === "south" ||
+    value === "west"
+  );
+}
+
+function isRoutePort(
+  value: unknown,
+  role: CompilerWorkerRoutePort["role"],
+): value is CompilerWorkerRoutePort {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const port = value as Partial<CompilerWorkerRoutePort>;
+  return (
+    typeof port.id === "string" &&
+    port.role === role &&
+    isCardinalSide(port.side) &&
+    isNavigationPoint(port.point)
+  );
+}
+
+function isRouteCorridor(
+  value: unknown,
+): value is CompilerWorkerRouteCorridor {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const corridor = value as Partial<CompilerWorkerRouteCorridor>;
+  return (
+    typeof corridor.id === "string" &&
+    (corridor.orientation === "horizontal" ||
+      corridor.orientation === "vertical") &&
+    Number.isFinite(corridor.coordinate) &&
+    Number.isFinite(corridor.laneCoordinate) &&
+    Number.isSafeInteger(corridor.lane) &&
+    (corridor.lane ?? -1) >= 0 &&
+    Number.isSafeInteger(corridor.lanes) &&
+    (corridor.lanes ?? 0) > 0 &&
+    (corridor.lane ?? Number.POSITIVE_INFINITY) <
+      (corridor.lanes ?? Number.NEGATIVE_INFINITY) &&
+    isPositiveFinite(corridor.laneSpacing)
+  );
+}

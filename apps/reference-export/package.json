@@ -13,6 +13,6 @@
     "@c4ml/compiler-core": "workspace:*",
     "@c4ml/font-ibm-plex": "workspace:*",
     "@c4ml/layout-elk": "workspace:*",
-    "@c4ml/spike-render-resvg": "workspace:*"
+    "@c4ml/render-resvg": "workspace:*"
   }
 }

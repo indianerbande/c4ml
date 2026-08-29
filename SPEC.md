@@ -1,8 +1,8 @@
 # C4ML Specification
 
-Status: Draft 0.22
+Status: Draft 0.23
 
-Date: 2026-08-28
+Date: 2026-08-29
 
 Working title: C4ML
 
@@ -714,7 +714,8 @@ The first implemented rendering slice accepts the parser-neutral model and view
 contracts rather than `.c4ml` source. It resolves one view, creates an
 engine-neutral layout request, invokes a replaceable layout adapter, resolves
 effective routes, creates a renderer-neutral scene graph, and serializes a
-standalone SVG. A Node.js adapter can rasterize that exact SVG to PNG.
+standalone SVG. The production `@c4ml/render-resvg` Node.js adapter rasterizes
+that exact SVG to PNG behind the compiler-owned `PngRenderer` contract.
 
 The automatically and visually validated reference path currently covers one
 original Container View with a Software System boundary, a nested Visual Group,
@@ -823,6 +824,14 @@ The production-bound editor foundation is implemented as an Angular 22
 standalone application under `apps/editor`. It uses Signals and zoneless change
 detection for UI state and keeps parser, semantic, layout, scene, and rendering
 behavior outside Angular components.
+
+The workbench root component is a composition boundary. Focused Angular
+facades own document/export, preview, help, and command-palette presentation
+state. Those facades may coordinate browser or desktop adapters but MUST NOT
+own C4ML syntax, semantics, layout, or rendering. Worker transport is composed
+from independent Compile, Language, and Authoring contracts over one shared
+version and source-location core. The combined protocol module remains a
+compatibility and dispatch boundary rather than the owner of domain contracts.
 
 The editor communicates with a module Web Worker through a C4ML-owned message
 contract. Compile, completion, syntax-highlight, help-context, and wizard-source requests share one

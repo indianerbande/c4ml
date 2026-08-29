@@ -1,5 +1,5 @@
 {
-  "name": "@c4ml/spike-render-resvg",
+  "name": "@c4ml/render-resvg",
   "version": "0.0.0",
   "private": true,
   "type": "module",

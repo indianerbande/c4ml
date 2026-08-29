@@ -94,9 +94,9 @@ the CLI, reference exporter, and desktop main process.**
   WebAssembly package exists for browser use, but it is not accepted.
 - **Offline behavior:** rasterization runs locally after installation. External
   images and system-font discovery are disabled by the C4ML adapter.
-- **Boundary:** a `PngRenderer` contract accepts canonical SVG and returns PNG
-  bytes plus dimensions. The Node.js native implementation remains outside the
-  portable compiler core.
+- **Boundary:** `@c4ml/render-resvg` implements the `PngRenderer` contract,
+  which accepts canonical SVG and returns PNG bytes plus dimensions. The
+  Node.js native implementation remains outside the portable compiler core.
 - **Protecting evidence:** valid PNG signature and dimensions, repeated
   byte-stable output for controlled SVG, disabled system fonts, no external
   resources, bridge/request validation, packaged-native-resource checks, and a

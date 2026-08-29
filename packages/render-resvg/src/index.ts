@@ -8,20 +8,20 @@ import {
 } from "@c4ml/compiler-core";
 
 export class ResvgPngRenderer implements PngRenderer {
-  readonly rendererId = "phase-zero.resvg-js-2.6";
+  readonly rendererId = "resvg-js-2.6";
 
   async render(
     svg: string,
     options: PngRenderOptions = {},
   ): Promise<PngRenderResult> {
     if (svg.trim().length === 0) {
-      throw new ContractError("C4ML-P0-PNG-001", "SVG input is empty.");
+      throw new ContractError("C4ML-PNG-001", "SVG input is empty.");
     }
 
     const scale = options.scale ?? 1;
     if (!Number.isFinite(scale) || scale <= 0) {
       throw new ContractError(
-        "C4ML-P0-PNG-002",
+        "C4ML-PNG-002",
         "PNG scale must be finite and greater than zero.",
       );
     }
@@ -49,7 +49,7 @@ export class ResvgPngRenderer implements PngRenderer {
 
     if (renderer.imagesToResolve().length > 0) {
       throw new ContractError(
-        "C4ML-P0-PNG-003",
+        "C4ML-PNG-003",
         "SVG contains external image resources.",
       );
     }
