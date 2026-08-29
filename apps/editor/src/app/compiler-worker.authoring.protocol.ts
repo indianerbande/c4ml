@@ -2,6 +2,21 @@ import type {
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
+import {
+  isProjectRevision,
+  isProjectSourceChangeIssue,
+  isProposedProjectSourceChangeSet,
+  type ProjectRevision,
+  type ProjectSourceChangeIssue,
+  type ProposedProjectSourceChangeSet,
+} from "@c4ml/compiler-core";
+
+import {
+  isCompilerWorkerProject,
+  isCompilerWorkerResponse,
+  type CompilerWorkerProject,
+  type CompilerWorkerResponse,
+} from "./compiler-worker.compile.protocol.js";
 
 import {
   compilerWorkerProtocolVersion,
@@ -22,6 +37,28 @@ export interface WizardWorkerResponse {
   readonly status: "failed" | "invalid" | "valid";
   readonly source: string | undefined;
   readonly issues: readonly C4mlWizardIssue[];
+  readonly message: string | undefined;
+}
+
+export interface PreviewProjectChangeWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-project-change";
+  readonly requestId: number;
+  readonly file: string;
+  readonly project: CompilerWorkerProject;
+  readonly changeSet: ProposedProjectSourceChangeSet;
+  readonly requestedViewId?: string;
+}
+
+export interface PreviewProjectChangeWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-project-change-result";
+  readonly requestId: number;
+  readonly status: "failed" | "invalid" | "valid";
+  readonly candidateProject: CompilerWorkerProject | undefined;
+  readonly revision: ProjectRevision | undefined;
+  readonly compilation: CompilerWorkerResponse | undefined;
+  readonly issues: readonly ProjectSourceChangeIssue[];
   readonly message: string | undefined;
 }
 
@@ -57,12 +94,75 @@ export function isWizardWorkerResponse(
     (candidate.source === undefined || typeof candidate.source === "string") &&
     Array.isArray(candidate.issues) &&
     candidate.issues.every(isWizardIssue) &&
-    (candidate.message === undefined || typeof candidate.message === "string") &&
+    (candidate.message === undefined ||
+      typeof candidate.message === "string") &&
     (candidate.status === "valid"
       ? typeof candidate.source === "string" &&
         candidate.issues.length === 0 &&
         candidate.message === undefined
       : candidate.source === undefined)
+  );
+}
+
+export function isPreviewProjectChangeWorkerRequest(
+  value: unknown,
+): value is PreviewProjectChangeWorkerRequest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<PreviewProjectChangeWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-project-change" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    isCompilerWorkerProject(candidate.project) &&
+    candidate.project.documents.some(({ uri }) => uri === candidate.file) &&
+    isProposedProjectSourceChangeSet(candidate.changeSet) &&
+    (candidate.requestedViewId === undefined ||
+      typeof candidate.requestedViewId === "string")
+  );
+}
+
+export function isPreviewProjectChangeWorkerResponse(
+  value: unknown,
+): value is PreviewProjectChangeWorkerResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<PreviewProjectChangeWorkerResponse>;
+  const common =
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-project-change-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "failed" ||
+      candidate.status === "invalid" ||
+      candidate.status === "valid") &&
+    Array.isArray(candidate.issues) &&
+    candidate.issues.every(isProjectSourceChangeIssue) &&
+    (candidate.message === undefined || typeof candidate.message === "string");
+  if (!common) {
+    return false;
+  }
+  if (candidate.candidateProject === undefined) {
+    return (
+      candidate.revision === undefined &&
+      candidate.compilation === undefined &&
+      ((candidate.status === "invalid" &&
+        candidate.issues.length > 0 &&
+        candidate.message === undefined) ||
+        (candidate.status === "failed" &&
+          candidate.issues.length === 0 &&
+          typeof candidate.message === "string"))
+    );
+  }
+  return (
+    isCompilerWorkerProject(candidate.candidateProject) &&
+    isProjectRevision(candidate.revision) &&
+    isCompilerWorkerResponse(candidate.compilation) &&
+    candidate.compilation.requestId === candidate.requestId &&
+    candidate.compilation.status === candidate.status &&
+    candidate.issues.length === 0
   );
 }
 

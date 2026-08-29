@@ -15,10 +15,8 @@ import type {
 } from "monaco-editor/editor";
 
 import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
-import {
-  c4mlMonacoThemeName,
-  c4mlMonacoThemes,
-} from "./monaco-theme.js";
+import type { ProposedSourceChangeSet } from "@c4ml/compiler-core";
+import { c4mlMonacoThemeName, c4mlMonacoThemes } from "./monaco-theme.js";
 import type {
   EffectiveColorScheme,
   WorkbenchColorPalette,
@@ -28,6 +26,10 @@ import {
   SourceEditorDocumentSession,
   type SourceEditorDocumentHost,
 } from "./source-editor-document-session.js";
+import {
+  applySourceChangeSetAsSingleUndo,
+  type SourceEditorChangeSetApplication,
+} from "./source-editor-change-set.js";
 import {
   sourceEditorCompletion,
   sourceEditorMarkers,
@@ -174,6 +176,36 @@ export class C4mlMonacoSourceEditorComponent
     this.revealSource(source);
   }
 
+  applyChangeSet(
+    changeSet: ProposedSourceChangeSet,
+  ): SourceEditorChangeSetApplication {
+    const editor = this.#editor;
+    const model = editor?.getModel();
+    if (editor === undefined || model === null || model === undefined) {
+      return { applied: false, reason: "editor-rejected", issues: [] };
+    }
+    return applySourceChangeSetAsSingleUndo(changeSet, {
+      source: () => model.getValue(),
+      pushUndoStop: () => {
+        editor.pushUndoStop();
+      },
+      executeEdits: (edits) =>
+        editor.executeEdits(
+          "c4ml.authoring",
+          edits.map((edit) => ({
+            range: {
+              startLineNumber: model.getPositionAt(edit.startOffset).lineNumber,
+              startColumn: model.getPositionAt(edit.startOffset).column,
+              endLineNumber: model.getPositionAt(edit.endOffset).lineNumber,
+              endColumn: model.getPositionAt(edit.endOffset).column,
+            },
+            text: edit.text,
+            forceMoveMarkers: true,
+          })),
+        ),
+    });
+  }
+
   revealSource(source: NonNullable<CompilerWorkerDiagnostic["source"]>): void {
     if (this.#editor === undefined) {
       return;
@@ -252,7 +284,11 @@ export class C4mlMonacoSourceEditorComponent
     );
     this.#editor.onDidChangeModelContent(() => {
       const model = this.#editor?.getModel();
-      if (!this.#synchronizeExternalValue && model !== null && model !== undefined) {
+      if (
+        !this.#synchronizeExternalValue &&
+        model !== null &&
+        model !== undefined
+      ) {
         this.valueChanged.emit(model.getValue());
       }
     });
@@ -294,24 +330,21 @@ export class C4mlMonacoSourceEditorComponent
         },
       });
     this.#highlightRegistration =
-      runtime.languages.registerDocumentSemanticTokensProvider(
-        c4mlLanguageId,
-        {
-          getLegend: () => ({
-            tokenTypes: [...sourceEditorSemanticTokenTypes],
-            tokenModifiers: [],
-          }),
-          provideDocumentSemanticTokens: async (model, _lastResultId, token) => {
-            const source = model.getValue();
-            const highlights = await this.highlightProvider()(source);
-            if (token.isCancellationRequested || model.getValue() !== source) {
-              return { data: new Uint32Array() };
-            }
-            return { data: sourceEditorSemanticTokens(highlights) };
-          },
-          releaseDocumentSemanticTokens: () => undefined,
+      runtime.languages.registerDocumentSemanticTokensProvider(c4mlLanguageId, {
+        getLegend: () => ({
+          tokenTypes: [...sourceEditorSemanticTokenTypes],
+          tokenModifiers: [],
+        }),
+        provideDocumentSemanticTokens: async (model, _lastResultId, token) => {
+          const source = model.getValue();
+          const highlights = await this.highlightProvider()(source);
+          if (token.isCancellationRequested || model.getValue() !== source) {
+            return { data: new Uint32Array() };
+          }
+          return { data: sourceEditorSemanticTokens(highlights) };
         },
-      );
+        releaseDocumentSemanticTokens: () => undefined,
+      });
     this.#updateMarkers();
   }
 
@@ -365,7 +398,12 @@ export class C4mlMonacoSourceEditorComponent
     const editor = this.#editor;
     const model = editor?.getModel();
     const selection = editor?.getSelection();
-    if (model === null || model === undefined || selection === null || selection === undefined) {
+    if (
+      model === null ||
+      model === undefined ||
+      selection === null ||
+      selection === undefined
+    ) {
       return;
     }
     this.selectionChanged.emit({

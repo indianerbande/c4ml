@@ -37,6 +37,37 @@ function io(cwd: string): CliIo {
 }
 
 describe("experimental C4ML CLI", () => {
+  it("exposes the canonical analysis report through the CLI boundary", async () => {
+    const cwd = fileURLToPath(new URL("../../..", import.meta.url));
+    const exitCode = await runCli(
+      ["analyze", "examples/draft/hello-context.c4ml", "--diagnostics", "json"],
+      io(cwd),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly command: string;
+      readonly report: {
+        readonly version: number;
+        readonly snapshot: {
+          readonly elements: readonly { readonly id: string }[];
+          readonly views: readonly { readonly id: string }[];
+        };
+        readonly findings: readonly unknown[];
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.command).toBe("analyze");
+    expect(result.report.version).toBe(1);
+    expect(result.report.snapshot.elements.map(({ id }) => id)).toContain(
+      "garden-pulse",
+    );
+    expect(result.report.snapshot.views.map(({ id }) => id)).toEqual([
+      "garden-pulse-context",
+    ]);
+    expect(result.report.findings).toEqual([]);
+    expect(stderr).toEqual([]);
+  });
+
   it("checks a valid source file without rendering", async () => {
     const cwd = fileURLToPath(new URL("../../..", import.meta.url));
     const exitCode = await runCli(
@@ -64,7 +95,9 @@ describe("experimental C4ML CLI", () => {
 
     expect(exitCode).toBe(cliExitCode.success);
     expect(result.valid).toBe(true);
-    expect(result.views).toEqual([{ id: "garden-pulse-context", kind: "system-context" }]);
+    expect(result.views).toEqual([
+      { id: "garden-pulse-context", kind: "system-context" },
+    ]);
     expect(stderr).toEqual([]);
   });
 
@@ -76,31 +109,50 @@ describe("experimental C4ML CLI", () => {
     await mkdir(projectDirectory);
     await writeMultifileContextProject(projectDirectory);
 
-    expect(await runCli([
-      "render",
-      fileURLToPath(new URL("../../../examples/draft/hello-context.c4ml", import.meta.url)),
-      "--view",
-      "garden-pulse-context",
-      "--output",
-      singleOutput,
-    ], io(directory))).toBe(cliExitCode.success);
+    expect(
+      await runCli(
+        [
+          "render",
+          fileURLToPath(
+            new URL(
+              "../../../examples/draft/hello-context.c4ml",
+              import.meta.url,
+            ),
+          ),
+          "--view",
+          "garden-pulse-context",
+          "--output",
+          singleOutput,
+        ],
+        io(directory),
+      ),
+    ).toBe(cliExitCode.success);
     stdout = [];
-    expect(await runCli([
-      "render",
-      projectDirectory,
-      "--view",
-      "garden-pulse-context",
-      "--output",
-      projectOutput,
-    ], io(directory))).toBe(cliExitCode.success);
+    expect(
+      await runCli(
+        [
+          "render",
+          projectDirectory,
+          "--view",
+          "garden-pulse-context",
+          "--output",
+          projectOutput,
+        ],
+        io(directory),
+      ),
+    ).toBe(cliExitCode.success);
 
     const withoutSourceLocations = (svg: string): string =>
       svg.replace(/ data-c4ml-source="[^"]+"/gu, "");
-    expect(withoutSourceLocations(
-      await readFile(join(projectOutput, "garden-pulse-context.svg"), "utf8"),
-    )).toBe(withoutSourceLocations(
-      await readFile(join(singleOutput, "garden-pulse-context.svg"), "utf8"),
-    ));
+    expect(
+      withoutSourceLocations(
+        await readFile(join(projectOutput, "garden-pulse-context.svg"), "utf8"),
+      ),
+    ).toBe(
+      withoutSourceLocations(
+        await readFile(join(singleOutput, "garden-pulse-context.svg"), "utf8"),
+      ),
+    );
   });
 
   it("requires an explicit manifest when a directory has several sources", async () => {
@@ -167,7 +219,7 @@ describe("experimental C4ML CLI", () => {
     expect(svg).toContain("Code View — Arrangement Engine");
     expect(svg).toContain("Code Element · function");
     expect(svg).toContain('font-family="IBM Plex Sans"');
-    expect(svg).toContain('data:font/woff2;base64,d09GMg');
+    expect(svg).toContain("data:font/woff2;base64,d09GMg");
     expect(stderr).toEqual([]);
   });
 
@@ -200,9 +252,7 @@ describe("experimental C4ML CLI", () => {
 
     expect(exitCode).toBe(cliExitCode.success);
     expect(report.artifacts).toHaveLength(8);
-    expect([...png.subarray(0, 8)]).toEqual([
-      137, 80, 78, 71, 13, 10, 26, 10,
-    ]);
+    expect([...png.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     expect(stderr).toEqual([]);
   });
 
@@ -283,16 +333,20 @@ async function writeMultifileContextProject(directory: string): Promise<void> {
   await Promise.all([
     writeFile(
       join(directory, "c4ml.project.json"),
-      `${JSON.stringify({
-        version: 1,
-        id: "garden-pulse",
-        name: "Garden Pulse Architecture",
-        sources: [
-          "model/systems.c4ml",
-          "relations/relationships.c4ml",
-          "views/context.c4ml",
-        ],
-      }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          version: 1,
+          id: "garden-pulse",
+          name: "Garden Pulse Architecture",
+          sources: [
+            "model/systems.c4ml",
+            "relations/relationships.c4ml",
+            "views/context.c4ml",
+          ],
+        },
+        null,
+        2,
+      )}\n`,
       "utf8",
     ),
     writeFile(

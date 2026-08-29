@@ -53,11 +53,11 @@ be delivered as small independently tested slices in this order.
 - [x] define a frontend-neutral source revision identity;
 - [x] define deterministic, non-overlapping text edits with reason, affected
   stable identities, and originating authoring command;
-- [ ] support preview compilation without mutating the active document;
+- [x] support preview compilation without mutating the active document;
 - [x] reject stale change sets explicitly;
-- [ ] apply one change set as one Monaco undo unit through the existing editor
+- [x] apply one change set as one Monaco undo unit through the existing editor
   adapter; and
-- [ ] prove preservation of comments, unrelated formatting, identifiers, and
+- [x] prove preservation of comments, unrelated formatting, identifiers, and
   declarations with original fixtures.
 
 The language/authoring layer owns syntax-aware edit generation. Angular,
@@ -72,7 +72,7 @@ Monaco, and Electron only present or apply the resulting contract.
 - [x] separate semantic, view, deployment, presentation, and layout fields;
 - [x] provide deterministic upstream, downstream, containment, deployment, and
   view-membership traversal; and
-- [ ] prove Node.js and browser-worker parity.
+- [x] prove Node.js and browser-worker parity.
 
 The first snapshot slice may remain single-document. Final multi-file namespace
 and merge rules are not a prerequisite for proving the contract.
@@ -83,7 +83,7 @@ and merge rules are not a prerequisite for proving the contract.
   stable identities, source locations, and evidence paths;
 - [x] allow an optional proposed source change set as a correction;
 - [x] keep evaluation pure and independent of renderer output;
-- [ ] expose the same result through compiler-worker and CLI boundaries; and
+- [x] expose the same result through compiler-worker and CLI boundaries; and
 - [x] attribute external observations without letting them overwrite authored
   source.
 

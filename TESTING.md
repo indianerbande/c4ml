@@ -95,9 +95,13 @@ deployment, view, presentation, and layout separation, kind-qualified graph
 identity, deterministic containment/deployment/view/impact traversal, analysis
 findings, query results, ordered evidence paths, source-location ordering,
 optional proposed corrections, and mandatory attribution of observed evidence.
-Browser bundle validation protects the absence of Node.js-only APIs. Actual
-syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
-semantic diffing, and executable policy rules remain unimplemented.
+Browser bundle validation protects the absence of Node.js-only APIs. The first
+authoring integration evidence proves syntax-aware value replacement without
+rewriting comments, unrelated formatting, identifiers, or declarations;
+non-mutating project preview through the normal compiler worker; stale preview
+rejection; and application as one Monaco undo unit. Worker/direct-portable
+snapshot parity and worker/CLI exposure of the same versioned analysis report are
+also covered. Semantic diffing and executable policy rules remain unimplemented.
 
 The first project-source foundation adds contract evidence for canonical
 project-relative document URIs, deterministic document ordering, explicit

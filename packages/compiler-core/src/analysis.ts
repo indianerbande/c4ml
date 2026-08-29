@@ -1,4 +1,5 @@
 import type { ArchitectureGraphItemKey } from "./architecture-graph.js";
+import type { ArchitectureSnapshot } from "./architecture-snapshot.js";
 import type { DiagnosticSeverity } from "./diagnostics.js";
 import { compareText } from "./ordering.js";
 import type { SourceReference } from "./source.js";
@@ -54,12 +55,18 @@ export interface ArchitectureQueryResult {
   readonly evidence: readonly AnalysisEvidence[];
 }
 
+export const architectureAnalysisReportVersion = 1 as const;
+
+export interface ArchitectureAnalysisReport {
+  readonly version: typeof architectureAnalysisReportVersion;
+  readonly snapshot: ArchitectureSnapshot;
+  readonly findings: readonly AnalysisFinding[];
+}
+
 export class AnalysisContractError extends Error {
   constructor(
     readonly code:
-      | "C4ML-ANALYSIS-001"
-      | "C4ML-ANALYSIS-002"
-      | "C4ML-ANALYSIS-003",
+      "C4ML-ANALYSIS-001" | "C4ML-ANALYSIS-002" | "C4ML-ANALYSIS-003",
     message: string,
   ) {
     super(message);
@@ -74,7 +81,10 @@ export function createAnalysisFinding(
   requireText(input.ruleId, "rule identity");
   requireText(input.message, "finding message");
   const subjectKeys = stableUnique(input.subjectKeys);
-  if (subjectKeys.length === 0 || subjectKeys.length !== input.subjectKeys.length) {
+  if (
+    subjectKeys.length === 0 ||
+    subjectKeys.length !== input.subjectKeys.length
+  ) {
     throw new AnalysisContractError(
       "C4ML-ANALYSIS-002",
       "An analysis finding requires unique affected architecture identities.",
@@ -122,6 +132,57 @@ export function createArchitectureQueryResult(
   };
 }
 
+export function createArchitectureAnalysisReport(
+  snapshot: ArchitectureSnapshot,
+  findings: readonly AnalysisFinding[] = [],
+): ArchitectureAnalysisReport {
+  const normalizedFindings = findings
+    .map((finding) =>
+      createAnalysisFinding({
+        id: finding.id,
+        ruleId: finding.ruleId,
+        severity: finding.severity,
+        message: finding.message,
+        subjectKeys: finding.subjectKeys,
+        evidence: finding.evidence,
+        sourceLocations: finding.sourceLocations,
+        ...(finding.correction === undefined
+          ? {}
+          : { correction: finding.correction }),
+      }),
+    )
+    .sort((left, right) => compareText(left.id, right.id));
+  if (
+    new Set(normalizedFindings.map(({ id }) => id)).size !==
+    normalizedFindings.length
+  ) {
+    throw new AnalysisContractError(
+      "C4ML-ANALYSIS-002",
+      "An architecture analysis report requires unique finding identities.",
+    );
+  }
+  return {
+    version: architectureAnalysisReportVersion,
+    snapshot,
+    findings: normalizedFindings,
+  };
+}
+
+export function isArchitectureAnalysisReport(
+  value: unknown,
+): value is ArchitectureAnalysisReport {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<ArchitectureAnalysisReport>;
+  return (
+    candidate.version === architectureAnalysisReportVersion &&
+    isArchitectureSnapshot(candidate.snapshot) &&
+    Array.isArray(candidate.findings) &&
+    candidate.findings.every(isAnalysisFinding)
+  );
+}
+
 function validateEvidence(evidence: AnalysisEvidence): AnalysisEvidence {
   requireText(evidence.id, "evidence identity");
   requireText(evidence.statement, "evidence statement");
@@ -142,10 +203,47 @@ function validateEvidence(evidence: AnalysisEvidence): AnalysisEvidence {
     origin: evidence.origin,
     subjectKey: evidence.subjectKey,
     statement: evidence.statement,
-    ...(evidence.source === undefined ? {} : { source: cloneSource(evidence.source) }),
-    ...(evidence.adapterId === undefined ? {} : { adapterId: evidence.adapterId }),
-    ...(evidence.observedAt === undefined ? {} : { observedAt: evidence.observedAt }),
+    ...(evidence.source === undefined
+      ? {}
+      : { source: cloneSource(evidence.source) }),
+    ...(evidence.adapterId === undefined
+      ? {}
+      : { adapterId: evidence.adapterId }),
+    ...(evidence.observedAt === undefined
+      ? {}
+      : { observedAt: evidence.observedAt }),
   };
+}
+
+function isArchitectureSnapshot(value: unknown): value is ArchitectureSnapshot {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<ArchitectureSnapshot>;
+  return (
+    candidate.version === 1 &&
+    Array.isArray(candidate.elements) &&
+    Array.isArray(candidate.relationships) &&
+    Array.isArray(candidate.views)
+  );
+}
+
+function isAnalysisFinding(value: unknown): value is AnalysisFinding {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<AnalysisFinding>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.ruleId === "string" &&
+    (candidate.severity === "error" ||
+      candidate.severity === "information" ||
+      candidate.severity === "warning") &&
+    typeof candidate.message === "string" &&
+    Array.isArray(candidate.subjectKeys) &&
+    Array.isArray(candidate.evidence) &&
+    Array.isArray(candidate.sourceLocations)
+  );
 }
 
 function requireText(value: string, label: string): void {

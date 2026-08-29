@@ -8,6 +8,9 @@ import {
   createProposedProjectSourceChangeSet,
   createProposedSourceChangeSet,
   createSourceRevision,
+  isProjectRevision,
+  isProjectSourceChangeIssue,
+  isProposedProjectSourceChangeSet,
   previewProjectSourceChangeSet,
   previewSourceChangeSet,
   type ProposedSourceChangeSet,
@@ -30,7 +33,7 @@ describe("portable source change sets", () => {
         {
           startOffset: nameEnd,
           endOffset: nameEnd,
-          text: " {\n    responsibility = \"Plans gardens.\"\n  }",
+          text: ' {\n    responsibility = "Plans gardens."\n  }',
         },
         { startOffset: nameStart, endOffset: nameEnd, text: "gardener" },
       ],
@@ -45,7 +48,7 @@ describe("portable source change sets", () => {
     expect(applySourceChangeSet(source, changeSet)).toMatchObject({
       valid: true,
       source:
-        "model {\n  person gardener {\n    responsibility = \"Plans gardens.\"\n  }\n}\n",
+        'model {\n  person gardener {\n    responsibility = "Plans gardens."\n  }\n}\n',
     });
   });
 
@@ -66,10 +69,13 @@ describe("portable source change sets", () => {
 
     expect(result).toEqual({
       valid: false,
-      issues: [{
-        code: "C4ML-SOURCE-CHANGE-002",
-        message: "The proposed source change was created for another source revision.",
-      }],
+      issues: [
+        {
+          code: "C4ML-SOURCE-CHANGE-002",
+          message:
+            "The proposed source change was created for another source revision.",
+        },
+      ],
     });
     expect(source).toBe("view garden {}");
   });
@@ -99,7 +105,11 @@ describe("portable source change sets", () => {
     const startOffset = source.indexOf("100");
     const changeSet = createProposedSourceChangeSet(source, {
       id: "nudge-garden",
-      intent: { id: "layout:nudge", kind: "layout", summary: "Move Garden right." },
+      intent: {
+        id: "layout:nudge",
+        kind: "layout",
+        summary: "Move Garden right.",
+      },
       affectedIds: ["garden"],
       edits: [{ startOffset, endOffset: startOffset + 3, text: "116" }],
     });
@@ -134,12 +144,53 @@ describe("portable multi-document source change sets", () => {
       documents: [...project.documents].reverse(),
     });
 
-    expect(createProjectRevision(reordered)).toEqual(createProjectRevision(project));
-    expect(createProjectRevision(createArchitectureProjectInput({
-      id: "signal-garden",
-      name: "Renamed Project",
-      documents: project.documents,
-    }))).not.toEqual(createProjectRevision(project));
+    expect(createProjectRevision(reordered)).toEqual(
+      createProjectRevision(project),
+    );
+    expect(
+      createProjectRevision(
+        createArchitectureProjectInput({
+          id: "signal-garden",
+          name: "Renamed Project",
+          documents: project.documents,
+        }),
+      ),
+    ).not.toEqual(createProjectRevision(project));
+  });
+
+  it("validates the portable project change boundary structurally", () => {
+    const changeSet = createProposedProjectSourceChangeSet(project, {
+      id: "rename-system",
+      intent: {
+        id: "authoring:rename",
+        kind: "architecture",
+        summary: "Rename the system.",
+      },
+      affectedIds: ["garden"],
+      edits: [
+        {
+          documentUri: "model/systems.c4ml",
+          startOffset: 7,
+          endOffset: 13,
+          text: "park",
+        },
+      ],
+    });
+
+    expect(isProposedProjectSourceChangeSet(changeSet)).toBe(true);
+    expect(isProjectRevision(changeSet.baseRevision)).toBe(true);
+    expect(
+      isProposedProjectSourceChangeSet({
+        ...changeSet,
+        edits: [{ ...changeSet.edits[0], startOffset: "7" }],
+      }),
+    ).toBe(false);
+    expect(
+      isProjectSourceChangeIssue({
+        code: "C4ML-SOURCE-CHANGE-102",
+        message: "Stale.",
+      }),
+    ).toBe(true);
   });
 
   it("applies edits to several documents atomically", () => {
@@ -152,8 +203,18 @@ describe("portable multi-document source change sets", () => {
       },
       affectedIds: ["garden", "context"],
       edits: [
-        { documentUri: "views/context.c4ml", startOffset: 5, endOffset: 12, text: "overview" },
-        { documentUri: "model/systems.c4ml", startOffset: 7, endOffset: 13, text: "orchard" },
+        {
+          documentUri: "views/context.c4ml",
+          startOffset: 5,
+          endOffset: 12,
+          text: "overview",
+        },
+        {
+          documentUri: "model/systems.c4ml",
+          startOffset: 7,
+          endOffset: 13,
+          text: "orchard",
+        },
       ],
     });
 
@@ -174,12 +235,14 @@ describe("portable multi-document source change sets", () => {
       id: "stale",
       intent: { id: "authoring.edit", kind: "architecture", summary: "Edit." },
       affectedIds: ["garden"],
-      edits: [{
-        documentUri: "model/systems.c4ml",
-        startOffset: 0,
-        endOffset: 6,
-        text: "service",
-      }],
+      edits: [
+        {
+          documentUri: "model/systems.c4ml",
+          startOffset: 0,
+          endOffset: 6,
+          text: "service",
+        },
+      ],
     });
     const changedProject = createArchitectureProjectInput({
       id: project.id,
@@ -210,12 +273,14 @@ describe("portable multi-document source change sets", () => {
       id: "preview",
       intent: { id: "authoring.preview", kind: "layout", summary: "Preview." },
       affectedIds: ["context"],
-      edits: [{
-        documentUri: "views/context.c4ml",
-        startOffset: 5,
-        endOffset: 12,
-        text: "overview",
-      }],
+      edits: [
+        {
+          documentUri: "views/context.c4ml",
+          startOffset: 5,
+          endOffset: 12,
+          text: "overview",
+        },
+      ],
     });
 
     const preview = await previewProjectSourceChangeSet(
