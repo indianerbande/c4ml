@@ -92,6 +92,32 @@ Dependency evaluation becomes necessary only if later constraint solving,
 repository access, or external evidence adapters exceed a well-bounded C4ML
 implementation.
 
+## Gate 1.5 — project and multi-document foundation
+
+- [x] preserve a direct `.c4ml` file as an implicit project;
+- [x] define a versioned portable project input and explicit
+  `c4ml.project.json` manifest;
+- [x] require normalized project-relative source URIs and deterministic document
+  ordering without textual includes or precedence;
+- [x] extend source changes with deterministic project revisions and atomic
+  document-addressed edits;
+- [x] allow executable top-level language fragments and cross-document
+  references in one flat project namespace;
+- [x] add CLI file, manifest, and directory loading with explicit source lists;
+- [x] prove semantic and normalized-SVG parity with an original split project;
+- [x] expose project compilation and cross-document completion through the
+  browser worker;
+- [x] add desktop Open Folder, a project explorer, multi-document dirty state,
+  and several source tabs;
+- [ ] add an explicit Save All command and preserve independent Monaco undo and
+  cursor history per project document; and
+- [ ] add typed glossary, narrative, policy, publication, theme, shape, and
+  asset resources only through separately reviewed slices.
+
+The first manifest intentionally has no globs, remote sources, transitive
+project dependencies, or module aliases. Those features require their own
+identity, trust, caching, and reproducibility decisions.
+
 ## Pillar 1 — intent-based authoring
 
 This pillar comes first because C4ML already has source mapping, compiler-owned
@@ -214,7 +240,8 @@ The following choices do not block Gate 1 or the first slices:
 
 - final public syntax for source change commands, policies, queries, evidence,
   or migration stories;
-- multi-file namespace and merge rules;
+- reusable-library, module-alias, and external-project namespace rules beyond
+  the implemented flat project;
 - graphical creation of every C4 element kind;
 - the first external evidence or repository scanner;
 - cloud collaboration and hosted review; and

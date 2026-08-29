@@ -23,6 +23,7 @@
   "devDependencies": {
     "@c4ml/desktop-contract": "workspace:*",
     "@c4ml/font-ibm-plex": "workspace:*",
+    "@c4ml/project-node": "workspace:*",
     "@c4ml/render-resvg": "workspace:*",
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/maker-dmg": "7.11.2",

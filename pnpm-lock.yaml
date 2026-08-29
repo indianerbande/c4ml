@@ -41,6 +41,9 @@ importers:
       '@c4ml/layout-elk':
         specifier: workspace:*
         version: link:../../packages/layout-elk
+      '@c4ml/project-node':
+        specifier: workspace:*
+        version: link:../../packages/project-node
       '@c4ml/render-resvg':
         specifier: workspace:*
         version: link:../../packages/render-resvg
@@ -53,6 +56,9 @@ importers:
       '@c4ml/font-ibm-plex':
         specifier: workspace:*
         version: link:../../packages/font-ibm-plex
+      '@c4ml/project-node':
+        specifier: workspace:*
+        version: link:../../packages/project-node
       '@c4ml/render-resvg':
         specifier: workspace:*
         version: link:../../packages/render-resvg
@@ -198,6 +204,12 @@ importers:
       elkjs:
         specifier: 0.12.0
         version: 0.12.0
+
+  packages/project-node:
+    dependencies:
+      '@c4ml/compiler-core':
+        specifier: workspace:*
+        version: link:../compiler-core
 
   packages/render-resvg:
     dependencies:

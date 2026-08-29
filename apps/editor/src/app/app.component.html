@@ -102,29 +102,48 @@
           </header>
           <section class="side-section">
             <h3>{{ i18n.t("files.openEditors") }}</h3>
-            <button type="button" class="tree-row is-selected">
-              <span class="file-badge" aria-hidden="true">C4</span>
-              <span>{{ documentName() }}</span>
-              @if (documentDirty()) {
-                <i [attr.aria-label]="i18n.t('files.unsaved')">●</i>
-              }
-            </button>
+            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+              <button
+                type="button"
+                class="tree-row"
+                [class.is-selected]="activeDocumentUri() === projectDocument.uri"
+                (click)="selectDocument(projectDocument.uri)"
+              >
+                <span class="file-badge" aria-hidden="true">C4</span>
+                <span>{{ projectDocument.displayName }}</span>
+                @if (projectDocument.dirty) {
+                  <i [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+                }
+              </button>
+            }
           </section>
           <section class="side-section">
             <h3>{{ i18n.t("files.architecture") }}</h3>
             <div class="tree-row folder-row">
               <span class="tree-caret" aria-hidden="true">⌄</span>
-              <strong>{{ i18n.t("files.workspaceName") }}</strong>
+              <strong>{{ workspaceName() }}</strong>
             </div>
-            <div class="tree-row nested-row">
-              <span class="file-badge" aria-hidden="true">C4</span>
-              <span>{{ documentName() }}</span>
-            </div>
+            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+              <button
+                type="button"
+                class="tree-row nested-row"
+                [class.is-selected]="activeDocumentUri() === projectDocument.uri"
+                [title]="projectDocument.uri"
+                (click)="selectDocument(projectDocument.uri)"
+              >
+                <span class="file-badge" aria-hidden="true">C4</span>
+                <span>{{ projectDocument.uri }}</span>
+                @if (projectDocument.dirty) {
+                  <i [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+                }
+              </button>
+            }
           </section>
           @if (desktopAvailable) {
             <section class="side-section quick-actions">
               <h3>{{ i18n.t("files.actions") }}</h3>
               <button type="button" (click)="openDocument()">{{ i18n.t("files.open") }}</button>
+              <button type="button" (click)="openProject()">{{ i18n.t("files.openProject") }}</button>
               <button type="button" (click)="saveDocument('save')">{{ i18n.t("files.save") }}</button>
               <button type="button" (click)="saveDocument('save-as')">{{ i18n.t("files.saveAs") }}</button>
             </section>
@@ -258,13 +277,25 @@
       <div class="editor-groups">
         <section class="editor-group source-group" aria-labelledby="source-heading">
           <div class="tab-strip" role="tablist" [attr.aria-label]="i18n.t('editor.sourceEditors')">
-            <button type="button" class="editor-tab is-active" role="tab" aria-selected="true">
-              <span class="file-badge" aria-hidden="true">C4</span>
-              <span id="source-heading">{{ documentName() }}</span>
-              @if (documentDirty()) {
-                <i class="dirty-indicator" [attr.aria-label]="i18n.t('files.unsaved')">●</i>
-              }
-            </button>
+            @for (projectDocument of projectDocuments(); track projectDocument.uri) {
+              <button
+                type="button"
+                class="editor-tab"
+                [class.is-active]="activeDocumentUri() === projectDocument.uri"
+                role="tab"
+                [attr.aria-selected]="activeDocumentUri() === projectDocument.uri"
+                [title]="projectDocument.uri"
+                (click)="selectDocument(projectDocument.uri)"
+              >
+                <span class="file-badge" aria-hidden="true">C4</span>
+                <span [id]="activeDocumentUri() === projectDocument.uri ? 'source-heading' : null">
+                  {{ projectDocument.displayName }}
+                </span>
+                @if (projectDocument.dirty) {
+                  <i class="dirty-indicator" [attr.aria-label]="i18n.t('files.unsaved')">●</i>
+                }
+              </button>
+            }
             <span class="tab-fill"></span>
             <span class="language-badge">draft-1</span>
           </div>
@@ -273,7 +304,7 @@
             #sourceEditor
             class="source-editor-host"
             [value]="source()"
-            [diagnostics]="compiler.state().diagnostics"
+            [diagnostics]="activeDiagnostics()"
             [completionProvider]="provideCompletions"
             [highlightProvider]="provideHighlights"
             [colorScheme]="preferences.effectiveColorScheme()"
@@ -498,7 +529,7 @@
 
   <footer class="status-bar">
     <button type="button" (click)="openCommandPalette()">C4ML · draft-1</button>
-    <span>{{ documentName() }}@if (documentDirty()) { · {{ i18n.t("status.modified") }}}</span>
+    <span>{{ documentName() }}@if (projectDirty()) { · {{ i18n.t("status.modified") }}}</span>
     <span class="status-spacer"></span>
     <button type="button" (click)="showBottomPanel('problems')">
       {{ i18n.t("status.problemCount", { count: compiler.state().diagnostics.length }) }}

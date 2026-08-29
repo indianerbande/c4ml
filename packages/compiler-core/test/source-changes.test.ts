@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyProjectSourceChangeSet,
   applySourceChangeSet,
+  createArchitectureProjectInput,
+  createProjectRevision,
+  createProposedProjectSourceChangeSet,
   createProposedSourceChangeSet,
   createSourceRevision,
+  previewProjectSourceChangeSet,
   previewSourceChangeSet,
   type ProposedSourceChangeSet,
 } from "../src/index.js";
@@ -111,5 +116,118 @@ describe("portable source change sets", () => {
       evaluation: { accepted: true },
     });
     expect(source).toBe("pin garden { x = 100du }");
+  });
+});
+
+describe("portable multi-document source change sets", () => {
+  const project = createArchitectureProjectInput({
+    id: "signal-garden",
+    documents: [
+      { uri: "model/systems.c4ml", text: "system garden" },
+      { uri: "views/context.c4ml", text: "view context" },
+    ],
+  });
+
+  it("creates an order-independent project revision", () => {
+    const reordered = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [...project.documents].reverse(),
+    });
+
+    expect(createProjectRevision(reordered)).toEqual(createProjectRevision(project));
+    expect(createProjectRevision(createArchitectureProjectInput({
+      id: "signal-garden",
+      name: "Renamed Project",
+      documents: project.documents,
+    }))).not.toEqual(createProjectRevision(project));
+  });
+
+  it("applies edits to several documents atomically", () => {
+    const changeSet = createProposedProjectSourceChangeSet(project, {
+      id: "rename-and-retitle",
+      intent: {
+        id: "authoring.rename-system",
+        kind: "architecture",
+        summary: "Rename the system and its context title.",
+      },
+      affectedIds: ["garden", "context"],
+      edits: [
+        { documentUri: "views/context.c4ml", startOffset: 5, endOffset: 12, text: "overview" },
+        { documentUri: "model/systems.c4ml", startOffset: 7, endOffset: 13, text: "orchard" },
+      ],
+    });
+
+    const result = applyProjectSourceChangeSet(project, changeSet);
+
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.project.documents).toEqual([
+        { uri: "model/systems.c4ml", text: "system orchard" },
+        { uri: "views/context.c4ml", text: "view overview" },
+      ]);
+    }
+    expect(project.documents[0]?.text).toBe("system garden");
+  });
+
+  it("rejects the whole transaction when one document is stale or unknown", () => {
+    const stale = createProposedProjectSourceChangeSet(project, {
+      id: "stale",
+      intent: { id: "authoring.edit", kind: "architecture", summary: "Edit." },
+      affectedIds: ["garden"],
+      edits: [{
+        documentUri: "model/systems.c4ml",
+        startOffset: 0,
+        endOffset: 6,
+        text: "service",
+      }],
+    });
+    const changedProject = createArchitectureProjectInput({
+      id: project.id,
+      documents: project.documents.map((document) =>
+        document.uri === "views/context.c4ml"
+          ? { ...document, text: `${document.text}\n` }
+          : document,
+      ),
+    });
+    const unknown = {
+      ...stale,
+      baseRevision: createProjectRevision(project),
+      edits: [{ ...stale.edits[0]!, documentUri: "missing.c4ml" }],
+    };
+
+    expect(applyProjectSourceChangeSet(changedProject, stale)).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-SOURCE-CHANGE-102" }],
+    });
+    expect(applyProjectSourceChangeSet(project, unknown)).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-SOURCE-CHANGE-105" }],
+    });
+  });
+
+  it("previews a complete candidate project without mutating active documents", async () => {
+    const changeSet = createProposedProjectSourceChangeSet(project, {
+      id: "preview",
+      intent: { id: "authoring.preview", kind: "layout", summary: "Preview." },
+      affectedIds: ["context"],
+      edits: [{
+        documentUri: "views/context.c4ml",
+        startOffset: 5,
+        endOffset: 12,
+        text: "overview",
+      }],
+    });
+
+    const preview = await previewProjectSourceChangeSet(
+      project,
+      changeSet,
+      (candidate) => candidate.documents.map(({ text }) => text).join("|"),
+    );
+
+    expect(preview).toMatchObject({
+      valid: true,
+      evaluation: "system garden|view overview",
+    });
+    expect(project.documents[1]?.text).toBe("view context");
   });
 });

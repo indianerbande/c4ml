@@ -8,6 +8,7 @@ export * from "./layout.js";
 export * from "./model.js";
 export * from "./placement.js";
 export * from "./ports.js";
+export * from "./project.js";
 export * from "./routing.js";
 export * from "./scene.js";
 export * from "./semantic-validation.js";

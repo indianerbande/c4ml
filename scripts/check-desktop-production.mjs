@@ -32,6 +32,11 @@ assert.equal(
   "workspace:*",
   "desktop PNG export must use the replaceable C4ML renderer adapter",
 );
+assert.equal(
+  desktopManifest.devDependencies?.["@c4ml/project-node"],
+  "workspace:*",
+  "desktop project loading must use the shared replaceable Node.js adapter",
+);
 
 const expectedPackages = [
   ["electron", "44.0.0", "MIT"],
@@ -124,6 +129,10 @@ assert.ok(
 assert.ok(
   preloadBundle.includes("c4ml:desktop:export-png"),
   "desktop preload must expose the owned PNG export channel",
+);
+assert.ok(
+  preloadBundle.includes("c4ml:desktop:open-project"),
+  "desktop preload must expose the owned project-open channel",
 );
 assert.ok(
   preloadBundle.includes("c4ml:desktop:set-ui-language"),

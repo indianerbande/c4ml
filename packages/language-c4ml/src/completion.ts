@@ -5,7 +5,10 @@ import {
   type LangiumDocument,
 } from "langium";
 
-import type { SourceRange } from "@c4ml/compiler-core";
+import type {
+  ArchitectureProjectInput,
+  SourceRange,
+} from "@c4ml/compiler-core";
 
 import type {
   C4mlDocument,
@@ -370,44 +373,88 @@ export async function completeC4mlDraft(
   }
 
   const file = options.file ?? "<memory>";
-  const services = createC4mlDraftLanguageServices();
-  const document = services.shared.workspace.LangiumDocumentFactory.fromString(
-    source,
-    URI.parse("c4ml:///completion.c4ml"),
+  return completeProjectDocuments(
+    [{ uri: file, source }],
+    file,
+    options.offset,
   );
-  services.shared.workspace.LangiumDocuments.addDocument(document);
-  await services.shared.workspace.DocumentBuilder.build([document], {
-    validation: true,
+}
+
+export async function completeC4mlProjectDraft(
+  project: ArchitectureProjectInput,
+  file: string,
+  offset: number,
+): Promise<C4mlCompletionResult> {
+  const activeDocument = project.documents.find(({ uri }) => uri === file);
+  if (activeDocument === undefined) {
+    throw new Error(`Completion source "${file}" is not part of project "${project.id}".`);
+  }
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > activeDocument.text.length) {
+    throw new RangeError("Completion offset must be inside the source text.");
+  }
+  return completeProjectDocuments(
+    project.documents.map(({ uri, text }) => ({ uri, source: text })),
+    file,
+    offset,
+  );
+}
+
+async function completeProjectDocuments(
+  sources: readonly { readonly uri: string; readonly source: string }[],
+  file: string,
+  offset: number,
+): Promise<C4mlCompletionResult> {
+  const services = createC4mlDraftLanguageServices();
+  const documents = sources.map(({ uri, source }, index) => {
+    const document = services.shared.workspace.LangiumDocumentFactory.fromString(
+      source,
+      URI.from({
+        scheme: "c4ml-completion",
+        path: `/${index}-${uri.endsWith(".c4ml") ? uri : "memory.c4ml"}`,
+      }),
+    );
+    services.shared.workspace.LangiumDocuments.addDocument(document);
+    return { uri, document };
   });
+  const document = documents.find(({ uri }) => uri === file)?.document;
+  if (document === undefined) {
+    throw new Error(`Completion source "${file}" is unavailable.`);
+  }
+  await services.shared.workspace.DocumentBuilder.build(
+    documents.map(({ document }) => document),
+    {
+    validation: true,
+    },
+  );
 
   const provider = services.language.lsp.CompletionProvider;
   if (provider === undefined) {
     return {
       languageVersion: c4mlDraftLanguageVersion,
       file,
-      offset: options.offset,
+      offset,
       candidates: [],
     };
   }
 
   const completion = await provider.getCompletion(document, {
     textDocument: { uri: document.uri.toString() },
-    position: document.textDocument.positionAt(options.offset),
+    position: document.textDocument.positionAt(offset),
   });
   const owner = completionOwner(
     document.parseResult.value as C4mlDocument,
-    options.offset,
+    offset,
   );
   const candidates = (completion?.items ?? [])
-    .map((item) => toCandidate(item, document, owner, options.offset))
+    .map((item) => toCandidate(item, document, owner, offset))
     .filter((candidate): candidate is C4mlCompletionCandidate =>
-      candidate !== undefined && !isAlreadyDeclared(candidate, owner, options.offset),
+      candidate !== undefined && !isAlreadyDeclared(candidate, owner, offset),
     );
 
   return {
     languageVersion: c4mlDraftLanguageVersion,
     file,
-    offset: options.offset,
+    offset,
     candidates: deduplicateAndSort(candidates),
   };
 }

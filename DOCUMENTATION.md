@@ -312,6 +312,46 @@ The current proposal uses:
 Declaration order has no semantic or layout meaning unless a construct such as
 a Dynamic Interaction explicitly declares an order.
 
+### 3.3 Projects and several source files
+
+A single `.c4ml` file is also the smallest C4ML project. It needs no manifest.
+The CLI may receive that file directly or a directory containing exactly one
+root-level `.c4ml` file.
+
+When an architecture is divided among several files, add
+`c4ml.project.json`. It names the project and explicitly lists its architecture
+sources:
+
+```json
+{
+  "version": 1,
+  "id": "garden-architecture",
+  "name": "Garden Architecture",
+  "sources": [
+    "model/systems.c4ml",
+    "relations/relationships.c4ml",
+    "views/context.c4ml"
+  ]
+}
+```
+
+Each listed source still begins with `c4ml draft-1`, but may contain only the
+top-level blocks that belong in that file. References work across the project.
+Files are merged as declarations rather than pasted as text, and neither file
+order nor directory position changes stable identity or layout.
+
+Version one uses only explicit local relative paths. Globs, parent-directory
+traversal, remote includes, reusable external projects, and module aliases are
+not available. The executable original
+`examples/projects/garden-pulse-multifile` project shows the current structure;
+`PROJECTS.md` contains the complete project guide.
+
+In the desktop application, choose **File → Open Project…** or use
+`Cmd/Ctrl+Alt+O`. The Files area and source tab strip then show every listed
+source. Compilation, diagnostics, diagram navigation, and reference suggestions
+use the complete in-memory project. Save currently writes the active tab; the
+window remains marked as modified while any project source is unsaved.
+
 ## 4. Declaring the architecture model
 
 ### 4.1 People and Software Systems

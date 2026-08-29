@@ -4,6 +4,7 @@ export type WorkbenchCommandId =
   | "diagram.fit"
   | "diagram.route-debug"
   | "file.open"
+  | "file.open-project"
   | "file.save"
   | "file.save-as"
   | "help.context"
@@ -35,6 +36,13 @@ const workbenchCommandDefinitions: readonly WorkbenchCommandDefinition[] = [
     category: "command.category.file",
     desktopOnly: true,
     shortcut: "⌘O",
+  },
+  {
+    id: "file.open-project",
+    label: "command.file.openProject",
+    category: "command.category.file",
+    desktopOnly: true,
+    shortcut: "⌥⌘O",
   },
   {
     id: "file.save",

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -47,6 +47,72 @@ describe("experimental C4ML CLI", () => {
     expect(exitCode).toBe(cliExitCode.success);
     expect(stdout.join("")).toContain("Valid C4ML:");
     expect(stderr).toEqual([]);
+  });
+
+  it("checks an explicit multifile project directory", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-project-"));
+    await writeMultifileContextProject(directory);
+
+    const exitCode = await runCli(
+      ["check", directory, "--diagnostics", "json"],
+      io(tmpdir()),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly valid: boolean;
+      readonly views: readonly { readonly id: string }[];
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.valid).toBe(true);
+    expect(result.views).toEqual([{ id: "garden-pulse-context", kind: "system-context" }]);
+    expect(stderr).toEqual([]);
+  });
+
+  it("renders single-file and multifile projects to identical SVG", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-project-parity-"));
+    const projectDirectory = join(directory, "project");
+    const singleOutput = join(directory, "single");
+    const projectOutput = join(directory, "project-output");
+    await mkdir(projectDirectory);
+    await writeMultifileContextProject(projectDirectory);
+
+    expect(await runCli([
+      "render",
+      fileURLToPath(new URL("../../../examples/draft/hello-context.c4ml", import.meta.url)),
+      "--view",
+      "garden-pulse-context",
+      "--output",
+      singleOutput,
+    ], io(directory))).toBe(cliExitCode.success);
+    stdout = [];
+    expect(await runCli([
+      "render",
+      projectDirectory,
+      "--view",
+      "garden-pulse-context",
+      "--output",
+      projectOutput,
+    ], io(directory))).toBe(cliExitCode.success);
+
+    const withoutSourceLocations = (svg: string): string =>
+      svg.replace(/ data-c4ml-source="[^"]+"/gu, "");
+    expect(withoutSourceLocations(
+      await readFile(join(projectOutput, "garden-pulse-context.svg"), "utf8"),
+    )).toBe(withoutSourceLocations(
+      await readFile(join(singleOutput, "garden-pulse-context.svg"), "utf8"),
+    ));
+  });
+
+  it("requires an explicit manifest when a directory has several sources", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-ambiguous-"));
+    await writeFile(join(directory, "one.c4ml"), "c4ml draft-1\n", "utf8");
+    await writeFile(join(directory, "two.c4ml"), "c4ml draft-1\n", "utf8");
+
+    const exitCode = await runCli(["check", directory], io(tmpdir()));
+
+    expect(exitCode).toBe(cliExitCode.source);
+    expect(stderr.join("")).toContain("C4ML-CLI-PROJECT-003");
+    expect(stderr.join("")).toContain("c4ml.project.json");
   });
 
   it("returns machine-readable source diagnostics and the source exit class", async () => {
@@ -198,3 +264,51 @@ describe("experimental C4ML CLI", () => {
     expect(stderr.join("")).toContain("C4ML-CLI-ENV-001");
   });
 });
+
+async function writeMultifileContextProject(directory: string): Promise<void> {
+  const source = await readFile(
+    new URL("../../../examples/draft/hello-context.c4ml", import.meta.url),
+    "utf8",
+  );
+  const modelStart = source.indexOf("model {");
+  const relationsStart = source.indexOf("relations {");
+  const viewStart = source.indexOf("view garden-pulse-context {");
+  const section = (start: number, end?: number): string =>
+    `c4ml draft-1\n\n${source.slice(start, end).trim()}\n`;
+  await Promise.all([
+    mkdir(join(directory, "model"), { recursive: true }),
+    mkdir(join(directory, "relations"), { recursive: true }),
+    mkdir(join(directory, "views"), { recursive: true }),
+  ]);
+  await Promise.all([
+    writeFile(
+      join(directory, "c4ml.project.json"),
+      `${JSON.stringify({
+        version: 1,
+        id: "garden-pulse",
+        name: "Garden Pulse Architecture",
+        sources: [
+          "model/systems.c4ml",
+          "relations/relationships.c4ml",
+          "views/context.c4ml",
+        ],
+      }, null, 2)}\n`,
+      "utf8",
+    ),
+    writeFile(
+      join(directory, "model", "systems.c4ml"),
+      section(modelStart, relationsStart),
+      "utf8",
+    ),
+    writeFile(
+      join(directory, "relations", "relationships.c4ml"),
+      section(relationsStart, viewStart),
+      "utf8",
+    ),
+    writeFile(
+      join(directory, "views", "context.c4ml"),
+      section(viewStart),
+      "utf8",
+    ),
+  ]);
+}

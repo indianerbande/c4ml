@@ -1,9 +1,10 @@
-export const desktopBridgeProtocolVersion = 3 as const;
+export const desktopBridgeProtocolVersion = 4 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
   exportPng: "c4ml:desktop:export-png",
   openDocument: "c4ml:desktop:open-document",
+  openProject: "c4ml:desktop:open-project",
   saveDocument: "c4ml:desktop:save-document",
   setDocumentState: "c4ml:desktop:set-document-state",
   setUiLanguage: "c4ml:desktop:set-ui-language",
@@ -17,6 +18,7 @@ export type DesktopUiLanguage = "en" | "de";
 export type DesktopCommand =
   | "export-png"
   | "open-document"
+  | "open-project"
   | "open-settings"
   | "save-as-document"
   | "save-document";
@@ -26,6 +28,17 @@ export interface DesktopSourceDocument {
   readonly handle: string;
   readonly displayName: string;
   readonly source: string;
+}
+
+export interface DesktopProjectDocument extends DesktopSourceDocument {
+  readonly uri: string;
+}
+
+export interface DesktopSourceProject {
+  readonly id: string;
+  readonly name?: string;
+  readonly description?: string;
+  readonly documents: readonly DesktopProjectDocument[];
 }
 
 export interface DesktopSaveRequest {
@@ -63,6 +76,11 @@ export type DesktopOpenResult =
   | { readonly status: "opened"; readonly document: DesktopSourceDocument }
   | DesktopOperationFailure;
 
+export type DesktopOpenProjectResult =
+  | { readonly status: "canceled" }
+  | { readonly status: "opened"; readonly project: DesktopSourceProject }
+  | DesktopOperationFailure;
+
 export type DesktopSaveResult =
   | { readonly status: "canceled" }
   | {
@@ -87,6 +105,7 @@ export interface C4mlDesktopApi {
   readonly platform: DesktopPlatform;
   exportPng(request: DesktopPngExportRequest): Promise<DesktopPngExportResult>;
   openDocument(): Promise<DesktopOpenResult>;
+  openProject(): Promise<DesktopOpenProjectResult>;
   saveDocument(request: DesktopSaveRequest): Promise<DesktopSaveResult>;
   setDocumentState(state: DesktopDocumentState): void;
   setUiLanguage(language: DesktopUiLanguage): void;
@@ -97,6 +116,7 @@ export function isDesktopCommand(value: unknown): value is DesktopCommand {
   return (
     value === "export-png" ||
     value === "open-document" ||
+    value === "open-project" ||
     value === "open-settings" ||
     value === "save-document" ||
     value === "save-as-document"
@@ -163,6 +183,7 @@ export function isC4mlDesktopApi(value: unknown): value is C4mlDesktopApi {
     isDesktopPlatform(value.platform) &&
     typeof value.exportPng === "function" &&
     typeof value.openDocument === "function" &&
+    typeof value.openProject === "function" &&
     typeof value.saveDocument === "function" &&
     typeof value.setDocumentState === "function" &&
     typeof value.setUiLanguage === "function" &&

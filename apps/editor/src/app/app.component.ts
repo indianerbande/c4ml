@@ -37,7 +37,10 @@ import { WorkbenchPreferencesService } from "./workbench-preferences.service.js"
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import type { WorkbenchCommand } from "./workbench-command.js";
 import { WorkbenchCommandFacade } from "./workbench-command.facade.js";
-import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
+import {
+  WorkbenchDocumentFacade,
+  type WorkbenchDocumentState,
+} from "./workbench-document.facade.js";
 import { WorkbenchHelpFacade } from "./workbench-help.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
@@ -71,6 +74,10 @@ export class AppComponent {
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
   readonly documentDirty = this.documents.documentDirty;
+  readonly projectDirty = this.documents.projectDirty;
+  readonly projectDocuments = this.documents.projectDocuments;
+  readonly activeDocumentUri = this.documents.activeDocumentUri;
+  readonly workspaceName = this.documents.workspaceName;
   readonly fileOperationLabel = this.documents.fileOperationLabel;
   readonly pngScale = this.documents.pngScale;
   readonly desktopAvailable = this.documents.desktopAvailable;
@@ -117,6 +124,14 @@ export class AppComponent {
     () => this.session.state().bottomPanelOpen,
   );
   readonly bottomPanel = computed(() => this.session.state().bottomPanel);
+  readonly activeDiagnostics = computed(() =>
+    this.compiler
+      .state()
+      .diagnostics.filter(
+        ({ source }) =>
+          source === undefined || source.file === this.activeDocumentUri(),
+      ),
+  );
   readonly statusLabel = computed(() => {
     switch (this.compiler.state().phase) {
       case "compiling":
@@ -134,13 +149,7 @@ export class AppComponent {
 
   #compileTimer: ReturnType<typeof setTimeout> | undefined;
   readonly #wizardSourceSession = new WizardSourceSession();
-  #wizardDocumentBefore:
-    | {
-        readonly handle: string | undefined;
-        readonly name: string;
-        readonly dirty: boolean;
-      }
-    | undefined;
+  #wizardDocumentBefore: WorkbenchDocumentState | undefined;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -151,6 +160,9 @@ export class AppComponent {
           break;
         case "open-document":
           void this.openDocument();
+          break;
+        case "open-project":
+          void this.openProject();
           break;
         case "save-document":
           void this.saveDocument("save");
@@ -169,7 +181,7 @@ export class AppComponent {
       }
       unsubscribeDesktopCommands?.();
     });
-    this.compiler.compile(this.source(), undefined, this.documentName());
+    this.#compileCurrentProject();
     this.compiler.resolveHelpContext(this.source(), 0);
   }
 
@@ -206,13 +218,27 @@ export class AppComponent {
   async openDocument(): Promise<void> {
     const opened = await this.documents.openDocument();
     if (opened !== undefined) {
-      this.preview.clearSelection();
-      this.#wizardSourceSession.invalidateUndo();
-      this.#wizardDocumentBefore = undefined;
-      this.canUndoWizard.set(false);
-      this.compiler.compile(opened.source, undefined, opened.displayName);
+      this.#afterDocumentSetChanged();
+      this.#compileCurrentProject(undefined);
       this.#refreshHelpContext(opened.source);
     }
+  }
+
+  async openProject(): Promise<void> {
+    if (await this.documents.openProject()) {
+      this.#afterDocumentSetChanged();
+      this.#compileCurrentProject(undefined);
+      this.#refreshHelpContext(this.source());
+    }
+  }
+
+  selectDocument(uri: string): void {
+    if (!this.documents.selectDocument(uri)) {
+      return;
+    }
+    this.preview.clearSelection();
+    this.#compileCurrentProject(this.compiler.state().activeViewId);
+    this.#refreshHelpContext(this.source());
   }
 
   async saveDocument(mode: "save" | "save-as"): Promise<void> {
@@ -220,7 +246,12 @@ export class AppComponent {
   }
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
-    this.sourceEditor()?.revealDiagnostic(diagnostic);
+    const source = diagnostic.source;
+    if (source !== undefined && source.file !== this.activeDocumentUri()) {
+      this.documents.selectDocument(source.file);
+      this.#compileCurrentProject(this.compiler.state().activeViewId);
+    }
+    queueMicrotask(() => this.sourceEditor()?.revealDiagnostic(diagnostic));
   }
 
   onSourceSelection(selection: SourceEditorSelection): void {
@@ -229,6 +260,7 @@ export class AppComponent {
     const target = navigationTargetForOffset(
       this.navigation()?.targets ?? [],
       selection.startOffset,
+      this.activeDocumentUri(),
     );
     this.preview.select(target, false);
   }
@@ -309,12 +341,12 @@ export class AppComponent {
       return;
     }
     this.preview.clearSelection();
-    this.compiler.compile(this.source(), target.value, this.documentName());
+    this.#compileCurrentProject(target.value);
   }
 
   selectView(viewId: string): void {
     this.preview.clearSelection();
-    this.compiler.compile(this.source(), viewId, this.documentName());
+    this.#compileCurrentProject(viewId);
   }
 
   selectActivity(activity: WorkbenchActivity): void {
@@ -384,6 +416,9 @@ export class AppComponent {
       case "file.open":
         void this.openDocument();
         break;
+      case "file.open-project":
+        void this.openProject();
+        break;
       case "file.save":
         void this.saveDocument("save");
         break;
@@ -423,11 +458,7 @@ export class AppComponent {
 
   startWizard(): void {
     this.#wizardSourceSession.start(this.source());
-    this.#wizardDocumentBefore = {
-      handle: this.documentHandle(),
-      name: this.documentName(),
-      dirty: this.documentDirty(),
-    };
+    this.#wizardDocumentBefore = this.documents.captureState();
     this.wizardOpen.set(true);
   }
 
@@ -452,22 +483,23 @@ export class AppComponent {
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardOpen.set(false);
-    this.compiler.compile(next, undefined, this.documentName());
+    this.#compileCurrentProject(undefined);
     this.#refreshHelpContext(next);
   }
 
   undoWizard(): void {
     const restored = this.#wizardSourceSession.undo(this.source());
-    this.documents.replaceSource(restored, this.documentDirty());
     const previousDocument = this.#wizardDocumentBefore;
     if (previousDocument !== undefined) {
-      this.documents.restoreDocumentState(previousDocument);
+      this.documents.restoreState(previousDocument);
+    } else {
+      this.documents.replaceSource(restored, this.documentDirty());
     }
     this.#wizardDocumentBefore = undefined;
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
-    this.compiler.compile(restored, undefined, this.documentName());
-    this.#refreshHelpContext(restored);
+    this.#compileCurrentProject(undefined);
+    this.#refreshHelpContext(this.source());
   }
 
   #scheduleCompile(): void {
@@ -475,11 +507,7 @@ export class AppComponent {
       clearTimeout(this.#compileTimer);
     }
     this.#compileTimer = setTimeout(() => {
-      this.compiler.compile(
-        this.source(),
-        this.compiler.state().activeViewId,
-        this.documentName(),
-      );
+      this.#compileCurrentProject(this.compiler.state().activeViewId);
     }, 180);
   }
 
@@ -495,8 +523,27 @@ export class AppComponent {
   ): void {
     this.preview.select(target);
     if (revealSource && target !== undefined) {
-      this.sourceEditor()?.revealSource(target.source);
+      if (target.source.file !== this.activeDocumentUri()) {
+        this.documents.selectDocument(target.source.file);
+        this.#compileCurrentProject(this.compiler.state().activeViewId);
+      }
+      queueMicrotask(() => this.sourceEditor()?.revealSource(target.source));
     }
+  }
+
+  #compileCurrentProject(requestedViewId = this.compiler.state().activeViewId): void {
+    this.compiler.compileProject(
+      this.documents.projectSnapshot(),
+      this.activeDocumentUri(),
+      requestedViewId,
+    );
+  }
+
+  #afterDocumentSetChanged(): void {
+    this.preview.clearSelection();
+    this.#wizardSourceSession.invalidateUndo();
+    this.#wizardDocumentBefore = undefined;
+    this.canUndoWizard.set(false);
   }
 
 }

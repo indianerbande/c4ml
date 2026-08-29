@@ -161,12 +161,26 @@ export interface CompilerWorkerDiagnostic {
   readonly correction: string | undefined;
 }
 
+export interface CompilerWorkerProjectDocument {
+  readonly uri: string;
+  readonly source: string;
+}
+
+export interface CompilerWorkerProject {
+  readonly version: 1;
+  readonly id: string;
+  readonly name?: string;
+  readonly description?: string;
+  readonly documents: readonly CompilerWorkerProjectDocument[];
+}
+
 export interface CompilerWorkerRequest {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
   readonly type: "compile";
   readonly requestId: number;
   readonly file: string;
   readonly source: string;
+  readonly project?: CompilerWorkerProject;
   readonly requestedViewId?: string;
 }
 
@@ -195,8 +209,38 @@ export function isCompilerWorkerRequest(
     isPositiveRequestId(candidate.requestId) &&
     typeof candidate.file === "string" &&
     typeof candidate.source === "string" &&
+    (candidate.project === undefined ||
+      (isCompilerWorkerProject(candidate.project) &&
+        candidate.project.documents.some(
+          ({ uri, source }) => uri === candidate.file && source === candidate.source,
+        ))) &&
     (candidate.requestedViewId === undefined ||
       typeof candidate.requestedViewId === "string")
+  );
+}
+
+export function isCompilerWorkerProject(
+  value: unknown,
+): value is CompilerWorkerProject {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<CompilerWorkerProject>;
+  return (
+    candidate.version === 1 &&
+    typeof candidate.id === "string" &&
+    candidate.id.length > 0 &&
+    (candidate.name === undefined || typeof candidate.name === "string") &&
+    (candidate.description === undefined ||
+      typeof candidate.description === "string") &&
+    Array.isArray(candidate.documents) &&
+    candidate.documents.length > 0 &&
+    candidate.documents.every((document) =>
+      typeof document === "object" &&
+      document !== null &&
+      typeof (document as Partial<CompilerWorkerProjectDocument>).uri === "string" &&
+      typeof (document as Partial<CompilerWorkerProjectDocument>).source === "string",
+    )
   );
 }
 

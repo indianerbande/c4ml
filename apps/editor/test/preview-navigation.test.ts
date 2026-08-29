@@ -183,6 +183,30 @@ describe("preview navigation", () => {
     ).toBeUndefined();
   });
 
+  it("does not select an equally positioned target from another project file", () => {
+    const otherFileTarget: CompilerWorkerNodeNavigationTarget = {
+      ...elementTarget,
+      sceneObjectId: "scene-node:element:other",
+      referenceId: "other",
+      source: { ...elementTarget.source, file: "model/other.c4ml" },
+    };
+
+    expect(
+      navigationTargetForOffset(
+        [otherFileTarget, elementTarget],
+        210,
+        "editor.c4ml",
+      )?.referenceId,
+    ).toBe("garden-pulse");
+    expect(
+      navigationTargetForOffset(
+        [otherFileTarget, elementTarget],
+        210,
+        "missing.c4ml",
+      ),
+    ).toBeUndefined();
+  });
+
   it("prioritizes elements, then nearby routes, then containing boundaries", () => {
     expect(
       navigationTargetAtPoint([viewTarget, elementTarget, routeTarget], {

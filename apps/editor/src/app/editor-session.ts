@@ -2,6 +2,7 @@ import {
   compilerWorkerProtocolVersion,
   type CompilerWorkerDiagnostic,
   type CompilerWorkerNavigation,
+  type CompilerWorkerProject,
   type CompilerWorkerRequest,
   type CompilerWorkerResponse,
   type CompilerWorkerView,
@@ -90,6 +91,23 @@ export class EditorCompilationSession {
     };
   }
 
+  beginProject(
+    project: CompilerWorkerProject,
+    activeFile: string,
+    requestedViewId?: string,
+  ): CompilerWorkerRequest {
+    const activeDocument = project.documents.find(({ uri }) => uri === activeFile);
+    if (activeDocument === undefined) {
+      throw new Error(`Active project document "${activeFile}" does not exist.`);
+    }
+    const request = this.begin(
+      activeDocument.source,
+      activeDocument.uri,
+      requestedViewId,
+    );
+    return { ...request, project };
+  }
+
   accept(response: CompilerWorkerResponse): boolean {
     if (response.requestId !== this.#state.activeRequestId) {
       return false;
@@ -167,6 +185,7 @@ export class EditorCompletionSession {
     source: string,
     offset: number,
     file = "editor.c4ml",
+    project?: CompilerWorkerProject,
   ): CompletionWorkerRequest {
     this.#finishPending([]);
     const requestId = this.sequence.next();
@@ -184,6 +203,7 @@ export class EditorCompletionSession {
       file,
       source,
       offset,
+      ...(project === undefined ? {} : { project }),
     };
   }
 
@@ -191,11 +211,12 @@ export class EditorCompletionSession {
     source: string,
     offset: number,
     file = "editor.c4ml",
+    project?: CompilerWorkerProject,
   ): {
     readonly request: CompletionWorkerRequest;
     readonly result: Promise<readonly CompletionWorkerCandidate[]>;
   } {
-    const request = this.begin(source, offset, file);
+    const request = this.begin(source, offset, file, project);
     const result = new Promise<readonly CompletionWorkerCandidate[]>(
       (resolve) => {
         this.#resolvePending = resolve;

@@ -2,10 +2,10 @@ grammar C4mlDraft
 
 entry C4mlDocument:
     'c4ml' version='draft-1'
-    model=ModelBlock
-    relations=RelationsBlock
+    model=ModelBlock?
+    relations=RelationsBlock?
     deployment=DeploymentsBlock?
-    views+=ViewDeclaration+;
+    views+=ViewDeclaration*;
 
 ModelBlock:
     'model' '{'

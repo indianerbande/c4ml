@@ -10,6 +10,10 @@ import {
   isPositiveRequestId,
   isWorkerPosition,
 } from "./compiler-worker.shared.js";
+import {
+  isCompilerWorkerProject,
+  type CompilerWorkerProject,
+} from "./compiler-worker.compile.protocol.js";
 
 export interface CompletionWorkerRequest {
   readonly protocolVersion: typeof compilerWorkerProtocolVersion;
@@ -18,6 +22,7 @@ export interface CompletionWorkerRequest {
   readonly file: string;
   readonly source: string;
   readonly offset: number;
+  readonly project?: CompilerWorkerProject;
 }
 
 export interface HighlightWorkerRequest {
@@ -84,6 +89,11 @@ export function isCompletionWorkerRequest(
     isPositiveRequestId(candidate.requestId) &&
     typeof candidate.file === "string" &&
     typeof candidate.source === "string" &&
+    (candidate.project === undefined ||
+      (isCompilerWorkerProject(candidate.project) &&
+        candidate.project.documents.some(
+          ({ uri, source }) => uri === candidate.file && source === candidate.source,
+        ))) &&
     Number.isSafeInteger(candidate.offset) &&
     (candidate.offset ?? -1) >= 0 &&
     (candidate.offset ?? Number.POSITIVE_INFINITY) <= candidate.source.length
