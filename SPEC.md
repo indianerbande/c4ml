@@ -543,12 +543,15 @@ Diagnostics and navigation retain project-relative source URIs.
 The desktop editor opens an explicit project directory through its native
 bridge, presents the manifest-selected sources in a project explorer and source
 tabs, and compiles the complete in-memory project after an edit. Each document
-retains its own source buffer, opaque native handle, and dirty marker; the
-native close guard reflects aggregate project dirtiness. Save and Save As act
-on the active document in this foundation. Diagnostics and preview navigation
-select the owning document before revealing its range. Context completion sees
-the complete project namespace while highlighting and cursor help remain
-properties of the active source text.
+retains its own source buffer, opaque native handle, dirty marker, Monaco text
+model, undo history, cursor, and scroll state; the native close guard reflects
+aggregate project dirtiness. Save and Save As act on the active document. Save
+All writes every dirty document sequentially through the same validated
+opaque-handle bridge, preserves successful writes if a later write fails or is
+canceled, and leaves every unsaved document visibly dirty. Diagnostics and
+preview navigation select the owning document before revealing its range.
+Context completion sees the complete project namespace while highlighting and
+cursor help remain properties of the active source text.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, and exact document revisions. A project source
@@ -1056,7 +1059,10 @@ diagnostic list to reveal and focus their source range. Zoom, fit-to-view,
 scroll-pan at enlarged scale, and local SVG download are implemented without
 mutating compiler geometry. Syntax highlighting is implemented with spans from
 the authoritative C4ML lexer, transported through the compiler worker and
-encoded as Monaco semantic tokens. Successful compilation also returns an
+encoded as Monaco semantic tokens. The language package contextually
+distinguishes declaration words, properties, predefined values, identifiers and
+references, strings, numbers, operators, and comments. Monaco only presents
+those classifications. Successful compilation also returns an
 inspectable navigation map from source ranges through stable scene-node and SVG
 identities to scene bounds. Selecting a source declaration highlights the
 smallest matching source-mapped preview node. Selecting a preview node reveals
@@ -1280,7 +1286,9 @@ validated foundation.**
 
 The desktop editor has an extensible settings area with category navigation.
 Its first version owns the local workbench interface language, color scheme,
-and interface font size plus source-editor font family and size. Settings apply live and persist locally
+color family, and interface font size plus source-editor syntax theme, font
+family, and size.
+Settings apply live and persist locally
 as a validated, versioned record. Interface language supports `en` and `de`,
 with English as the default. It changes C4ML-owned interface copy, accessibility
 labels, command search, native menu commands, file-dialog labels, and
@@ -1289,6 +1297,26 @@ descriptions, generated source, compiler diagnostics, or diagram content. The
 document root language attribute MUST reflect the current interface language.
 The color scheme supports `system`, `light`, and `dark`;
 `system` tracks operating-system changes while the application is running.
+The independent color family supports `blue`, `gray`, `yellow`, `green`,
+`violet`, `red`, `orange`, and `turquoise`, with blue as the default. Each
+family has a quiet light and dark realization, producing sixteen concrete
+workbench variants while `system` merely chooses the effective light or dark
+half. A family changes workbench accents, subtle surfaces, controls, Monaco
+chrome, and the syntax declaration accent without changing the stable meaning
+of the remaining syntax roles, diagram themes, or exported artifacts.
+
+The source editor has a separate C4ML-owned syntax-theme contract. Its semantic
+roles are comment, declaration, property, predefined value, structural keyword,
+number, operator, string, and identifier/reference. Monaco only adapts these
+roles to semantic-token presentation and MUST NOT own their classification or
+meaning. The five local presets are `balanced`, `minimal`, `vivid`,
+`high-contrast`, and `color-safe`, with `balanced` as the default. Minimal uses
+restrained, nearly monochrome differentiation; vivid uses stronger semantic
+separation; high contrast adds redundant weight and underline cues where
+appropriate; color-safe does not rely on red-versus-green distinctions.
+Every preset has explicit light and dark values. The active workbench color
+family supplies the declaration accent, cursor, selection, and focus colors;
+all other semantic role colors stay stable within the selected preset.
 Interface font size is bounded to 9–16 px in 0.5 px steps and scales
 C4ML-owned workbench text through one root typography token.
 Source font choice is bounded to the packaged IBM Plex Mono, Fira Code, Hack,
@@ -1304,10 +1332,12 @@ NOT change source characters, offsets, selections, diagnostics, compiler input,
 diagram output, or exported artifacts.
 
 Monaco completion lists MUST explicitly theme normal, highlighted, selected,
-and keyboard-focused states in both light and dark workbench schemes. Text in
-each normal and selected state MUST retain a contrast ratio of at least 4.5:1
-against its effective background; no selected-state foreground may be inherited
-implicitly from Monaco's base theme.
+and keyboard-focused states in every light/dark color-family combination.
+Syntax roles MUST be explicit in every syntax-preset, light/dark, and
+color-family combination. Text in each normal and selected state and every
+syntax role MUST retain a contrast ratio of at least 4.5:1 against its effective
+background; no selected-state or syntax foreground may be inherited implicitly
+from Monaco's base theme.
 
 Interface font size MUST NOT change Monaco source text or any diagram content,
 geometry, SVG, or PNG. These are installation-local presentation preferences. They MUST NOT modify

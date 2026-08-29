@@ -110,10 +110,11 @@ intentionally preserved source-document metadata. The browser worker compiles
 the complete project and resolves cross-document completion references. The
 desktop boundary exposes native project-directory selection through the shared
 Node.js loader, while Angular provides project tabs, explorer selection,
-per-document buffers and dirty markers, aggregate close protection, and
-cross-document source navigation. Glossary/narrative/policy/publication
-resources, reusable project libraries, remote imports, and Save All remain
-unimplemented.
+per-document buffers and dirty markers, aggregate close protection,
+cross-document source navigation, sequential Save All with partial-result and
+cancel behavior, and independent Monaco models with restored cursor and scroll
+state. Glossary/narrative/policy/publication resources, reusable project
+libraries, and remote imports remain unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -178,13 +179,32 @@ their standard actions, changed to German in the same session, and the German
 preference survived an application relaunch. The local inspection state was
 returned to English afterward.
 
+All eight workbench color families were visually inspected in their light and
+dark realizations in the live Angular workbench on 2026-08-29. The settings
+cards, focus and selection borders, primary actions, navigation surfaces,
+editor background, and surrounding workbench remained legible and visually
+balanced in all sixteen combinations. The expanded declaration, property,
+predefined-value, identifier, string, operator, number, and comment palette was
+also inspected in representative light and dark turquoise editor views. The
+test preference was reset to the default blue/system combination afterward.
+
+All five syntax profiles were visually inspected in both light and dark mode
+in the live Monaco editor on 2026-08-29. The settings control applied each
+profile immediately; comments, declarations, properties, predefined values,
+identifiers, strings, numbers, and operators remained legible. The minimal
+profile stayed restrained, vivid separated roles more strongly, high contrast
+showed its redundant underline and weight cues, and color-safe avoided a
+red-versus-green distinction. Source and diagram output remained unchanged.
+The inspection state was returned to `balanced`, `system`, and `blue` afterward.
+
 The local workbench-preference suite verifies English language defaulting,
 English/German round trips, backward-compatible version-one records,
 field-level fallback, malformed JSON and unsupported-version fallback, bounded
-half-pixel interface and editor font sizes, effective system/light/dark resolution, and controlled
+half-pixel interface and editor font sizes, effective system/light/dark resolution,
+all eight accepted color families, and controlled
 font-stack mapping. Localization-contract tests verify both catalogues and
 interpolation, while command tests verify search in each language. Browser and
-desktop verification MUST also cover live language and scheme changes, the
+desktop verification MUST also cover live language, scheme, and color-family changes, the
 document root language attribute, interface typography changes at minimum,
 default, and maximum size without changing Monaco or canonical SVG, every
 packaged Monaco font choice, font remeasurement after loading, persistence across
@@ -197,11 +217,22 @@ preference, explicit disabling, backward-compatible loading of older version-one
 records, family-specific `ss01` and `dlig` mappings, and unchanged source text
 and canonical SVG while ligatures are toggled.
 
-The Monaco-theme suite MUST verify explicit normal, highlighted, selected, icon,
-and focus colors for both workbench schemes. Normal, highlighted, and selected
-text/background pairs require a computed contrast ratio of at least 4.5:1.
-Browser inspection MUST open the completion list in both light and dark schemes
-and confirm the focused row remains legible.
+The Monaco-theme suite MUST verify all eighty combinations of five syntax
+presets, eight color families, and light/dark presentation, explicit normal,
+highlighted, selected, icon, and focus colors, and the complete C4ML token
+palette. Normal, highlighted, selected, and syntax text/background pairs
+require a computed contrast ratio of at least 4.5:1. Contract tests MUST verify
+that every preset covers every role, color-family changes affect only the
+declaration accent within one preset, minimal remains restrained, high contrast
+uses redundant style cues, and color-safe does not rely on red-versus-green
+encoding. Language tests MUST
+distinguish representative declaration words, properties, predefined values,
+identifiers or references, strings, numbers, operators, and comments using
+lexer-owned spans. Browser inspection MUST sample every family in both light
+and dark modes, open the completion list in both schemes, and confirm the
+focused row and syntax categories remain legible. Browser inspection MUST also
+sample every syntax preset in both light and dark mode and verify that the
+settings control changes Monaco immediately without changing authored source.
 
 The local-handbook suite MUST verify that every help-topic identifier has
 English and German content, search is deterministic in both languages, only
@@ -530,6 +561,13 @@ Editor tests MUST cover:
   transform scaling;
 - SVG and PNG export; and
 - operation without a compiler service or network connection.
+
+Multi-document editor tests MUST additionally prove that switching documents
+reuses each document's Monaco model and therefore its independent undo stack,
+restores cursor and scroll state, and disposes every stale model when a new
+project is loaded. Save All MUST skip clean documents, process dirty documents
+in deterministic source order, retain successful writes after a later failure
+or cancellation, and leave every unsaved source visibly dirty.
 
 A shared contract suite MUST run the same effective source through the Node.js
 CLI path and browser-worker path. It MUST compare diagnostics, semantic model,

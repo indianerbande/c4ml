@@ -109,7 +109,7 @@ implementation.
   browser worker;
 - [x] add desktop Open Folder, a project explorer, multi-document dirty state,
   and several source tabs;
-- [ ] add an explicit Save All command and preserve independent Monaco undo and
+- [x] add an explicit Save All command and preserve independent Monaco undo and
   cursor history per project document; and
 - [ ] add typed glossary, narrative, policy, publication, theme, shape, and
   asset resources only through separately reviewed slices.
