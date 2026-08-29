@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.25
+Status: Draft 0.27
 
 Date: 2026-08-29
 
@@ -42,7 +42,8 @@ groups, collaboration/sequence equivalence, nested Deployment Nodes, relevant
 Infrastructure Nodes, and declaration-order independence. Rendering and visual
 evidence now also covers deterministic diagram preparation, semantic and Visual
 Group parentage, automatic/guided/fixed route policies, fixed-route rejection,
-hard and soft relative placement, center-axis alignment, individual pinning,
+hard and soft relative placement, anchored multi-element edge/axis alignment,
+ordered equal-gap distribution, automatic-relative adjustment, exact pinning,
 multi-location hard-conflict diagnostics, deterministic declaration-order
 handling, inspectable relaxed soft constraints,
 explicit source/target Ports, scene-owned Arrowheads, safe custom-shape
@@ -65,7 +66,8 @@ relationships, all seven view types, static Relationship references,
 environment-scoped completion references, exact source locations, stable
 diagnostics for unresolved references and invalid property cardinality,
 semantic stability across comments and whitespace, view-local route lowering,
-view-local relative placement, alignment, and pin lowering,
+view-local intent placement, multi-element alignment, ordered distribution,
+automatic-relative adjustment, named/step/du measurement, and pin lowering,
 absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
 relative Port/element/canvas anchors, ordered locked segments, hard and soft
 avoidance declarations and selection, label placement, policy-combination
@@ -74,14 +76,16 @@ browser bundling without Node.js polyfills, and deterministic SVG through the
 shared compiler pipeline. This evidence does not claim coverage of the complete
 preview grammar.
 
-The current constraint-solver foundation covers the first executable subset in
-`SPEC.md`: left/right/above/below placement, horizontal/vertical center
-alignment, and individual pins. It verifies coexistence with automatic
-candidate geometry, hard pins, soft relaxation warnings, hard failures with all
-source locations, and deterministic results independent of constraint
-declaration order. Row/column membership, ordered sets, grouped minimum gaps,
-preferred proximity, bounded movement, constrained size, and group-spanning
-constraints still require the remaining Section 2.5 evidence.
+The current constraint-solver foundation covers the executable intent hierarchy
+in `SPEC.md`: left/right/above/below placement, anchored multi-element edge and
+center alignment, explicitly ordered equal-gap distribution, directional and
+axis adjustment relative to automatic candidate geometry, named gap presets,
+`step` and exact `du` conversion, and individual pins. It verifies coexistence
+with automatic candidate geometry, hard positions, soft relaxation warnings,
+hard failures with all source locations, and deterministic results independent
+of unordered constraint declaration order. General row/column membership,
+grouped minimum gaps, preferred proximity, bounded movement, constrained size,
+and group-spanning constraints still require the remaining Section 2.5 evidence.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -334,6 +338,10 @@ Tests MUST cover each constraint independently and in combinations:
 - horizontal and vertical alignment;
 - explicit ordering;
 - minimum gaps;
+- anchored multi-element edge and center-axis alignment;
+- equal-gap distribution in explicitly authored order;
+- named gap, layout-step, and exact diagram-unit conversion;
+- directional and signed-axis adjustment from automatic candidate geometry;
 - soft proximity;
 - pinning and bounded movement;
 - fixed or constrained size;
@@ -572,6 +580,75 @@ manual file round trip and close-protection check is required on each supported
 desktop platform before release. Apple Developer ID signing/notarization and
 Windows signing MUST be checked with release identities; ad-hoc signing is only
 local development evidence.
+
+### 2.12 Intent-based authoring
+
+Before graphical source editing is claimed, contract and integration tests MUST
+prove that:
+
+- every graphical operation produces a deterministic proposed source change
+  set against an explicit source revision;
+- edits are syntax-aware, non-overlapping, previewable, and rejected when their
+  source revision is stale;
+- previewing an edit does not mutate source, dirty state, compiler state, or
+  canonical output;
+- applying one operation creates one editor undo unit and undo restores the
+  exact preceding source;
+- comments, unrelated formatting, stable identifiers, and unrelated
+  declarations remain unchanged;
+- nudge, alignment, distribution, exact positioning, Port selection, and route
+  guidance produce their corresponding source intent rather than hidden editor
+  geometry;
+- the proposed source passes through the normal parser, semantic validator,
+  compiler, and diagnostic pipeline before it can be accepted; and
+- CLI and browser-worker compilation remain equivalent after an applied edit.
+
+Tests MUST distinguish semantic architecture operations from view-local layout
+operations. UI event coordinates and Monaco edit objects MUST NOT enter the
+portable authoring contract.
+
+### 2.13 Semantic architecture evolution
+
+Semantic comparison tests MUST use original before/after fixture pairs and
+prove that:
+
+- matching uses stable identities, so a rename is not reported as removal plus
+  addition;
+- formatting, comments, declaration order, and source ranges do not create
+  architecture changes;
+- additions, removals, and modifications are classified separately for model,
+  relationship, view, deployment, presentation, and layout data;
+- impact paths contain only validated semantic references and remain
+  deterministic;
+- unchanged regions retain their baseline geometry within the declared
+  stability policy when a comparison is rendered;
+- the normalized comparison is byte-stable for identical input snapshots; and
+- repository or Git adapters cannot alter comparison semantics.
+
+Visual review MUST inspect before, after, overlay, and change-only presentation
+for at least one local semantic change and one layout-only change. The review
+must demonstrate that layout noise cannot masquerade as architecture change.
+
+### 2.14 Architecture proof
+
+Rule and query tests MUST prove that:
+
+- rule identities, severities, affected stable identities, evidence paths, and
+  source locations are deterministic;
+- evaluation consumes validated compiler contracts and never derives
+  architecture facts solely from rendered geometry;
+- the same rule set returns equivalent findings through CLI and browser-worker
+  paths without network access;
+- changing presentation alone cannot change a semantic rule result;
+- a suggested correction is an optional proposed source change set and never a
+  direct semantic-model mutation;
+- malformed, unknown, or inapplicable rules fail with stable diagnostics; and
+- imported or observed evidence is attributed to its adapter and cannot
+  silently replace authored facts.
+
+Original fixtures MUST cover at least a forbidden dependency, a missing
+required protocol, a deployment/static-model inconsistency, a multi-hop impact
+query, and an external observation that disagrees with authored architecture.
 
 ## 3. Original fixture catalog
 

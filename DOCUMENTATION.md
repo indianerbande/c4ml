@@ -932,47 +932,89 @@ layout {
 }
 ```
 
-### 9.2 Relative constraints
+### 9.2 Place, align, and distribute by intent
 
-The current executable `draft-1` slice supports `left-of`, `right-of`,
-`above`, and `below`, plus `align-center-x` and `align-center-y`.
+Start with semantic placement controls. They survive diagram growth because
+they describe the intended relationship between elements instead of storing a
+screen position.
 
 ```c4ml
 layout {
-  constraint left-of(grower, signal-garden) {
+  place grower left-of signal-garden {
     strength = hard
-    gap = 120
+    gap = normal
   }
 
-  constraint align-center-y(grower, signal-garden) {
+  align center-y [grower, signal-garden, weather-beacon] {
+    anchor = signal-garden
+    strength = soft
+  }
+
+  distribute horizontal [grower, signal-garden, weather-beacon] {
+    gap = normal
+    strength = hard
+  }
+}
+```
+
+`place` supports `left-of`, `right-of`, `above`, and `below`. `align` supports
+`left`, `center-x`, `right`, `top`, `center-y`, and `bottom`; its explicit
+`anchor` stays on the alignment line. `distribute` uses the listed order and
+places each following element after the preceding one with the requested equal
+gap. The first listed element is the reference position.
+
+The named gaps are `tiny`, `small`, `normal`, and `large`. They resolve to 1,
+2, 4, and 8 layout steps. One `step` is 16 diagram units (`du`). These are
+scalable diagram-space units, not monitor pixels.
+
+Placement controls are layout objects, not semantic relationships. `hard`
+controls must either be satisfied or produce a diagnostic naming every
+conflicting source location. A `soft` control may be relaxed only with an
+explicit compiler warning.
+
+### 9.3 Adjust the automatic result
+
+Use `adjust` when the automatic position is almost right. The offset is always
+computed from the automatic candidate, so it cannot accumulate across builds.
+
+```c4ml
+layout {
+  adjust weather-beacon {
+    relative-to = automatic
+    move = up small
+    strength = soft
+  }
+
+  adjust grower {
+    relative-to = automatic
+    move-y = -2step
     strength = soft
   }
 }
 ```
 
-Constraints are layout objects, not semantic relationships. `hard` constraints
-must either be satisfied or produce a diagnostic naming every conflicting
-source location. A `soft` constraint may be relaxed only with an explicit
-compiler warning.
+Directional `move` accepts a named gap or an explicit `step`/`du` distance.
+`move-x` and `move-y` accept signed `step` or `du` distances.
 
-### 9.3 Pinning one element
+### 9.4 Pin exact diagram coordinates
 
 ```c4ml
 layout {
   pin signal-garden {
-    x = 520
-    y = 240
+    x = 520du
+    y = 240du
     strength = hard
   }
 }
 ```
 
 Pinning one element does not disable automatic layout for the rest of the view.
-The current executable slice requires non-negative integer `x` and `y` values.
-Rows, columns, ordered sets, bounded movement, proximity, and constrained sizes
-remain planned rather than executable.
+Exact coordinates deliberately require the `du` suffix so a fixed position is
+visibly different from a relative intent. Use a pin only when place, align,
+distribute, and adjust cannot express the required result. Row/column
+membership, bounded movement, proximity, and constrained sizes remain planned.
 
-### 9.4 Ports and guided routes
+### 9.5 Ports and guided routes
 
 A Relationship, its attachment points, and its drawing are separate objects:
 
@@ -1058,7 +1100,7 @@ width, height)`. A hard region that cannot be respected fails compilation. A
 soft region may be crossed only with diagnostic `C4ML-ROUTE-030`; the effective
 region is then marked `relaxed` in the inspector and debug overlay.
 
-### 9.5 Named corridors and lanes
+### 9.6 Named corridors and lanes
 
 Dense diagrams often need stable connection corridors rather than a separate
 collection of unrelated waypoints for every relationship. The proposed model
@@ -1108,7 +1150,7 @@ Shared trunks or junctions remain possible, but only when the author declares
 that sharing deliberately. Automatic routing must not merge relationships just
 to reduce the apparent number of lines.
 
-### 9.6 Fixed routes and locked segments
+### 9.7 Fixed routes and locked segments
 
 Exact coordinates remain the final escape hatch:
 

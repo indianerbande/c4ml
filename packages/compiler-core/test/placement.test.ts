@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   applyPlacementConstraints,
   compileArchitectureDiagram,
+  placementGapDu,
+  placementStepDu,
   prepareDiagram,
   resolveArchitectureView,
   type ArchitectureView,
@@ -220,6 +222,134 @@ describe("placement constraints", () => {
     expect(result.diagnostics[0]!.related.map(({ source }) => source)).toEqual(
       expect.arrayContaining([source(30), source(31)]),
     );
+  });
+
+  it("aligns a declared set against its explicit anchor", async () => {
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const candidate = await new CandidateLayoutAdapter().layout(diagram.layoutRequest);
+    const result = applyPlacementConstraints(diagram, candidate, {
+      constraints: [{
+        id: "align-top-row",
+        kind: "align",
+        alignment: "top",
+        nodeIds: ["grower", "signal-garden", "weather-beacon"],
+        anchorId: "signal-garden",
+        strength: "hard",
+      }],
+    });
+
+    const y = result.layout.nodes.find(({ id }) => id === "element:signal-garden")!.y;
+    expect(
+      result.layout.nodes
+        .filter(({ id }) => id.startsWith("element:"))
+        .map((node) => node.y),
+    ).toEqual([y, y, y]);
+  });
+
+  it("distributes an explicitly ordered set with a named-gap distance", async () => {
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const candidate = await new CandidateLayoutAdapter().layout(diagram.layoutRequest);
+    const result = applyPlacementConstraints(diagram, candidate, {
+      constraints: [{
+        id: "distribute-context",
+        kind: "distribute",
+        orientation: "horizontal",
+        nodeIds: ["grower", "signal-garden", "weather-beacon"],
+        gap: placementGapDu.normal,
+        strength: "hard",
+      }],
+    });
+    const nodes = ["grower", "signal-garden", "weather-beacon"].map((id) =>
+      result.layout.nodes.find((node) => node.id === `element:${id}`)!,
+    );
+    expect(nodes[1]!.x - nodes[0]!.x - nodes[0]!.width).toBe(placementGapDu.normal);
+    expect(nodes[2]!.x - nodes[1]!.x - nodes[1]!.width).toBe(placementGapDu.normal);
+  });
+
+  it("adjusts selected axes relative to automatic candidate geometry", async () => {
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const candidate = await new CandidateLayoutAdapter().layout(diagram.layoutRequest);
+    const result = applyPlacementConstraints(diagram, candidate, {
+      constraints: [{
+        id: "adjust-weather",
+        kind: "adjust",
+        targetId: "weather-beacon",
+        relativeTo: "automatic",
+        offsetX: -2 * placementStepDu,
+        offsetY: placementGapDu.small,
+        strength: "hard",
+      }],
+    });
+    const weather = result.layout.nodes.find(({ id }) => id === "element:weather-beacon")!;
+    expect(weather).toMatchObject({ x: 428, y: 112 });
+    expect(result.constraints[0]).toMatchObject({ satisfied: true, relaxed: false });
+  });
+
+  it("rolls back a partially applicable soft set constraint atomically", async () => {
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const candidate = await new CandidateLayoutAdapter().layout(diagram.layoutRequest);
+    const result = applyPlacementConstraints(diagram, candidate, {
+      constraints: [
+        {
+          id: "pin-focus",
+          kind: "pin",
+          targetId: "signal-garden",
+          x: 180,
+          y: 160,
+          strength: "hard",
+        },
+        {
+          id: "prefer-distribution",
+          kind: "distribute",
+          orientation: "horizontal",
+          nodeIds: ["grower", "signal-garden", "weather-beacon"],
+          gap: placementGapDu.normal,
+          strength: "soft",
+        },
+      ],
+    });
+
+    expect(
+      result.layout.nodes.find(({ id }) => id === "element:weather-beacon"),
+    ).toMatchObject({ x: 460, y: 80 });
+    expect(
+      result.constraints.find(({ id }) => id === "prefer-distribution"),
+    ).toMatchObject({ satisfied: false, relaxed: true });
+  });
+
+  it("reports an earlier soft rule as relaxed when a later soft rule supersedes it", async () => {
+    const resolved = resolveArchitectureView(signalGardenModel, contextView);
+    const diagram = prepareDiagram(contextView, resolved.views[0]!);
+    const candidate = await new CandidateLayoutAdapter().layout(diagram.layoutRequest);
+    const result = applyPlacementConstraints(diagram, candidate, {
+      constraints: [
+        {
+          id: "a-align-top",
+          kind: "align",
+          alignment: "top",
+          nodeIds: ["grower", "weather-beacon"],
+          anchorId: "grower",
+          strength: "soft",
+        },
+        {
+          id: "z-adjust-weather",
+          kind: "adjust",
+          targetId: "weather-beacon",
+          relativeTo: "automatic",
+          offsetY: placementGapDu.large,
+          strength: "soft",
+        },
+      ],
+    });
+
+    expect(result.constraints).toMatchObject([
+      { id: "a-align-top", satisfied: false, relaxed: true },
+      { id: "z-adjust-weather", satisfied: true, relaxed: false },
+    ]);
   });
 
   it("is deterministic when declarations arrive in another order", async () => {

@@ -10,12 +10,27 @@ import { compareText } from "./ordering.js";
 import type { SourceBacked } from "./source.js";
 
 export type PlacementStrength = "hard" | "soft";
+export type PlacementGapPreset = "tiny" | "small" | "normal" | "large";
 export type RelativePlacementRelation =
   | "above"
   | "below"
   | "left-of"
   | "right-of";
-export type PlacementAlignment = "center-x" | "center-y";
+export type PlacementAlignment =
+  | "bottom"
+  | "center-x"
+  | "center-y"
+  | "left"
+  | "right"
+  | "top";
+
+export const placementStepDu = 16;
+export const placementGapDu: Readonly<Record<PlacementGapPreset, number>> = {
+  tiny: placementStepDu,
+  small: placementStepDu * 2,
+  normal: placementStepDu * 4,
+  large: placementStepDu * 8,
+};
 
 interface PlacementConstraintBase extends SourceBacked {
   readonly id: string;
@@ -37,6 +52,30 @@ export interface AlignmentPlacementConstraint extends PlacementConstraintBase {
   readonly targetId: string;
 }
 
+export interface MultiAlignmentPlacementConstraint
+  extends PlacementConstraintBase {
+  readonly kind: "align";
+  readonly alignment: PlacementAlignment;
+  readonly nodeIds: readonly string[];
+  readonly anchorId: string;
+}
+
+export interface DistributionPlacementConstraint
+  extends PlacementConstraintBase {
+  readonly kind: "distribute";
+  readonly orientation: "horizontal" | "vertical";
+  readonly nodeIds: readonly string[];
+  readonly gap: number;
+}
+
+export interface AdjustmentPlacementConstraint extends PlacementConstraintBase {
+  readonly kind: "adjust";
+  readonly targetId: string;
+  readonly relativeTo: "automatic";
+  readonly offsetX?: number;
+  readonly offsetY?: number;
+}
+
 export interface PinPlacementConstraint extends PlacementConstraintBase {
   readonly kind: "pin";
   readonly targetId: string;
@@ -45,7 +84,10 @@ export interface PinPlacementConstraint extends PlacementConstraintBase {
 }
 
 export type PlacementConstraint =
+  | AdjustmentPlacementConstraint
   | AlignmentPlacementConstraint
+  | DistributionPlacementConstraint
+  | MultiAlignmentPlacementConstraint
   | PinPlacementConstraint
   | RelativePlacementConstraint;
 
@@ -103,28 +145,37 @@ export function applyPlacementConstraints(
   );
   const hard = constraints.filter(({ strength }) => strength === "hard");
   const soft = constraints.filter(({ strength }) => strength === "soft");
-  const locks = applyHardPins(state, hard, referenceToNodeId);
+  const locks = applyHardPositions(
+    state,
+    candidateById,
+    hard,
+    referenceToNodeId,
+  );
 
   solveHardConstraints(state, hard, referenceToNodeId, locks);
 
-  const effective: EffectivePlacementConstraint[] = hard.map((constraint) =>
-    effectiveConstraint(constraint, referenceToNodeId, true),
-  );
   for (const constraint of soft) {
     const before = cloneState(state);
-    applyConstraint(state, constraint, referenceToNodeId, locks);
+    applyConstraint(state, candidateById, constraint, referenceToNodeId, locks);
     const hardStillSatisfied = hard.every((hardConstraint) =>
-      isSatisfied(state, hardConstraint, referenceToNodeId),
+      isSatisfied(state, candidateById, hardConstraint, referenceToNodeId),
     );
-    if (!hardStillSatisfied) {
+    const satisfied =
+      hardStillSatisfied &&
+      isSatisfied(state, candidateById, constraint, referenceToNodeId);
+    if (!satisfied) {
       restoreState(state, before);
     }
-    const satisfied =
-      hardStillSatisfied && isSatisfied(state, constraint, referenceToNodeId);
-    effective.push(
-      effectiveConstraint(constraint, referenceToNodeId, satisfied),
-    );
   }
+
+  const effective: EffectivePlacementConstraint[] = constraints.map(
+    (constraint) =>
+      effectiveConstraint(
+        constraint,
+        referenceToNodeId,
+        isSatisfied(state, candidateById, constraint, referenceToNodeId),
+      ),
+  );
 
   const nodes = resizeAffectedAncestors(
     [...state.values()].sort((left, right) => compareText(left.id, right.id)),
@@ -192,7 +243,7 @@ function validateConstraints(
       }
     }
     if (
-      constraint.kind !== "pin" &&
+      (constraint.kind === "relative" || constraint.kind === "alignment") &&
       constraint.subjectId === constraint.targetId
     ) {
       throw new ContractError(
@@ -201,12 +252,46 @@ function validateConstraints(
       );
     }
     if (
-      constraint.kind === "relative" &&
+      (constraint.kind === "relative" || constraint.kind === "distribute") &&
       (!Number.isFinite(constraint.gap) || constraint.gap < 0)
     ) {
       throw new ContractError(
         "C4ML-PLACEMENT-005",
         `Placement constraint ${constraint.id} requires a finite non-negative gap.`,
+      );
+    }
+    if (constraint.kind === "align") {
+      if (
+        constraint.nodeIds.length < 2 ||
+        new Set(constraint.nodeIds).size !== constraint.nodeIds.length ||
+        !constraint.nodeIds.includes(constraint.anchorId)
+      ) {
+        throw new ContractError(
+          "C4ML-PLACEMENT-008",
+          `Alignment ${constraint.id} requires at least two unique items and an anchor from that list.`,
+        );
+      }
+    }
+    if (
+      constraint.kind === "distribute" &&
+      (constraint.nodeIds.length < 3 ||
+        new Set(constraint.nodeIds).size !== constraint.nodeIds.length)
+    ) {
+      throw new ContractError(
+        "C4ML-PLACEMENT-009",
+        `Distribution ${constraint.id} requires at least three unique ordered items.`,
+      );
+    }
+    if (
+      constraint.kind === "adjust" &&
+      (constraint.relativeTo !== "automatic" ||
+        (constraint.offsetX === undefined && constraint.offsetY === undefined) ||
+        (constraint.offsetX !== undefined && !Number.isFinite(constraint.offsetX)) ||
+        (constraint.offsetY !== undefined && !Number.isFinite(constraint.offsetY)))
+    ) {
+      throw new ContractError(
+        "C4ML-PLACEMENT-013",
+        `Adjustment ${constraint.id} requires at least one finite offset relative to automatic layout.`,
       );
     }
     if (
@@ -224,36 +309,45 @@ function validateConstraints(
   }
 }
 
-function applyHardPins(
+function applyHardPositions(
   state: Map<string, MutableLayoutNode>,
+  candidateById: ReadonlyMap<string, LayoutNodeResult>,
   constraints: readonly PlacementConstraint[],
   referenceToNodeId: ReadonlyMap<string, string>,
 ): AxisLocks {
   const locks: AxisLocks = { x: new Map(), y: new Map() };
   for (const constraint of constraints) {
-    if (constraint.kind !== "pin") {
+    if (constraint.kind !== "pin" && constraint.kind !== "adjust") {
       continue;
     }
     const nodeId = requiredNodeId(referenceToNodeId, constraint.targetId);
-    const existingX = locks.x.get(nodeId);
-    const existingY = locks.y.get(nodeId);
-    if (
-      (existingX !== undefined && Math.abs(existingX.value - constraint.x) > epsilon) ||
-      (existingY !== undefined && Math.abs(existingY.value - constraint.y) > epsilon)
-    ) {
-      throw new PlacementConflictError(
-        "C4ML-PLACEMENT-010",
-        `Hard pins for ${constraint.targetId} require different positions.`,
-        [existingX?.constraintId, existingY?.constraintId, constraint.id].filter(
-          (id): id is string => id !== undefined,
-        ),
-      );
-    }
-    locks.x.set(nodeId, { value: constraint.x, constraintId: constraint.id });
-    locks.y.set(nodeId, { value: constraint.y, constraintId: constraint.id });
     const node = requiredStateNode(state, nodeId);
-    node.x = constraint.x;
-    node.y = constraint.y;
+    const candidateNode = requiredStateNode(candidateById, nodeId);
+    const targets =
+      constraint.kind === "pin"
+        ? { x: constraint.x, y: constraint.y }
+        : {
+            ...(constraint.offsetX === undefined
+              ? {}
+              : { x: candidateNode.x + constraint.offsetX }),
+            ...(constraint.offsetY === undefined
+              ? {}
+              : { y: candidateNode.y + constraint.offsetY }),
+          };
+    for (const axis of ["x", "y"] as const) {
+      const value = targets[axis];
+      if (value === undefined) continue;
+      const existing = locks[axis].get(nodeId);
+      if (existing !== undefined && Math.abs(existing.value - value) > epsilon) {
+        throw new PlacementConflictError(
+          "C4ML-PLACEMENT-010",
+          `Hard placement controls for ${constraint.targetId} require different ${axis}-positions.`,
+          [existing.constraintId, constraint.id],
+        );
+      }
+      locks[axis].set(nodeId, { value, constraintId: constraint.id });
+      node[axis] = value;
+    }
   }
   return locks;
 }
@@ -264,20 +358,24 @@ function solveHardConstraints(
   referenceToNodeId: ReadonlyMap<string, string>,
   locks: AxisLocks,
 ): void {
-  const nonPins = constraints.filter(({ kind }) => kind !== "pin");
-  const maxPasses = Math.max(1, nonPins.length * Math.max(4, state.size * 2));
+  const active = constraints.filter(
+    ({ kind }) => kind !== "pin" && kind !== "adjust",
+  );
+  const maxPasses = Math.max(1, active.length * Math.max(4, state.size * 2));
   for (let pass = 0; pass < maxPasses; pass += 1) {
     let changed = false;
-    for (const constraint of nonPins) {
-      changed = applyConstraint(state, constraint, referenceToNodeId, locks) || changed;
+    for (const constraint of active) {
+      changed =
+        applyConstraint(state, state, constraint, referenceToNodeId, locks) ||
+        changed;
     }
     if (!changed) {
       return;
     }
   }
 
-  const unsatisfied = nonPins.filter(
-    (constraint) => !isSatisfied(state, constraint, referenceToNodeId),
+  const unsatisfied = active.filter(
+    (constraint) => !isSatisfied(state, state, constraint, referenceToNodeId),
   );
   if (unsatisfied.length > 0) {
     const involved = new Set(unsatisfied.flatMap(referencedIds));
@@ -294,10 +392,40 @@ function solveHardConstraints(
 
 function applyConstraint(
   state: Map<string, MutableLayoutNode>,
+  candidateById: ReadonlyMap<string, LayoutNodeResult>,
   constraint: PlacementConstraint,
   referenceToNodeId: ReadonlyMap<string, string>,
   locks: AxisLocks,
 ): boolean {
+  if (constraint.kind === "adjust") {
+    const nodeId = requiredNodeId(referenceToNodeId, constraint.targetId);
+    const node = requiredStateNode(state, nodeId);
+    const candidate = requiredStateNode(candidateById, nodeId);
+    let changed = false;
+    if (constraint.offsetX !== undefined) {
+      changed =
+        moveSingle(
+          node,
+          nodeId,
+          "x",
+          candidate.x + constraint.offsetX,
+          locks,
+          constraint,
+        ) || changed;
+    }
+    if (constraint.offsetY !== undefined) {
+      changed =
+        moveSingle(
+          node,
+          nodeId,
+          "y",
+          candidate.y + constraint.offsetY,
+          locks,
+          constraint,
+        ) || changed;
+    }
+    return changed;
+  }
   if (constraint.kind === "pin") {
     const node = requiredStateNode(
       state,
@@ -308,6 +436,40 @@ function applyConstraint(
       Math.abs(node.y - constraint.y) > epsilon;
     node.x = constraint.x;
     node.y = constraint.y;
+    return changed;
+  }
+
+  if (constraint.kind === "align") {
+    const anchorId = requiredNodeId(referenceToNodeId, constraint.anchorId);
+    const anchor = requiredStateNode(state, anchorId);
+    const axis = alignmentAxis(constraint.alignment);
+    const coordinate = alignmentCoordinate(anchor, constraint.alignment);
+    let changed = false;
+    for (const referenceId of constraint.nodeIds) {
+      const nodeId = requiredNodeId(referenceToNodeId, referenceId);
+      if (nodeId === anchorId) continue;
+      const node = requiredStateNode(state, nodeId);
+      const desired = node[axis] + coordinate - alignmentCoordinate(node, constraint.alignment);
+      changed = moveSingle(node, nodeId, axis, desired, locks, constraint) || changed;
+    }
+    return changed;
+  }
+
+  if (constraint.kind === "distribute") {
+    const axis = constraint.orientation === "horizontal" ? "x" : "y";
+    const size = axis === "x" ? "width" : "height";
+    let previous = requiredStateNode(
+      state,
+      requiredNodeId(referenceToNodeId, constraint.nodeIds[0]!),
+    );
+    let changed = false;
+    for (const referenceId of constraint.nodeIds.slice(1)) {
+      const nodeId = requiredNodeId(referenceToNodeId, referenceId);
+      const node = requiredStateNode(state, nodeId);
+      const desired = previous[axis] + previous[size] + constraint.gap;
+      changed = moveSingle(node, nodeId, axis, desired, locks, constraint) || changed;
+      previous = node;
+    }
     return changed;
   }
 
@@ -380,9 +542,21 @@ function movePair(
 
 function isSatisfied(
   state: ReadonlyMap<string, MutableLayoutNode>,
+  candidateById: ReadonlyMap<string, LayoutNodeResult>,
   constraint: PlacementConstraint,
   referenceToNodeId: ReadonlyMap<string, string>,
 ): boolean {
+  if (constraint.kind === "adjust") {
+    const nodeId = requiredNodeId(referenceToNodeId, constraint.targetId);
+    const node = requiredStateNode(state, nodeId);
+    const candidate = requiredStateNode(candidateById, nodeId);
+    return (
+      (constraint.offsetX === undefined ||
+        Math.abs(node.x - candidate.x - constraint.offsetX) <= epsilon) &&
+      (constraint.offsetY === undefined ||
+        Math.abs(node.y - candidate.y - constraint.offsetY) <= epsilon)
+    );
+  }
   if (constraint.kind === "pin") {
     const node = requiredStateNode(
       state,
@@ -391,6 +565,31 @@ function isSatisfied(
     return (
       Math.abs(node.x - constraint.x) <= epsilon &&
       Math.abs(node.y - constraint.y) <= epsilon
+    );
+  }
+  if (constraint.kind === "align") {
+    const anchor = requiredStateNode(
+      state,
+      requiredNodeId(referenceToNodeId, constraint.anchorId),
+    );
+    const coordinate = alignmentCoordinate(anchor, constraint.alignment);
+    return constraint.nodeIds.every((referenceId) =>
+      Math.abs(
+        alignmentCoordinate(
+          requiredStateNode(state, requiredNodeId(referenceToNodeId, referenceId)),
+          constraint.alignment,
+        ) - coordinate,
+      ) <= epsilon,
+    );
+  }
+  if (constraint.kind === "distribute") {
+    const axis = constraint.orientation === "horizontal" ? "x" : "y";
+    const size = axis === "x" ? "width" : "height";
+    const nodes = constraint.nodeIds.map((referenceId) =>
+      requiredStateNode(state, requiredNodeId(referenceToNodeId, referenceId)),
+    );
+    return nodes.slice(1).every((node, index) =>
+      Math.abs(nodes[index]![axis] + nodes[index]![size] + constraint.gap - node[axis]) <= epsilon,
     );
   }
   const subject = requiredStateNode(
@@ -601,9 +800,61 @@ function effectiveConstraint(
 }
 
 function referencedIds(constraint: PlacementConstraint): string[] {
-  return constraint.kind === "pin"
-    ? [constraint.targetId]
-    : [constraint.subjectId, constraint.targetId];
+  switch (constraint.kind) {
+    case "pin":
+    case "adjust":
+      return [constraint.targetId];
+    case "align":
+    case "distribute":
+      return [...constraint.nodeIds];
+    case "alignment":
+    case "relative":
+      return [constraint.subjectId, constraint.targetId];
+  }
+}
+
+function alignmentAxis(alignment: PlacementAlignment): "x" | "y" {
+  return alignment === "left" || alignment === "center-x" || alignment === "right"
+    ? "x"
+    : "y";
+}
+
+function alignmentCoordinate(
+  node: LayoutNodeResult,
+  alignment: PlacementAlignment,
+): number {
+  switch (alignment) {
+    case "left": return node.x;
+    case "center-x": return node.x + node.width / 2;
+    case "right": return node.x + node.width;
+    case "top": return node.y;
+    case "center-y": return node.y + node.height / 2;
+    case "bottom": return node.y + node.height;
+  }
+}
+
+function moveSingle(
+  node: MutableLayoutNode,
+  nodeId: string,
+  axis: "x" | "y",
+  desired: number,
+  locks: AxisLocks,
+  constraint: PlacementConstraint,
+): boolean {
+  if (Math.abs(node[axis] - desired) <= epsilon) return false;
+  const lock = locks[axis].get(nodeId);
+  if (lock !== undefined) {
+    if (constraint.strength === "hard") {
+      throw new PlacementConflictError(
+        "C4ML-PLACEMENT-012",
+        `Hard placement constraint ${constraint.id} conflicts with a fixed ${axis}-position.`,
+        [constraint.id, lock.constraintId],
+      );
+    }
+    return false;
+  }
+  node[axis] = desired;
+  return true;
 }
 
 function stableConstraints(

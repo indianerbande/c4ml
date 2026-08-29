@@ -253,8 +253,8 @@ describe("C4ML draft-1 language slice", () => {
       "    }",
       "",
       "    pin garden-pulse {",
-      "      x = 520",
-      "      y = 180",
+      "      x = 520du",
+      "      y = 180du",
       "      strength = hard",
       "    }",
       "  }",
@@ -329,6 +329,86 @@ describe("C4ML draft-1 language slice", () => {
       "C4ML-LANG-120",
     ]);
     expect(parsed.diagnostics[1]?.related).toHaveLength(1);
+  });
+
+  it("lowers intent placement, set alignment, distribution, adjustment, and diagram units", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    place caretaker left-of garden-pulse {",
+      "      gap = normal",
+      "      strength = hard",
+      "    }",
+      "    align top [caretaker, garden-pulse, sensor-post] {",
+      "      anchor = garden-pulse",
+      "      strength = soft",
+      "    }",
+      "    distribute horizontal [caretaker, garden-pulse, sensor-post] {",
+      "      gap = 2step",
+      "      strength = hard",
+      "    }",
+      "    adjust sensor-post {",
+      "      relative-to = automatic",
+      "      move-y = -2step",
+      "      strength = soft",
+      "    }",
+      "    pin garden-pulse {",
+      "      x = 520du",
+      "      y = 180du",
+      "      strength = hard",
+      "    }",
+      "  }",
+    ]);
+    const parsed = await parseC4mlDraft(source, { file: "intent-layout.c4ml" });
+
+    expect(parsed.valid).toBe(true);
+    expect(parsed.placementByViewId?.["garden-pulse-context"]?.constraints).toMatchObject([
+      { kind: "relative", gap: 64 },
+      {
+        kind: "align",
+        alignment: "top",
+        nodeIds: ["caretaker", "garden-pulse", "sensor-post"],
+        anchorId: "garden-pulse",
+      },
+      { kind: "distribute", orientation: "horizontal", gap: 32 },
+      {
+        kind: "adjust",
+        targetId: "sensor-post",
+        relativeTo: "automatic",
+        offsetY: -32,
+      },
+      { kind: "pin", targetId: "garden-pulse", x: 520, y: 180 },
+    ]);
+  });
+
+  it("rejects malformed set placement and ambiguous automatic adjustments", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    align top [caretaker, caretaker] {",
+      "      anchor = caretaker",
+      "      strength = hard",
+      "    }",
+      "    distribute vertical [caretaker, garden-pulse] {",
+      "      gap = small",
+      "      strength = hard",
+      "    }",
+      "    adjust sensor-post {",
+      "      relative-to = automatic",
+      "      move = up small",
+      "      move-y = -1step",
+      "      strength = soft",
+      "    }",
+      "  }",
+    ]);
+    const parsed = await parseC4mlDraft(source, { file: "invalid-intent-layout.c4ml" });
+
+    expect(parsed.valid).toBe(false);
+    expect(parsed.diagnostics.map(({ code }) => code)).toEqual([
+      "C4ML-LANG-122",
+      "C4ML-LANG-123",
+      "C4ML-LANG-124",
+    ]);
   });
 
   it("lowers view-local corridors, ports, guided routes, fixed routes, and label placement", async () => {
@@ -654,8 +734,8 @@ describe("C4ML draft-1 completion contract", () => {
     const source = (await helloContextSource()).replace(
       [
         "    pin garden-pulse {",
-        "      x = 520",
-        "      y = 120",
+        "      x = 520du",
+        "      y = 120du",
         "      strength = hard",
         "    }",
       ].join("\n"),
@@ -670,6 +750,28 @@ describe("C4ML draft-1 completion contract", () => {
         .filter(({ kind }) => kind === "property")
         .map(({ label }) => label),
     ).toEqual(["strength", "x", "y"]);
+  });
+
+  it("offers only adjustment properties in an adjust block", async () => {
+    const source = (await helloContextSource()).replace(
+      [
+        "    adjust sensor-post {",
+        "      relative-to = automatic",
+        "      move = left small",
+        "      strength = soft",
+        "    }",
+      ].join("\n"),
+      ["    adjust sensor-post {", "      ", "    }"].join("\n"),
+    );
+    const offset = source.indexOf("    adjust sensor-post {") +
+      "    adjust sensor-post {\n      ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(
+      result.candidates
+        .filter(({ kind }) => kind === "property")
+        .map(({ label }) => label),
+    ).toEqual(["move", "move-x", "move-y", "relative-to", "strength"]);
   });
 
   it("limits route-block properties to the active routing context", async () => {
@@ -1472,7 +1574,7 @@ describe("draft help context", () => {
     expect(
       helpContextAtC4mlDraft(
         source,
-        source.indexOf("constraint left-of") + 8,
+        source.indexOf("place caretaker") + 4,
       ).topicId,
     ).toBe("layout");
     expect(

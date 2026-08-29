@@ -37,7 +37,8 @@ Implemented and automatically validated:
   absolute and relative waypoints, locked segments, hard or soft avoidance,
   named corridors and lanes, selected label segments, and label offsets;
 - an engine-neutral placement stage that combines automatic layout with hard
-  or soft relative position, center-axis alignment, and individual pin rules,
+  or soft semantic placement, anchored multi-element alignment, ordered
+  equal-gap distribution, relative adjustment, and exact diagram-unit pins,
   including multi-location hard-conflict diagnostics;
 - explicit Port, Route, and Arrowhead objects through the scene graph, using
   consistent `north`, `east`, `south`, and `west` attachment names;
@@ -97,9 +98,10 @@ Implemented and automatically validated:
   fixed policies, cardinal Ports, relative anchors, locked segments, hard and
   soft avoidance, named corridors and exclusive lanes, complete fixed point
   lists, and label placement;
-- executable, view-local `draft-1` placement controls for relative
-  above/below/left/right position, center-axis alignment, and single-element
-  pinning while the remaining layout stays automatic;
+- executable, view-local `draft-1` placement controls for semantic relative
+  position, anchored set alignment, ordered equal-gap distribution,
+  automatic-relative adjustment, and exact `du` pinning while the remaining
+  layout stays automatic;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   browser-worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
@@ -157,8 +159,9 @@ presentation, layout, scene construction, and output rendering. A model element
 retains the same stable identity when it appears in different diagrams.
 
 Automatic layout and routing are starting points rather than irreversible
-results. The current draft source can already apply relative placement,
-center-axis alignment, one-element pins, view-local Ports, relative waypoints,
+results. The current draft source can already apply intent placement, anchored
+set alignment, ordered distribution, automatic-relative adjustment, exact pins,
+view-local Ports, relative waypoints,
 avoidance regions, locked segments, named corridors and exclusive lanes, label
 placement, or a fully fixed route. None of these controls creates a fake
 architecture relationship.
@@ -238,6 +241,7 @@ Its command names and current static-language scope remain provisional.
   current contributor commands, and demo walkthroughs
 - [SPEC.md](SPEC.md) — normative product behavior and architectural boundaries
 - [TESTING.md](TESTING.md) — required validation evidence
+- [TODO.md](TODO.md) — ordered implementation roadmap and prerequisite gates
 - [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licensing, and
   replacement boundaries
 - [AGENTS.md](AGENTS.md) — repository workflow and project invariants

@@ -171,7 +171,7 @@ describe("compiler worker runtime", () => {
           }),
           relatedSources: [
             expect.objectContaining({
-              start: expect.objectContaining({ line: 82, column: 4 }),
+              start: expect.objectContaining({ line: 89, column: 4 }),
             }),
           ],
           waypoints: [

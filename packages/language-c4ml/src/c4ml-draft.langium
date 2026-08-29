@@ -269,6 +269,10 @@ InteractionRelationshipProperty:
 LayoutBlock:
     'layout' '{'
         properties+=LayoutProperty*
+        places+=PlacementPlaceDeclaration*
+        alignments+=PlacementAlignDeclaration*
+        distributions+=PlacementDistributeDeclaration*
+        adjustments+=PlacementAdjustDeclaration*
         constraints+=PlacementConstraintDeclaration*
         pins+=PlacementPinDeclaration*
         avoidanceRegions+=RouteAvoidanceDeclaration*
@@ -306,6 +310,69 @@ PlacementStrengthProperty:
 PlacementGapProperty:
     'gap' '=' value=INT;
 
+PlacementPlaceDeclaration:
+    'place' subject=[ElementDeclaration:ID]
+    relation=('above' | 'below' | 'left-of' | 'right-of')
+    target=[ElementDeclaration:ID] '{'
+        properties+=PlacementPlaceProperty*
+    '}';
+
+PlacementPlaceProperty:
+    PlacementStrengthProperty | PlacementIntentGapProperty;
+
+PlacementIntentGapProperty:
+    'gap' '=' value=PlacementDistance;
+
+PlacementAlignDeclaration:
+    'align' alignment=('bottom' | 'center-x' | 'center-y' | 'left' | 'right' | 'top')
+    '[' items+=[ElementDeclaration:ID] (',' items+=[ElementDeclaration:ID])* ']'
+    '{' properties+=PlacementAlignProperty* '}';
+
+PlacementAlignProperty:
+    PlacementAnchorProperty | PlacementStrengthProperty;
+
+PlacementAnchorProperty:
+    'anchor' '=' value=[ElementDeclaration:ID];
+
+PlacementDistributeDeclaration:
+    'distribute' orientation=('horizontal' | 'vertical')
+    '[' items+=[ElementDeclaration:ID] (',' items+=[ElementDeclaration:ID])* ']'
+    '{' properties+=PlacementDistributeProperty* '}';
+
+PlacementDistributeProperty:
+    PlacementIntentGapProperty | PlacementStrengthProperty;
+
+PlacementAdjustDeclaration:
+    'adjust' target=[ElementDeclaration:ID] '{'
+        properties+=PlacementAdjustProperty*
+    '}';
+
+PlacementAdjustProperty:
+    PlacementRelativeToProperty
+    | PlacementMoveProperty
+    | PlacementMoveXProperty
+    | PlacementMoveYProperty
+    | PlacementStrengthProperty;
+
+PlacementRelativeToProperty:
+    'relative-to' '=' value='automatic';
+
+PlacementMoveProperty:
+    'move' '=' direction=('down' | 'left' | 'right' | 'up') value=PlacementDistance;
+
+PlacementMoveXProperty:
+    'move-x' '=' value=SignedPlacementDistance;
+
+PlacementMoveYProperty:
+    'move-y' '=' value=SignedPlacementDistance;
+
+PlacementDistance:
+    preset=('tiny' | 'small' | 'normal' | 'large')
+    | amount=INT unit=('step' | 'du');
+
+SignedPlacementDistance:
+    negative?='-' value=PlacementDistance;
+
 PlacementPinDeclaration:
     'pin' target=[ElementDeclaration:ID] '{'
         properties+=PlacementPinProperty*
@@ -315,10 +382,10 @@ PlacementPinProperty:
     PlacementXProperty | PlacementYProperty | PlacementStrengthProperty;
 
 PlacementXProperty:
-    'x' '=' value=INT;
+    'x' '=' value=INT 'du';
 
 PlacementYProperty:
-    'y' '=' value=INT;
+    'y' '=' value=INT 'du';
 
 RouteAvoidanceDeclaration:
     'avoidance' name=ID '{'

@@ -273,12 +273,13 @@ view signal-context {
   layout {
     flow = right
 
-    constraint left-of(grower, signal-garden) {
+    place grower left-of signal-garden {
       strength = hard
-      gap = 120
+      gap = large
     }
 
-    constraint align-center-y(grower, signal-garden) {
+    align center-y [grower, signal-garden] {
+      anchor = signal-garden
       strength = soft
     }
   }

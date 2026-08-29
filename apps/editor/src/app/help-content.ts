@@ -357,8 +357,8 @@ code priority-rule inside scheduler {
     ),
     paragraphs: [
       text(
-        "Layout belongs to a view and never changes architecture semantics. The executable slice supports four flow directions, relative above/below/left/right placement, center-axis alignment, and individual pins.",
-        "Layout gehört zu einer Ansicht und verändert niemals die Architektursemantik. Der ausführbare Teil unterstützt vier Flussrichtungen, relative Platzierung oberhalb, unterhalb, links und rechts, Achsenausrichtung sowie einzelne Pins.",
+        "Layout belongs to a view and never changes architecture semantics. Start with place, align, and distribute; use adjust for a small correction from automatic layout, and pin exact diagram coordinates only as an escape hatch.",
+        "Layout gehört zu einer Ansicht und verändert niemals die Architektursemantik. Beginne mit place, align und distribute; nutze adjust für eine kleine Korrektur am automatischen Layout und pin für exakte Diagrammkoordinaten nur als Ausweg.",
       ),
       text(
         "Hard rules must be satisfied or compilation fails with every conflicting source location. Soft preferences may be relaxed, but only with an explicit warning.",
@@ -367,26 +367,37 @@ code priority-rule inside scheduler {
     ],
     points: [
       text("Use right or down for common reading directions.", "Verwende right oder down für übliche Leserichtungen."),
-      text("constraint positions elements without inventing an architecture relationship.", "constraint positioniert Elemente, ohne eine Architekturbeziehung zu erfinden."),
-      text("pin fixes one element while the rest remains automatic.", "pin fixiert ein Element, während der Rest automatisch bleibt."),
-      text("Source declaration order has no layout meaning.", "Die Deklarationsreihenfolge hat keine Layoutbedeutung."),
+      text("Named gaps tiny, small, normal, and large scale consistently with the diagram.", "Benannte Abstände tiny, small, normal und large skalieren einheitlich mit dem Diagramm."),
+      text("One step is 16 device-independent diagram units; du is the exact escape-hatch unit.", "Ein step entspricht 16 geräteunabhängigen Diagrammeinheiten; du ist die exakte Ausweg-Einheit."),
+      text("Source order matters only inside an explicitly ordered distribute list.", "Die Quellreihenfolge ist nur innerhalb einer ausdrücklich geordneten distribute-Liste relevant."),
     ],
     exampleTitle: text("Automatic flow with local control", "Automatischer Fluss mit lokaler Kontrolle"),
     example: `layout {
   flow = right
 
-  constraint left-of(caretaker, garden-pulse) {
+  place caretaker left-of garden-pulse {
     strength = hard
-    gap = 120
+    gap = normal
+  }
+
+  align center-y [caretaker, garden-pulse] {
+    anchor = garden-pulse
+    strength = soft
+  }
+
+  adjust caretaker {
+    relative-to = automatic
+    move = up small
+    strength = soft
   }
 
   pin garden-pulse {
-    x = 520
-    y = 120
+    x = 520du
+    y = 120du
     strength = hard
   }
 }`,
-    keywords: text("layout flow constraint alignment pin hard soft", "layout fluss constraint ausrichtung pin hart weich"),
+    keywords: text("layout flow place align distribute adjust step du pin hard soft", "layout fluss platzieren ausrichten verteilen verschieben step du pin hart weich"),
   },
   {
     id: "routes",

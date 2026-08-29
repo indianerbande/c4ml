@@ -16,8 +16,12 @@ import type {
   InfrastructureNodeDeclaration,
   InteractionDeclaration,
   LayoutBlock,
+  PlacementAdjustDeclaration,
+  PlacementAlignDeclaration,
   PlacementConstraintDeclaration,
+  PlacementDistributeDeclaration,
   PlacementPinDeclaration,
+  PlacementPlaceDeclaration,
   RelationshipDeclaration,
   RouteAvoidanceDeclaration,
   RouteCorridorDeclaration,
@@ -33,8 +37,12 @@ import {
   isInfrastructureNodeDeclaration,
   isInteractionDeclaration,
   isLayoutBlock,
+  isPlacementAdjustDeclaration,
+  isPlacementAlignDeclaration,
   isPlacementConstraintDeclaration,
+  isPlacementDistributeDeclaration,
   isPlacementPinDeclaration,
+  isPlacementPlaceDeclaration,
   isRelationshipDeclaration,
   isRouteAvoidanceDeclaration,
   isRouteCorridorDeclaration,
@@ -78,6 +86,7 @@ export interface C4mlCompletionResult {
 
 const propertyLabels = new Set([
   "around",
+  "anchor",
   "avoid",
   "audience",
   "bounds",
@@ -105,9 +114,13 @@ const propertyLabels = new Set([
   "padding",
   "parallel",
   "name",
+  "move",
+  "move-x",
+  "move-y",
   "purpose",
   "responsibility",
   "relation",
+  "relative-to",
   "scope",
   "systems",
   "technology",
@@ -129,6 +142,9 @@ const propertyLabels = new Set([
 const valueLabels = new Set([
   "default",
   "automatic",
+  "bottom",
+  "center-x",
+  "center-y",
   "direct",
   "down",
   "east",
@@ -146,14 +162,19 @@ const valueLabels = new Set([
   "horizontal",
   "internal",
   "left",
+  "large",
   "north",
   "orthogonal",
   "right",
+  "normal",
   "sequence",
   "system-context",
   "system-landscape",
   "south",
   "soft",
+  "small",
+  "tiny",
+  "top",
   "true",
   "up",
   "vertical",
@@ -173,7 +194,7 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   display: ["ViewDisplayProperty"],
   environment: ["ViewEnvironmentProperty"],
   flow: ["FlowProperty"],
-  gap: ["PlacementGapProperty"],
+  gap: ["PlacementGapProperty", "PlacementIntentGapProperty"],
   from: [
     "RelationshipFromProperty",
     "InteractionFromProperty",
@@ -197,12 +218,17 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   padding: ["AvoidancePaddingProperty"],
   parallel: ["InteractionParallelProperty"],
   name: ["DisplayNameProperty"],
+  move: ["PlacementMoveProperty"],
+  "move-x": ["PlacementMoveXProperty"],
+  "move-y": ["PlacementMoveYProperty"],
   purpose: ["ViewPurposeProperty"],
   responsibility: ["ResponsibilityProperty"],
   relation: [
     "InteractionRelationshipProperty",
     "DeploymentStaticRelationshipProperty",
   ],
+  anchor: ["PlacementAnchorProperty"],
+  "relative-to": ["PlacementRelativeToProperty"],
   scope: ["ViewScopeProperty"],
   systems: ["ViewSystemsProperty"],
   technology: ["TechnologyProperty"],
@@ -226,6 +252,9 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
 };
 
 const documentationByLabel: Readonly<Record<string, string>> = {
+  adjust: "Moves one element by a declared offset from its automatic candidate position.",
+  align: "Aligns two or more listed elements against one explicit anchor.",
+  anchor: "Selects the listed element whose alignment line remains the reference.",
   around: "Anchors an avoidance region to the current bounds of a visible architecture element.",
   avoid: "Applies named hard or soft avoidance regions to this guided route.",
   avoidance: "Declares a reusable view-local area that selected routes should not cross.",
@@ -253,7 +282,8 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   fixed: "Uses and validates the complete authored route without replacing it.",
   environment: "Selects the Deployment Environment shown by this view.",
   flow: "Chooses the primary automatic layout direction for this view.",
-  gap: "Sets the minimum space preserved by a relative placement constraint.",
+  distribute: "Places three or more explicitly ordered elements with equal gaps.",
+  gap: "Sets a named, step-based, or exact diagram-space gap.",
   from: "Selects the source element of this directed relationship.",
   generated: "Generates the diagram legend from the effective notation.",
   guided: "Keeps authored route controls while the router completes the remaining path.",
@@ -265,6 +295,8 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   layout: "Opens view-local layout preferences without changing architecture semantics.",
   constraint: "Declares a view-local positional rule without creating an architecture relationship.",
   pin: "Fixes one visible element at an explicit view position while the rest stays automatic.",
+  place: "Places one visible element above, below, left of, or right of another.",
+  "relative-to": "Declares automatic candidate geometry as the stable adjustment baseline.",
   left: "Arranges the view from east to west.",
   legend: "Declares how this view explains its notation.",
   language: "Declares the implementation language of a Code Element.",
@@ -275,6 +307,9 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   "lane-gap": "Sets the distance between adjacent corridor lanes.",
   lanes: "Declares how many exclusive lanes this corridor provides.",
   model: "Opens the shared semantic architecture model.",
+  move: "Applies one directional offset from automatic candidate geometry.",
+  "move-x": "Applies a signed horizontal step or diagram-unit offset from automatic geometry.",
+  "move-y": "Applies a signed vertical step or diagram-unit offset from automatic geometry.",
   name: "Declares the human-readable display name.",
   north: "Attaches this relationship appearance to the north side.",
   orientation: "Selects whether corridor lanes run horizontally or vertically.",
@@ -385,8 +420,12 @@ type CompletionOwner =
   | InfrastructureNodeDeclaration
   | InteractionDeclaration
   | LayoutBlock
+  | PlacementAdjustDeclaration
+  | PlacementAlignDeclaration
   | PlacementConstraintDeclaration
+  | PlacementDistributeDeclaration
   | PlacementPinDeclaration
+  | PlacementPlaceDeclaration
   | RelationshipDeclaration
   | RouteAvoidanceDeclaration
   | RouteCorridorDeclaration
@@ -537,8 +576,12 @@ function isCompletionOwner(node: AstNode): node is Exclude<CompletionOwner, unde
     isEnvironmentDeclaration(node) ||
     isInfrastructureNodeDeclaration(node) ||
     isInteractionDeclaration(node) ||
+    isPlacementAdjustDeclaration(node) ||
+    isPlacementAlignDeclaration(node) ||
     isPlacementConstraintDeclaration(node) ||
+    isPlacementDistributeDeclaration(node) ||
     isPlacementPinDeclaration(node) ||
+    isPlacementPlaceDeclaration(node) ||
     isRelationshipDeclaration(node) ||
     isRouteAvoidanceDeclaration(node) ||
     isRouteCorridorDeclaration(node) ||

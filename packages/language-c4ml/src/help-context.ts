@@ -15,8 +15,12 @@ import {
   isLayoutBlock,
   isModelBlock,
   isPersonDeclaration,
+  isPlacementAdjustDeclaration,
+  isPlacementAlignDeclaration,
   isPlacementConstraintDeclaration,
+  isPlacementDistributeDeclaration,
   isPlacementPinDeclaration,
+  isPlacementPlaceDeclaration,
   isRelationshipDeclaration,
   isRelationsBlock,
   isRouteCorridorDeclaration,
@@ -99,7 +103,11 @@ function topicForNode(node: AstNode): C4mlHelpTopicId | undefined {
   }
   if (
     isPlacementConstraintDeclaration(node) ||
-    isPlacementPinDeclaration(node)
+    isPlacementPinDeclaration(node) ||
+    isPlacementPlaceDeclaration(node) ||
+    isPlacementAlignDeclaration(node) ||
+    isPlacementDistributeDeclaration(node) ||
+    isPlacementAdjustDeclaration(node)
   ) {
     return "layout";
   }

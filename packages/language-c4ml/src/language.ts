@@ -6,6 +6,8 @@ import {
 import {
   createDiagnostic,
   hasErrors,
+  placementGapDu,
+  placementStepDu,
   resolveArchitectureViews,
   sortDiagnostics,
   type ArchitectureModel,
@@ -64,6 +66,18 @@ import type {
   InfrastructureNodeDeclaration,
   LanguageProperty,
   PlacementConstraintDeclaration,
+  PlacementAdjustDeclaration,
+  PlacementAlignDeclaration,
+  PlacementAnchorProperty,
+  PlacementDistance,
+  PlacementDistributeDeclaration,
+  PlacementIntentGapProperty,
+  PlacementMoveProperty,
+  PlacementMoveXProperty,
+  PlacementMoveYProperty,
+  PlacementPlaceDeclaration,
+  PlacementRelativeToProperty,
+  SignedPlacementDistance,
   PlacementGapProperty,
   PlacementPinDeclaration,
   PlacementStrengthProperty,
@@ -938,6 +952,18 @@ function lowerViewPlacement(
     return undefined;
   }
   const constraints = [
+    ...layout.places.map((place) =>
+      lowerPlacementPlace(place, file, diagnostics),
+    ),
+    ...layout.alignments.map((alignment) =>
+      lowerPlacementAlign(alignment, file, diagnostics),
+    ),
+    ...layout.distributions.map((distribution) =>
+      lowerPlacementDistribution(distribution, file, diagnostics),
+    ),
+    ...layout.adjustments.map((adjustment) =>
+      lowerPlacementAdjustment(adjustment, file, diagnostics),
+    ),
     ...layout.constraints.map((constraint) =>
       lowerPlacementConstraint(constraint, file, diagnostics),
     ),
@@ -945,7 +971,14 @@ function lowerViewPlacement(
   ].filter((constraint): constraint is PlacementConstraint => constraint !== undefined);
 
   diagnoseDuplicateDeclarations(
-    [...layout.constraints, ...layout.pins],
+    [
+      ...layout.places,
+      ...layout.alignments,
+      ...layout.distributions,
+      ...layout.adjustments,
+      ...layout.constraints,
+      ...layout.pins,
+    ],
     placementDeclarationId,
     "placement control",
     "C4ML-LANG-120",
@@ -953,6 +986,228 @@ function lowerViewPlacement(
     diagnostics,
   );
   return constraints.length === 0 ? undefined : { constraints };
+}
+
+function lowerPlacementPlace(
+  declaration: PlacementPlaceDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const gap = requiredProperty<PlacementIntentGapProperty>(
+    declaration.properties,
+    "PlacementIntentGapProperty",
+    "gap",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const subjectId = declaration.subject.ref?.name;
+  const targetId = declaration.target.ref?.name;
+  if (strength === undefined || gap === undefined || subjectId === undefined || targetId === undefined) {
+    return undefined;
+  }
+  return {
+    id: placementDeclarationId(declaration),
+    kind: "relative",
+    relation: declaration.relation,
+    subjectId,
+    targetId,
+    gap: placementDistanceDu(gap.value),
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function lowerPlacementAlign(
+  declaration: PlacementAlignDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const anchor = requiredProperty<PlacementAnchorProperty>(
+    declaration.properties,
+    "PlacementAnchorProperty",
+    "anchor",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const nodeIds = declaration.items.map((item) => item.ref?.name);
+  const anchorId = anchor?.value.ref?.name;
+  if (strength === undefined || anchorId === undefined || nodeIds.some((id) => id === undefined)) {
+    return undefined;
+  }
+  const ids = nodeIds as string[];
+  if (ids.length < 2 || new Set(ids).size !== ids.length || !ids.includes(anchorId)) {
+    diagnostics.push(createDiagnostic({
+      code: "C4ML-LANG-122",
+      severity: "error",
+      message: `Alignment "${placementDeclarationId(declaration)}" requires at least two unique items and an anchor from that list.`,
+      source: sourceReference(declaration, file),
+      correction: "List each item once and select one listed item as anchor.",
+    }));
+    return undefined;
+  }
+  return {
+    id: placementDeclarationId(declaration),
+    kind: "align",
+    alignment: declaration.alignment,
+    nodeIds: ids,
+    anchorId,
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function lowerPlacementDistribution(
+  declaration: PlacementDistributeDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const gap = requiredProperty<PlacementIntentGapProperty>(
+    declaration.properties,
+    "PlacementIntentGapProperty",
+    "gap",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const nodeIds = declaration.items.map((item) => item.ref?.name);
+  if (strength === undefined || gap === undefined || nodeIds.some((id) => id === undefined)) {
+    return undefined;
+  }
+  const ids = nodeIds as string[];
+  if (ids.length < 3 || new Set(ids).size !== ids.length) {
+    diagnostics.push(createDiagnostic({
+      code: "C4ML-LANG-123",
+      severity: "error",
+      message: `Distribution "${placementDeclarationId(declaration)}" requires at least three unique ordered items.`,
+      source: sourceReference(declaration, file),
+      correction: "List three or more items once each, in the intended order.",
+    }));
+    return undefined;
+  }
+  return {
+    id: placementDeclarationId(declaration),
+    kind: "distribute",
+    orientation: declaration.orientation,
+    nodeIds: ids,
+    gap: placementDistanceDu(gap.value),
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function lowerPlacementAdjustment(
+  declaration: PlacementAdjustDeclaration,
+  file: string,
+  diagnostics: Diagnostic[],
+): PlacementConstraint | undefined {
+  const strength = requiredProperty<PlacementStrengthProperty>(
+    declaration.properties,
+    "PlacementStrengthProperty",
+    "strength",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const relativeTo = requiredProperty<PlacementRelativeToProperty>(
+    declaration.properties,
+    "PlacementRelativeToProperty",
+    "relative-to",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const move = optionalProperty<PlacementMoveProperty>(
+    declaration.properties,
+    "PlacementMoveProperty",
+    "move",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const moveX = optionalProperty<PlacementMoveXProperty>(
+    declaration.properties,
+    "PlacementMoveXProperty",
+    "move-x",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const moveY = optionalProperty<PlacementMoveYProperty>(
+    declaration.properties,
+    "PlacementMoveYProperty",
+    "move-y",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const targetId = declaration.target.ref?.name;
+  if (strength === undefined || relativeTo === undefined || targetId === undefined) return undefined;
+  if ((move === undefined) === (moveX === undefined && moveY === undefined)) {
+    diagnostics.push(createDiagnostic({
+      code: "C4ML-LANG-124",
+      severity: "error",
+      message: `Adjustment "${placementDeclarationId(declaration)}" requires either move or move-x/move-y.`,
+      source: sourceReference(declaration, file),
+      correction: "Use one directional move, or one or both axis offsets.",
+    }));
+    return undefined;
+  }
+  let offsetX = moveX === undefined ? undefined : signedPlacementDistanceDu(moveX.value);
+  let offsetY = moveY === undefined ? undefined : signedPlacementDistanceDu(moveY.value);
+  if (move !== undefined) {
+    const amount = placementDistanceDu(move.value);
+    if (move.direction === "left") offsetX = -amount;
+    if (move.direction === "right") offsetX = amount;
+    if (move.direction === "up") offsetY = -amount;
+    if (move.direction === "down") offsetY = amount;
+  }
+  return {
+    id: placementDeclarationId(declaration),
+    kind: "adjust",
+    targetId,
+    relativeTo: relativeTo.value,
+    ...(offsetX === undefined ? {} : { offsetX }),
+    ...(offsetY === undefined ? {} : { offsetY }),
+    strength: strength.value,
+    source: sourceReference(declaration, file),
+  };
+}
+
+function placementDistanceDu(value: PlacementDistance): number {
+  return value.preset === undefined
+    ? value.amount! * (value.unit === "step" ? placementStepDu : 1)
+    : placementGapDu[value.preset];
+}
+
+function signedPlacementDistanceDu(value: SignedPlacementDistance): number {
+  const amount = placementDistanceDu(value.value);
+  return value.negative ? -amount : amount;
 }
 
 function lowerPlacementConstraint(
@@ -1083,10 +1338,25 @@ function lowerPlacementPin(
 }
 
 function placementDeclarationId(
-  declaration: PlacementConstraintDeclaration | PlacementPinDeclaration,
+  declaration:
+    | PlacementAdjustDeclaration
+    | PlacementAlignDeclaration
+    | PlacementConstraintDeclaration
+    | PlacementDistributeDeclaration
+    | PlacementPinDeclaration
+    | PlacementPlaceDeclaration,
 ): string {
+  if ("alignment" in declaration) {
+    return `align:${declaration.alignment}:${declaration.items.map((item) => item.$refText).join(":")}`;
+  }
+  if ("orientation" in declaration) {
+    return `distribute:${declaration.orientation}:${declaration.items.map((item) => item.$refText).join(":")}`;
+  }
   if ("relation" in declaration) {
     return `${declaration.relation}:${declaration.subject.$refText}:${declaration.target.$refText}`;
+  }
+  if (declaration.$type === "PlacementAdjustDeclaration") {
+    return `adjust:${declaration.target.$refText}`;
   }
   return `pin:${declaration.target.$refText}`;
 }

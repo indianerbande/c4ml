@@ -47,23 +47,30 @@ view garden-pulse-context {
   layout {
     flow = right
 
-    constraint left-of(caretaker, garden-pulse) {
+    place caretaker left-of garden-pulse {
       strength = hard
-      gap = 120
+      gap = large
     }
 
-    constraint below(sensor-post, garden-pulse) {
+    place sensor-post below garden-pulse {
       strength = hard
-      gap = 150
+      gap = large
     }
 
-    constraint align-center-y(caretaker, garden-pulse) {
+    align center-y [caretaker, garden-pulse] {
+      anchor = garden-pulse
+      strength = soft
+    }
+
+    adjust sensor-post {
+      relative-to = automatic
+      move = left small
       strength = soft
     }
 
     pin garden-pulse {
-      x = 520
-      y = 120
+      x = 520du
+      y = 120du
       strength = hard
     }
 

@@ -111,8 +111,10 @@ resvg-js Node adapter in `packages/render-resvg`. Automatic geometry is
 provided by the accepted,
 replaceable ELK.js adapter in both Node.js frontends and the browser compiler
 worker. A compiler-owned placement stage now applies hard or soft relative
-above/below/left/right rules, center-axis alignment, and individual pins to the
-candidate geometry before routing. It preserves candidate and final geometry,
+above/below/left/right intent, anchored multi-element edge/axis alignment,
+ordered equal-gap distribution, adjustment from automatic geometry, and
+individual exact pins to the candidate geometry before routing. Named gaps,
+layout steps, and diagram units resolve deterministically. It preserves candidate and final geometry,
 reports relaxed soft rules, and fails hard conflicts with all involved source
 locations. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
@@ -120,8 +122,9 @@ placement, ELK compound geometry, SVG, and PNG. The separate experimental
 language package can parse and lower the original `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices into these compiler contracts. The first
-executable view-local placement slice lowers relative position, center-axis
-alignment, and pin controls without creating semantic Relationships. The first
+executable view-local placement slice lowers semantic placement, anchored set
+alignment, ordered distribution, automatic-relative adjustment, and exact pin
+controls without creating semantic Relationships. The first
 executable view-local route slice lowers static Relationship controls for
 automatic, guided, and fixed policies, cardinal Ports, absolute waypoints,
 relative Port/element/canvas anchors, ordered locked segments, hard and soft
