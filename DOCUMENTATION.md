@@ -349,8 +349,12 @@ not available. The executable original
 In the desktop application, choose **File → Open Project…** or use
 `Cmd/Ctrl+Alt+O`. The Files area and source tab strip then show every listed
 source. Compilation, diagnostics, diagram navigation, and reference suggestions
-use the complete in-memory project. Save currently writes the active tab; the
-window remains marked as modified while any project source is unsaved.
+use the complete in-memory project. **Save** writes the active tab. **Save All**
+(`Cmd/Ctrl+Alt+S`) writes every modified project source; each successful file is
+marked clean even if a later save fails or is canceled. The window remains
+marked as modified while any project source is unsaved. Switching source tabs
+preserves the independent undo history, cursor, and scroll position of every
+document.
 
 ## 4. Declaring the architecture model
 

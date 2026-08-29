@@ -74,11 +74,12 @@ Implemented and automatically validated:
   state, plus independent Compile, Language, and Authoring worker contract
   modules behind one combined transport boundary;
 - an Electron 44 desktop shell with a narrow typed preload bridge, native
-  Open/Save/Save As, normal desktop menus and shortcuts, document titles and
-  dirty-state close protection;
+  Open/Save/Save All/Save As, normal desktop menus and shortcuts, document
+  titles and dirty-state close protection;
 - an extensible local settings area with live English/German interface copy,
   synchronized C4ML-owned native controls, System/Light/Dark workbench schemes,
-  and persisted source-editor font family and size;
+  eight quiet color families for sixteen light/dark combinations, and persisted
+  source-editor font family and size;
 - a bounded local workbench session that restores only presentation state and
   never source, document handles, or filesystem paths;
 - hardened local-only application loading with renderer sandboxing, no Node.js
@@ -90,8 +91,11 @@ Implemented and automatically validated:
   worker's context-valid completions, applies exact source edits, displays
   inline diagnostic markers, supports keyboard undo/redo, and navigates from
   diagnostics to source;
-- lexer-owned C4ML syntax highlighting presented through Monaco semantic
-  tokens without a second editor grammar;
+- lexer-owned C4ML syntax highlighting that distinguishes declarations,
+  properties, predefined values, references, literals, operators, and comments,
+  presented through Monaco semantic tokens without a second editor grammar,
+  with five C4ML-owned light/dark syntax profiles from minimal to vivid,
+  high-contrast, and color-safe;
 - bidirectional navigation between source declarations and source-mapped
   preview nodes, with a preview-only selection highlight that does not alter
   exported SVG;
