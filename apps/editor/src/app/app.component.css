@@ -228,15 +228,42 @@ kbd {
   content: "";
 }
 
-.activity-bar button > span {
-  display: grid;
-  width: 26px;
-  height: 26px;
-  place-items: center;
-  border: 1px solid currentColor;
-  border-radius: 8px 8px 8px 3px;
-  font-size: 1rem;
-  font-weight: 700;
+.activity-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+.activity-icon[data-symbol="folder-open"] {
+  mask-image: url("/icons/material-symbols/folder_open.svg");
+  -webkit-mask-image: url("/icons/material-symbols/folder_open.svg");
+}
+
+.activity-icon[data-symbol="schema"] {
+  mask-image: url("/icons/material-symbols/schema.svg");
+  -webkit-mask-image: url("/icons/material-symbols/schema.svg");
+}
+
+.activity-icon[data-symbol="download"] {
+  mask-image: url("/icons/material-symbols/download.svg");
+  -webkit-mask-image: url("/icons/material-symbols/download.svg");
+}
+
+.activity-icon[data-symbol="menu-book"] {
+  mask-image: url("/icons/material-symbols/menu_book.svg");
+  -webkit-mask-image: url("/icons/material-symbols/menu_book.svg");
+}
+
+.activity-icon[data-symbol="settings"] {
+  mask-image: url("/icons/material-symbols/settings.svg");
+  -webkit-mask-image: url("/icons/material-symbols/settings.svg");
 }
 
 .activity-bar button:hover,

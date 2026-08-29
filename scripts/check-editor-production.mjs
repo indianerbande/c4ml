@@ -27,6 +27,12 @@ const installedEditorMonoRoot = join(
   "@c4ml",
   "font-editor-mono",
 );
+const materialSymbolsRoot = join(
+  editorRoot,
+  "src",
+  "assets",
+  "material-symbols",
+);
 const editorBuildRoot = join(repositoryRoot, "build", "editor");
 
 const editorManifest = await readJson(join(editorRoot, "package.json"));
@@ -295,6 +301,68 @@ for (const filename of [
   );
 }
 
+const reviewedMaterialSymbolAssets = {
+  "download.svg":
+    "13cbeb084e6056eeaf439eacad956f70a6104bf29c4501066974a25555136816",
+  "folder_open.svg":
+    "6d10551fa941f384f2dd6f6b63ad97e2c06627751a63cc626a16c8ffcf5d4009",
+  "menu_book.svg":
+    "92db94b810abc5a7b62650e56ef6fabae082623d96fd4416deee132c2840f2ba",
+  "schema.svg":
+    "60b295a4f6ef8dc90e02660418048986bb097187afb42fd401b20dcff026e588",
+  "settings.svg":
+    "24e25b8b7cd3de339ac83fbdcfa710e32cbb3b9fb16fea840362fe56e5680c97",
+};
+for (const [filename, expectedHash] of Object.entries(
+  reviewedMaterialSymbolAssets,
+)) {
+  const sourceAsset = join(materialSymbolsRoot, filename);
+  const packagedAsset = join(
+    editorBuildRoot,
+    "browser",
+    "icons",
+    "material-symbols",
+    filename,
+  );
+  await assertHash(
+    sourceAsset,
+    expectedHash,
+    `Reviewed Material Symbol changed: ${filename}`,
+  );
+  await assertSameFile(
+    sourceAsset,
+    packagedAsset,
+    `Editor packaging changed Material Symbol ${filename}`,
+  );
+}
+await assertSameFile(
+  join(materialSymbolsRoot, "SOURCE.md"),
+  join(
+    editorBuildRoot,
+    "browser",
+    "third-party",
+    "material-symbols",
+    "SOURCE.md",
+  ),
+  "Material Symbols source notice must be copied unchanged",
+);
+await assertSameFile(
+  join(materialSymbolsRoot, "LICENSE"),
+  join(
+    editorBuildRoot,
+    "browser",
+    "third-party",
+    "material-symbols",
+    "LICENSE",
+  ),
+  "Material Symbols Apache-2.0 license must be present in the editor artifact",
+);
+await assertSameFile(
+  join(repositoryRoot, "LICENSE"),
+  join(materialSymbolsRoot, "LICENSE"),
+  "Material Symbols license copy must remain the unmodified Apache-2.0 text",
+);
+
 const generatedLicenseInventory = await readFile(
   join(editorBuildRoot, "3rdpartylicenses.txt"),
   "utf8",
@@ -316,7 +384,7 @@ for (const packageName of [
 }
 
 console.log(
-  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts).`,
+  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts, five Material Symbols).`,
 );
 
 async function readJson(path) {

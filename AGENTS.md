@@ -38,6 +38,10 @@ palette. A versioned session contract persists only safe UI presentation state
 (active activity area, bottom-panel state, zoom, and route-debug visibility),
 never source, document handles, or filesystem paths. It also has an implemented
 version-one local settings contract and category-based settings panel.
+The activity bar uses five locally packaged, hash-pinned Material Symbols
+Outlined SVGs for Files, Diagrams, Output, Help, and Settings. They remain
+decorative presentation assets inside localized, accessibly named buttons and
+never enter diagrams or exports.
 English/German interface language, System/Light/Dark brightness, eight quiet
 workbench color families,
 five C4ML-owned source syntax profiles, source-editor font family, and
