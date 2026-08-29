@@ -269,6 +269,13 @@ InteractionRelationshipProperty:
 LayoutBlock:
     'layout' '{'
         properties+=LayoutProperty*
+        places+=PlacementPlaceDeclaration*
+        alignments+=PlacementAlignDeclaration*
+        distributions+=PlacementDistributeDeclaration*
+        adjustments+=PlacementAdjustDeclaration*
+        constraints+=PlacementConstraintDeclaration*
+        pins+=PlacementPinDeclaration*
+        avoidanceRegions+=RouteAvoidanceDeclaration*
         corridors+=RouteCorridorDeclaration*
         routes+=RouteDeclaration*
     '}';
@@ -278,6 +285,130 @@ LayoutProperty:
 
 FlowProperty:
     'flow' '=' value=('down' | 'left' | 'right' | 'up');
+
+PlacementConstraintDeclaration:
+    'constraint'
+    relation=(
+        'above'
+        | 'align-center-x'
+        | 'align-center-y'
+        | 'below'
+        | 'left-of'
+        | 'right-of'
+    )
+    '(' subject=[ElementDeclaration:ID] ',' target=[ElementDeclaration:ID] ')'
+    '{'
+        properties+=PlacementConstraintProperty*
+    '}';
+
+PlacementConstraintProperty:
+    PlacementStrengthProperty | PlacementGapProperty;
+
+PlacementStrengthProperty:
+    'strength' '=' value=('hard' | 'soft');
+
+PlacementGapProperty:
+    'gap' '=' value=INT;
+
+PlacementPlaceDeclaration:
+    'place' subject=[ElementDeclaration:ID]
+    relation=('above' | 'below' | 'left-of' | 'right-of')
+    target=[ElementDeclaration:ID] '{'
+        properties+=PlacementPlaceProperty*
+    '}';
+
+PlacementPlaceProperty:
+    PlacementStrengthProperty | PlacementIntentGapProperty;
+
+PlacementIntentGapProperty:
+    'gap' '=' value=PlacementDistance;
+
+PlacementAlignDeclaration:
+    'align' alignment=('bottom' | 'center-x' | 'center-y' | 'left' | 'right' | 'top')
+    '[' items+=[ElementDeclaration:ID] (',' items+=[ElementDeclaration:ID])* ']'
+    '{' properties+=PlacementAlignProperty* '}';
+
+PlacementAlignProperty:
+    PlacementAnchorProperty | PlacementStrengthProperty;
+
+PlacementAnchorProperty:
+    'anchor' '=' value=[ElementDeclaration:ID];
+
+PlacementDistributeDeclaration:
+    'distribute' orientation=('horizontal' | 'vertical')
+    '[' items+=[ElementDeclaration:ID] (',' items+=[ElementDeclaration:ID])* ']'
+    '{' properties+=PlacementDistributeProperty* '}';
+
+PlacementDistributeProperty:
+    PlacementIntentGapProperty | PlacementStrengthProperty;
+
+PlacementAdjustDeclaration:
+    'adjust' target=[ElementDeclaration:ID] '{'
+        properties+=PlacementAdjustProperty*
+    '}';
+
+PlacementAdjustProperty:
+    PlacementRelativeToProperty
+    | PlacementMoveProperty
+    | PlacementMoveXProperty
+    | PlacementMoveYProperty
+    | PlacementStrengthProperty;
+
+PlacementRelativeToProperty:
+    'relative-to' '=' value='automatic';
+
+PlacementMoveProperty:
+    'move' '=' direction=('down' | 'left' | 'right' | 'up') value=PlacementDistance;
+
+PlacementMoveXProperty:
+    'move-x' '=' value=SignedPlacementDistance;
+
+PlacementMoveYProperty:
+    'move-y' '=' value=SignedPlacementDistance;
+
+PlacementDistance:
+    preset=('tiny' | 'small' | 'normal' | 'large')
+    | amount=INT unit=('step' | 'du');
+
+SignedPlacementDistance:
+    negative?='-' value=PlacementDistance;
+
+PlacementPinDeclaration:
+    'pin' target=[ElementDeclaration:ID] '{'
+        properties+=PlacementPinProperty*
+    '}';
+
+PlacementPinProperty:
+    PlacementXProperty | PlacementYProperty | PlacementStrengthProperty;
+
+PlacementXProperty:
+    'x' '=' value=INT 'du';
+
+PlacementYProperty:
+    'y' '=' value=INT 'du';
+
+RouteAvoidanceDeclaration:
+    'avoidance' name=ID '{'
+        properties+=RouteAvoidanceSetting*
+    '}';
+
+RouteAvoidanceSetting:
+    AvoidanceStrengthProperty
+    | AvoidanceBoundsProperty
+    | AvoidanceAroundProperty
+    | AvoidancePaddingProperty;
+
+AvoidanceStrengthProperty:
+    'strength' '=' value=('hard' | 'soft');
+
+AvoidanceBoundsProperty:
+    'bounds' '=' value=BoundsLiteral;
+
+AvoidanceAroundProperty:
+    'around' '=' value=[ElementDeclaration:ID];
+
+AvoidancePaddingProperty:
+    'padding' '=' value=INT;
 
 RouteCorridorDeclaration:
     'corridor' name=ID '{'
@@ -313,6 +444,8 @@ RouteProperty:
     | RouteSourcePortProperty
     | RouteTargetPortProperty
     | RouteViaProperty
+    | RouteGuideProperty
+    | RouteAvoidProperty
     | RouteCorridorSelectionProperty
     | RouteLaneProperty
     | RoutePointsProperty
@@ -334,6 +467,36 @@ RouteTargetPortProperty:
 RouteViaProperty:
     'via' '=' value=PointList;
 
+RouteGuideProperty:
+    'guide' '=' '[' items+=RouteGuideItem (',' items+=RouteGuideItem)* ']';
+
+RouteGuideItem:
+    RouteWaypointGuide | RouteLockedSegmentGuide;
+
+RouteWaypointGuide:
+    'via' anchor=RouteAnchorLiteral;
+
+RouteLockedSegmentGuide:
+    'lock' start=RouteAnchorLiteral 'to' end=RouteAnchorLiteral;
+
+RouteAnchorLiteral:
+    RoutePortAnchor | RouteElementAnchor | RouteCanvasAnchor;
+
+RoutePortAnchor:
+    kind=('source-port' | 'target-port') ('shift' offset=PointLiteral)?;
+
+RouteElementAnchor:
+    'element' element=[ElementDeclaration:ID]
+    side=('north' | 'east' | 'south' | 'west')
+    ('shift' offset=PointLiteral)?;
+
+RouteCanvasAnchor:
+    'canvas' 'at' point=PointLiteral;
+
+RouteAvoidProperty:
+    'avoid' '=' '[' regions+=[RouteAvoidanceDeclaration:ID]
+        (',' regions+=[RouteAvoidanceDeclaration:ID])* ']';
+
 RouteCorridorSelectionProperty:
     'corridor' '=' value=[RouteCorridorDeclaration:ID];
 
@@ -354,6 +517,9 @@ PointList:
 
 PointLiteral:
     '(' x=SignedInteger ',' y=SignedInteger ')';
+
+BoundsLiteral:
+    '(' x=SignedInteger ',' y=SignedInteger ',' width=INT ',' height=INT ')';
 
 SignedInteger:
     (negative?='-')? value=INT;

@@ -412,6 +412,188 @@ describe("diagram compiler pipeline", () => {
     );
   });
 
+  it("resolves relative waypoints and preserves ordered locked segments", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        controls: [
+          {
+            relationshipId: "weather-feeds-api",
+            policy: "guided",
+            style: "orthogonal",
+            sourcePort: "west",
+            targetPort: "east",
+            guidance: [
+              {
+                kind: "waypoint",
+                anchor: {
+                  kind: "node",
+                  referenceId: "weather-beacon",
+                  side: "north",
+                  offset: { x: -50, y: -30 },
+                },
+              },
+              {
+                kind: "locked-segment",
+                start: { kind: "canvas", point: { x: 820, y: 120 } },
+                end: { kind: "canvas", point: { x: 760, y: 120 } },
+              },
+              {
+                kind: "waypoint",
+                anchor: { kind: "target-port", offset: { x: 18, y: -80 } },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    const route = result.routes?.find(
+      ({ relationshipId }) => relationshipId === "weather-feeds-api",
+    );
+    expect(route?.waypoints).toEqual([
+      expect.objectContaining({ point: { x: 940, y: 150 } }),
+      expect.objectContaining({ point: { x: 718, y: 146 } }),
+    ]);
+    expect(route?.lockedSegments).toEqual([
+      { start: { x: 820, y: 120 }, end: { x: 760, y: 120 }, segmentIndex: 5 },
+    ]);
+    expect(
+      result.scene?.routes.find(
+        ({ relationshipId }) => relationshipId === "weather-feeds-api",
+      )?.lockedSegments[0],
+    ).toMatchObject({ start: { x: 860, y: 246 }, end: { x: 800, y: 246 } });
+  });
+
+  it("detours around a hard avoidance region and exposes its effective bounds", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        avoidanceRegions: [
+          {
+            id: "protected-strip",
+            strength: "hard",
+            geometry: {
+              kind: "absolute",
+              bounds: { x: 790, y: 230, width: 20, height: 32 },
+            },
+          },
+        ],
+        controls: [
+          {
+            relationshipId: "weather-feeds-api",
+            policy: "guided",
+            style: "orthogonal",
+            sourcePort: "west",
+            targetPort: "east",
+            avoidanceRegionIds: ["protected-strip"],
+          },
+        ],
+      },
+    });
+
+    expect(result.valid).toBe(true);
+    const route = result.routes?.find(
+      ({ relationshipId }) => relationshipId === "weather-feeds-api",
+    );
+    expect(route?.avoidanceRegions).toEqual([
+      {
+        id: "protected-strip",
+        strength: "hard",
+        bounds: { x: 790, y: 230, width: 20, height: 32 },
+        relaxed: false,
+      },
+    ]);
+    expect(route?.points).toEqual(
+      expect.arrayContaining([
+        { x: 778, y: 218 },
+        { x: 822, y: 218 },
+      ]),
+    );
+  });
+
+  it("warns for relaxed soft avoidance and fails the same locked conflict when hard", async () => {
+    const request = (strength: "hard" | "soft") => ({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        avoidanceRegions: [
+          {
+            id: "protected-strip",
+            strength,
+            geometry: {
+              kind: "absolute" as const,
+              bounds: { x: 790, y: 230, width: 20, height: 32 },
+            },
+          },
+        ],
+        controls: [
+          {
+            relationshipId: "weather-feeds-api",
+            policy: "guided" as const,
+            style: "orthogonal" as const,
+            sourcePort: "west" as const,
+            targetPort: "east" as const,
+            guidance: [
+              {
+                kind: "locked-segment" as const,
+                start: { kind: "canvas" as const, point: { x: 850, y: 246 } },
+                end: { kind: "canvas" as const, point: { x: 750, y: 246 } },
+              },
+            ],
+            avoidanceRegionIds: ["protected-strip"],
+          },
+        ],
+      },
+    });
+
+    const soft = await compileArchitectureDiagram(request("soft"));
+    expect(soft.valid).toBe(true);
+    expect(soft.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "C4ML-ROUTE-030", severity: "warning" }),
+      ]),
+    );
+    expect(soft.routes?.find(
+      ({ relationshipId }) => relationshipId === "weather-feeds-api",
+    )?.avoidanceRegions[0]?.relaxed).toBe(true);
+
+    const hard = await compileArchitectureDiagram(request("hard"));
+    expect(hard.valid).toBe(false);
+    expect(hard.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "C4ML-ROUTE-029" })]),
+    );
+
+    const direct = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        avoidanceRegions: request("hard").routing.avoidanceRegions,
+        controls: [
+          {
+            relationshipId: "weather-feeds-api",
+            policy: "guided",
+            style: "direct",
+            sourcePort: "west",
+            targetPort: "east",
+            avoidanceRegionIds: ["protected-strip"],
+          },
+        ],
+      },
+    });
+    expect(direct.valid).toBe(false);
+    expect(direct.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "C4ML-ROUTE-029" })]),
+    );
+  });
+
   it("renders an assigned custom shape without changing the element's C4 role", async () => {
     const result = await compileArchitectureDiagram({
       model: signalGardenModel,

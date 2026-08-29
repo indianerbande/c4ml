@@ -88,6 +88,9 @@ export async function compileWorkerRequest(
       model: parsed.model,
       view,
       layoutAdapter,
+      ...(parsed.placementByViewId?.[view.id] === undefined
+        ? {}
+        : { placement: parsed.placementByViewId[view.id] }),
       ...(parsed.routingByViewId?.[view.id] === undefined
         ? {}
         : { routing: parsed.routingByViewId[view.id] }),
@@ -411,6 +414,20 @@ function toWorkerNavigation(
                     lanes: route.corridor.lanes,
                     laneSpacing: route.corridor.laneSpacing,
                   },
+            waypoints: route.waypoints.map((waypoint) => ({
+              anchorKind: waypoint.anchor.kind,
+              referenceId:
+                waypoint.anchor.kind === "node"
+                  ? waypoint.anchor.referenceId
+                  : undefined,
+              side:
+                waypoint.anchor.kind === "node"
+                  ? waypoint.anchor.side
+                  : undefined,
+              point: waypoint.point,
+            })),
+            lockedSegments: route.lockedSegments,
+            avoidanceRegions: route.avoidanceRegions,
           };
         const commonDetail = {
           referenceId: route.relationshipId,

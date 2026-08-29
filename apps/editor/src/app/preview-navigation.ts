@@ -335,6 +335,28 @@ function routeDebugOverlay(
     return "";
   }
   const corridor = corridorOverlay(target, options);
+  const avoidanceRegions = target.avoidanceRegions
+    .map((region) => {
+      const classes = [
+        "editor-avoidance-region",
+        `editor-avoidance-${region.strength}`,
+        ...(region.relaxed ? ["editor-avoidance-relaxed"] : []),
+      ].join(" ");
+      return `<rect class="${classes}" x="${number(region.bounds.x)}" y="${number(region.bounds.y)}" width="${number(region.bounds.width)}" height="${number(region.bounds.height)}" rx="5"/>`;
+    })
+    .join("");
+  const lockedSegments = target.lockedSegments
+    .map(
+      (segment) =>
+        `<line class="editor-locked-segment" x1="${number(segment.start.x)}" y1="${number(segment.start.y)}" x2="${number(segment.end.x)}" y2="${number(segment.end.y)}"/>`,
+    )
+    .join("");
+  const waypoints = target.waypoints
+    .map(
+      (waypoint) =>
+        `<rect class="editor-relative-waypoint" x="${number(waypoint.point.x - 5)}" y="${number(waypoint.point.y - 5)}" width="10" height="10" transform="rotate(45 ${number(waypoint.point.x)} ${number(waypoint.point.y)})"/>`,
+    )
+    .join("");
   const points = target.points
     .slice(1, -1)
     .map(
@@ -343,8 +365,8 @@ function routeDebugOverlay(
     )
     .join("");
   return `<g id="c4ml-editor-routing-debug" aria-hidden="true" pointer-events="none">
-    <style>.editor-corridor-lane{stroke:#0F766E;stroke-width:1.5;stroke-dasharray:7 6;opacity:.38}.editor-corridor-selected{stroke:#F59E0B;stroke-width:3;stroke-dasharray:9 5;opacity:.78}.editor-route-point{fill:#FFF8E8;stroke:#F59E0B;stroke-width:2}.editor-route-port-source{fill:#0EA5E9;stroke:#FFFFFF;stroke-width:2}.editor-route-port-target{fill:#F97316;stroke:#FFFFFF;stroke-width:2}.editor-label-point{fill:#7C3AED;stroke:#FFFFFF;stroke-width:2}</style>
-    ${corridor}${points}
+    <style>.editor-corridor-lane{stroke:#0F766E;stroke-width:1.5;stroke-dasharray:7 6;opacity:.38}.editor-corridor-selected{stroke:#F59E0B;stroke-width:3;stroke-dasharray:9 5;opacity:.78}.editor-route-point{fill:#FFF8E8;stroke:#F59E0B;stroke-width:2}.editor-relative-waypoint{fill:#FFFFFF;stroke:#2563EB;stroke-width:2.5}.editor-locked-segment{stroke:#16A34A;stroke-width:7;stroke-linecap:round;opacity:.72}.editor-avoidance-region{stroke-width:2;stroke-dasharray:7 5}.editor-avoidance-hard{fill:#EF44441A;stroke:#DC2626}.editor-avoidance-soft{fill:#8B5CF61A;stroke:#7C3AED}.editor-avoidance-relaxed{stroke:#F59E0B;stroke-width:3;stroke-dasharray:3 4}.editor-route-port-source{fill:#0EA5E9;stroke:#FFFFFF;stroke-width:2}.editor-route-port-target{fill:#F97316;stroke:#FFFFFF;stroke-width:2}.editor-label-point{fill:#7C3AED;stroke:#FFFFFF;stroke-width:2}</style>
+    ${avoidanceRegions}${corridor}${lockedSegments}${points}${waypoints}
     <circle class="editor-route-port-source" cx="${number(target.sourcePort.point.x)}" cy="${number(target.sourcePort.point.y)}" r="7"/>
     <circle class="editor-route-port-target" cx="${number(target.targetPort.point.x)}" cy="${number(target.targetPort.point.y)}" r="7"/>
     <circle class="editor-label-point" cx="${number(target.labelPoint.x)}" cy="${number(target.labelPoint.y)}" r="5"/>

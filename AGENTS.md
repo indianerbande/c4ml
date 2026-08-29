@@ -110,15 +110,26 @@ scene, serialized as standalone SVG, and rasterized as PNG through the accepted
 resvg-js Node adapter in `packages/render-resvg`. Automatic geometry is
 provided by the accepted,
 replaceable ELK.js adapter in both Node.js frontends and the browser compiler
-worker. The original Signal Garden Container View reference
+worker. A compiler-owned placement stage now applies hard or soft relative
+above/below/left/right intent, anchored multi-element edge/axis alignment,
+ordered equal-gap distribution, adjustment from automatic geometry, and
+individual exact pins to the candidate geometry before routing. Named gaps,
+layout steps, and diagram units resolve deterministically. It preserves candidate and final geometry,
+reports relaxed soft rules, and fails hard conflicts with all involved source
+locations. The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
 placement, ELK compound geometry, SVG, and PNG. The separate experimental
 language package can parse and lower the original `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices into these compiler contracts. The first
+executable view-local placement slice lowers semantic placement, anchored set
+alignment, ordered distribution, automatic-relative adjustment, and exact pin
+controls without creating semantic Relationships. The first
 executable view-local route slice lowers static Relationship controls for
 automatic, guided, and fixed policies, cardinal Ports, absolute waypoints,
-named corridors and exclusive lanes, fixed point lists, and label placement.
+relative Port/element/canvas anchors, ordered locked segments, hard and soft
+avoidance regions, named corridors and exclusive lanes, fixed point lists, and
+label placement.
 CLI and editor pass those controls into the same compiler API. There is no
 publicly accepted `.c4ml` frontend or frozen grammar yet, the complete
 constraint/routing scope is not implemented, and the remaining candidate
@@ -153,10 +164,11 @@ element kinds. Their future author-facing grammar is still draft.
 preview. They are deliberately non-normative. Only the `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices are executable through the internal experimental
-language package. `hello-context.c4ml` also exercises the executable absolute
-route-control subset; relative anchors, avoidance regions, locked segments,
-and the remaining preview are not executable. Treat all of it as review
-material, not as an accepted grammar or a compatibility commitment.
+language package. `hello-context.c4ml` also exercises executable placement
+constraints, one pin, relative route anchors, a locked segment, and soft
+avoidance. The remaining preview is not necessarily executable. Treat all of
+it as review material, not as an accepted grammar or a compatibility
+commitment.
 
 The completion and wizard source-generation APIs are experimental authoring
 contracts over those same subsets. They MUST stay outside Angular components and

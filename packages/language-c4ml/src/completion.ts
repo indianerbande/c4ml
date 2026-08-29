@@ -16,7 +16,14 @@ import type {
   InfrastructureNodeDeclaration,
   InteractionDeclaration,
   LayoutBlock,
+  PlacementAdjustDeclaration,
+  PlacementAlignDeclaration,
+  PlacementConstraintDeclaration,
+  PlacementDistributeDeclaration,
+  PlacementPinDeclaration,
+  PlacementPlaceDeclaration,
   RelationshipDeclaration,
+  RouteAvoidanceDeclaration,
   RouteCorridorDeclaration,
   RouteDeclaration,
   RoutePolicyProperty,
@@ -30,7 +37,14 @@ import {
   isInfrastructureNodeDeclaration,
   isInteractionDeclaration,
   isLayoutBlock,
+  isPlacementAdjustDeclaration,
+  isPlacementAlignDeclaration,
+  isPlacementConstraintDeclaration,
+  isPlacementDistributeDeclaration,
+  isPlacementPinDeclaration,
+  isPlacementPlaceDeclaration,
   isRelationshipDeclaration,
+  isRouteAvoidanceDeclaration,
   isRouteCorridorDeclaration,
   isRouteDeclaration,
   isViewDeclaration,
@@ -71,14 +85,20 @@ export interface C4mlCompletionResult {
 }
 
 const propertyLabels = new Set([
+  "around",
+  "anchor",
+  "avoid",
   "audience",
+  "bounds",
   "allow-mixed-levels",
   "classification",
   "code-kind",
   "coordinate",
   "corridor",
   "flow",
+  "gap",
   "from",
+  "guide",
   "display",
   "environment",
   "intent",
@@ -91,11 +111,16 @@ const propertyLabels = new Set([
   "lanes",
   "orientation",
   "order",
+  "padding",
   "parallel",
   "name",
+  "move",
+  "move-x",
+  "move-y",
   "purpose",
   "responsibility",
   "relation",
+  "relative-to",
   "scope",
   "systems",
   "technology",
@@ -107,13 +132,19 @@ const propertyLabels = new Set([
   "policy",
   "source-port",
   "style",
+  "strength",
   "target-port",
   "via",
+  "x",
+  "y",
 ]);
 
 const valueLabels = new Set([
   "default",
   "automatic",
+  "bottom",
+  "center-x",
+  "center-y",
   "direct",
   "down",
   "east",
@@ -127,16 +158,23 @@ const valueLabels = new Set([
   "deployment",
   "generated",
   "guided",
+  "hard",
   "horizontal",
   "internal",
   "left",
+  "large",
   "north",
   "orthogonal",
   "right",
+  "normal",
   "sequence",
   "system-context",
   "system-landscape",
   "south",
+  "soft",
+  "small",
+  "tiny",
+  "top",
   "true",
   "up",
   "vertical",
@@ -144,8 +182,11 @@ const valueLabels = new Set([
 ]);
 
 const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
+  around: ["AvoidanceAroundProperty"],
+  avoid: ["RouteAvoidProperty"],
   "allow-mixed-levels": ["ViewAllowMixedLevelsProperty"],
   audience: ["ViewAudienceProperty"],
+  bounds: ["AvoidanceBoundsProperty"],
   classification: ["ClassificationProperty"],
   "code-kind": ["CodeKindProperty"],
   coordinate: ["CorridorCoordinateProperty"],
@@ -153,11 +194,13 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   display: ["ViewDisplayProperty"],
   environment: ["ViewEnvironmentProperty"],
   flow: ["FlowProperty"],
+  gap: ["PlacementGapProperty", "PlacementIntentGapProperty"],
   from: [
     "RelationshipFromProperty",
     "InteractionFromProperty",
     "DeploymentRelationshipFromProperty",
   ],
+  guide: ["RouteGuideProperty"],
   intent: [
     "RelationshipIntentProperty",
     "InteractionIntentProperty",
@@ -172,14 +215,20 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   lanes: ["CorridorLanesProperty"],
   orientation: ["CorridorOrientationProperty"],
   order: ["InteractionOrderProperty"],
+  padding: ["AvoidancePaddingProperty"],
   parallel: ["InteractionParallelProperty"],
   name: ["DisplayNameProperty"],
+  move: ["PlacementMoveProperty"],
+  "move-x": ["PlacementMoveXProperty"],
+  "move-y": ["PlacementMoveYProperty"],
   purpose: ["ViewPurposeProperty"],
   responsibility: ["ResponsibilityProperty"],
   relation: [
     "InteractionRelationshipProperty",
     "DeploymentStaticRelationshipProperty",
   ],
+  anchor: ["PlacementAnchorProperty"],
+  "relative-to": ["PlacementRelativeToProperty"],
   scope: ["ViewScopeProperty"],
   systems: ["ViewSystemsProperty"],
   technology: ["TechnologyProperty"],
@@ -195,14 +244,25 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   policy: ["RoutePolicyProperty"],
   "source-port": ["RouteSourcePortProperty"],
   style: ["RouteStyleProperty"],
+  strength: ["AvoidanceStrengthProperty", "PlacementStrengthProperty"],
   "target-port": ["RouteTargetPortProperty"],
   via: ["RouteViaProperty"],
+  x: ["PlacementXProperty"],
+  y: ["PlacementYProperty"],
 };
 
 const documentationByLabel: Readonly<Record<string, string>> = {
+  adjust: "Moves one element by a declared offset from its automatic candidate position.",
+  align: "Aligns two or more listed elements against one explicit anchor.",
+  anchor: "Selects the listed element whose alignment line remains the reference.",
+  around: "Anchors an avoidance region to the current bounds of a visible architecture element.",
+  avoid: "Applies named hard or soft avoidance regions to this guided route.",
+  avoidance: "Declares a reusable view-local area that selected routes should not cross.",
   "allow-mixed-levels": "Acknowledges that a Dynamic View deliberately mixes C4 abstraction levels.",
   automatic: "Lets the router choose the effective path for this relationship appearance.",
   audience: "Declares the intended audience policy for this view.",
+  bounds: "Declares absolute x, y, width, and height for an avoidance region.",
+  canvas: "Anchors route guidance to an absolute point in view coordinates.",
   classification: "Classifies an architecture element as internal or external.",
   code: "Declares a C4 Code Element or selects a C4 Code View in the active context.",
   "code-kind": "Names the implementation-level role, such as module, class, or function.",
@@ -222,28 +282,41 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   fixed: "Uses and validates the complete authored route without replacing it.",
   environment: "Selects the Deployment Environment shown by this view.",
   flow: "Chooses the primary automatic layout direction for this view.",
+  distribute: "Places three or more explicitly ordered elements with equal gaps.",
+  gap: "Sets a named, step-based, or exact diagram-space gap.",
   from: "Selects the source element of this directed relationship.",
   generated: "Generates the diagram legend from the effective notation.",
   guided: "Keeps authored route controls while the router completes the remaining path.",
+  guide: "Declares ordered relative waypoints and route segments that must stay fixed.",
+  hard: "Fails compilation when a placement or routing rule cannot be respected.",
   horizontal: "Creates lanes parallel to the horizontal view axis.",
   intent: "Describes the architectural intent in the relationship direction.",
   internal: "Marks an element as owned inside the modeled organization or scope.",
   layout: "Opens view-local layout preferences without changing architecture semantics.",
+  constraint: "Declares a view-local positional rule without creating an architecture relationship.",
+  pin: "Fixes one visible element at an explicit view position while the rest stays automatic.",
+  place: "Places one visible element above, below, left of, or right of another.",
+  "relative-to": "Declares automatic candidate geometry as the stable adjustment baseline.",
   left: "Arranges the view from east to west.",
   legend: "Declares how this view explains its notation.",
   language: "Declares the implementation language of a Code Element.",
+  lock: "Keeps the declared route segment unchanged while surrounding geometry is completed.",
   "label-segment": "Selects the zero-based effective route segment that carries the label.",
   "label-shift": "Moves the relationship label by an explicit x/y offset.",
   lane: "Selects the zero-based lane within the named corridor.",
   "lane-gap": "Sets the distance between adjacent corridor lanes.",
   lanes: "Declares how many exclusive lanes this corridor provides.",
   model: "Opens the shared semantic architecture model.",
+  move: "Applies one directional offset from automatic candidate geometry.",
+  "move-x": "Applies a signed horizontal step or diagram-unit offset from automatic geometry.",
+  "move-y": "Applies a signed vertical step or diagram-unit offset from automatic geometry.",
   name: "Declares the human-readable display name.",
   north: "Attaches this relationship appearance to the north side.",
   orientation: "Selects whether corridor lanes run horizontally or vertically.",
   orthogonal: "Connects route points using axis-aligned segments.",
   person: "Declares a C4 Person with a stable identifier.",
   order: "Declares the positive interaction order in a Dynamic View.",
+  padding: "Expands a node-relative avoidance region by this many view units.",
   parallel: "Groups same-order Dynamic Interactions into one explicit parallel occurrence.",
   purpose: "Explains why this view exists and what question it answers.",
   protocol: "Declares the communication protocol for a relationship.",
@@ -257,8 +330,10 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   "deployment-relation": "Declares runtime communication between deployed endpoints.",
   sequence: "Renders Dynamic Interactions using a sequence-oriented vocabulary.",
   south: "Attaches this relationship appearance to the south side.",
+  soft: "Allows a placement or routing preference to be relaxed with an explicit warning.",
   "source-port": "Selects the source-side attachment for this relationship appearance.",
   style: "Selects direct or orthogonal route geometry.",
+  strength: "Selects hard failure or warned soft relaxation for an avoidance region.",
   relations: "Opens the shared relationship declarations.",
   responsibility: "Summarizes what this architecture element is responsible for.",
   right: "Arranges the view from west to east.",
@@ -276,6 +351,8 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   up: "Arranges the view from south to north.",
   vertical: "Creates lanes parallel to the vertical view axis.",
   via: "Adds absolute waypoints that guide an otherwise completed route.",
+  x: "Sets the horizontal view coordinate of a pinned element.",
+  y: "Sets the vertical view coordinate of a pinned element.",
   view: "Declares a named projection of the shared architecture model.",
   west: "Attaches this relationship appearance to the west side.",
 };
@@ -343,7 +420,14 @@ type CompletionOwner =
   | InfrastructureNodeDeclaration
   | InteractionDeclaration
   | LayoutBlock
+  | PlacementAdjustDeclaration
+  | PlacementAlignDeclaration
+  | PlacementConstraintDeclaration
+  | PlacementDistributeDeclaration
+  | PlacementPinDeclaration
+  | PlacementPlaceDeclaration
   | RelationshipDeclaration
+  | RouteAvoidanceDeclaration
   | RouteCorridorDeclaration
   | RouteDeclaration
   | ViewDeclaration
@@ -453,6 +537,8 @@ function referenceDetail(
       return "Code Element reference";
     case "RelationshipDeclaration":
       return "Relationship reference";
+    case "RouteAvoidanceDeclaration":
+      return "Route avoidance reference";
     case "DeploymentNodeDeclaration":
       return "Deployment Node reference";
     case "DeploymentEndpointDeclaration":
@@ -490,7 +576,14 @@ function isCompletionOwner(node: AstNode): node is Exclude<CompletionOwner, unde
     isEnvironmentDeclaration(node) ||
     isInfrastructureNodeDeclaration(node) ||
     isInteractionDeclaration(node) ||
+    isPlacementAdjustDeclaration(node) ||
+    isPlacementAlignDeclaration(node) ||
+    isPlacementConstraintDeclaration(node) ||
+    isPlacementDistributeDeclaration(node) ||
+    isPlacementPinDeclaration(node) ||
+    isPlacementPlaceDeclaration(node) ||
     isRelationshipDeclaration(node) ||
+    isRouteAvoidanceDeclaration(node) ||
     isRouteCorridorDeclaration(node) ||
     isRouteDeclaration(node) ||
     isViewDeclaration(node) ||
@@ -543,7 +636,9 @@ function isRoutePropertyAllowed(
   const allowedByPolicy: Readonly<Record<typeof policy, ReadonlySet<string>>> = {
     automatic: new Set(["label-segment", "label-shift", "policy"]),
     guided: new Set([
+      "avoid",
       "corridor",
+      "guide",
       "label-segment",
       "label-shift",
       "lane",
@@ -573,9 +668,13 @@ function isRoutePropertyAllowed(
       $type === "RouteCorridorSelectionProperty" ||
       $type === "RouteLaneProperty",
   );
+  const hasGuide = route.properties.some(
+    ({ $type }) => $type === "RouteGuideProperty",
+  );
   return !(
-    (hasVia && (label === "corridor" || label === "lane")) ||
-    (hasCorridorSelection && label === "via")
+    (hasVia && (label === "corridor" || label === "guide" || label === "lane")) ||
+    (hasCorridorSelection && (label === "guide" || label === "via")) ||
+    (hasGuide && (label === "corridor" || label === "lane" || label === "via"))
   );
 }
 

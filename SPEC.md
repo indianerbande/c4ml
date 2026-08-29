@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.23
+Status: Draft 0.26
 
 Date: 2026-08-29
 
@@ -26,9 +26,43 @@ It combines:
 - deterministic SVG and PNG output; and
 - a local editor with source code and live graphical preview.
 
-The primary differentiator is a hybrid layout model. Automatic layout provides
-a good initial result, while authors retain precise and versionable control over
-positions, alignment, ports, routes, waypoints, and labels.
+The first implemented differentiator is a hybrid layout model. Automatic layout
+provides a good initial result, while authors retain precise and versionable
+control over positions, alignment, ports, routes, waypoints, and labels.
+
+### 1.1 Accepted strategic product pillars
+
+**Status: Accepted product direction; detailed public contracts remain draft.**
+
+C4ML is intended to grow from a model-and-diagram compiler into an explainable,
+versionable architecture compiler. Three connected product pillars guide that
+development after the current compiler foundation:
+
+1. **Intent-based authoring.** Graphical operations express architecture or
+   layout intent and produce explicit, reviewable, undoable source edits. The
+   source remains authoritative; the editor MUST NOT persist hidden geometry or
+   private architecture state. Automatic layout, semantic placement, relative
+   adjustment, exact positioning, and route guidance remain distinguishable so
+   the compiler can explain why an element or route has its effective geometry.
+2. **Semantic architecture evolution.** C4ML compares validated architecture
+   states by stable identity rather than by text lines or rendered pixels. It
+   distinguishes semantic, view, deployment, presentation, and layout changes;
+   ignores formatting-only differences; and SHOULD preserve unchanged geometry
+   so a visual comparison shows architecture change instead of layout noise.
+   Version-control access remains a frontend adapter over the portable
+   comparison contract.
+3. **Architecture proof.** Deterministic rules and graph queries evaluate what
+   the architecture claims, which elements and paths are affected, and why a
+   finding exists. Findings retain stable rule identity, affected semantic
+   identities, evidence, and source locations. Suggested corrections, when
+   available, are proposed source edits rather than direct model mutation.
+   External observations or repository evidence enter through replaceable
+   adapters and MUST NOT silently overwrite authored source.
+
+These pillars share the existing stable-identity, source-location, diagnostic,
+worker, CLI-parity, and deterministic-output foundations. Optional AI MAY help
+authors phrase questions or proposed edits, but it MUST NOT replace compiler
+validation, deterministic comparison, or rule evaluation.
 
 ## 2. Goals
 
@@ -112,6 +146,9 @@ Graphviz, ELK, and Penrose.
 | Scalable vector formats map a stable local coordinate space onto varying output sizes. | Custom C4ML shapes MUST use a normalized renderer-neutral canvas with explicit content and port geometry. |
 | Constraint-based systems demonstrate the value of separating meaning from visual realization. | Semantic objects, view selection, visual style, and geometry MUST be separate compiler stages. |
 | Browser-screenshot PNG export adds a large and variable runtime dependency. | PNG SHOULD be derived directly from the canonical SVG without a headless browser. |
+| Users of model-as-code tools request graphical control without losing changes, fighting stale connection controls, or abandoning automatic layout. | Graphical operations MUST become explicit source intent, and C4ML SHOULD explain the effective controls behind geometry. |
+| Architecture authors request before/after, migration, and Git-oriented visual comparisons, while text and pixel diffs obscure semantic change. | C4ML SHOULD compare normalized architecture states by stable identity and separate architectural change from layout movement. |
+| Existing tools can highlight tagged perspectives, but visual classification alone does not prove that architecture constraints hold. | C4ML SHOULD provide deterministic, source-located rules and impact queries over the validated architecture graph. |
 
 This table records requirements only. It does not define or endorse another
 tool's syntax or implementation.
@@ -488,6 +525,25 @@ The design MUST be able to express:
 Relative constraints SHOULD be preferred in documentation and diagnostics
 because they survive diagram growth better than absolute coordinates.
 
+Placement controls use this relevance order:
+
+1. semantic `place`, multi-element `align`, and ordered `distribute` intent;
+2. a relative `adjust` offset from the complete automatic candidate; and
+3. an exact `pin` in diagram units only as an escape hatch.
+
+Named gaps `tiny`, `small`, `normal`, and `large` resolve to 1, 2, 4, and 8
+layout steps. One layout step is 16 diagram units (`du`). A `du` is a unit in
+the normalized SVG/layout coordinate space, not a CSS or device pixel. Exact
+coordinates MUST state the `du` suffix. Relative adjustment MUST always be
+recomputed from candidate geometry and MUST NOT accumulate across builds.
+
+Multi-element alignment MUST name an anchor from its element list and MUST
+support left, horizontal center, right, top, vertical center, and bottom
+edges/axes. Distribution MUST preserve its explicitly authored list order,
+keep the first listed element as its position reference, and place consecutive
+elements with equal requested gaps. Source order outside such an explicitly
+ordered construct remains semantically irrelevant.
+
 ### 8.3 Constraint strengths
 
 Constraints MUST have explicit semantics:
@@ -725,6 +781,17 @@ selection, explicit label-segment selection, view-local label offsets, and an
 original semantic color theme. Fixed orthogonal routes are structurally
 validated in the compiler-core suite.
 
+The compiler-owned placement stage accepts the automatic adapter result as
+candidate geometry and applies an engine-neutral intent hierarchy. It
+implements hard or soft relative `left-of`, `right-of`, `above`, and `below`
+placement; anchored multi-element edge or center-axis alignment; explicitly
+ordered horizontal or vertical equal-gap distribution; relative x/y or
+directional adjustment from automatic geometry; and an individual exact pin.
+Named gap presets, `step`, and exact `du` distances resolve deterministically.
+Hard conflicts fail before routing and preserve every involved constraint
+source; relaxed soft rules remain inspectable and emit a stable warning. Final
+constrained geometry and the original candidate layout are both compiler-visible.
+
 The implemented internal contract represents every effective relationship
 appearance as two explicit Ports, one Route, and one Arrowhead. The Route owns
 the path and label placement; the Arrowhead owns its final geometry. The SVG
@@ -737,11 +804,15 @@ explicit text content box, four cardinal port anchors, semantic paint roles,
 and a restricted primitive set. The original `c4ml-person` and `c4ml-box`
 shapes exercise this contract. The author-facing shape grammar remains draft.
 
-These types are internal compiler contracts, not accepted `.c4ml` grammar. The
-current slice intentionally does not claim complete placement constraints,
-relative waypoints, avoidance regions, locked segments, route-junction
-authorship, complete all-view rendering evidence, a frozen author-facing theme
-grammar, or geometry-affecting style tokens. ELK.js is the accepted first
+These types are internal compiler contracts, not accepted public `.c4ml`
+grammar. The current slice implements the placement controls described above,
+relative route anchors, hard and soft avoidance regions, and locked segments,
+but intentionally does not claim row/column membership beyond explicit
+alignment, minimum-gap groups, preferred proximity, bounded movement,
+constrained size,
+route-junction authorship, relative corridors,
+complete all-view rendering evidence, a frozen author-facing theme grammar, or
+geometry-affecting style tokens. ELK.js is the accepted first
 automatic-layout adapter behind the engine-neutral boundary; resvg-js is the
 accepted replaceable Node.js PNG adapter behind `PngRenderer`.
 
@@ -778,6 +849,34 @@ An internal, browser-compatible language package implements the executable
   Systems; and
 - line comments and formatting-only whitespace changes.
 
+The executable view-local placement subset additionally recognizes:
+
+- hard or soft relative `left-of`, `right-of`, `above`, and `below` placement
+  between visible static elements;
+- hard or soft anchored alignment of two or more visible static elements by
+  left, horizontal center, right, top, vertical center, or bottom geometry;
+- hard or soft horizontal or vertical equal-gap distribution of three or more
+  explicitly ordered visible static elements;
+- hard or soft directional or x/y adjustment relative to automatic candidate
+  geometry; and
+- one view-local exact pin per visible static element with non-negative `du`
+  coordinates.
+
+Relative placement and distribution gaps accept `tiny`, `small`, `normal`,
+`large`, non-negative `step`, or non-negative `du` values. Adjustments accept the same
+non-negative magnitudes for directional movement or signed `step`/`du` x/y
+offsets. Exact pins require the explicit `du` suffix.
+
+These controls lower into compiler-owned `DiagramPlacementOptions`, are applied
+after automatic candidate layout and before routing, and are passed identically
+by the CLI and browser worker. Duplicate placement identities, missing relative
+gaps, inappropriate alignment gaps, unknown or non-visible items, invalid
+coordinates, invalid or duplicate alignment/distribution sets, invalid
+adjustment combinations, conflicting hard pins, and contradictory hard constraints fail
+with stable source-located diagnostics. Soft constraints may be relaxed only
+with a warning. General row/column membership, grouped minimum gaps, proximity,
+bounded movement, and constrained size remain outside this executable slice.
+
 The first executable view-local routing subset additionally recognizes:
 
 - named horizontal or vertical corridors at an absolute integer canvas
@@ -788,18 +887,27 @@ The first executable view-local routing subset additionally recognizes:
 - independent automatic or cardinal source and target Ports;
 - absolute integer waypoints for guided routes and complete point lists for
   fixed routes;
+- ordered guided waypoints relative to source or target Ports, cardinal sides
+  of visible elements, or absolute canvas points, with optional integer shifts;
+- ordered locked segments whose endpoints use the same anchor forms;
+- reusable view-local hard or soft avoidance regions using absolute bounds or
+  the padded effective bounds of a visible element;
+- explicit selection of avoidance regions by guided routes;
 - a named corridor plus a zero-based exclusive lane for guided routes; and
 - a zero-based effective label segment and an integer x/y label offset.
 
 These controls lower into the compiler-owned `DiagramRoutingOptions` for their
 own view and are passed identically by the CLI and browser worker. They do not
 alter the semantic Relationship or the resolved view. The lowering stage
-rejects duplicate corridor identities, duplicate controls for one Relationship,
+rejects duplicate corridor or avoidance identities, duplicate controls for one Relationship,
 missing required corridor properties, non-positive corridor capacity or lane
 spacing, and policy-incompatible combinations. The routing stage rejects an
 unknown or non-visible Relationship, unknown corridors, out-of-capacity lanes,
 shared exclusive lanes, invalid point geometry, obstacle crossings, invalid
-label segments, and fixed endpoints that do not attach to their nodes.
+label segments, unknown relative anchors or avoidance regions, impossible hard
+avoidance, loss of locked geometry, and fixed endpoints that do not attach to
+their nodes. A soft avoidance conflict remains valid but emits a stable warning
+and is retained as a relaxed effective region.
 
 The Langium-generated syntax types remain private to the language package. An
 explicit lowering stage translates them into the parser-independent C4ML model
@@ -810,8 +918,8 @@ pipeline without introducing a second compiler implementation.
 
 These slices are an implemented feasibility boundary, not an accepted public
 grammar or compatibility promise. They do not yet cover Visual Groups,
-complete selection, styling, shapes, relative route anchors, avoidance regions,
-locked segments, route controls for Dynamic Interactions or Deployment
+complete selection, styling, shapes, route junctions, relative corridors,
+route controls for Dynamic Interactions or Deployment
 Relationships, formatting, incremental documents, or complete editor language
 services. They expose context-completion for the executable subsets, including
 only valid properties and references inside route and corridor blocks. The rest
@@ -873,16 +981,18 @@ output. Invalid edits retain the last valid navigation map with the last valid
 preview, but preview clicks are disabled until current source compiles again.
 The navigation map also preserves every effective Route's Relationship source,
 optional view-local route-control source, stable scene/SVG identities, final
-polyline, endpoint Ports, policy, style, label anchor and segment, and effective
-corridor lane. Relationship or route-control selection therefore highlights
+polyline, endpoint Ports, policy, style, label anchor and segment, effective
+corridor lane, relative waypoints, locked segments, and effective avoidance
+regions including soft relaxation. Relationship or route-control selection therefore highlights
 the corresponding Route; path hit testing reveals the semantic Relationship,
 Dynamic Interaction, or Deployment Relationship declaration. Element interiors
 take precedence over Routes, Routes take precedence over enclosing boundaries,
 and nearby path selection uses a bounded scene-space tolerance.
 
 A toggleable routing-debug overlay displays the selected Route's effective
-points, endpoint Ports, label anchor, and all lanes of its selected corridor.
-An adjacent inspector reports the same compiler-owned route facts. This is
+points, relative waypoints, locked segments, avoidance bounds, endpoint Ports,
+label anchor, and all lanes of its selected corridor. An adjacent inspector
+reports the same compiler-owned route facts. This is
 preview-only editor presentation; it does not recalculate geometry, mutate
 source, or enter SVG export. Ports, route labels, and corridors are distinct
 preview navigation targets. Selecting one identifies its owning Route and
@@ -1152,6 +1262,35 @@ MUST NOT persist source text, document handles, filesystem paths, compilation
 results, diagram semantics, or uncommitted graphical state. Source files remain
 the only persistent architecture authority.
 
+### 9.10 Shared authoring, comparison, and analysis foundations
+
+**Status: Accepted architectural direction; contracts not yet implemented.**
+
+The three product pillars in Section 1.1 require shared portable contracts
+before feature-specific editor work begins:
+
+- A proposed source change set identifies the exact source revision it was
+  created from, contains deterministic non-overlapping text edits, describes
+  the affected stable architecture identities and author intent, and can be
+  previewed, compiled, applied atomically, or rejected as stale. Applying one
+  change set in the editor MUST create one understandable undo operation.
+- A canonical architecture snapshot normalizes a validated model and its
+  resolved views independently of parser AST objects, declaration order,
+  source formatting, frontend state, and renderer output. It MUST retain stable
+  identities and enough typed information to classify semantic, view,
+  deployment, presentation, and layout changes without treating source ranges
+  as architectural meaning.
+- An analysis finding identifies its rule or query, severity or result kind,
+  affected stable identities, source locations, and an inspectable evidence
+  path. A proposed correction MAY reference a source change set, but analysis
+  MUST NOT mutate the semantic model.
+
+These contracts MUST remain usable in Node.js and a browser Web Worker. Git,
+filesystem, repository scanners, deployment observations, and other external
+inputs belong in frontend or importer adapters. Angular components, Monaco,
+Electron, and CLI argument handling MUST NOT implement competing diff, rule, or
+source-rewrite semantics.
+
 ## 10. Scene graph and rendering
 
 The scene graph MUST represent at least:
@@ -1382,6 +1521,12 @@ Layout operations and semantic architecture operations MUST be distinct tools.
 The editor SHOULD use minimal syntax-aware text edits that preserve comments and
 unrelated formatting.
 
+A graphical move SHOULD first emit or update semantic `place`, `align`, or
+`distribute` source. A nudge SHOULD emit or update `adjust` relative to the
+automatic candidate. Only an explicitly chosen exact-position action SHOULD
+emit a `pin` with `du` coordinates. No graphical operation may persist a hidden
+pixel offset.
+
 Direct manipulation is not an MVP acceptance requirement, but the compiler and
 source mapping MUST NOT preclude it.
 
@@ -1479,8 +1624,8 @@ The following decisions remain deliberately open:
 - single-file versus optional sidecar layout organization;
 - namespace and multi-file merge rules;
 - whether custom element kinds are allowed in strict C4 mode;
-- precise units and coordinate systems;
-- the first constraint-solving strategy;
+- the complete constraint-solving strategy beyond the implemented intent,
+  adjustment, and exact-pin slice;
 - whether C4ML owns the full orthogonal router in the MVP or initially wraps a
   replaceable routing engine;
 - the accessibility target for generated SVG.
@@ -1511,6 +1656,15 @@ not source material for C4ML syntax or implementation.
   <https://docs.structurizr.com/dsl/language>,
   <https://docs.structurizr.com/ui/diagrams/manual-layout>,
   <https://docs.structurizr.com/ui/diagrams/automatic-layout>
+- Public requests concerning durable manual layout, automatic-layout
+  readability, model transformations, visual Git diffs, and approachable
+  onboarding:
+  <https://github.com/likec4/likec4/discussions/343>,
+  <https://github.com/structurizr/ui/discussions/98>,
+  <https://github.com/likec4/likec4/discussions/1192>,
+  <https://github.com/likec4/likec4/issues/1919>
+- Structurizr perspective highlighting:
+  <https://docs.structurizr.com/ui/diagrams/perspectives>
 - C4-PlantUML layout documentation:
   <https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md>
 - Mermaid C4 and architecture diagrams:
