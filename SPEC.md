@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.26
+Status: Draft 0.27
 
 Date: 2026-08-29
 
@@ -1264,7 +1264,8 @@ the only persistent architecture authority.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
-**Status: Accepted architectural direction; contracts not yet implemented.**
+**Status: Accepted architectural direction; portable version-one contracts
+implemented and automatically validated.**
 
 The three product pillars in Section 1.1 require shared portable contracts
 before feature-specific editor work begins:
@@ -1290,6 +1291,27 @@ filesystem, repository scanners, deployment observations, and other external
 inputs belong in frontend or importer adapters. Angular components, Monaco,
 Electron, and CLI argument handling MUST NOT implement competing diff, rule, or
 source-rewrite semantics.
+
+The implemented source-change contract uses a deterministic versioned revision
+identity, normalized non-overlapping offset edits, affected stable identities,
+and an explicit architecture/layout/route/policy intent. It rejects stale or
+overlapping edits before application and can evaluate a candidate source without
+mutating the active source string. Syntax-aware edit generation and conversion
+to one Monaco undo unit remain language/editor adapter responsibilities.
+
+The implemented architecture snapshot removes source locations and parser
+objects, sorts unordered declarations, preserves typed semantic, deployment,
+view, presentation, and layout data, and serializes deterministically. Its graph
+index uses kind-qualified keys so identities in different namespaces cannot
+collide. It exposes deterministic containment, relationship, deployment-instance,
+view-membership, upstream, and downstream traversal.
+
+The implemented analysis contract represents findings and query results with
+stable rule/query identity, qualified affected items, ordered evidence, sorted
+source locations, and optional proposed source corrections. Observed evidence
+requires its adapter identity and observation time. These contracts are exported
+from the portable compiler core; worker messages, CLI commands, concrete rules,
+and source-generating editor actions remain subsequent slices.
 
 ## 10. Scene graph and rendering
 

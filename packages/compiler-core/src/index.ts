@@ -1,3 +1,6 @@
+export * from "./analysis.js";
+export * from "./architecture-graph.js";
+export * from "./architecture-snapshot.js";
 export * from "./diagnostics.js";
 export * from "./diagram-compiler.js";
 export * from "./diagram-preparation.js";
@@ -9,6 +12,7 @@ export * from "./routing.js";
 export * from "./scene.js";
 export * from "./semantic-validation.js";
 export * from "./source.js";
+export * from "./source-changes.js";
 export * from "./shapes.js";
 export * from "./svg-renderer.js";
 export * from "./theme.js";

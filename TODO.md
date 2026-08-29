@@ -36,8 +36,8 @@ Before starting a pillar implementation:
 - [x] regenerate the original Signal Garden reference export and inspect the
   affected SVG and PNG visually;
 - [x] inspect the complete diff for unrelated changes and whitespace errors;
-- [ ] commit and push the coherent foundation when explicitly requested; and
-- [ ] merge it through the normal review path before opening the first pillar
+- [x] commit and push the coherent foundation when explicitly requested; and
+- [x] merge it through the normal review path before opening the first pillar
   branch.
 
 This gate protects the candidate/final geometry, source mapping, stable route
@@ -50,11 +50,11 @@ be delivered as small independently tested slices in this order.
 
 ### 1. Proposed source change set
 
-- [ ] define a frontend-neutral source revision identity;
-- [ ] define deterministic, non-overlapping text edits with reason, affected
+- [x] define a frontend-neutral source revision identity;
+- [x] define deterministic, non-overlapping text edits with reason, affected
   stable identities, and originating authoring command;
 - [ ] support preview compilation without mutating the active document;
-- [ ] reject stale change sets explicitly;
+- [x] reject stale change sets explicitly;
 - [ ] apply one change set as one Monaco undo unit through the existing editor
   adapter; and
 - [ ] prove preservation of comments, unrelated formatting, identifiers, and
@@ -65,12 +65,12 @@ Monaco, and Electron only present or apply the resulting contract.
 
 ### 2. Canonical architecture snapshot and graph index
 
-- [ ] normalize the validated model and resolved views independently of parser
+- [x] normalize the validated model and resolved views independently of parser
   AST objects, declaration order, source formatting, frontend state, and SVG;
-- [ ] preserve stable semantic and view identities plus typed containment and
+- [x] preserve stable semantic and view identities plus typed containment and
   relationship edges;
-- [ ] separate semantic, view, deployment, presentation, and layout fields;
-- [ ] provide deterministic upstream, downstream, containment, deployment, and
+- [x] separate semantic, view, deployment, presentation, and layout fields;
+- [x] provide deterministic upstream, downstream, containment, deployment, and
   view-membership traversal; and
 - [ ] prove Node.js and browser-worker parity.
 
@@ -79,12 +79,12 @@ and merge rules are not a prerequisite for proving the contract.
 
 ### 3. Analysis finding and evidence contract
 
-- [ ] define stable rule/query identity, severity or result kind, affected
+- [x] define stable rule/query identity, severity or result kind, affected
   stable identities, source locations, and evidence paths;
-- [ ] allow an optional proposed source change set as a correction;
-- [ ] keep evaluation pure and independent of renderer output;
+- [x] allow an optional proposed source change set as a correction;
+- [x] keep evaluation pure and independent of renderer output;
 - [ ] expose the same result through compiler-worker and CLI boundaries; and
-- [ ] attribute external observations without letting them overwrite authored
+- [x] attribute external observations without letting them overwrite authored
   source.
 
 No new runtime dependency is currently required for these three contracts.

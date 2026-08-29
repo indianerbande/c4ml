@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.27
+Status: Draft 0.28
 
 Date: 2026-08-29
 
@@ -86,6 +86,18 @@ hard failures with all source locations, and deterministic results independent
 of unordered constraint declaration order. General row/column membership,
 grouped minimum gaps, preferred proximity, bounded movement, constrained size,
 and group-spanning constraints still require the remaining Section 2.5 evidence.
+
+The portable product-pillar foundation adds compiler-core contract evidence for
+versioned source revisions, canonical non-overlapping text edits, stale and
+overlap rejection, non-mutating candidate preview evaluation, canonical
+architecture snapshots, source/declaration-order independence, typed semantic,
+deployment, view, presentation, and layout separation, kind-qualified graph
+identity, deterministic containment/deployment/view/impact traversal, analysis
+findings, query results, ordered evidence paths, source-location ordering,
+optional proposed corrections, and mandatory attribution of observed evidence.
+Browser bundle validation protects the absence of Node.js-only APIs. Actual
+syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
+semantic diffing, and executable policy rules remain unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
