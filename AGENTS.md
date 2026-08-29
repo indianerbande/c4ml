@@ -38,9 +38,12 @@ palette. A versioned session contract persists only safe UI presentation state
 (active activity area, bottom-panel state, zoom, and route-debug visibility),
 never source, document handles, or filesystem paths. It also has an implemented
 version-one local settings contract and category-based settings panel.
-English/German interface language, System/Light/Dark workbench color,
-source-editor font family, and source-editor font size apply reactively and are
-stored locally. Language selection also synchronizes C4ML-owned native menus
+English/German interface language, System/Light/Dark brightness, eight quiet
+workbench color families,
+five C4ML-owned source syntax profiles, source-editor font family, and
+source-editor font size apply reactively and are stored locally. The syntax
+profiles define semantic role colors independently of Monaco; the workbench
+family supplies their declaration accent. Language selection also synchronizes C4ML-owned native menus
 and dialogs through the validated desktop bridge, but never translates
 authored or compiler-owned content. These preferences MUST remain outside
 `.c4ml`, compiler worker, diagram theme, layout, and exported SVG/PNG.
@@ -54,7 +57,9 @@ the experimental language package and shared compiler in a browser Web Worker.
 It rejects stale responses, retains the last valid SVG during invalid edits,
 and displays source-located diagnostics in a two-pane layout. The same worker
 provides the only context-completion, help-context, syntax-highlighting, and diagnostic
-source; Monaco presents its exact edits, semantic-token spans, and ranges
+source; syntax spans distinguish declarations, properties, predefined values,
+identifiers, strings, numbers, operators, and comments, while Monaco presents
+the exact edits, semantic-token spans, and ranges
 without owning C4ML syntax or semantics. The UI also exposes diagnostics-to-source navigation,
 bidirectional source/preview node navigation through compiler-owned stable
 identities and source ranges, zoom, fit, scroll-pan, SVG download, wizard
@@ -108,9 +113,11 @@ document through the browser worker, offers cross-document references in
 context completion, displays the explicit source set in its project explorer
 and source tabs, preserves per-document dirty state, and navigates diagnostics
 and preview objects to the owning document. Project revisions and source-change
-transactions are deterministic and document-addressed. Save currently applies
-to the active document; project-wide Save All remains a later interaction
-slice. Glossary/narrative/policy/publication resources remain unimplemented.
+transactions are deterministic and document-addressed. Save and Save As apply
+to the active document; Save All processes every dirty source through the same
+validated desktop bridge. Monaco keeps an independent model, undo history,
+cursor, and scroll state for every open project document.
+Glossary/narrative/policy/publication resources remain unimplemented.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views

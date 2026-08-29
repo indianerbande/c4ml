@@ -105,10 +105,13 @@ continue to work before every changed file has been saved. Selecting a problem
 or diagram object declared in another file opens its source tab and reveals the
 owning range.
 
-**Save** and **Save As** currently affect the active source tab. Closing a
-project with any dirty source still triggers the native unsaved-change guard.
-An explicit Save All command and independent Monaco undo/cursor history per
-source are planned editor refinements.
+**Save** and **Save As** affect the active source tab. **Save All** processes
+every dirty source in manifest order through the same native file boundary.
+Successful files remain saved if a later write fails or is canceled; every
+remaining file stays visibly dirty. Closing a project with any dirty source
+still triggers the native unsaved-change guard. Each source tab also keeps its
+own Monaco undo history, cursor, and scroll position while the project remains
+open.
 
 ## Planned project resources
 

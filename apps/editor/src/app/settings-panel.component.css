@@ -175,6 +175,78 @@
   border: 0;
 }
 
+.compact-heading {
+  margin-top: -6px;
+}
+
+.palette-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.palette-options legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.palette-options label {
+  position: relative;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--control-bg);
+  cursor: pointer;
+}
+
+.palette-options label:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.palette-options input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.palette-options strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-swatch {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--palette-preview) 70%, black);
+  border-radius: 50%;
+  background: var(--palette-preview);
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--palette-preview) 20%, white);
+}
+
+.palette-options label[data-palette="blue"] { --palette-preview: #157ca3; }
+.palette-options label[data-palette="gray"] { --palette-preview: #66717e; }
+.palette-options label[data-palette="yellow"] { --palette-preview: #a17a18; }
+.palette-options label[data-palette="green"] { --palette-preview: #3d8062; }
+.palette-options label[data-palette="violet"] { --palette-preview: #755fa0; }
+.palette-options label[data-palette="red"] { --palette-preview: #a64f5c; }
+.palette-options label[data-palette="orange"] { --palette-preview: #aa641d; }
+.palette-options label[data-palette="turquoise"] { --palette-preview: #1b817d; }
+
 .scheme-options legend {
   position: absolute;
   width: 1px;
@@ -358,7 +430,7 @@ label[data-scheme="system"] .scheme-preview i:last-child {
 .primary-button {
   border: 1px solid var(--accent-strong);
   background: var(--accent);
-  color: white;
+  color: var(--primary-button-ink);
 }
 
 .secondary-button {
@@ -409,6 +481,7 @@ label[data-scheme="system"] .scheme-preview i:last-child {
   }
 
   .scheme-options,
+  .palette-options,
   .setting-row {
     grid-template-columns: 1fr;
   }

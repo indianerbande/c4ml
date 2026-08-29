@@ -21,7 +21,7 @@ describe("editor desktop bridge", () => {
     expect(resolveC4mlDesktopApi({ c4mlDesktop: api })).toBe(api);
     expect(
       resolveC4mlDesktopApi({
-        c4mlDesktop: { ...api, protocolVersion: 5 },
+        c4mlDesktop: { ...api, protocolVersion: 999 },
       }),
     ).toBeUndefined();
     expect(resolveC4mlDesktopApi({})).toBeUndefined();

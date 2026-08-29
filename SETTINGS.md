@@ -2,7 +2,7 @@
 
 Status: Implemented, automatically and visually validated foundation
 
-Date: 2026-08-28
+Date: 2026-08-29
 
 This document defines settings for the local C4ML workbench. It deliberately
 separates application preferences from architecture content and diagram
@@ -20,8 +20,8 @@ The first categories are:
 
 | Category | Purpose | Implemented settings |
 | --- | --- | --- |
-| Appearance | Local workbench presentation | interface language, color scheme, interface font size |
-| Source editor | C4ML authoring readability | font family, font size |
+| Appearance | Local workbench presentation | interface language, color scheme, color family, interface font size |
+| Source editor | C4ML authoring readability | syntax colors, font family, ligatures, font size |
 
 Likely later categories include Files, Diagram preview, Export, Accessibility,
 Keyboard, and Updates. These names are planning placeholders, not implemented
@@ -33,7 +33,9 @@ features or accepted settings.
 | --- | --- | --- | --- |
 | `uiLanguage` | `en`, `de` | `en` | C4ML-owned workbench and native application copy |
 | `colorScheme` | `system`, `light`, `dark` | `system` | Angular workbench and Monaco theme |
+| `colorPalette` | `blue`, `gray`, `yellow`, `green`, `violet`, `red`, `orange`, `turquoise` | `blue` | Angular workbench and Monaco theme |
 | `interfaceFontSize` | 9–16 px in 0.5 px steps | 10 px | C4ML-owned workbench interface text |
+| `syntaxTheme` | `balanced`, `minimal`, `vivid`, `high-contrast`, `color-safe` | `balanced` | Monaco source syntax only |
 | `editorFontFamily` | packaged IBM Plex Mono, Fira Code, Hack, Source Code Pro, Intel One Mono, Inconsolata, Cascadia Code; or `system-monospace` | `ibm-plex-mono` | Monaco source text only |
 | `editorFontLigatures` | `true`, `false` | `true` | Monaco and the source-font sample only |
 | `editorFontSize` | 11–24 px in 0.5 px steps | 12.5 px | Monaco source text only |
@@ -58,6 +60,22 @@ names or descriptions written by an author, `.c4ml` source, compiler diagnostics
 diagram labels, SVG, or PNG. English is the initial and fallback language;
 German can be selected without restarting the application.
 
+Color scheme and color family are orthogonal. `light` and `dark` select
+brightness; the eight families select the quiet accent and related surfaces.
+This yields sixteen concrete visual combinations. `system` follows the current
+operating-system brightness and uses the selected family for whichever variant
+is active. Neither setting changes diagram colors, source, SVG, or PNG.
+
+Syntax colors form a second, independent dimension. `balanced` is the quiet
+default, `minimal` relies mainly on restrained tone plus weight and italics,
+`vivid` separates semantic roles more strongly, `high-contrast` adds redundant
+style cues, and `color-safe` avoids red-versus-green meaning. The workbench
+family contributes the declaration accent, cursor, selection, and focus color;
+property, value, identifier/reference, string, number, comment, operator, and
+structural-keyword meanings remain stable within the selected syntax preset.
+All five presets are defined by a C4ML-owned, testable contract. Monaco is only
+the rendering adapter for that contract.
+
 ## Behavior
 
 - Changes apply immediately and are stored locally for the installation.
@@ -66,6 +84,10 @@ German can be selected without restarting the application.
 - Interface font-size changes apply through one root typography token. They
   scale C4ML-owned workbench text but not Monaco source text or diagram output.
 - `system` follows operating-system color changes while the application runs.
+- Color-family changes apply to the workbench and Monaco together without
+  changing the active light/dark choice.
+- Syntax-theme changes apply immediately without changing the workbench family,
+  source content, diagnostics, or diagram output.
 - Reset restores the complete version-one default record.
 - Unsupported versions, malformed values, and unavailable browser storage fall
   back safely without blocking the editor.
@@ -93,8 +115,9 @@ The preferences service owns validation, persistence, system-theme observation,
 and reactive values. The localization service owns the complete English/German
 workbench catalogues and interpolation. The settings panel owns presentation
 and category navigation. Consumers receive only the values they need: the
-Angular root gets interface language and effective workbench scheme, while the
-Monaco adapter gets the effective scheme and source font options. The Electron
+Angular root gets interface language, effective workbench scheme, and color
+family, while the Monaco adapter gets the effective scheme, color family,
+syntax theme, and source font options. The Electron
 main process has a separate, small native-control catalogue selected through a
 validated language-only IPC message. Compiler, language, layout, scene, and
 renderer packages do not depend on this contract.

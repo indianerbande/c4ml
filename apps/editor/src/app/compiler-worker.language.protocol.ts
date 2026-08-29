@@ -241,11 +241,14 @@ function isHighlightSpan(value: unknown): value is HighlightWorkerSpan {
   const span = value as Partial<HighlightWorkerSpan>;
   return (
     (span.kind === "comment" ||
+      span.kind === "declaration" ||
       span.kind === "identifier" ||
       span.kind === "keyword" ||
       span.kind === "number" ||
       span.kind === "operator" ||
-      span.kind === "string") &&
+      span.kind === "property" ||
+      span.kind === "string" ||
+      span.kind === "value") &&
     typeof span.range === "object" &&
     span.range !== null &&
     isWorkerPosition(span.range.start) &&

@@ -1012,7 +1012,10 @@ describe("C4ML draft-1 highlighting contract", () => {
     }));
 
     expect(highlighted).toContainEqual({ kind: "keyword", text: "c4ml" });
-    expect(highlighted).toContainEqual({ kind: "keyword", text: "person" });
+    expect(highlighted).toContainEqual({
+      kind: "declaration",
+      text: "person",
+    });
     expect(highlighted).toContainEqual({
       kind: "comment",
       text: "// Original C4ML fixture",
@@ -1021,11 +1024,32 @@ describe("C4ML draft-1 highlighting contract", () => {
       kind: "identifier",
       text: "gardener",
     });
+    expect(highlighted).toContainEqual({ kind: "property", text: "name" });
     expect(highlighted).toContainEqual({ kind: "operator", text: "=" });
     expect(highlighted).toContainEqual({
       kind: "string",
       text: '"Garden Keeper"',
     });
+  });
+
+  it("distinguishes declaration words, properties, and predefined values", () => {
+    const source = [
+      "model {",
+      '  system garden { name = "Garden" classification = internal }',
+      "}",
+    ].join("\n");
+    const highlighted = highlightC4mlDraft(source).map(({ kind, range }) => ({
+      kind,
+      text: source.slice(range.start.offset, range.end.offset),
+    }));
+
+    expect(highlighted).toEqual(
+      expect.arrayContaining([
+        { kind: "declaration", text: "system" },
+        { kind: "property", text: "classification" },
+        { kind: "value", text: "internal" },
+      ]),
+    );
   });
 
   it("keeps recovered tokens available while source is incomplete", () => {
@@ -1039,7 +1063,7 @@ describe("C4ML draft-1 highlighting contract", () => {
       })),
     ).toEqual(
       expect.arrayContaining([
-        { kind: "keyword", text: "model" },
+        { kind: "declaration", text: "model" },
         { kind: "identifier", text: "garden" },
       ]),
     );

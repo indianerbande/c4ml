@@ -6,6 +6,7 @@ import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
 import { initialC4mlSource } from "./initial-source.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
+import { saveAllProjectDocuments } from "./workbench-document-save-all.js";
 
 export interface WorkbenchProjectDocument {
   readonly uri: string;
@@ -51,6 +52,7 @@ export class WorkbenchDocumentFacade {
     initialDocument,
   ]);
   readonly activeDocumentUri = signal(initialDocument.uri);
+  readonly documentSetRevision = signal(0);
   readonly projectId = signal("implicit-project");
   readonly projectName = signal<string | undefined>(undefined);
   readonly projectDescription = signal<string | undefined>(undefined);
@@ -128,6 +130,7 @@ export class WorkbenchDocumentFacade {
     this.projectMode.set(state.projectMode);
     this.projectDocuments.set(state.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(state.activeUri);
+    this.documentSetRevision.update((revision) => revision + 1);
   }
 
   selectDocument(uri: string): boolean {
@@ -272,6 +275,46 @@ export class WorkbenchDocumentFacade {
     }
   }
 
+  async saveAllDocuments(): Promise<void> {
+    const desktop = this.#desktop;
+    if (desktop === undefined) {
+      return;
+    }
+    const dirtyCount = this.projectDocuments().filter(({ dirty }) => dirty).length;
+    if (dirtyCount === 0) {
+      this.fileOperationLabel.set(this.#i18n.t("operation.allSaved"));
+      return;
+    }
+    this.fileOperationLabel.set(
+      this.#i18n.t("operation.savingAll", { count: dirtyCount }),
+    );
+    const result = await saveAllProjectDocuments(
+      this.projectDocuments(),
+      (request) => desktop.saveDocument(request),
+    );
+    this.projectDocuments.set(result.documents);
+    const remaining = result.documents.filter(({ dirty }) => dirty).length;
+    if (result.canceled) {
+      this.fileOperationLabel.set(
+        this.#i18n.t("operation.saveAllCanceled", {
+          saved: result.savedCount,
+          remaining,
+        }),
+      );
+    } else if (result.failedCount > 0) {
+      this.fileOperationLabel.set(
+        this.#i18n.t("operation.saveAllFailed", {
+          saved: result.savedCount,
+          failed: result.failedCount,
+        }),
+      );
+    } else {
+      this.fileOperationLabel.set(
+        this.#i18n.t("operation.savedAll", { count: result.savedCount }),
+      );
+    }
+  }
+
   downloadSvg(svg: string, activeViewId: string | undefined): void {
     const url = URL.createObjectURL(
       new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
@@ -340,6 +383,7 @@ export class WorkbenchDocumentFacade {
     this.projectMode.set(input.projectMode);
     this.projectDocuments.set(input.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(first.uri);
+    this.documentSetRevision.update((revision) => revision + 1);
   }
 
   #updateActiveDocument(

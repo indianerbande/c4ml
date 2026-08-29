@@ -20,6 +20,9 @@ export const sourceEditorSemanticTokenTypes = [
   "number",
   "operator",
   "string",
+  "declaration",
+  "property",
+  "value",
 ] as const;
 
 export interface SourceEditorRange {

@@ -12,12 +12,20 @@ import {
 
 import type {
   WorkbenchColorScheme,
+  WorkbenchColorPalette,
   WorkbenchEditorFontFamily,
   WorkbenchUiLanguage,
 } from "./workbench-preferences.js";
-import { workbenchEditorFontFamilyOptions } from "./workbench-preferences.js";
+import {
+  workbenchColorPalettes,
+  workbenchEditorFontFamilyOptions,
+} from "./workbench-preferences.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
+import {
+  c4mlSyntaxThemePresets,
+  type C4mlSyntaxThemePreset,
+} from "./syntax-theme.js";
 
 type SettingsCategoryId = "appearance" | "source-editor";
 
@@ -31,6 +39,16 @@ interface ColorSchemeOption {
   readonly id: WorkbenchColorScheme;
   readonly label: string;
   readonly hint: string;
+}
+
+interface ColorPaletteOption {
+  readonly id: WorkbenchColorPalette;
+  readonly label: string;
+}
+
+interface SyntaxThemeOption {
+  readonly id: C4mlSyntaxThemePreset;
+  readonly label: string;
 }
 
 @Component({
@@ -73,10 +91,21 @@ export class SettingsPanelComponent {
       hint: this.i18n.t("settings.darkHint"),
     },
   ]);
-  readonly activeCategory = signal<SettingsCategoryId>("appearance");
-  readonly closeButton = viewChild.required<ElementRef<HTMLButtonElement>>(
-    "closeButton",
+  readonly colorPaletteOptions = computed<readonly ColorPaletteOption[]>(() =>
+    workbenchColorPalettes.map((id) => ({
+      id,
+      label: this.i18n.t(`settings.palette.${id}`),
+    })),
   );
+  readonly syntaxThemeOptions = computed<readonly SyntaxThemeOption[]>(() =>
+    c4mlSyntaxThemePresets.map((id) => ({
+      id,
+      label: this.i18n.t(`settings.syntaxTheme.${id}`),
+    })),
+  );
+  readonly activeCategory = signal<SettingsCategoryId>("appearance");
+  readonly closeButton =
+    viewChild.required<ElementRef<HTMLButtonElement>>("closeButton");
   readonly dialog = viewChild.required<ElementRef<HTMLElement>>("dialog");
 
   constructor() {
@@ -95,6 +124,10 @@ export class SettingsPanelComponent {
     this.preferences.setColorScheme(colorScheme);
   }
 
+  setColorPalette(colorPalette: WorkbenchColorPalette): void {
+    this.preferences.setColorPalette(colorPalette);
+  }
+
   setLanguage(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) {
@@ -111,6 +144,14 @@ export class SettingsPanelComponent {
     this.preferences.setEditorFontFamily(
       target.value as WorkbenchEditorFontFamily,
     );
+  }
+
+  setSyntaxTheme(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+    this.preferences.setSyntaxTheme(target.value as C4mlSyntaxThemePreset);
   }
 
   setFontLigatures(event: Event): void {

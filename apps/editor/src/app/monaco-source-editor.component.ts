@@ -16,10 +16,18 @@ import type {
 
 import type { CompilerWorkerDiagnostic } from "./compiler-worker.protocol.js";
 import {
-  c4mlDaySuggestionColors,
-  c4mlNightSuggestionColors,
+  c4mlMonacoThemeName,
+  c4mlMonacoThemes,
 } from "./monaco-theme.js";
-import type { EffectiveColorScheme } from "./workbench-preferences.js";
+import type {
+  EffectiveColorScheme,
+  WorkbenchColorPalette,
+} from "./workbench-preferences.js";
+import type { C4mlSyntaxThemePreset } from "./syntax-theme.js";
+import {
+  SourceEditorDocumentSession,
+  type SourceEditorDocumentHost,
+} from "./source-editor-document-session.js";
 import {
   sourceEditorCompletion,
   sourceEditorMarkers,
@@ -61,11 +69,15 @@ export class C4mlMonacoSourceEditorComponent
   implements AfterViewInit, OnDestroy
 {
   readonly value = input.required<string>();
+  readonly documentUri = input.required<string>();
+  readonly documentSetRevision = input.required<number>();
   readonly diagnostics = input<readonly CompilerWorkerDiagnostic[]>([]);
   readonly completionProvider =
     input.required<SourceEditorCompletionProvider>();
   readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
   readonly colorScheme = input.required<EffectiveColorScheme>();
+  readonly colorPalette = input.required<WorkbenchColorPalette>();
+  readonly syntaxTheme = input.required<C4mlSyntaxThemePreset>();
   readonly editorFontFamily = input.required<string>();
   readonly editorFontLigatures = input.required<boolean | string>();
   readonly editorFontSize = input.required<number>();
@@ -77,6 +89,10 @@ export class C4mlMonacoSourceEditorComponent
 
   #editor: MonacoEditor.IStandaloneCodeEditor | undefined;
   #model: MonacoEditor.ITextModel | undefined;
+  readonly #documents = new SourceEditorDocumentSession<
+    MonacoEditor.ITextModel,
+    MonacoEditor.ICodeEditorViewState
+  >();
   #completionRegistration: { dispose(): void } | undefined;
   #highlightRegistration: { dispose(): void } | undefined;
   #synchronizeExternalValue = false;
@@ -86,7 +102,9 @@ export class C4mlMonacoSourceEditorComponent
   constructor() {
     effect(() => {
       const value = this.value();
-      const model = this.#model;
+      const uri = this.documentUri();
+      const documentSetRevision = this.documentSetRevision();
+      const model = this.#activateDocument(documentSetRevision, uri, value);
       if (model === undefined || model.getValue() === value) {
         return;
       }
@@ -106,11 +124,13 @@ export class C4mlMonacoSourceEditorComponent
 
     effect(() => {
       const colorScheme = this.colorScheme();
+      const colorPalette = this.colorPalette();
+      const syntaxTheme = this.syntaxTheme();
       const fontFamily = this.editorFontFamily();
       const fontLigatures = this.editorFontLigatures();
       const fontSize = this.editorFontSize();
       this.#runtime?.editor.setTheme(
-        colorScheme === "dark" ? "c4ml-night" : "c4ml-day",
+        c4mlMonacoThemeName(colorScheme, colorPalette, syntaxTheme),
       );
       this.#editor?.updateOptions({
         fontFamily,
@@ -138,8 +158,12 @@ export class C4mlMonacoSourceEditorComponent
     this.#destroyed = true;
     this.#completionRegistration?.dispose();
     this.#highlightRegistration?.dispose();
+    const host = this.#documentHost();
+    if (host !== undefined) {
+      this.#documents.dispose(host);
+    }
     this.#editor?.dispose();
-    this.#model?.dispose();
+    this.#model = undefined;
   }
 
   revealDiagnostic(diagnostic: CompilerWorkerDiagnostic): void {
@@ -184,15 +208,13 @@ export class C4mlMonacoSourceEditorComponent
     }
     this.#runtime = runtime;
     registerC4mlLanguage(runtime);
-    const modelUri = runtime.Uri.parse("inmemory://c4ml/architecture.c4ml");
-    this.#model = runtime.editor.createModel(
-      this.value(),
-      c4mlLanguageId,
-      modelUri,
-    );
     this.#editor = runtime.editor.create(this.editorHost().nativeElement, {
-      model: this.#model,
-      theme: this.colorScheme() === "dark" ? "c4ml-night" : "c4ml-day",
+      model: null,
+      theme: c4mlMonacoThemeName(
+        this.colorScheme(),
+        this.colorPalette(),
+        this.syntaxTheme(),
+      ),
       ariaLabel: "C4ML source",
       automaticLayout: true,
       bracketPairColorization: { enabled: true },
@@ -223,14 +245,20 @@ export class C4mlMonacoSourceEditorComponent
       this.editorFontFamily(),
       this.editorFontSize(),
     );
+    this.#activateDocument(
+      this.documentSetRevision(),
+      this.documentUri(),
+      this.value(),
+    );
     this.#editor.onDidChangeModelContent(() => {
-      if (!this.#synchronizeExternalValue && this.#model !== undefined) {
-        this.valueChanged.emit(this.#model.getValue());
+      const model = this.#editor?.getModel();
+      if (!this.#synchronizeExternalValue && model !== null && model !== undefined) {
+        this.valueChanged.emit(model.getValue());
       }
     });
     this.#editor.onDidChangeCursorSelection(({ selection }) => {
-      const model = this.#model;
-      if (model === undefined) {
+      const model = this.#editor?.getModel();
+      if (model === null || model === undefined) {
         return;
       }
       this.selectionChanged.emit({
@@ -285,6 +313,65 @@ export class C4mlMonacoSourceEditorComponent
         },
       );
     this.#updateMarkers();
+  }
+
+  #activateDocument(
+    documentSetRevision: number,
+    uri: string,
+    source: string,
+  ): MonacoEditor.ITextModel | undefined {
+    const host = this.#documentHost();
+    if (host === undefined) {
+      return undefined;
+    }
+    const model = this.#documents.activate(
+      documentSetRevision,
+      uri,
+      source,
+      host,
+    );
+    this.#model = model;
+    this.#emitCurrentSelection();
+    this.#updateMarkers();
+    return model;
+  }
+
+  #documentHost():
+    | SourceEditorDocumentHost<
+        MonacoEditor.ITextModel,
+        MonacoEditor.ICodeEditorViewState
+      >
+    | undefined {
+    const runtime = this.#runtime;
+    const editor = this.#editor;
+    if (runtime === undefined || editor === undefined) {
+      return undefined;
+    }
+    return {
+      createModel: (uri, source) =>
+        runtime.editor.createModel(
+          source,
+          c4mlLanguageId,
+          runtime.Uri.from({ scheme: "c4ml-document", path: `/${uri}` }),
+        ),
+      currentModel: () => editor.getModel() ?? undefined,
+      setCurrentModel: (model) => editor.setModel(model ?? null),
+      saveViewState: () => editor.saveViewState() ?? undefined,
+      restoreViewState: (state) => editor.restoreViewState(state),
+    };
+  }
+
+  #emitCurrentSelection(): void {
+    const editor = this.#editor;
+    const model = editor?.getModel();
+    const selection = editor?.getSelection();
+    if (model === null || model === undefined || selection === null || selection === undefined) {
+      return;
+    }
+    this.selectionChanged.emit({
+      startOffset: model.getOffsetAt(selection.getStartPosition()),
+      endOffset: model.getOffsetAt(selection.getEndPosition()),
+    });
   }
 
   #remeasureFontAfterLoad(fontFamily: string, fontSize: number): void {
@@ -368,50 +455,14 @@ function registerC4mlLanguage(runtime: MonacoRuntime): void {
     return;
   }
   runtime.languages.register({ id: c4mlLanguageId });
-  runtime.editor.defineTheme("c4ml-night", {
-    base: "vs-dark",
-    inherit: true,
-    rules: [
-      { token: "comment", foreground: "7895AA", fontStyle: "italic" },
-      { token: "keyword", foreground: "7DD8E6", fontStyle: "bold" },
-      { token: "number", foreground: "F2C879" },
-      { token: "operator", foreground: "A9C2D8" },
-      { token: "string", foreground: "B8D98A" },
-      { token: "variable", foreground: "E4EEF8" },
-    ],
-    colors: {
-      "editor.background": "#132132",
-      "editor.foreground": "#E4EEF8",
-      "editorLineNumber.foreground": "#61778D",
-      "editorLineNumber.activeForeground": "#A9C2D8",
-      "editorCursor.foreground": "#7DD8E6",
-      "editor.selectionBackground": "#24516E",
-      "editor.inactiveSelectionBackground": "#203F57",
-      ...c4mlNightSuggestionColors,
-    },
-  });
-  runtime.editor.defineTheme("c4ml-day", {
-    base: "vs",
-    inherit: true,
-    rules: [
-      { token: "comment", foreground: "607B8F", fontStyle: "italic" },
-      { token: "keyword", foreground: "096D87", fontStyle: "bold" },
-      { token: "number", foreground: "8A570D" },
-      { token: "operator", foreground: "52677D" },
-      { token: "string", foreground: "4D711D" },
-      { token: "variable", foreground: "17263D" },
-    ],
-    colors: {
-      "editor.background": "#FBFCFE",
-      "editor.foreground": "#17263D",
-      "editorLineNumber.foreground": "#8292A3",
-      "editorLineNumber.activeForeground": "#40566B",
-      "editorCursor.foreground": "#157CA3",
-      "editor.selectionBackground": "#B8DDE9",
-      "editor.inactiveSelectionBackground": "#DCEAF0",
-      ...c4mlDaySuggestionColors,
-    },
-  });
+  for (const theme of c4mlMonacoThemes) {
+    runtime.editor.defineTheme(theme.name, {
+      base: theme.base,
+      inherit: theme.inherit,
+      rules: [...theme.rules],
+      colors: { ...theme.colors },
+    });
+  }
   languageRegistered = true;
 }
 
