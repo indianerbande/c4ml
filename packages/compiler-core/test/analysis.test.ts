@@ -4,10 +4,16 @@ import {
   AnalysisContractError,
   architectureGraphItemKey,
   createAnalysisFinding,
+  createArchitectureAnalysisReport,
   createArchitectureQueryResult,
   createProposedSourceChangeSet,
   type SourceReference,
 } from "../src/index.js";
+import {
+  signalGardenModel,
+  signalGardenViews,
+} from "./signal-garden.fixture.js";
+import { resolveArchitectureSnapshot } from "../src/architecture-snapshot.js";
 
 function source(line: number): SourceReference {
   return {
@@ -20,9 +26,46 @@ function source(line: number): SourceReference {
 }
 
 describe("analysis finding and evidence contracts", () => {
+  it("creates a deterministic portable analysis report", () => {
+    const snapshot = resolveArchitectureSnapshot(
+      signalGardenModel,
+      signalGardenViews,
+    ).snapshot!;
+    const later = createAnalysisFinding({
+      id: "finding:z",
+      ruleId: "c4ml.example.z",
+      severity: "warning",
+      message: "Later finding.",
+      subjectKeys: [architectureGraphItemKey("element", "cultivation-api")],
+      evidence: [
+        {
+          id: "evidence:z",
+          origin: "derived",
+          subjectKey: architectureGraphItemKey("element", "cultivation-api"),
+          statement: "Derived from the canonical architecture.",
+        },
+      ],
+    });
+    const earlier = createAnalysisFinding({
+      ...later,
+      id: "finding:a",
+      ruleId: "c4ml.example.a",
+      evidence: [{ ...later.evidence[0]!, id: "evidence:a" }],
+    });
+
+    const report = createArchitectureAnalysisReport(snapshot, [later, earlier]);
+
+    expect(report.version).toBe(1);
+    expect(report.findings.map(({ id }) => id)).toEqual([
+      "finding:a",
+      "finding:z",
+    ]);
+    expect(report.snapshot).toBe(snapshot);
+  });
+
   it("normalizes a deterministic source-located finding with a proposed correction", () => {
-    const authoredSource = "relationship api-to-ledger { protocol = \"\" }";
-    const valueStart = authoredSource.indexOf("\"\"");
+    const authoredSource = 'relationship api-to-ledger { protocol = "" }';
+    const valueStart = authoredSource.indexOf('""');
     const correction = createProposedSourceChangeSet(authoredSource, {
       id: "set-ledger-protocol",
       intent: {
@@ -35,7 +78,7 @@ describe("analysis finding and evidence contracts", () => {
         {
           startOffset: valueStart,
           endOffset: valueStart + 2,
-          text: "\"PostgreSQL wire protocol\"",
+          text: '"PostgreSQL wire protocol"',
         },
       ],
     });
@@ -45,9 +88,7 @@ describe("analysis finding and evidence contracts", () => {
       ruleId: "c4ml.relationship.protocol-required",
       severity: "error",
       message: "Container relationships require a protocol.",
-      subjectKeys: [
-        architectureGraphItemKey("relationship", "api-to-ledger"),
-      ],
+      subjectKeys: [architectureGraphItemKey("relationship", "api-to-ledger")],
       evidence: [
         {
           id: "evidence:relationship-kind",
@@ -88,12 +129,14 @@ describe("analysis finding and evidence contracts", () => {
         severity: "warning",
         message: "Observed communication is not authored.",
         subjectKeys: [architectureGraphItemKey("element", "cultivation-api")],
-        evidence: [{
-          id: "observation:kafka",
-          origin: "observed",
-          subjectKey: architectureGraphItemKey("element", "cultivation-api"),
-          statement: "A Kafka client was observed.",
-        }],
+        evidence: [
+          {
+            id: "observation:kafka",
+            origin: "observed",
+            subjectKey: architectureGraphItemKey("element", "cultivation-api"),
+            statement: "A Kafka client was observed.",
+          },
+        ],
       }),
     ).toThrowError(
       expect.objectContaining<Partial<AnalysisContractError>>({

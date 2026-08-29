@@ -1412,7 +1412,10 @@ identity, normalized non-overlapping offset edits, affected stable identities,
 and an explicit architecture/layout/route/policy intent. It rejects stale or
 overlapping edits before application and can evaluate a candidate source without
 mutating the active source string. Syntax-aware edit generation and conversion
-to one Monaco undo unit remain language/editor adapter responsibilities.
+to one Monaco undo unit are implemented behind the language and Monaco adapter
+boundaries. The first syntax-aware generator changes one supported element
+property by replacing only its value range; it deliberately does not reprint the
+document or normalize unrelated formatting.
 
 The implemented project extension adds a deterministic project revision and
 document-addressed change set. It validates every edit before applying any,
@@ -1430,9 +1433,11 @@ view-membership, upstream, and downstream traversal.
 The implemented analysis contract represents findings and query results with
 stable rule/query identity, qualified affected items, ordered evidence, sorted
 source locations, and optional proposed source corrections. Observed evidence
-requires its adapter identity and observation time. These contracts are exported
-from the portable compiler core; worker messages, CLI commands, concrete rules,
-and source-generating editor actions remain subsequent slices.
+requires its adapter identity and observation time. A versioned portable analysis
+report combines the canonical snapshot and deterministic findings. The browser
+worker and the experimental CLI `analyze` command expose that same report. Until
+concrete rules are implemented, its findings list is correctly empty rather than
+implying checks that did not run.
 
 ## 10. Scene graph and rendering
 

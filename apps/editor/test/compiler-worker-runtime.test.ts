@@ -2,24 +2,39 @@ import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
-import { defaultSystemContextWizardAnswers } from "@c4ml/language-c4ml";
+import {
+  defaultSystemContextWizardAnswers,
+  parseC4mlProjectDraft,
+} from "@c4ml/language-c4ml";
+import {
+  createArchitectureAnalysisReport,
+  createArchitectureProjectInput,
+  createProposedProjectSourceChangeSet,
+  resolveArchitectureSnapshot,
+} from "@c4ml/compiler-core";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 
 import {
   compilerWorkerProtocolVersion,
+  isAnalysisWorkerResponse,
   isCompilerWorkerResponse,
+  type AnalysisWorkerRequest,
   type CompilerWorkerRequest,
   type CompletionWorkerRequest,
   type HighlightWorkerRequest,
   type HelpWorkerRequest,
+  isPreviewProjectChangeWorkerResponse,
+  type PreviewProjectChangeWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
 import {
+  analyzeWorkerRequest,
   compileWorkerRequest,
   completeWorkerRequest,
   generateWorkerRequest,
   highlightWorkerRequest,
   helpWorkerRequest,
+  previewProjectChangeWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -130,6 +145,36 @@ function helpRequest(
 }
 
 describe("compiler worker runtime", () => {
+  it("returns the same canonical analysis report as the portable Node path", async () => {
+    const project = createArchitectureProjectInput({
+      id: "garden-analysis",
+      documents: [{ uri: "architecture.c4ml", text: initialC4mlSource }],
+    });
+    const parsed = await parseC4mlProjectDraft(project);
+    const expected = createArchitectureAnalysisReport(
+      resolveArchitectureSnapshot(parsed.model!, parsed.views!).snapshot!,
+    );
+    const analysisRequest: AnalysisWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 46,
+      file: "architecture.c4ml",
+      source: initialC4mlSource,
+      project: {
+        version: 1,
+        id: project.id,
+        documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+      },
+    };
+
+    const result = await analyzeWorkerRequest(analysisRequest);
+
+    expect(result.status).toBe("valid");
+    expect(isAnalysisWorkerResponse(result)).toBe(true);
+    expect(JSON.stringify(result.report)).toBe(JSON.stringify(expected));
+    expect(result.report?.findings).toEqual([]);
+  });
+
   it("keeps the initial editor source aligned with the documented example", async () => {
     expect(initialC4mlSource).toBe(await readFile(documentedSourceUrl, "utf8"));
   });
@@ -160,8 +205,7 @@ describe("compiler worker runtime", () => {
         expect.objectContaining({
           kind: "route",
           referenceId: "caretaker-reviews-plan",
-          sceneObjectId:
-            "scene-route:relationship:caretaker-reviews-plan",
+          sceneObjectId: "scene-route:relationship:caretaker-reviews-plan",
           policy: "guided",
           style: "orthogonal",
           sourcePort: expect.objectContaining({ side: "east" }),
@@ -174,9 +218,7 @@ describe("compiler worker runtime", () => {
               start: expect.objectContaining({ line: 89, column: 4 }),
             }),
           ],
-          waypoints: [
-            expect.objectContaining({ anchorKind: "target-port" }),
-          ],
+          waypoints: [expect.objectContaining({ anchorKind: "target-port" })],
           lockedSegments: [
             expect.objectContaining({ segmentIndex: expect.any(Number) }),
           ],
@@ -193,8 +235,7 @@ describe("compiler worker runtime", () => {
           referenceId: "caretaker-reviews-plan",
           portRole: "source",
           side: "east",
-          routeSceneObjectId:
-            "scene-route:relationship:caretaker-reviews-plan",
+          routeSceneObjectId: "scene-route:relationship:caretaker-reviews-plan",
         }),
         expect.objectContaining({
           kind: "route-label",
@@ -224,6 +265,112 @@ describe("compiler worker runtime", () => {
         }),
       ]),
     );
+  });
+
+  it("previews a project change through the normal compiler without mutating active source", async () => {
+    const activeSource = initialC4mlSource;
+    const project = createArchitectureProjectInput({
+      id: "garden-preview",
+      documents: [{ uri: "architecture.c4ml", text: activeSource }],
+    });
+    const startOffset = activeSource.indexOf('"Garden Caretaker"');
+    const changeSet = createProposedProjectSourceChangeSet(project, {
+      id: "rename-caretaker",
+      intent: {
+        id: "authoring:rename-display-name",
+        kind: "architecture",
+        summary: "Rename the caretaker display name.",
+      },
+      affectedIds: ["caretaker"],
+      edits: [
+        {
+          documentUri: "architecture.c4ml",
+          startOffset,
+          endOffset: startOffset + '"Garden Caretaker"'.length,
+          text: '"Garden Coordinator"',
+        },
+      ],
+    });
+    const request: PreviewProjectChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-project-change",
+      requestId: 44,
+      file: "architecture.c4ml",
+      project: {
+        version: 1,
+        id: project.id,
+        documents: project.documents.map(({ uri, text }) => ({
+          uri,
+          source: text,
+        })),
+      },
+      changeSet,
+      requestedViewId: "garden-pulse-context",
+    };
+
+    const result = await previewProjectChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(result.status).toBe("valid");
+    expect(isPreviewProjectChangeWorkerResponse(result)).toBe(true);
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      'name = "Garden Coordinator"',
+    );
+    expect(result.compilation?.svg).toContain("Garden Coordinator");
+    expect(activeSource).toBe(initialC4mlSource);
+    expect((await parseC4mlProjectDraft(project)).valid).toBe(true);
+  });
+
+  it("rejects stale project previews before compilation", async () => {
+    const project = createArchitectureProjectInput({
+      id: "garden-preview",
+      documents: [{ uri: "architecture.c4ml", text: initialC4mlSource }],
+    });
+    const changeSet = createProposedProjectSourceChangeSet(project, {
+      id: "stale",
+      intent: {
+        id: "authoring:rename-display-name",
+        kind: "architecture",
+        summary: "Rename the caretaker display name.",
+      },
+      affectedIds: ["caretaker"],
+      edits: [
+        {
+          documentUri: "architecture.c4ml",
+          startOffset: 0,
+          endOffset: 0,
+          text: "// preview\n",
+        },
+      ],
+    });
+    const result = await previewProjectChangeWorkerRequest(
+      {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-project-change",
+        requestId: 45,
+        file: "architecture.c4ml",
+        project: {
+          version: 1,
+          id: project.id,
+          documents: [
+            { uri: "architecture.c4ml", source: `${initialC4mlSource}\n` },
+          ],
+        },
+        changeSet,
+      },
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(result).toMatchObject({
+      status: "invalid",
+      candidateProject: undefined,
+      compilation: undefined,
+      issues: [{ code: "C4ML-SOURCE-CHANGE-102" }],
+    });
   });
 
   it("compiles one multifile project through the browser-worker contract", async () => {
@@ -264,23 +411,25 @@ describe("compiler worker runtime", () => {
     const result = await compile(projectRequest);
     expect(result.status).toBe("valid");
     expect(result.svg).toContain("System Context — Garden Pulse");
-    expect(result.navigation?.targets).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        kind: "node",
-        referenceId: "garden-pulse",
-        source: expect.objectContaining({ file: "model/systems.c4ml" }),
-      }),
-      expect.objectContaining({
-        kind: "route",
-        referenceId: "caretaker-reviews-plan",
-        source: expect.objectContaining({
-          file: "relations/relationships.c4ml",
+    expect(result.navigation?.targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "node",
+          referenceId: "garden-pulse",
+          source: expect.objectContaining({ file: "model/systems.c4ml" }),
         }),
-        relatedSources: [
-          expect.objectContaining({ file: "views/context.c4ml" }),
-        ],
-      }),
-    ]));
+        expect.objectContaining({
+          kind: "route",
+          referenceId: "caretaker-reviews-plan",
+          source: expect.objectContaining({
+            file: "relations/relationships.c4ml",
+          }),
+          relatedSources: [
+            expect.objectContaining({ file: "views/context.c4ml" }),
+          ],
+        }),
+      ]),
+    );
   });
 
   it("compiles the executable Container slice in the same worker", async () => {
@@ -297,9 +446,7 @@ describe("compiler worker runtime", () => {
   it("returns available views and compiles the selected static zoom level", async () => {
     const source = await readFile(staticZoomSourceUrl, "utf8");
     const component = await compile(request(source));
-    const code = await compile(
-      request(source, 2, "arrangement-engine-code"),
-    );
+    const code = await compile(request(source, 2, "arrangement-engine-code"));
 
     expect(component.status).toBe("valid");
     expect(component.activeViewId).toBe("workshop-lens-components");
@@ -319,9 +466,7 @@ describe("compiler worker runtime", () => {
   it("compiles Landscape and selected Dynamic Views through the same worker", async () => {
     const source = await readFile(dynamicSourceUrl, "utf8");
     const landscape = await compile(request(source));
-    const dynamic = await compile(
-      request(source, 2, "finalize-release"),
-    );
+    const dynamic = await compile(request(source, 2, "finalize-release"));
 
     expect(landscape.status).toBe("valid");
     expect(landscape.activeViewId).toBe("release-portfolio");
@@ -372,8 +517,8 @@ describe("compiler worker runtime", () => {
       "classification = external",
       "classification = ex",
     );
-    const tokenOffset = source.indexOf("classification = ex") +
-      "classification = ".length;
+    const tokenOffset =
+      source.indexOf("classification = ex") + "classification = ".length;
     const result = await completeWorkerRequest(
       completionRequest(source, tokenOffset + 2),
     );
@@ -460,7 +605,8 @@ model {
   });
 
   it("returns a stable help topic from the language worker", async () => {
-    const offset = initialC4mlSource.indexOf("route caretaker-reviews-plan") + 8;
+    const offset =
+      initialC4mlSource.indexOf("route caretaker-reviews-plan") + 8;
     const result = await helpWorkerRequest(
       helpRequest(initialC4mlSource, offset),
     );
@@ -521,8 +667,8 @@ describe("linear preview layout", () => {
       edges: [],
     });
     const parent = result.nodes.find(({ id }) => id === "boundary")!;
-    const children = result.nodes.filter(({ parentId }) =>
-      parentId === "boundary",
+    const children = result.nodes.filter(
+      ({ parentId }) => parentId === "boundary",
     );
 
     expect(parent.width).toBe(530);

@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 
 import {
   compileArchitectureDiagram,
+  createArchitectureAnalysisReport,
+  resolveArchitectureSnapshot,
   type ArchitectureView,
   type Diagnostic,
   type SvgEmbeddedFontFace,
@@ -46,6 +48,12 @@ interface CheckCommand {
   readonly diagnostics: DiagnosticFormat;
 }
 
+interface AnalyzeCommand {
+  readonly kind: "analyze";
+  readonly file: string;
+  readonly diagnostics: DiagnosticFormat;
+}
+
 interface RenderCommand {
   readonly kind: "render";
   readonly file: string;
@@ -56,11 +64,13 @@ interface RenderCommand {
   readonly view: "all" | string;
 }
 
-type CliCommand = CheckCommand | RenderCommand | { readonly kind: "version" };
+type CliCommand =
+  AnalyzeCommand | CheckCommand | RenderCommand | { readonly kind: "version" };
 
 const usage = `C4ML experimental CLI
 
 Usage:
+  c4ml analyze <file-or-project> [--diagnostics human|json]
   c4ml check <file-or-project> [--diagnostics human|json]
   c4ml render <file-or-project> (--view <id> | --all) [--format svg|png|svg,png]
               [--output <directory>] [--scale <number>]
@@ -78,7 +88,9 @@ export async function runCli(
     return cliExitCode.usage;
   }
   if (parsedCommand.kind === "version") {
-    io.stdout(`C4ML CLI ${cliVersion} (language ${c4mlDraftLanguageVersion})\n`);
+    io.stdout(
+      `C4ML CLI ${cliVersion} (language ${c4mlDraftLanguageVersion})\n`,
+    );
     return cliExitCode.success;
   }
 
@@ -97,7 +109,11 @@ export async function runCli(
   }
 
   const parsed = await parseC4mlProjectDraft(loaded.project);
-  if (!parsed.valid || parsed.model === undefined || parsed.views === undefined) {
+  if (
+    !parsed.valid ||
+    parsed.model === undefined ||
+    parsed.views === undefined
+  ) {
     reportDiagnostics(parsed.diagnostics, parsedCommand.diagnostics, io);
     return cliExitCode.source;
   }
@@ -115,11 +131,34 @@ export async function runCli(
     );
     return cliExitCode.success;
   }
+  if (parsedCommand.kind === "analyze") {
+    const snapshot = resolveArchitectureSnapshot(
+      parsed.model,
+      parsed.views,
+    ).snapshot!;
+    reportSuccess(
+      {
+        command: "analyze",
+        file: sourcePath,
+        languageVersion: parsed.languageVersion,
+        valid: true,
+        report: createArchitectureAnalysisReport(snapshot),
+      },
+      parsedCommand.diagnostics,
+      io,
+    );
+    return cliExitCode.success;
+  }
 
   const selectedViews = selectViews(parsed.views, parsedCommand.view);
   if (selectedViews.length === 0) {
     const message = `No view with stable identifier "${parsedCommand.view}" exists in ${sourcePath}.`;
-    reportCliFailure("C4ML-CLI-SOURCE-001", message, parsedCommand.diagnostics, io);
+    reportCliFailure(
+      "C4ML-CLI-SOURCE-001",
+      message,
+      parsedCommand.diagnostics,
+      io,
+    );
     return cliExitCode.source;
   }
 
@@ -190,7 +229,10 @@ export async function runCli(
   try {
     await mkdir(outputDirectory, { recursive: true });
     for (const artifact of artifacts) {
-      await writeFile(resolve(outputDirectory, artifact.filename), artifact.bytes);
+      await writeFile(
+        resolve(outputDirectory, artifact.filename),
+        artifact.bytes,
+      );
     }
   } catch (error: unknown) {
     io.stderr(
@@ -236,8 +278,8 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   if (command === "version" && rest.length === 0) {
     return { kind: "version" };
   }
-  if (command !== "check" && command !== "render") {
-    return "Expected check, render, or version.";
+  if (command !== "analyze" && command !== "check" && command !== "render") {
+    return "Expected analyze, check, render, or version.";
   }
   const file = rest[0];
   if (file === undefined || file.startsWith("--")) {
@@ -270,28 +312,22 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   }
 
   const allowed =
-    command === "check"
+    command === "analyze" || command === "check"
       ? new Set(["--diagnostics"])
-      : new Set([
-          "--diagnostics",
-          "--format",
-          "--output",
-          "--scale",
-          "--view",
-        ]);
+      : new Set(["--diagnostics", "--format", "--output", "--scale", "--view"]);
   for (const option of options.keys()) {
     if (!allowed.has(option)) {
       return `Unknown option ${option} for ${command}.`;
     }
   }
-  if (command === "check") {
+  if (command === "analyze" || command === "check") {
     if (flags.size > 0) {
       return "--all is available only for render.";
     }
     const diagnostics = diagnosticFormat(options.get("--diagnostics"));
     return typeof diagnostics === "string"
       ? diagnostics
-      : { kind: "check", file, diagnostics: diagnostics.value };
+      : { kind: command, file, diagnostics: diagnostics.value };
   }
 
   const hasAll = flags.has("--all");
@@ -331,7 +367,9 @@ function diagnosticFormat(
   return "--diagnostics must be human or json.";
 }
 
-function renderFormats(value: string | undefined): readonly RenderFormat[] | string {
+function renderFormats(
+  value: string | undefined,
+): readonly RenderFormat[] | string {
   const values = value === undefined ? ["svg"] : value.split(",");
   if (
     values.length === 0 ||
@@ -376,7 +414,9 @@ function reportCliFailure(
   io: CliIo,
 ): void {
   if (format === "json") {
-    io.stdout(`${JSON.stringify({ valid: false, diagnostics: [{ code, message }] })}\n`);
+    io.stdout(
+      `${JSON.stringify({ valid: false, diagnostics: [{ code, message }] })}\n`,
+    );
   } else {
     io.stderr(`${code}: ${message}\n`);
   }
@@ -391,6 +431,21 @@ function reportSuccess(
     io.stdout(`${JSON.stringify(value)}\n`);
   } else if (value.command === "check") {
     io.stdout(`Valid C4ML: ${String(value.file)}\n`);
+  } else if (value.command === "analyze") {
+    const report = value.report as {
+      readonly snapshot: {
+        readonly elements: readonly unknown[];
+        readonly relationships: readonly unknown[];
+        readonly views: readonly unknown[];
+      };
+      readonly findings: readonly unknown[];
+    };
+    io.stdout(
+      `Analyzed C4ML: ${report.snapshot.elements.length} element(s), ` +
+        `${report.snapshot.relationships.length} relationship(s), ` +
+        `${report.snapshot.views.length} view(s), ` +
+        `${report.findings.length} finding(s)\n`,
+    );
   } else {
     const artifacts = value.artifacts as readonly string[];
     io.stdout(

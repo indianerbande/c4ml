@@ -1,3 +1,4 @@
+export * from "./authoring-edits.js";
 export * from "./completion.js";
 export * from "./highlighting.js";
 export * from "./help-context.js";

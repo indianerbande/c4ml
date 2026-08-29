@@ -98,8 +98,11 @@ kind-qualified architecture graph traversal, and analysis findings/query
 evidence. Source changes use deterministic revisions and non-overlapping text
 edits; snapshots exclude source formatting and parser objects; graph keys keep
 identity namespaces distinct; observed evidence requires adapter attribution.
-Syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
-semantic diffing, and executable policy rules remain later slices.
+The first syntax-aware element-property edit generator, non-mutating compiler
+worker preview, one-unit Monaco application adapter, canonical worker parity,
+and versioned worker/CLI analysis-report exposure are implemented. Broader
+syntax-aware commands, UI gestures, semantic diffing, and executable policy
+rules remain later slices.
 
 The first portable project-source foundation is also implemented. A direct
 `.c4ml` source or a directory containing exactly one root source remains an

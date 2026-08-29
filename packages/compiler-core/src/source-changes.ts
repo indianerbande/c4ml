@@ -16,10 +16,7 @@ export interface SourceRevision {
 }
 
 export type SourceChangeIntentKind =
-  | "architecture"
-  | "layout"
-  | "policy"
-  | "route";
+  "architecture" | "layout" | "policy" | "route";
 
 export interface SourceChangeIntent {
   readonly id: string;
@@ -185,8 +182,9 @@ export function createProjectRevision(
     `${project.version}:${project.id.length}:${project.id}`,
     `${project.name?.length ?? -1}:${project.name ?? ""}`,
     `${project.description?.length ?? -1}:${project.description ?? ""}`,
-    ...documents.map(({ uri, revision }) =>
-      `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
+    ...documents.map(
+      ({ uri, revision }) =>
+        `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
     ),
   ].join("\n");
   return {
@@ -206,9 +204,7 @@ export function createProposedSourceChangeSet(
     baseRevision: createSourceRevision(source),
     intent: { ...input.intent },
     affectedIds: stableUnique(input.affectedIds),
-    edits: [...input.edits]
-      .map((edit) => ({ ...edit }))
-      .sort(compareEdits),
+    edits: [...input.edits].map((edit) => ({ ...edit })).sort(compareEdits),
   };
 }
 
@@ -228,6 +224,61 @@ export function createProposedProjectSourceChangeSet(
   };
 }
 
+export function isProposedProjectSourceChangeSet(
+  value: unknown,
+): value is ProposedProjectSourceChangeSet {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    value["version"] === projectChangeSetVersion &&
+    typeof value["id"] === "string" &&
+    isProjectRevision(value["baseRevision"]) &&
+    isSourceChangeIntent(value["intent"]) &&
+    isStringArray(value["affectedIds"]) &&
+    Array.isArray(value["edits"]) &&
+    value["edits"].every(isProjectSourceTextEdit)
+  );
+}
+
+export function isProjectRevision(value: unknown): value is ProjectRevision {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    value["algorithm"] === projectRevisionAlgorithm &&
+    typeof value["hash"] === "string" &&
+    Array.isArray(value["documents"]) &&
+    value["documents"].every(
+      (document) =>
+        isRecord(document) &&
+        typeof document["uri"] === "string" &&
+        isSourceRevision(document["revision"]),
+    )
+  );
+}
+
+export function isProjectSourceChangeIssue(
+  value: unknown,
+): value is ProjectSourceChangeIssue {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    (value["code"] === "C4ML-SOURCE-CHANGE-101" ||
+      value["code"] === "C4ML-SOURCE-CHANGE-102" ||
+      value["code"] === "C4ML-SOURCE-CHANGE-103" ||
+      value["code"] === "C4ML-SOURCE-CHANGE-104" ||
+      value["code"] === "C4ML-SOURCE-CHANGE-105" ||
+      value["code"] === "C4ML-SOURCE-CHANGE-106") &&
+    typeof value["message"] === "string" &&
+    (value["documentUri"] === undefined ||
+      typeof value["documentUri"] === "string") &&
+    (value["editIndex"] === undefined ||
+      Number.isSafeInteger(value["editIndex"]))
+  );
+}
+
 export function applySourceChangeSet(
   source: string,
   changeSet: ProposedSourceChangeSet,
@@ -239,7 +290,10 @@ export function applySourceChangeSet(
 
   let result = source;
   for (const edit of [...changeSet.edits].reverse()) {
-    result = result.slice(0, edit.startOffset) + edit.text + result.slice(edit.endOffset);
+    result =
+      result.slice(0, edit.startOffset) +
+      edit.text +
+      result.slice(edit.endOffset);
   }
   return {
     valid: true,
@@ -264,7 +318,10 @@ export function applyProjectSourceChangeSet(
       ({ documentUri }) => documentUri === document.uri,
     );
     for (const edit of [...edits].reverse()) {
-      text = text.slice(0, edit.startOffset) + edit.text + text.slice(edit.endOffset);
+      text =
+        text.slice(0, edit.startOffset) +
+        edit.text +
+        text.slice(edit.endOffset);
     }
     return { uri: document.uri, text };
   });
@@ -335,13 +392,15 @@ export function validateSourceChangeSet(
   ) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-001",
-      message: "A source change set requires the supported version and non-empty identity and intent.",
+      message:
+        "A source change set requires the supported version and non-empty identity and intent.",
     });
   }
   if (!sameRevision(createSourceRevision(source), changeSet.baseRevision)) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-002",
-      message: "The proposed source change was created for another source revision.",
+      message:
+        "The proposed source change was created for another source revision.",
     });
   }
   if (
@@ -351,7 +410,8 @@ export function validateSourceChangeSet(
   ) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-003",
-      message: "A source change set requires unique non-empty affected stable identities.",
+      message:
+        "A source change set requires unique non-empty affected stable identities.",
     });
   }
   if (changeSet.edits.length === 0) {
@@ -398,13 +458,17 @@ export function validateProjectSourceChangeSet(
   ) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-101",
-      message: "A project source change set requires the supported version and non-empty identity and intent.",
+      message:
+        "A project source change set requires the supported version and non-empty identity and intent.",
     });
   }
-  if (!sameProjectRevision(createProjectRevision(project), changeSet.baseRevision)) {
+  if (
+    !sameProjectRevision(createProjectRevision(project), changeSet.baseRevision)
+  ) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-102",
-      message: "The proposed project source change was created for another project revision.",
+      message:
+        "The proposed project source change was created for another project revision.",
     });
   }
   if (
@@ -414,7 +478,8 @@ export function validateProjectSourceChangeSet(
   ) {
     issues.push({
       code: "C4ML-SOURCE-CHANGE-103",
-      message: "A project source change set requires unique non-empty affected stable identities.",
+      message:
+        "A project source change set requires unique non-empty affected stable identities.",
     });
   }
   if (changeSet.edits.length === 0) {
@@ -506,5 +571,52 @@ function compareProjectEdits(
   left: ProjectSourceTextEdit,
   right: ProjectSourceTextEdit,
 ): number {
-  return compareText(left.documentUri, right.documentUri) || compareEdits(left, right);
+  return (
+    compareText(left.documentUri, right.documentUri) ||
+    compareEdits(left, right)
+  );
+}
+
+function isSourceRevision(value: unknown): value is SourceRevision {
+  return (
+    isRecord(value) &&
+    value["algorithm"] === sourceRevisionAlgorithm &&
+    typeof value["hash"] === "string" &&
+    Number.isSafeInteger(value["length"]) &&
+    (value["length"] as number) >= 0
+  );
+}
+
+function isSourceChangeIntent(value: unknown): value is SourceChangeIntent {
+  return (
+    isRecord(value) &&
+    typeof value["id"] === "string" &&
+    (value["kind"] === "architecture" ||
+      value["kind"] === "layout" ||
+      value["kind"] === "policy" ||
+      value["kind"] === "route") &&
+    typeof value["summary"] === "string"
+  );
+}
+
+function isProjectSourceTextEdit(
+  value: unknown,
+): value is ProjectSourceTextEdit {
+  return (
+    isRecord(value) &&
+    typeof value["documentUri"] === "string" &&
+    Number.isSafeInteger(value["startOffset"]) &&
+    Number.isSafeInteger(value["endOffset"]) &&
+    typeof value["text"] === "string"
+  );
+}
+
+function isStringArray(value: unknown): value is readonly string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
