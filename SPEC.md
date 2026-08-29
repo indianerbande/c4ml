@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.27
+Status: Draft 0.28
 
 Date: 2026-08-29
 
@@ -283,8 +283,9 @@ Identifiers MUST be explicit, unique in their defined namespace, and stable
 across renames. The compiler MUST NOT derive persistent identity from source
 order, display names, or generated sequence numbers.
 
-Cross-file references MAY be supported, but their resolution and namespace
-rules must be designed before multi-file source is accepted as stable.
+Cross-file references use the project and namespace rules in Section 7.1.
+Moving a declaration between project documents MUST NOT change its stable
+identity.
 
 ### 5.7 C4 completeness profile
 
@@ -486,6 +487,90 @@ The grammar is deliberately deferred. Any proposal MUST satisfy these rules:
 
 The provisional file extension is `.c4ml`. The working title and extension must
 be checked before a public release.
+
+### 7.1 Project and multi-document source contract
+
+**Status: Accepted and implemented foundation for architecture source
+documents, the portable compiler contract, language package, CLI, browser
+worker, and desktop editor.**
+
+The project is the compilation unit, a source document is the editing unit, and
+a View is an output unit. A project MUST produce one validated architecture
+model and one set of resolved Views regardless of how declarations are divided
+among its source documents.
+
+A single `.c4ml` file remains an implicit project. Opening or compiling it MUST
+require no manifest, module declaration, or namespace knowledge. A directory
+containing exactly one root-level `.c4ml` file and no manifest is the equivalent
+implicit project.
+
+An explicit multi-document project uses `c4ml.project.json`. Its version-one
+manifest contains:
+
+- `version`, which is exactly `1`;
+- a stable non-empty project `id`;
+- optional non-empty `name` and `description` text; and
+- a non-empty explicit `sources` list.
+
+Source entries are normalized forward-slash paths relative to the project
+directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
+`..` segments, duplicate entries, paths escaping through symbolic links, and
+remote sources MUST be rejected. Version one intentionally has no globs,
+network imports, transitive project dependencies, or source-order precedence.
+The manifest and every source required for compilation MUST be available
+offline.
+
+Every architecture source retains the normal C4ML language header. In an
+explicit project it MAY contain any subset of the currently executable top-level
+model, relationship, deployment, and View blocks. Completeness is assessed over
+the merged project, not independently per fragment. A source fragment does not
+textually include or paste another fragment.
+
+All documents contribute additively to the existing typed semantic namespaces.
+Identifiers remain unique within the namespace defined by their semantic kind
+and scope. A filename or declaration order MUST NOT become part of stable
+identity. Duplicate declarations MUST fail with source information for every
+involved document; no declaration silently overrides another. Cross-document
+references obey the same target-type and scope rules as references inside one
+document.
+
+The portable compiler core receives a versioned `ArchitectureProjectInput`
+containing project metadata and a deterministic, URI-sorted set of source
+documents. It MUST NOT open files itself. CLI, Electron, and browser/editor
+adapters load documents and enforce their environment's path and access rules.
+Diagnostics and navigation retain project-relative source URIs.
+
+The desktop editor opens an explicit project directory through its native
+bridge, presents the manifest-selected sources in a project explorer and source
+tabs, and compiles the complete in-memory project after an edit. Each document
+retains its own source buffer, opaque native handle, and dirty marker; the
+native close guard reflects aggregate project dirtiness. Save and Save As act
+on the active document in this foundation. Diagnostics and preview navigation
+select the owning document before revealing its range. Context completion sees
+the complete project namespace while highlighting and cursor help remain
+properties of the active source text.
+
+One project revision is derived deterministically from the project identity,
+ordered document identities, and exact document revisions. A project source
+change set addresses every edit by document URI, validates all document ranges
+against one project revision, and applies all edits atomically or none. One
+authoring action spanning several documents MUST remain one preview and one undo
+transaction at the editor boundary.
+
+Future project resources are reserved as separate typed concerns:
+
+- glossary resources for terms, acronyms, and explanations;
+- narrative resources for longer Markdown-backed architecture context;
+- policy resources for deterministic architecture rules;
+- publication resources for View selection, ordering, captions, render
+  profiles, and future print composition; and
+- controlled presentation resources such as themes, shapes, and licensed local
+  assets.
+
+These future resources MUST NOT be treated as architecture source until their
+individual contracts are specified and implemented. Publication settings MUST
+not mutate semantic architecture, and installation-local workbench settings
+MUST remain outside the project.
 
 ## 8. Layout model
 
@@ -1299,6 +1384,12 @@ overlapping edits before application and can evaluate a candidate source without
 mutating the active source string. Syntax-aware edit generation and conversion
 to one Monaco undo unit remain language/editor adapter responsibilities.
 
+The implemented project extension adds a deterministic project revision and
+document-addressed change set. It validates every edit before applying any,
+rejects stale or unknown documents, and can preview a complete candidate project
+without mutating active documents. The original single-document contract remains
+available as the implicit-project convenience boundary.
+
 The implemented architecture snapshot removes source locations and parser
 objects, sorts unordered declarations, preserves typed semantic, deployment,
 view, presentation, and layout data, and serializes deterministically. Its graph
@@ -1492,7 +1583,13 @@ one-view or all-view rendering, SVG and PNG selection, PNG scale, output
 directory selection, human or JSON diagnostics, version reporting, and the
 documented exit classes `0`, `2`, `3`, `4`, and `5`.
 
-This is an implementation spike, not the accepted public CLI contract. Command
+The CLI additionally accepts an explicit project manifest or project directory
+for the executable architecture-source subset. Direct `.c4ml` input remains the
+implicit single-document mode. A directory with several root sources requires
+an explicit manifest. Project loading and path containment remain Node.js
+frontend behavior; the language and compiler receive only portable documents.
+
+This is an implementation foundation, not the accepted final public CLI contract. Command
 names remain provisional and there is no distributable package yet. SVG embeds
 the controlled IBM Plex Sans WOFF2 faces; PNG uses matching local TTF faces with
 system-font discovery disabled. The spike still does not satisfy the complete-
@@ -1643,8 +1740,9 @@ The following decisions remain deliberately open:
 
 - final project name and source extension;
 - exact source grammar and formatting rules;
-- single-file versus optional sidecar layout organization;
-- namespace and multi-file merge rules;
+- optional sidecar layout organization beyond normal View fragments;
+- module, alias, reusable-library, and external-project namespace rules beyond
+  the implemented flat explicit project;
 - whether custom element kinds are allowed in strict C4 mode;
 - the complete constraint-solving strategy beyond the implemented intent,
   adjustment, and exact-pin slice;

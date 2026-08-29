@@ -96,6 +96,22 @@ identity namespaces distinct; observed evidence requires adapter attribution.
 Syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
 semantic diffing, and executable policy rules remain later slices.
 
+The first portable project-source foundation is also implemented. A direct
+`.c4ml` source or a directory containing exactly one root source remains an
+implicit project. Explicit multifile projects use `c4ml.project.json` with a
+stable project ID and an exact list of normalized local source URIs. The
+language package merges executable top-level fragments, resolves cross-document
+references in one flat project, and retains project-relative source locations.
+The CLI and desktop shell accept files, manifests, and project directories
+through the same Node.js loading adapter. The editor compiles every project
+document through the browser worker, offers cross-document references in
+context completion, displays the explicit source set in its project explorer
+and source tabs, preserves per-document dirty state, and navigates diagnostics
+and preview objects to the owning document. Project revisions and source-change
+transactions are deterministic and document-addressed. Save currently applies
+to the active document; project-wide Save All remains a later interaction
+slice. Glossary/narrative/policy/publication resources remain unimplemented.
+
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views
 (System Landscape, Dynamic, Deployment), their required model elements, and the

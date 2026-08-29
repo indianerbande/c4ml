@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, inject, signal } from "@angular/core";
 
 import {
   isCompilerWorkerResponse,
+  type CompilerWorkerProject,
   type CompilerWorkerResponse,
 } from "./compiler-worker.compile.protocol.js";
 import {
@@ -53,6 +54,7 @@ export class CompilerWorkerClient {
   );
   readonly help = signal<EditorHelpState>(this.#helpSession.state);
   #activeFile = "editor.c4ml";
+  #activeProject: CompilerWorkerProject | undefined;
 
   constructor() {
     this.#worker.addEventListener("message", this.#onMessage);
@@ -70,7 +72,24 @@ export class CompilerWorkerClient {
     file = "editor.c4ml",
   ): void {
     this.#activeFile = file;
+    this.#activeProject = undefined;
     const request = this.#session.begin(source, file, requestedViewId);
+    this.state.set(this.#session.state);
+    this.#worker.postMessage(request);
+  }
+
+  compileProject(
+    project: CompilerWorkerProject,
+    activeFile: string,
+    requestedViewId?: string,
+  ): void {
+    this.#activeFile = activeFile;
+    this.#activeProject = project;
+    const request = this.#session.beginProject(
+      project,
+      activeFile,
+      requestedViewId,
+    );
     this.state.set(this.#session.state);
     this.#worker.postMessage(request);
   }
@@ -83,6 +102,7 @@ export class CompilerWorkerClient {
       source,
       offset,
       this.#activeFile,
+      this.#activeProject,
     );
     this.completion.set(this.#completionSession.state);
     this.#worker.postMessage(request);

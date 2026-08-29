@@ -672,6 +672,8 @@ button.tree-row {
 .tab-strip {
   display: flex;
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
   align-items: stretch;
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface-subtle);

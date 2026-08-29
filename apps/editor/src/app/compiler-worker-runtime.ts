@@ -1,5 +1,6 @@
 import {
   compileArchitectureDiagram,
+  createArchitectureProjectInput,
   svgSceneObjectId,
   type ArchitectureModel,
   type ArchitectureView,
@@ -18,10 +19,12 @@ import { loadIbmPlexSansSvgFontFaces } from "@c4ml/font-ibm-plex/browser";
 import { createBrowserElkLayoutAdapter } from "@c4ml/layout-elk/browser";
 import {
   completeC4mlDraft,
+  completeC4mlProjectDraft,
   generateSystemContextDraft,
   helpContextAtC4mlDraft,
   highlightC4mlDraft,
   parseC4mlDraft,
+  parseC4mlProjectDraft,
 } from "@c4ml/language-c4ml";
 
 import {
@@ -59,7 +62,21 @@ export async function compileWorkerRequest(
   embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
 ): Promise<CompilerWorkerResponse> {
   try {
-    const parsed = await parseC4mlDraft(request.source, { file: request.file });
+    const parsed = request.project === undefined
+      ? await parseC4mlDraft(request.source, { file: request.file })
+      : await parseC4mlProjectDraft(createArchitectureProjectInput({
+          id: request.project.id,
+          ...(request.project.name === undefined
+            ? {}
+            : { name: request.project.name }),
+          ...(request.project.description === undefined
+            ? {}
+            : { description: request.project.description }),
+          documents: request.project.documents.map(({ uri, source }) => ({
+            uri,
+            text: source,
+          })),
+        }));
     if (
       !parsed.valid ||
       parsed.model === undefined ||
@@ -167,10 +184,28 @@ export async function completeWorkerRequest(
   request: CompletionWorkerRequest,
 ): Promise<CompletionWorkerResponse> {
   try {
-    const result = await completeC4mlDraft(request.source, {
-      file: request.file,
-      offset: request.offset,
-    });
+    const result = request.project === undefined
+      ? await completeC4mlDraft(request.source, {
+          file: request.file,
+          offset: request.offset,
+        })
+      : await completeC4mlProjectDraft(
+          createArchitectureProjectInput({
+            id: request.project.id,
+            ...(request.project.name === undefined
+              ? {}
+              : { name: request.project.name }),
+            ...(request.project.description === undefined
+              ? {}
+              : { description: request.project.description }),
+            documents: request.project.documents.map(({ uri, source }) => ({
+              uri,
+              text: source,
+            })),
+          }),
+          request.file,
+          request.offset,
+        );
     return {
       protocolVersion: compilerWorkerProtocolVersion,
       type: "completion-result",

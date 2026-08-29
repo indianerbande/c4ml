@@ -9,6 +9,7 @@ import {
   type DesktopPngExportRequest,
   type DesktopPngExportResult,
   type DesktopOpenResult,
+  type DesktopOpenProjectResult,
   type DesktopPlatform,
   type DesktopSaveRequest,
   type DesktopSaveResult,
@@ -25,6 +26,8 @@ const api: C4mlDesktopApi = Object.freeze({
     ) as Promise<DesktopPngExportResult>,
   openDocument: () =>
     ipcRenderer.invoke(desktopIpcChannels.openDocument) as Promise<DesktopOpenResult>,
+  openProject: () =>
+    ipcRenderer.invoke(desktopIpcChannels.openProject) as Promise<DesktopOpenProjectResult>,
   saveDocument: (request: DesktopSaveRequest) =>
     ipcRenderer.invoke(
       desktopIpcChannels.saveDocument,

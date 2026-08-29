@@ -28,6 +28,8 @@ import {
   type RouteGuidance,
   type SourceReference,
   type StaticElement,
+  type ArchitectureProjectInput,
+  validateArchitectureProjectInput,
 } from "@c4ml/compiler-core";
 
 import type {
@@ -139,6 +141,11 @@ export interface C4mlDraftResult {
   readonly resolvedViews?: readonly ResolvedView[];
 }
 
+export interface C4mlProjectDraftResult extends C4mlDraftResult {
+  readonly projectId: string;
+  readonly documentUris: readonly string[];
+}
+
 interface LoweredDocument {
   readonly model: ArchitectureModel;
   readonly views: readonly ArchitectureView[];
@@ -201,10 +208,12 @@ export async function parseC4mlDraft(
     };
   }
 
+  const compositionDiagnostics = validateProjectComposition(lowered, file);
   const resolution = resolveArchitectureViews(lowered.model, lowered.views);
   const diagnostics = sortDiagnostics([
     ...syntaxDiagnostics,
     ...loweringDiagnostics,
+    ...compositionDiagnostics,
     ...resolution.diagnostics,
   ]);
   return {
@@ -219,15 +228,194 @@ export async function parseC4mlDraft(
   };
 }
 
+export async function parseC4mlProjectDraft(
+  project: ArchitectureProjectInput,
+): Promise<C4mlProjectDraftResult> {
+  const projectIssues = validateArchitectureProjectInput(project);
+  if (projectIssues.length > 0) {
+    return {
+      languageVersion: c4mlDraftLanguageVersion,
+      projectId: project.id,
+      documentUris: project.documents.map(({ uri }) => uri),
+      valid: false,
+      diagnostics: projectIssues.map((issue) =>
+        createDiagnostic({
+          severity: "error",
+          code: issue.code,
+          message: issue.message,
+          source: projectSource(issue.uri ?? "<project>"),
+        }),
+      ),
+    };
+  }
+
+  const services = createC4mlDraftServices();
+  const documents = project.documents.map((sourceDocument) => {
+    const document = services.shared.workspace.LangiumDocumentFactory.fromString(
+      sourceDocument.text,
+      URI.from({ scheme: "c4ml-project", path: `/${sourceDocument.uri}` }),
+    );
+    services.shared.workspace.LangiumDocuments.addDocument(document);
+    return { sourceDocument, document };
+  });
+  await services.shared.workspace.DocumentBuilder.build(
+    documents.map(({ document }) => document),
+    { validation: true },
+  );
+
+  const syntaxDiagnostics = sortDiagnostics(
+    documents.flatMap(({ sourceDocument, document }) =>
+      (document.diagnostics ?? []).map((diagnostic) =>
+        fromLangiumDiagnostic(
+          diagnostic,
+          document.textDocument,
+          sourceDocument.uri,
+        ),
+      ),
+    ),
+  );
+  if (hasErrors(syntaxDiagnostics)) {
+    return projectResult(project, {
+      valid: false,
+      diagnostics: syntaxDiagnostics,
+    });
+  }
+
+  const loweringDiagnostics: Diagnostic[] = [];
+  const loweredDocuments = documents.flatMap(({ sourceDocument, document }) => {
+    const lowered = lowerDocument(
+      document.parseResult.value as C4mlDocument,
+      sourceDocument.uri,
+      loweringDiagnostics,
+    );
+    return lowered === undefined ? [] : [lowered];
+  });
+  if (
+    loweredDocuments.length !== documents.length ||
+    hasErrors(loweringDiagnostics)
+  ) {
+    return projectResult(project, {
+      valid: false,
+      diagnostics: sortDiagnostics([
+        ...syntaxDiagnostics,
+        ...loweringDiagnostics,
+      ]),
+    });
+  }
+
+  const lowered = mergeLoweredDocuments(loweredDocuments);
+  const compositionDiagnostics = validateProjectComposition(
+    lowered,
+    project.documents[0]!.uri,
+  );
+  const resolution = resolveArchitectureViews(lowered.model, lowered.views);
+  const diagnostics = sortDiagnostics([
+    ...syntaxDiagnostics,
+    ...loweringDiagnostics,
+    ...compositionDiagnostics,
+    ...resolution.diagnostics,
+  ]);
+  return projectResult(project, {
+    valid: !hasErrors(diagnostics),
+    diagnostics,
+    model: lowered.model,
+    views: lowered.views,
+    placementByViewId: lowered.placementByViewId,
+    routingByViewId: lowered.routingByViewId,
+    resolvedViews: resolution.views,
+  });
+}
+
+function projectResult(
+  project: ArchitectureProjectInput,
+  result: Omit<C4mlDraftResult, "languageVersion">,
+): C4mlProjectDraftResult {
+  return {
+    languageVersion: c4mlDraftLanguageVersion,
+    projectId: project.id,
+    documentUris: project.documents.map(({ uri }) => uri),
+    ...result,
+  };
+}
+
+function projectSource(file: string): SourceReference {
+  const position = { offset: 0, line: 0, column: 0 };
+  return { file, range: { start: position, end: position } };
+}
+
+function validateProjectComposition(
+  project: LoweredDocument,
+  sourceFile: string,
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  if (project.model.elements.length === 0) {
+    diagnostics.push(
+      createDiagnostic({
+        severity: "error",
+        code: "C4ML-LANG-201",
+        message: "A complete C4ML project requires at least one architecture element.",
+        source: projectSource(sourceFile),
+      }),
+    );
+  }
+  if (project.views.length === 0) {
+    diagnostics.push(
+      createDiagnostic({
+        severity: "error",
+        code: "C4ML-LANG-202",
+        message: "A complete C4ML project requires at least one diagram view.",
+        source: projectSource(sourceFile),
+      }),
+    );
+  }
+  return diagnostics;
+}
+
+function mergeLoweredDocuments(
+  documents: readonly LoweredDocument[],
+): LoweredDocument {
+  const deployments = documents.flatMap(({ model }) =>
+    model.deployment === undefined ? [] : [model.deployment],
+  );
+  return {
+    model: {
+      elements: documents.flatMap(({ model }) => model.elements),
+      relationships: documents.flatMap(({ model }) => model.relationships),
+      ...(deployments.length === 0
+        ? {}
+        : {
+            deployment: {
+              environments: deployments.flatMap(({ environments }) => environments),
+              nodes: deployments.flatMap(({ nodes }) => nodes),
+              infrastructureNodes: deployments.flatMap(
+                ({ infrastructureNodes }) => infrastructureNodes,
+              ),
+              instances: deployments.flatMap(({ instances }) => instances),
+              relationships: deployments.flatMap(({ relationships }) => relationships),
+            },
+          }),
+    },
+    views: documents.flatMap(({ views }) => views),
+    placementByViewId: Object.assign(
+      {},
+      ...documents.map(({ placementByViewId }) => placementByViewId),
+    ),
+    routingByViewId: Object.assign(
+      {},
+      ...documents.map(({ routingByViewId }) => routingByViewId),
+    ),
+  };
+}
+
 function lowerDocument(
   document: C4mlDocument,
   file: string,
   diagnostics: Diagnostic[],
 ): LoweredDocument | undefined {
-  const elements = document.model.elements
+  const elements = (document.model?.elements ?? [])
     .map((element) => lowerElement(element, file, diagnostics))
     .filter((element): element is StaticElement => element !== undefined);
-  const relationships = document.relations.relationships
+  const relationships = (document.relations?.relationships ?? [])
     .map((relationship) =>
       lowerRelationship(relationship, file, diagnostics),
     )

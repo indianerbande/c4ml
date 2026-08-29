@@ -32,6 +32,7 @@ const routeHitTolerance = 12;
 export function navigationTargetForOffset(
   targets: readonly CompilerWorkerNavigationTarget[],
   offset: number,
+  file?: string,
 ): CompilerWorkerNavigationTarget | undefined {
   return targets
     .filter((target) => target.kind === "node" || target.kind === "route")
@@ -39,6 +40,7 @@ export function navigationTargetForOffset(
       [target.source, ...target.relatedSources]
         .filter(
           (source) =>
+            (file === undefined || source.file === file) &&
             source.start.offset <= offset && offset <= source.end.offset,
         )
         .map((source) => ({

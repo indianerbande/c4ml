@@ -34,6 +34,9 @@ Implemented and automatically validated:
 - portable version-one contracts for revision-protected source change sets,
   canonical architecture snapshots, kind-qualified graph traversal, and
   source-located analysis findings and query evidence;
+- implicit one-file and explicit multifile project contracts with deterministic
+  project revisions, atomic document-addressed edits, cross-file references,
+  and project-aware CLI validation and rendering;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,
@@ -234,7 +237,18 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --view arrangement-engine-code \
   --format svg,png \
   --output build/diagrams
+
+pnpm run c4ml -- check examples/projects/garden-pulse-multifile
+pnpm run c4ml -- render examples/projects/garden-pulse-multifile \
+  --view garden-pulse-context \
+  --format svg,png \
+  --output build/project-diagrams
 ```
+
+The desktop application can open the same directory with **File → Open
+Project…** (`Cmd/Ctrl+Alt+O`). Its Files area and source tabs retain each
+document separately while the browser worker compiles and completes against the
+whole project.
 
 Its command names and current static-language scope remain provisional.
 
@@ -242,6 +256,7 @@ Its command names and current static-language scope remain provisional.
 
 - [DOCUMENTATION.md](DOCUMENTATION.md) — first user guide, proposed syntax,
   current contributor commands, and demo walkthroughs
+- [PROJECTS.md](PROJECTS.md) — one-file and explicit multifile project guide
 - [SPEC.md](SPEC.md) — normative product behavior and architectural boundaries
 - [TESTING.md](TESTING.md) — required validation evidence
 - [TODO.md](TODO.md) — ordered implementation roadmap and prerequisite gates
@@ -250,6 +265,8 @@ Its command names and current static-language scope remain provisional.
 - [AGENTS.md](AGENTS.md) — repository workflow and project invariants
 - [`examples/draft`](examples/draft) — original syntax previews; the bounded
   seven-view slices are internally executable
+- [`examples/projects/garden-pulse-multifile`](examples/projects/garden-pulse-multifile)
+  — executable original project split across model, relationship, and View files
 
 ## Relationship to the wider ecosystem
 

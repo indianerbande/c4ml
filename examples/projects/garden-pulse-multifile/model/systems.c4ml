@@ -1,0 +1,21 @@
+c4ml draft-1
+
+model {
+  person caretaker {
+    name = "Garden Caretaker"
+    responsibility = "Reviews cultivation signals and schedules garden work."
+    classification = external
+  }
+
+  system garden-pulse {
+    name = "Garden Pulse"
+    responsibility = "Turns garden observations into a shared work plan."
+    classification = internal
+  }
+
+  system sensor-post {
+    name = "Sensor Post"
+    responsibility = "Publishes moisture and temperature observations."
+    classification = external
+  }
+}

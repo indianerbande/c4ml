@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   compileArchitectureDiagram,
+  createArchitectureProjectInput,
   type LayoutAdapter,
   type LayoutRequest,
   type LayoutResult,
@@ -11,11 +12,13 @@ import {
 
 import {
   completeC4mlDraft,
+  completeC4mlProjectDraft,
   defaultSystemContextWizardAnswers,
   generateSystemContextDraft,
   highlightC4mlDraft,
   helpContextAtC4mlDraft,
   parseC4mlDraft,
+  parseC4mlProjectDraft,
 } from "../src/index.js";
 
 const helloContextUrl = new URL(
@@ -151,6 +154,129 @@ describe("C4ML draft-1 language slice", () => {
         "  }",
       ].join("\n"),
     );
+  });
+
+  it("merges project documents and resolves cross-file references", async () => {
+    const source = await helloContextSource();
+    const modelStart = source.indexOf("model {");
+    const relationsStart = source.indexOf("relations {");
+    const viewStart = source.indexOf("view garden-pulse-context {");
+    const section = (start: number, end?: number): string =>
+      `c4ml draft-1\n\n${source.slice(start, end).trim()}\n`;
+    const project = createArchitectureProjectInput({
+      id: "garden-pulse",
+      documents: [
+        {
+          uri: "views/context.c4ml",
+          text: section(viewStart),
+        },
+        {
+          uri: "relations/relationships.c4ml",
+          text: section(relationsStart, viewStart),
+        },
+        {
+          uri: "model/systems.c4ml",
+          text: section(modelStart, relationsStart),
+        },
+      ],
+    });
+
+    const [single, multifile] = await Promise.all([
+      parseC4mlDraft(source),
+      parseC4mlProjectDraft(project),
+    ]);
+
+    expect(multifile.valid).toBe(true);
+    expect(multifile.diagnostics).toEqual([]);
+    expect(multifile.projectId).toBe("garden-pulse");
+    expect(multifile.documentUris).toEqual([
+      "model/systems.c4ml",
+      "relations/relationships.c4ml",
+      "views/context.c4ml",
+    ]);
+    expect(semanticSnapshot(multifile)).toEqual(semanticSnapshot(single));
+    expect(multifile.model?.elements[0]?.source?.file).toBe(
+      "model/systems.c4ml",
+    );
+    expect(multifile.model?.relationships[0]?.source?.file).toBe(
+      "relations/relationships.c4ml",
+    );
+    expect(multifile.views?.[0]?.source?.file).toBe("views/context.c4ml");
+  });
+
+  it("reports duplicate identities across documents with both source locations", async () => {
+    const declaration = (name: string): string => `c4ml draft-1
+
+model {
+  person caretaker {
+    name = "${name}"
+    responsibility = "Tends the shared garden."
+    classification = external
+  }
+}`;
+    const project = createArchitectureProjectInput({
+      id: "duplicate-project",
+      documents: [
+        { uri: "model/first.c4ml", text: declaration("First Caretaker") },
+        { uri: "model/second.c4ml", text: declaration("Second Caretaker") },
+      ],
+    });
+
+    const result = await parseC4mlProjectDraft(project);
+    const duplicate = result.diagnostics.find(
+      ({ code }) => code === "C4ML-SEM-002",
+    );
+
+    expect(result.valid).toBe(false);
+    expect(duplicate?.source.file).toBe("model/second.c4ml");
+    expect(duplicate?.related).toEqual([
+      expect.objectContaining({
+        source: expect.objectContaining({ file: "model/first.c4ml" }),
+      }),
+    ]);
+  });
+
+  it("accepts fragments only as part of a complete project", async () => {
+    const modelFragment = `c4ml draft-1
+
+model {
+  system garden-pulse {
+    name = "Garden Pulse"
+    responsibility = "Coordinates shared garden work."
+    classification = internal
+  }
+}`;
+
+    const single = await parseC4mlDraft(modelFragment, {
+      file: "model/systems.c4ml",
+    });
+    const project = await parseC4mlProjectDraft(
+      createArchitectureProjectInput({
+        id: "complete-project",
+        documents: [
+          { uri: "model/systems.c4ml", text: modelFragment },
+          {
+            uri: "views/context.c4ml",
+            text: `c4ml draft-1
+
+view garden-context {
+  type = system-context
+  scope = garden-pulse
+  title = "Garden Context"
+  purpose = "Explain the garden application."
+  audience = default
+  legend = generated
+}`,
+          },
+        ],
+      }),
+    );
+
+    expect(single.valid).toBe(false);
+    expect(single.diagnostics.map(({ code }) => code)).toContain(
+      "C4ML-LANG-202",
+    );
+    expect(project.valid).toBe(true);
   });
 
   it("runs the parsed source through the shared compiler to deterministic SVG", async () => {
@@ -610,6 +736,51 @@ describe("C4ML draft-1 language slice", () => {
 });
 
 describe("C4ML draft-1 completion contract", () => {
+  it("offers references declared in another project document", async () => {
+    const relationSource = `c4ml draft-1
+
+relations {
+  relation caretaker-opens-garden {
+    from = ${""}
+    to = garden-pulse
+    intent = "Opens the garden plan."
+  }
+}`;
+    const offset = relationSource.indexOf("from = ") + "from = ".length;
+    const result = await completeC4mlProjectDraft(
+      createArchitectureProjectInput({
+        id: "completion-project",
+        documents: [
+          {
+            uri: "model/systems.c4ml",
+            text: `c4ml draft-1
+
+model {
+  person caretaker {
+    name = "Garden Caretaker"
+    responsibility = "Coordinates garden work."
+    classification = external
+  }
+  system garden-pulse {
+    name = "Garden Pulse"
+    responsibility = "Coordinates shared plans."
+    classification = internal
+  }
+}`,
+          },
+          { uri: "relations/relationships.c4ml", text: relationSource },
+        ],
+      }),
+      "relations/relationships.c4ml",
+      offset,
+    );
+
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "caretaker",
+      "garden-pulse",
+    ]);
+  });
+
   it("offers only missing properties in the active element block", async () => {
     const marker = '    name = "Garden Caretaker"\n';
     const source = (await helloContextSource())
@@ -1420,6 +1591,51 @@ describe("C4ML draft-1 Deployment slice", () => {
     });
     expect(systemsResult.candidates.map(({ detail, label }) => ({ detail, label }))).toEqual([
       { detail: "Software System reference", label: "parcel-observer" },
+    ]);
+  });
+
+  it("resolves and completes Deployment View Environments across project documents", async () => {
+    const source = await helloDeploymentSource();
+    const viewStart = source.indexOf("view parcel-observer-production");
+    const deploymentSource = `c4ml draft-1\n\n${source
+      .slice(source.indexOf("model {"), viewStart)
+      .trim()}\n`;
+    const viewSource = `c4ml draft-1\n\n${source.slice(viewStart).trim()}\n`;
+    const project = createArchitectureProjectInput({
+      id: "deployment-project",
+      documents: [
+        { uri: "deployment/runtime.c4ml", text: deploymentSource },
+        { uri: "views/production.c4ml", text: viewSource },
+      ],
+    });
+
+    const parsed = await parseC4mlProjectDraft(project);
+    expect(parsed.valid).toBe(true);
+    expect(parsed.resolvedViews?.[0]?.deploymentEnvironment?.id).toBe(
+      "production",
+    );
+
+    const incompleteView = viewSource.replace(
+      "environment = production",
+      "environment = ",
+    );
+    const completionProject = createArchitectureProjectInput({
+      id: "deployment-completion-project",
+      documents: [
+        { uri: "deployment/runtime.c4ml", text: deploymentSource },
+        { uri: "views/production.c4ml", text: incompleteView },
+      ],
+    });
+    const offset =
+      incompleteView.indexOf("environment = ") + "environment = ".length;
+    const completion = await completeC4mlProjectDraft(
+      completionProject,
+      "views/production.c4ml",
+      offset,
+    );
+    expect(completion.candidates.map(({ label }) => label)).toEqual([
+      "production",
+      "verification",
     ]);
   });
 

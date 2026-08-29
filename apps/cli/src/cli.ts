@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -14,10 +14,12 @@ import {
 } from "@c4ml/font-ibm-plex/node";
 import {
   c4mlDraftLanguageVersion,
-  parseC4mlDraft,
+  parseC4mlProjectDraft,
 } from "@c4ml/language-c4ml";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import { ResvgPngRenderer } from "@c4ml/render-resvg";
+
+import { loadArchitectureProject } from "@c4ml/project-node";
 
 export const cliVersion = "0.0.0" as const;
 
@@ -59,8 +61,8 @@ type CliCommand = CheckCommand | RenderCommand | { readonly kind: "version" };
 const usage = `C4ML experimental CLI
 
 Usage:
-  c4ml check <file> [--diagnostics human|json]
-  c4ml render <file> (--view <id> | --all) [--format svg|png|svg,png]
+  c4ml check <file-or-project> [--diagnostics human|json]
+  c4ml render <file-or-project> (--view <id> | --all) [--format svg|png|svg,png]
               [--output <directory>] [--scale <number>]
               [--diagnostics human|json]
   c4ml version
@@ -81,15 +83,20 @@ export async function runCli(
   }
 
   const sourcePath = resolve(io.cwd, parsedCommand.file);
-  let source: string;
-  try {
-    source = await readFile(sourcePath, "utf8");
-  } catch (error: unknown) {
-    io.stderr(`C4ML-CLI-ENV-001: Cannot read ${sourcePath}: ${errorMessage(error)}\n`);
-    return cliExitCode.environment;
+  const loaded = await loadArchitectureProject(sourcePath);
+  if (!loaded.valid) {
+    reportCliFailure(
+      cliProjectFailureCode(loaded.code),
+      loaded.message,
+      parsedCommand.diagnostics,
+      io,
+    );
+    return loaded.classification === "source"
+      ? cliExitCode.source
+      : cliExitCode.environment;
   }
 
-  const parsed = await parseC4mlDraft(source, { file: sourcePath });
+  const parsed = await parseC4mlProjectDraft(loaded.project);
   if (!parsed.valid || parsed.model === undefined || parsed.views === undefined) {
     reportDiagnostics(parsed.diagnostics, parsedCommand.diagnostics, io);
     return cliExitCode.source;
@@ -205,6 +212,23 @@ export async function runCli(
     io,
   );
   return cliExitCode.success;
+}
+
+function cliProjectFailureCode(code: string): string {
+  switch (code) {
+    case "C4ML-PROJECT-NODE-001":
+      return "C4ML-CLI-ENV-001";
+    case "C4ML-PROJECT-NODE-003":
+      return "C4ML-CLI-ENV-002";
+    case "C4ML-PROJECT-NODE-002":
+      return "C4ML-CLI-PROJECT-001";
+    case "C4ML-PROJECT-NODE-004":
+      return "C4ML-CLI-PROJECT-002";
+    case "C4ML-PROJECT-NODE-005":
+      return "C4ML-CLI-PROJECT-003";
+    default:
+      return code;
+  }
 }
 
 function parseCommand(args: readonly string[]): CliCommand | string {

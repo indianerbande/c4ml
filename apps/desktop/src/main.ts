@@ -27,6 +27,7 @@ import {
   type DesktopCommand,
   type DesktopDocumentState,
   type DesktopOpenResult,
+  type DesktopOpenProjectResult,
   type DesktopOperationFailure,
   type DesktopPngExportResult,
   type DesktopSaveResult,
@@ -34,6 +35,7 @@ import {
 } from "@c4ml/desktop-contract";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
 import { ResvgPngRenderer } from "@c4ml/render-resvg";
+import { loadArchitectureProject } from "@c4ml/project-node";
 
 import {
   DesktopDocumentRegistry,
@@ -191,6 +193,7 @@ function denyRendererPermissions(): void {
 function registerDesktopIpc(): void {
   ipcMain.removeHandler(desktopIpcChannels.exportPng);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
+  ipcMain.removeHandler(desktopIpcChannels.openProject);
   ipcMain.removeHandler(desktopIpcChannels.saveDocument);
   ipcMain.removeAllListeners(desktopIpcChannels.setUiLanguage);
   ipcMain.handle(
@@ -318,6 +321,70 @@ function registerDesktopIpc(): void {
       } catch {
         return fileReadFailure();
       }
+    },
+  );
+  ipcMain.handle(
+    desktopIpcChannels.openProject,
+    async (event): Promise<DesktopOpenProjectResult> => {
+      if (!isTrustedSender(event)) {
+        return invalidIpcResult();
+      }
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: desktopMessage(uiLanguage, "dialog.openProject"),
+        properties: ["openDirectory" as const],
+      };
+      const selection =
+        owner === null
+          ? await dialog.showOpenDialog(options)
+          : await dialog.showOpenDialog(owner, options);
+      const path = selection.filePaths[0];
+      if (selection.canceled || path === undefined) {
+        return { status: "canceled" };
+      }
+      const loaded = await loadArchitectureProject(path);
+      if (!loaded.valid) {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-FILE-001",
+          message: `${loaded.code}: ${loaded.message}`,
+        };
+      }
+      if (
+        loaded.project.documents.some(
+          ({ text }) => Buffer.byteLength(text, "utf8") > maxDesktopSourceBytes,
+        )
+      ) {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-FILE-001",
+          message: desktopMessage(uiLanguage, "error.projectUnreadable"),
+        };
+      }
+      const pathByUri = new Map(
+        loaded.documentPaths.map(({ uri, path: documentPath }) => [uri, documentPath]),
+      );
+      return {
+        status: "opened",
+        project: {
+          id: loaded.project.id,
+          ...(loaded.project.name === undefined
+            ? {}
+            : { name: loaded.project.name }),
+          ...(loaded.project.description === undefined
+            ? {}
+            : { description: loaded.project.description }),
+          documents: loaded.project.documents.map(({ uri, text }) => {
+            const documentPath = pathByUri.get(uri)!;
+            return {
+              handle: documents.register(documentPath),
+              uri,
+              displayName: basename(documentPath),
+              source: text,
+            };
+          }),
+        },
+      };
     },
   );
   ipcMain.handle(
@@ -491,6 +558,11 @@ function installApplicationMenu(): void {
             click: () => send("open-document"),
           },
           {
+            label: desktopMessage(uiLanguage, "menu.openProject"),
+            accelerator: "CmdOrCtrl+Alt+O",
+            click: () => send("open-project"),
+          },
+          {
             label: desktopMessage(uiLanguage, "menu.save"),
             accelerator: "CmdOrCtrl+S",
             click: () => send("save-document"),
@@ -655,6 +727,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
       const check = () => {
         const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
           typeof window.c4mlDesktop?.exportPng === 'function' &&
+          typeof window.c4mlDesktop?.openProject === 'function' &&
           typeof window.c4mlDesktop?.setUiLanguage === 'function';
         const editorReady = document.querySelector('.source-editor-host') !== null;
         const previewReady = document.querySelector('.diagram') !== null;

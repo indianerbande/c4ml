@@ -1,0 +1,15 @@
+c4ml draft-1
+
+relations {
+  relation caretaker-reviews-plan {
+    from = caretaker
+    to = garden-pulse
+    intent = "Reviews and adjusts the garden work plan"
+  }
+
+  relation sensor-publishes-observations {
+    from = sensor-post
+    to = garden-pulse
+    intent = "Publishes current garden observations"
+  }
+}

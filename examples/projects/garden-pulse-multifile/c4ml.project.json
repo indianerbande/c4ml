@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "garden-pulse",
+  "name": "Garden Pulse Architecture",
+  "description": "Original C4ML multifile project demonstrating one shared model and one view.",
+  "sources": [
+    "model/systems.c4ml",
+    "relations/relationships.c4ml",
+    "views/context.c4ml"
+  ]
+}

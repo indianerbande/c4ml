@@ -243,6 +243,34 @@ describe("editor compilation session", () => {
     ).toBe(false);
   });
 
+  it("creates a validated project request around its active document", () => {
+    const session = new EditorCompilationSession();
+    const project = {
+      version: 1 as const,
+      id: "garden-pulse",
+      documents: [
+        { uri: "model/systems.c4ml", source: "c4ml draft-1\nmodel {}" },
+        { uri: "views/context.c4ml", source: "c4ml draft-1\nview context {}" },
+      ],
+    };
+
+    const request = session.beginProject(project, "views/context.c4ml");
+
+    expect(isCompilerWorkerRequest(request)).toBe(true);
+    expect(request).toMatchObject({
+      file: "views/context.c4ml",
+      source: "c4ml draft-1\nview context {}",
+      project,
+    });
+    expect(() => session.beginProject(project, "missing.c4ml")).toThrow(
+      "does not exist",
+    );
+    expect(isCompilerWorkerRequest({
+      ...request,
+      source: "stale active source",
+    })).toBe(false);
+  });
+
   it("orders compile and completion requests on one worker sequence", () => {
     const sequence = new EditorRequestSequence();
     const compilation = new EditorCompilationSession(sequence);

@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.28
+Status: Draft 0.29
 
 Date: 2026-08-29
 
@@ -98,6 +98,22 @@ optional proposed corrections, and mandatory attribution of observed evidence.
 Browser bundle validation protects the absence of Node.js-only APIs. Actual
 syntax-aware edit generation, Monaco undo integration, worker/CLI exposure,
 semantic diffing, and executable policy rules remain unimplemented.
+
+The first project-source foundation adds contract evidence for canonical
+project-relative document URIs, deterministic document ordering, explicit
+manifest parsing, implicit one-document projects, order-independent project
+revisions, atomic multi-document changes, stale and unknown-document rejection,
+cross-document language references, and CLI file/project operation. The
+original Garden Pulse source is also compiled as an explicit three-document
+project; semantic data and normalized SVG remain equivalent except for the
+intentionally preserved source-document metadata. The browser worker compiles
+the complete project and resolves cross-document completion references. The
+desktop boundary exposes native project-directory selection through the shared
+Node.js loader, while Angular provides project tabs, explorer selection,
+per-document buffers and dirty markers, aggregate close protection, and
+cross-document source navigation. Glossary/narrative/policy/publication
+resources, reusable project libraries, remote imports, and Save All remain
+unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -572,6 +588,9 @@ Desktop tests MUST cover:
 - opaque document handles and the configured source-size limit;
 - native Open, Save, Save As, cancellation, failure reporting, dirty titles,
   and unsaved-close protection;
+- native project-directory opening through the shared manifest loader, opaque
+  handles for every selected source, per-document size enforcement, and
+  aggregate project dirty state;
 - native PNG export cancellation, validation, 1x/2x/3x scaling, controlled
   fonts, failure reporting, and faithful canonical-SVG rasterization;
 - safe local workbench-session persistence that excludes source, handles, and
@@ -661,6 +680,38 @@ Rule and query tests MUST prove that:
 Original fixtures MUST cover at least a forbidden dependency, a missing
 required protocol, a deployment/static-model inconsistency, a multi-hop impact
 query, and an external observation that disagrees with authored architecture.
+
+### 2.15 Project and multi-document source
+
+Project-source tests MUST prove that:
+
+- a direct `.c4ml` source and a directory with exactly one root source create
+  equivalent implicit projects;
+- an explicit manifest loads only its listed local sources in normalized URI
+  order;
+- malformed manifests, duplicate sources, absolute paths, traversal segments,
+  platform-specific separators, and symbolic-link escape are rejected with
+  stable codes;
+- missing or unreadable listed sources retain the environment failure class;
+- model, relationship, deployment, View, placement, and Route references can
+  resolve across project documents without weakening their target-type scope;
+- declaration and file order do not alter the validated architecture, resolved
+  Views, geometry, or visible SVG;
+- duplicate stable identities across documents fail with all relevant source
+  locations and never use last-file-wins behavior;
+- diagnostics and navigation retain the owning project-relative document URI;
+- a project source change validates all documents against one revision and
+  applies several document edits atomically as one transaction; and
+- the Node.js CLI and browser-worker consume the same effective portable project
+  input;
+- project completion offers type-correct references declared in other source
+  documents; and
+- editor diagnostics and preview navigation select the owning source tab before
+  revealing its range.
+
+An original parity fixture MUST exist in both single-document and explicit
+multi-document form. Comparisons may normalize source-location metadata, but
+must not normalize semantic, geometry, label, theme, or route differences.
 
 ## 3. Original fixture catalog
 

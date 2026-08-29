@@ -226,6 +226,63 @@ describe("compiler worker runtime", () => {
     );
   });
 
+  it("compiles one multifile project through the browser-worker contract", async () => {
+    const source = await readFile(documentedSourceUrl, "utf8");
+    const modelStart = source.indexOf("model {");
+    const relationsStart = source.indexOf("relations {");
+    const viewStart = source.indexOf("view garden-pulse-context {");
+    const section = (start: number, end?: number): string =>
+      `c4ml draft-1\n\n${source.slice(start, end).trim()}\n`;
+    const activeSource = section(viewStart);
+    const projectRequest: CompilerWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "compile",
+      requestId: 71,
+      file: "views/context.c4ml",
+      source: activeSource,
+      project: {
+        version: 1,
+        id: "garden-pulse",
+        documents: [
+          {
+            uri: "views/context.c4ml",
+            source: activeSource,
+          },
+          {
+            uri: "relations/relationships.c4ml",
+            source: section(relationsStart, viewStart),
+          },
+          {
+            uri: "model/systems.c4ml",
+            source: section(modelStart, relationsStart),
+          },
+        ],
+      },
+    };
+
+    expect(isCompilerWorkerResponse(await compile(projectRequest))).toBe(true);
+    const result = await compile(projectRequest);
+    expect(result.status).toBe("valid");
+    expect(result.svg).toContain("System Context — Garden Pulse");
+    expect(result.navigation?.targets).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "node",
+        referenceId: "garden-pulse",
+        source: expect.objectContaining({ file: "model/systems.c4ml" }),
+      }),
+      expect.objectContaining({
+        kind: "route",
+        referenceId: "caretaker-reviews-plan",
+        source: expect.objectContaining({
+          file: "relations/relationships.c4ml",
+        }),
+        relatedSources: [
+          expect.objectContaining({ file: "views/context.c4ml" }),
+        ],
+      }),
+    ]));
+  });
+
   it("compiles the executable Container slice in the same worker", async () => {
     const source = await readFile(containerSourceUrl, "utf8");
     const result = await compile(request(source));
@@ -338,6 +395,53 @@ describe("compiler worker runtime", () => {
         },
       ],
     });
+  });
+
+  it("returns cross-file references from a project completion request", async () => {
+    const activeSource = `c4ml draft-1
+
+relations {
+  relation caretaker-opens-garden {
+    from = ${""}
+    to = garden-pulse
+    intent = "Opens the garden plan."
+  }
+}`;
+    const offset = activeSource.indexOf("from = ") + "from = ".length;
+    const result = await completeWorkerRequest({
+      ...completionRequest(activeSource, offset, 72),
+      file: "relations/relationships.c4ml",
+      project: {
+        version: 1,
+        id: "garden-completion",
+        documents: [
+          {
+            uri: "model/systems.c4ml",
+            source: `c4ml draft-1
+
+model {
+  person caretaker {
+    name = "Garden Caretaker"
+    responsibility = "Coordinates garden work."
+    classification = external
+  }
+  system garden-pulse {
+    name = "Garden Pulse"
+    responsibility = "Coordinates shared plans."
+    classification = internal
+  }
+}`,
+          },
+          { uri: "relations/relationships.c4ml", source: activeSource },
+        ],
+      },
+    });
+
+    expect(result.status).toBe("complete");
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "caretaker",
+      "garden-pulse",
+    ]);
   });
 
   it("returns compiler-owned highlighting spans from the language worker", async () => {

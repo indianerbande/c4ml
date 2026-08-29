@@ -3,6 +3,7 @@ import {
   DefaultScopeProvider,
   type AstNode,
   type LangiumCoreServices,
+  type LangiumDocuments,
   type ReferenceInfo,
   type Scope,
 } from "langium";
@@ -24,8 +25,11 @@ import {
 } from "./generated/ast.js";
 
 export class C4mlDraftScopeProvider extends DefaultScopeProvider {
+  private readonly documents: LangiumDocuments;
+
   constructor(services: LangiumCoreServices) {
     super(services);
+    this.documents = services.shared.workspace.LangiumDocuments;
   }
 
   override getScope(context: ReferenceInfo): Scope {
@@ -52,7 +56,9 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
     const referenceType = this.reflection.getReferenceType(context);
     if (referenceType === "RelationshipDeclaration") {
       return this.createScopeForNodes(
-        root.relations.relationships,
+        this.projectRoots().flatMap(
+          (document) => document.relations?.relationships ?? [],
+        ),
         super.getScope(context),
       );
     }
@@ -62,10 +68,11 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
         super.getScope(context),
       );
     }
-    const deployment = root.deployment;
     if (referenceType === "EnvironmentDeclaration") {
       return this.createScopeForNodes(
-        deployment?.environments ?? [],
+        this.projectRoots().flatMap(
+          (document) => document.deployment?.environments ?? [],
+        ),
         super.getScope(context),
       );
     }
@@ -82,18 +89,27 @@ export class C4mlDraftScopeProvider extends DefaultScopeProvider {
       return this.createScopeForNodes(matches, super.getScope(context));
     }
     const elements = this.elementsForReference(
-      root.model.elements,
+      this.projectRoots().flatMap(
+        (document) => document.model?.elements ?? [],
+      ),
       context,
       referenceType,
     );
     return this.createScopeForNodes(elements, super.getScope(context));
   }
 
+  private projectRoots(): C4mlDocument[] {
+    return this.documents.all
+      .map(({ parseResult }) => parseResult.value)
+      .filter(isC4mlDocument)
+      .toArray();
+  }
+
   private elementsForReference(
-    elements: C4mlDocument["model"]["elements"],
+    elements: NonNullable<C4mlDocument["model"]>["elements"],
     context: ReferenceInfo,
     referenceType: string,
-  ): C4mlDocument["model"]["elements"] {
+  ): NonNullable<C4mlDocument["model"]>["elements"] {
     if (referenceType === "SoftwareSystemDeclaration") {
       return elements.filter(isSoftwareSystemDeclaration);
     }
