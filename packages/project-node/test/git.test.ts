@@ -6,7 +6,15 @@ import { promisify } from "node:util";
 
 import { describe, expect, it } from "vitest";
 
-import { loadArchitectureProjectAtGitRevision } from "../src/index.js";
+import {
+  commitGitWorkingTreeChanges,
+  loadArchitectureProjectAtGitRevision,
+  pushGitWorkingTreeBranch,
+  readGitWorkingTreeStatus,
+  stageAllGitWorkingTreeChanges,
+  stageGitWorkingTreePaths,
+  unstageGitWorkingTreePaths,
+} from "../src/index.js";
 
 const run = promisify(execFile);
 
@@ -95,5 +103,97 @@ describe("Git project revision adapter", () => {
       code: "C4ML-GIT-002",
     });
     expect(await git(directory, "status", "--porcelain=v1")).toBe(before);
+  });
+});
+
+describe("Git working-tree adapter", () => {
+  it("reports, stages, unstages, and commits repository changes", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-git-worktree-"));
+    const sourcePath = join(directory, "architecture.c4ml");
+    await initializeRepository(directory);
+    await writeFile(sourcePath, "c4ml draft-1\n", "utf8");
+    await git(directory, "add", "architecture.c4ml");
+    await git(directory, "commit", "-m", "initial");
+    await writeFile(sourcePath, "c4ml draft-1\n// changed\n", "utf8");
+    await writeFile(join(directory, "notes.txt"), "local note\n", "utf8");
+
+    const initial = await readGitWorkingTreeStatus(sourcePath);
+    expect(initial).toMatchObject({
+      valid: true,
+      value: {
+        branch: "main",
+        changes: [
+          { path: "architecture.c4ml", workingTreeStatus: "modified" },
+          { path: "notes.txt", workingTreeStatus: "untracked" },
+        ],
+      },
+    });
+
+    const staged = await stageGitWorkingTreePaths(sourcePath, ["architecture.c4ml"]);
+    expect(staged).toMatchObject({
+      valid: true,
+      value: {
+        changes: [
+          { path: "architecture.c4ml", indexStatus: "modified" },
+          { path: "notes.txt", workingTreeStatus: "untracked" },
+        ],
+      },
+    });
+
+    const unstaged = await unstageGitWorkingTreePaths(sourcePath, ["architecture.c4ml"]);
+    expect(unstaged).toMatchObject({
+      valid: true,
+      value: {
+        changes: [
+          { path: "architecture.c4ml", workingTreeStatus: "modified" },
+          { path: "notes.txt", workingTreeStatus: "untracked" },
+        ],
+      },
+    });
+
+    expect((await stageAllGitWorkingTreeChanges(sourcePath)).valid).toBe(true);
+    const committed = await commitGitWorkingTreeChanges(
+      sourcePath,
+      "Update architecture",
+    );
+    expect(committed).toMatchObject({ valid: true, value: { changes: [] } });
+    expect(await git(directory, "log", "-1", "--pretty=%s")).toBe(
+      "Update architecture",
+    );
+  });
+
+  it("sets the upstream when pushing a branch to its only remote", async () => {
+    const root = await mkdtemp(join(tmpdir(), "c4ml-git-push-"));
+    const remote = join(root, "remote.git");
+    const directory = join(root, "worktree");
+    await mkdir(directory);
+    await git(root, "init", "--bare", remote);
+    await initializeRepository(directory);
+    const sourcePath = join(directory, "architecture.c4ml");
+    await writeFile(sourcePath, "c4ml draft-1\n", "utf8");
+    await git(directory, "add", "architecture.c4ml");
+    await git(directory, "commit", "-m", "initial");
+    await git(directory, "remote", "add", "origin", remote);
+
+    const pushed = await pushGitWorkingTreeBranch(sourcePath);
+
+    expect(pushed).toMatchObject({
+      valid: true,
+      value: { branch: "main", upstream: "origin/main", ahead: 0, behind: 0 },
+    });
+    expect(await git(remote, "rev-parse", "refs/heads/main")).toBe(
+      await git(directory, "rev-parse", "HEAD"),
+    );
+  });
+
+  it("rejects source-control requests outside a repository", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-git-none-"));
+    const sourcePath = join(directory, "architecture.c4ml");
+    await writeFile(sourcePath, "c4ml draft-1\n", "utf8");
+
+    expect(await readGitWorkingTreeStatus(sourcePath)).toMatchObject({
+      valid: false,
+      code: "C4ML-GIT-WORKTREE-001",
+    });
   });
 });

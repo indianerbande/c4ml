@@ -1,7 +1,7 @@
 # C4ML experimental CLI
 
 This private application is the first thin Node.js command-line frontend over
-the browser-compatible language and compiler core. It does not contain a second
+the runtime-portable language and compiler core. It does not contain a second
 parser, semantic model, layout model, or renderer.
 
 From the repository root:

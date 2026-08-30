@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "pnpm --recursive --sort --if-present run build",
-    "check:browser": "node scripts/check-browser-bundles.mjs",
+    "check:worker-bundles": "node scripts/check-worker-bundles.mjs",
     "check:desktop-production": "node scripts/check-desktop-production.mjs",
     "check:editor-production": "node scripts/check-editor-production.mjs",
     "c4ml": "pnpm --filter @c4ml/cli... run build && node apps/cli/dist/main.js",
@@ -27,12 +27,12 @@
     "desktop:package": "pnpm run desktop:build && pnpm --filter @c4ml/desktop run package",
     "desktop:smoke": "pnpm run desktop:package && pnpm --filter @c4ml/desktop run smoke",
     "desktop:start": "pnpm run desktop:package && pnpm --filter @c4ml/desktop run start",
-    "editor:build": "pnpm --filter @c4ml/editor run build",
-    "editor:start": "pnpm --filter @c4ml/editor run start",
+    "renderer:build": "pnpm --filter @c4ml/editor run build",
+    "renderer:start": "pnpm --filter @c4ml/editor run start",
     "test": "pnpm --recursive --sort --if-present run test",
     "typecheck": "pnpm run build && pnpm run typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
-    "check": "pnpm run build && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:browser && pnpm run typecheck:tests && pnpm run test"
+    "check": "pnpm run build && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run typecheck:tests && pnpm run test"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

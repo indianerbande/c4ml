@@ -88,8 +88,12 @@ pnpm run desktop:start
 ```
 
 It opens as a normal desktop application with simultaneous source and preview
-tabs. The activity bar opens C4ML-specific Files, Diagrams, and Output areas;
-Problems and selected Route details share the bottom panel. Use the command
+tabs. The activity bar opens C4ML-specific Files, Source Control, Diagrams,
+Output, and Help areas. Source Control reports the containing local repository,
+lets you stage or unstage changes, commits staged changes, and pushes the current
+branch through its configured remote. Save editor changes before committing.
+Problems and selected Route details share the bottom panel; their active tab and
+the visible Problems count both toggle that panel. Use the command
 center or `Shift+Cmd/Ctrl+P` to search the local command palette. Use the
 toolbar or the native File menu to open and save `.c4ml` source. The standard shortcuts are
 `Cmd/Ctrl+O`, `Cmd/Ctrl+S`, and `Cmd/Ctrl+Shift+S`. The window title and source
@@ -105,14 +109,14 @@ workbench** docks it again. Selection, zoom, fit, and the Route overlay stay in
 sync. The detached window is deliberately projection-only: it receives no
 source text, document handle, filesystem path, compiler, save action, or export
 action. Closing or moving it cannot change the `.c4ml` document or exported
-SVG/PNG. Browser development currently uses the full-size mode; a browser
-pop-out is intentionally deferred.
+SVG/PNG. The detachable preview is a native Electron window. The internal
+renderer harness uses the full-size mode and does not provide a browser pop-out.
 
 Use **Export PNG** in Output or the File menu to save the current canonical
 diagram at 1x, 2x, or 3x. Rasterization runs locally in the desktop main process
 from the same SVG shown by the preview, with the packaged IBM Plex Sans fonts;
-it does not take a browser screenshot or run layout again. Browser-only
-development keeps SVG download but has no native PNG dialog.
+it does not take a browser screenshot or run layout again. The internal
+renderer harness keeps SVG download but has no native PNG dialog.
 
 Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
 choose English or German interface copy, System, Light, or Dark workbench
@@ -139,8 +143,8 @@ syntax owner reported by the C4ML language worker. Press `F1` to open that
 article directly. Help search and navigation never edit the document or alter
 diagram output.
 
-Parsing, compilation, and SVG generation still run in the same browser Web
-Worker as the isolated Angular development path.
+Parsing, compilation, and SVG generation run in a local Web Worker inside the
+sandboxed desktop renderer.
 When an edit is invalid, the diagnostic panel updates while the last valid
 diagram remains visible. The accepted lazy Monaco adapter presents only the
 tokens, values, or references accepted at the current cursor and applies the
@@ -154,13 +158,13 @@ compilation. The preview can be zoomed, fitted, scrolled while enlarged, and
 downloaded as SVG. Documents with several executable views expose a view
 selector; changing it recompiles the selected projection without duplicating
 the model. Syntax colors come from the C4ML lexer's source spans through the
-same worker, while automatic preview geometry comes from the local ELK.js
-browser worker.
+same worker, while automatic preview geometry comes from the separate local
+ELK.js Web Worker.
 
-For isolated renderer development, the Angular application can still be opened
-in a browser with `pnpm run editor:start`; native Open/Save controls are absent
-there. A local packaged application and current-platform installers can be
-created with:
+For isolated renderer development, contributors can start the internal harness
+with `pnpm run renderer:start`; native Open/Save controls are absent there. It
+is not a supported browser application or deployment target. A local packaged
+application and current-platform installers can be created with:
 
 ```shell
 pnpm run desktop:package
@@ -325,7 +329,7 @@ PNG use the same locally packaged IBM Plex Sans files;
 SVG embeds WOFF2 faces and PNG supplies the matching TTF faces to the renderer
 with system-font discovery disabled.
 
-The editor uses the same compiler in a browser Web Worker. Source remains
+The desktop renderer uses the same compiler in a local Web Worker. Source remains
 authoritative; the preview does not keep hidden semantic or layout state.
 Monaco is the accepted desktop source-editor library behind a C4ML-owned
 adapter, not a second parser. Selecting a source declaration highlights its

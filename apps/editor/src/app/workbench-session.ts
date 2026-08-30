@@ -2,6 +2,7 @@ export const workbenchSessionStorageKey = "c4ml.workbench.session.v1";
 
 export const workbenchActivities = [
   "files",
+  "source-control",
   "diagrams",
   "export",
   "help",
@@ -118,6 +119,20 @@ export function normalizePreviewZoom(value: unknown): number {
   }
   const rounded = Math.round(value * 5) / 5;
   return Math.min(2.5, Math.max(0.4, rounded));
+}
+
+export function toggleWorkbenchPanel(
+  session: WorkbenchSession,
+  bottomPanel: WorkbenchPanel,
+): WorkbenchSession {
+  return {
+    ...session,
+    bottomPanel,
+    bottomPanelOpen:
+      session.bottomPanel === bottomPanel && session.bottomPanelOpen
+        ? false
+        : true,
+  };
 }
 
 export function normalizePreviewWindowBounds(

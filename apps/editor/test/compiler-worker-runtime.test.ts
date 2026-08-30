@@ -684,7 +684,7 @@ describe("compiler worker runtime", () => {
     });
   });
 
-  it("compiles one multifile project through the browser-worker contract", async () => {
+  it("compiles one multifile project through the compiler-worker contract", async () => {
     const source = await readFile(documentedSourceUrl, "utf8");
     const modelStart = source.indexOf("model {");
     const relationsStart = source.indexOf("relations {");

@@ -3,19 +3,23 @@
 This private Electron application packages the Angular/Monaco editor as a
 local desktop workbench. It is an application adapter, not a second compiler:
 all language processing, C4 semantics, layout, routing, and rendering continue
-to run through the shared browser-compatible compiler worker.
+to run through the shared runtime-portable compiler worker.
 
 The shell currently provides:
 
 - a sandboxed Electron renderer with context isolation and Node integration
   disabled;
-- a small typed preload bridge for Open, Save, Save As, native PNG export, menu
-  commands, document state, and validated English/German UI-language selection;
+- a small typed preload bridge for Open, Save, Save As, native PNG export,
+  explicit local Git status/stage/unstage/commit/push operations, menu commands,
+  document state, and validated English/German UI-language selection;
 - an optional second preview window with its own projection-only preload and no
   document, source, compiler, save, export, filesystem, or Node authority;
 - full-size, detach, synchronized selection/zoom/Route-overlay, safe window
   bounds, and redock behavior owned by the authoritative workbench;
 - opaque document handles, so renderer code never receives filesystem paths;
+- bounded shell-free Git subprocesses in the main/project-node boundary, with
+  repository-relative change paths and no checkout, discard, pull, fetch, or
+  history-rewrite operation;
 - local-only editor assets served through the owned `c4ml://app` protocol;
 - native menus, shortcuts, dialogs, title updates, and unsaved-close
   protection, with C4ML-owned copy synchronized to the workbench language;

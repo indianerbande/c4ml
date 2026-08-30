@@ -7,6 +7,7 @@ import {
   normalizePreviewZoom,
   parseWorkbenchSession,
   storeWorkbenchSession,
+  toggleWorkbenchPanel,
 } from "../src/app/workbench-session.js";
 
 describe("workbench session", () => {
@@ -59,6 +60,29 @@ describe("workbench session", () => {
         }),
       ).activeActivity,
     ).toBe("help");
+  });
+
+  it("persists the Source Control activity without repository details", () => {
+    expect(
+      parseWorkbenchSession(
+        JSON.stringify({
+          ...defaultWorkbenchSession,
+          activeActivity: "source-control",
+          repositoryPath: "/private/repository",
+        }),
+      ),
+    ).toEqual({
+      ...defaultWorkbenchSession,
+      activeActivity: "source-control",
+    });
+  });
+
+  it("uses the active panel tab as the panel toggle", () => {
+    const closed = toggleWorkbenchPanel(defaultWorkbenchSession, "problems");
+    expect(closed.bottomPanelOpen).toBe(false);
+    const route = toggleWorkbenchPanel(closed, "route");
+    expect(route).toMatchObject({ bottomPanel: "route", bottomPanelOpen: true });
+    expect(toggleWorkbenchPanel(route, "route").bottomPanelOpen).toBe(false);
   });
 
   it("rejects unsupported values field by field", () => {

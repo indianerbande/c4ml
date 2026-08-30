@@ -22,9 +22,11 @@ The next product direction consists of three connected pillars:
 3. **Architecture proof:** deterministic rules and graph queries explain
    compliance, impact, evidence, and source-located corrections.
 
-The product direction is accepted. The detailed contracts and public source
-syntax remain draft until their individual slices are reviewed and accepted in
-`SPEC.md`.
+The product direction is accepted. Its user-facing application is exclusively
+the Electron desktop workbench; the Angular renderer harness is an internal
+development and visual-testing tool, not a browser product. The detailed
+contracts and public source syntax remain draft until their individual slices
+are reviewed and accepted in `SPEC.md`.
 
 ## Gate 0 — finish the current foundation
 
@@ -72,7 +74,7 @@ Monaco, and Electron only present or apply the resulting contract.
 - [x] separate semantic, view, deployment, presentation, and layout fields;
 - [x] provide deterministic upstream, downstream, containment, deployment, and
       view-membership traversal; and
-- [x] prove Node.js and browser-worker parity.
+- [x] prove Node.js and compiler-worker parity.
 
 The first snapshot slice may remain single-document. Final multi-file namespace
 and merge rules are not a prerequisite for proving the contract.
@@ -106,7 +108,7 @@ implementation.
 - [x] add CLI file, manifest, and directory loading with explicit source lists;
 - [x] prove semantic and normalized-SVG parity with an original split project;
 - [x] expose project compilation and cross-document completion through the
-      browser worker;
+      compiler worker;
 - [x] add desktop Open Folder, a project explorer, multi-document dirty state,
       and several source tabs;
 - [x] add an explicit Save All command and preserve independent Monaco undo and
@@ -143,14 +145,13 @@ placement and routing intent, preview hit testing, and Monaco undo support.
 - [x] synchronize selection and source navigation in both directions, support
       redocking, and restore only safe window bounds and presentation state;
       and
-- [x] evaluate an optional same-origin browser pop-out using a browser messaging
-      channel after the desktop workflow is proven; separate development ports
-      are not part of the intended design.
+- [x] keep detached preview behavior exclusively in the native Electron window;
+      no hosted or standalone browser pop-out belongs to the product scope.
 
-The browser evaluation deliberately keeps pop-out deferred. Browser development
-uses the implemented full-size single-window workspace until a same-origin
-messaging, popup lifecycle, and recovery contract offers clear value beyond the
-accepted desktop workflow.
+Superseded evaluation note: an optional same-origin browser pop-out was
+considered before the desktop-only product boundary was made explicit. The
+accepted native preview window now covers that use case, while the internal
+renderer harness keeps only the full-size single-window workspace.
 
 The main workbench and its compiler worker remain authoritative. Closing,
 reopening, or moving the preview window MUST NOT change source, canonical
@@ -205,7 +206,7 @@ state.
       movement.
 
 The implemented portable version-one result is exposed unchanged through the
-browser worker and the experimental CLI `diff` command. It also keeps the
+compiler worker and the experimental CLI `diff` command. It also keeps the
 stable View scope reference separate from its resolved display text so an
 element rename does not appear as unrelated View churn.
 
@@ -218,7 +219,7 @@ element rename does not appear as unrelated View churn.
 - [x] ensure exported comparison artifacts explain their visual encoding.
 
 The portable version-one impact report, conservative geometry-stability stage,
-comparison-scene projection, browser-worker pass-through, and CLI SVG/PNG export
+comparison-scene projection, compiler-worker pass-through, and CLI SVG/PNG export
 are implemented. Geometry decisions explicitly distinguish retention, hard
 layout ownership, additions/removals, incompatibility, containment, and
 collision fallback. Comparison artifacts include visible and machine-readable
@@ -231,6 +232,12 @@ encoding for architecture change, affected paths, and layout-only movement.
       portable diff semantics; and
 - [x] expose comparison results without persisting repository paths in the
       workbench session record.
+- [x] expose local branch, upstream, divergence, index, and working-tree state
+      in a left-side Source Control activity;
+- [x] stage and unstage individual or all changes and commit staged changes
+      after explicit user action; and
+- [x] push the current branch through its configured upstream, or establish the
+      upstream when exactly one remote is available.
 
 The read-only local Git loader is implemented in the existing Node.js project
 adapter already shared by desktop and CLI. It reads blobs and manifests from a
@@ -238,6 +245,10 @@ resolved commit without checkout, returns ordinary portable project documents,
 and never enters compiler-core. The CLI accepts `working`, commit, tag, or
 branch selections. Persisted workbench-session parsing continues to whitelist
 only presentation state and demonstrably drops repository paths and refs.
+The desktop extension uses a separate bounded working-tree adapter. It never
+checks out, discards, pulls, fetches, or rewrites user work. Hosted-provider
+authentication, branch creation/switching, pull/sync, and conflict resolution
+remain later slices.
 
 ### Slice 2.4 — migration stories
 
@@ -252,7 +263,7 @@ and impact engine, and retains state provenance for every reported change. Its
 offline HTML renderer embeds all four comparison SVG modes, provides ordered
 step navigation, and rejects active or externally linked SVG content. The
 original Garden Pulse review story has been exercised interactively in a local
-browser without network access.
+offline HTML viewer.
 
 Pillar 2 is complete at its version-one foundation: a rename remains a rename,
 an unrelated reformatting produces an empty semantic diff, local Git states are
@@ -271,7 +282,7 @@ reviewed states can be composed into a navigable offline migration story.
 
 The portable version-one evaluator converts non-blocking shared validation
 guidance and adds evidence-backed View-coverage and empty-View findings over a
-validated snapshot. CLI and browser worker return the same deterministic
+validated snapshot. CLI and compiler worker return the same deterministic
 report. The CLI prints source locations; the localized Output area lists the
 plain-language findings and navigates directly to their Monaco declaration.
 Blocking invalid source remains in the existing Problems path because it has
@@ -295,11 +306,21 @@ changing authored Views.
 
 ### Slice 3.3 — project architecture policies
 
-- [ ] define a typed internal policy contract before proposing public syntax;
-- [ ] cover forbidden dependencies, required protocols, ownership, allowed
+- [x] define a typed internal policy contract before proposing public syntax;
+- [x] cover forbidden dependencies, required protocols, ownership, allowed
       direction, deployment consistency, and selected metadata requirements;
 - [ ] run the same policies in editor and CLI/CI; and
-- [ ] offer corrections only as reviewable source change sets.
+- [x] offer corrections only as reviewable source change sets.
+
+The portable version-one contract uses exact kind-qualified stable identities,
+normalizes policy sets deterministically, and evaluates all six rule families
+over validated canonical snapshots. Violations become ordinary source-located
+analysis findings with authored and derived evidence. Malformed, unknown, and
+inapplicable policies fail with stable `C4ML-POLICY-*` codes. An optional
+correction can only be a complete proposed single-document or atomic project
+source change set with policy intent. No policy file format, public source
+syntax, editor loading path, or CLI flag is accepted yet; feeding one identical
+policy set through worker and CLI/CI boundaries is the remaining slice.
 
 ### Slice 3.4 — claimed versus observed architecture
 

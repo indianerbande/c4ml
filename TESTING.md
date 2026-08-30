@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.37
+Status: Draft 0.38
 
 Date: 2026-08-30
 
@@ -12,7 +12,8 @@ Vitest is accepted for unit and adapter-contract tests. The verified
 commands are:
 
 - `pnpm run build` for generated-language and TypeScript build validation;
-- `pnpm run check:browser` for in-memory browser bundle validation;
+- `pnpm run check:worker-bundles` for in-memory renderer Web Worker bundle
+  validation;
 - `pnpm run typecheck` for source and test type checking;
 - `pnpm run test` for the current semantic, view, adapter, language, and editor
   test suite;
@@ -22,7 +23,7 @@ commands are:
 - `pnpm run check:desktop-production` for pinned desktop dependencies, secure
   main/preload boundaries, CSP, and required packaged editor resources;
 - `pnpm run check` for the complete current gate;
-- `pnpm run editor:build` for the production-mode Angular editor build;
+- `pnpm run renderer:build` for the production-mode Angular renderer build;
 - `pnpm run desktop:smoke` for the built Electron shell and live compiler
   worker;
 - `pnpm run desktop:package` for the unpacked current-platform application;
@@ -72,7 +73,7 @@ absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
 relative Port/element/canvas anchors, ordered locked segments, hard and soft
 avoidance declarations and selection, label placement, policy-combination
 diagnostics, route-context completion,
-browser bundling without Node.js polyfills, and deterministic SVG through the
+Web Worker bundling without Node.js polyfills, and deterministic SVG through the
 shared compiler pipeline. This evidence does not claim coverage of the complete
 preview grammar.
 
@@ -101,7 +102,7 @@ deployment, view, presentation, and layout separation, kind-qualified graph
 identity, deterministic containment/deployment/view/impact traversal, analysis
 findings, query results, ordered evidence paths, source-location ordering,
 optional proposed corrections, and mandatory attribution of observed evidence.
-Browser bundle validation protects the absence of Node.js-only APIs. The first
+Worker-bundle validation protects the absence of Node.js-only APIs. The first
 authoring integration evidence proves syntax-aware value replacement without
 rewriting comments, unrelated formatting, identifiers, or declarations;
 non-mutating project preview through the normal compiler worker; stale preview
@@ -111,7 +112,7 @@ also covered. The semantic differ now adds original before/after evidence for
 stable-identity renames, additions, removals, property and Relationship changes,
 separate deployment, View, presentation, and layout categories, layout-only
 changes without architecture noise, deterministic serialization, and empty
-results for equivalent snapshots. Browser-worker/direct-core parity and CLI
+results for equivalent snapshots. Compiler-worker/direct-core parity and CLI
 tests cover the same rename result; a separate CLI pair proves that comments do
 not create a semantic change. Executable policy rules remain unimplemented.
 
@@ -122,7 +123,7 @@ revisions, atomic multi-document changes, stale and unknown-document rejection,
 cross-document language references, and CLI file/project operation. The
 original Garden Pulse source is also compiled as an explicit three-document
 project; semantic data and normalized SVG remain equivalent except for the
-intentionally preserved source-document metadata. The browser worker compiles
+intentionally preserved source-document metadata. The compiler worker compiles
 the complete project and resolves cross-document completion references. The
 desktop boundary exposes native project-directory selection through the shared
 Node.js loader, while Angular provides project tabs, explorer selection,
@@ -152,7 +153,7 @@ navigation targets. The production-mode Angular build
 proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is
 lazy, and that the reviewed ELK worker and license are packaged locally.
-Browser verification covers the two-pane layout, lexer-owned syntax
+Renderer-harness verification covers the two-pane layout, lexer-owned syntax
 highlighting, ELK-produced live preview, an
 in-place context-only completion popup, exact candidate application, inline
 diagnostic markers, diagnostic-to-source focus, invalid edit diagnostics,
@@ -166,7 +167,7 @@ the platform-shortcut suite advertises `Cmd+I` for macOS user agents and
 Monaco suggestion command. In the packaged macOS application, the workbench
 displayed `⌘I` and that keystroke opened the four context-valid top-level
 suggestions on 2026-08-30;
-the current browser-specific ELK pass visually covers a System Context with two
+the current renderer ELK pass visually covers a System Context with two
 guided routes, distinct target Ports, a named corridor and label shifts, plus a
 nested Deployment View. Route-block completion was inspected with the active
 policy and existing properties. Bidirectional navigation was visually inspected:
@@ -177,7 +178,7 @@ directions: clicking the corridor-guided observation path selected its semantic
 Relationship and displayed its effective routing data; selecting the other
 view-local `route` block highlighted only its effective path and inspector.
 The Route Debug toggle removed helper points, Ports, label anchor, and corridor
-lanes while retaining selection. The browser accessibility tree was inspected;
+lanes while retaining selection. The renderer accessibility tree was inspected;
 a real screen-reader pass is not yet complete. Typography verification confirms
 that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
 including regular and bold faces. The preview was visually inspected at 80,
@@ -191,6 +192,25 @@ advanced vertically. The first two cards showed source-located
 `C4ML-LANG-005` messages for proposed element tags and a View presentation
 block; neither reported a missing closing brace. The panel remained vertically
 scrollable and the last valid diagram stayed visible.
+
+Workbench interaction tests also require Source Control to appear between Files
+and Diagrams, Help to appear immediately above Settings, the Problems count and
+active panel tab to share one toggle behavior without a separate close glyph,
+and the Diagrams status action to use its destination label rather than an
+authored View title.
+
+On 2026-08-30 the updated workbench was visually inspected in the live Angular
+renderer and packaged macOS desktop shell in German and English, light and dark
+schemes. Files, Source Control, Diagrams, and Output remained grouped above the
+spacer; Help appeared immediately above Settings. Clicking the status Problems
+count closed and reopened the panel with matching `aria-pressed` state, no
+separate close glyph remained, and the adjacent action read `Diagramme` rather
+than repeating `System Context — Garden Pulse`. A populated Source Control
+state was rendered through an ignored build-only bridge fixture: long branch
+and upstream names truncated safely, German commit copy wrapped without overlap,
+staged and unstaged groups remained distinct, file actions stayed aligned, Push
+showed the outgoing count, and entering a message enabled Commit. No real
+repository mutation was invoked during visual inspection.
 
 The first intent-authoring inspector evidence verifies that the worker returns
 automatic candidate bounds, final scene bounds, movement delta, and stable
@@ -268,8 +288,8 @@ field-level fallback, malformed JSON and unsupported-version fallback, bounded
 half-pixel interface and editor font sizes, effective system/light/dark resolution,
 all eight accepted color families, and controlled
 font-stack mapping. Localization-contract tests verify both catalogues and
-interpolation, while command tests verify search in each language. Browser and
-desktop verification MUST also cover live language, scheme, and color-family changes, the
+interpolation, while command tests verify search in each language. Renderer-harness
+and desktop verification MUST also cover live language, scheme, and color-family changes, the
 document root language attribute, interface typography changes at minimum,
 default, and maximum size without changing Monaco or canonical SVG, every
 packaged Monaco font choice, font remeasurement after loading, persistence across
@@ -293,9 +313,9 @@ uses redundant style cues, and color-safe does not rely on red-versus-green
 encoding. Language tests MUST
 distinguish representative declaration words, properties, predefined values,
 identifiers or references, strings, numbers, operators, and comments using
-lexer-owned spans. Browser inspection MUST sample every family in both light
+lexer-owned spans. Renderer-harness inspection MUST sample every family in both light
 and dark modes, open the completion list in both schemes, and confirm the
-focused row and syntax categories remain legible. Browser inspection MUST also
+focused row and syntax categories remain legible. Renderer-harness inspection MUST also
 sample every syntax preset in both light and dark mode and verify that the
 settings control changes Monaco immediately without changing authored source.
 
@@ -306,7 +326,7 @@ external asset reference. Language-package tests MUST map representative model,
 relationship, view, deployment, layout, and route cursor positions to stable
 topic identifiers and reject offsets outside the source. Worker and editor-
 session tests MUST validate the versioned request/response boundary and reject
-stale cursor-context responses. Browser verification MUST cover Help activity
+stale cursor-context responses. Renderer-harness verification MUST cover Help activity
 navigation, expandable chapters, localized search, the cursor topic, `F1`,
 command-palette access, diagram/Handbook tab switching, keyboard focus, and
 legibility in both light and dark schemes. Help navigation MUST leave source,
@@ -627,7 +647,7 @@ CLI tests MUST cover:
 
 Editor tests MUST cover:
 
-- compilation in a browser Web Worker rather than on the UI thread;
+- compilation in a local Web Worker rather than on the renderer UI thread;
 - debounced or scheduled hot compilation after source changes;
 - cancellation or rejection of results from superseded compilations;
 - retention of the last valid preview while current source contains errors;
@@ -649,7 +669,7 @@ in deterministic source order, retain successful writes after a later failure
 or cancellation, and leave every unsaved source visibly dirty.
 
 A shared contract suite MUST run the same effective source through the Node.js
-CLI path and browser-worker path. It MUST compare diagnostics, semantic model,
+CLI path and compiler-worker path. It MUST compare diagnostics, semantic model,
 resolved views, final geometry, scene graph, and canonical SVG. Frontend-specific
 serialization MUST NOT change compiler behavior.
 
@@ -763,7 +783,7 @@ prove that:
   geometry;
 - the proposed source passes through the normal parser, semantic validator,
   compiler, and diagnostic pipeline before it can be accepted; and
-- CLI and browser-worker compilation remain equivalent after an applied edit.
+- CLI and compiler-worker compilation remain equivalent after an applied edit.
 
 Tests MUST distinguish semantic architecture operations from view-local layout
 operations. UI event coordinates and Monaco edit objects MUST NOT enter the
@@ -774,10 +794,10 @@ Signal Garden fixtures. Language tests cover deterministic, syntax-aware
 generation for relative placement, automatic-relative nudge, anchored
 alignment, ordered distribution, and exact pins, including declaration-order
 preservation when replacing a later pin with an earlier placement form. Worker
-tests compile the proposed candidate through the normal browser pipeline without
+tests compile the proposed candidate through the normal worker pipeline without
 mutating the active project; CLI tests check the applied source through the
 shared Node.js pipeline. Editor adapter tests prove project-to-document
-narrowing and one Monaco undo unit. A local browser interaction additionally
+narrowing and one Monaco undo unit. A local renderer-harness interaction additionally
 verified selected-element synchronization, candidate SVG and source review,
 zero diagnostics after apply, restoration of the preceding pin in one undo, and
 restoration of the original clean dirty-state marker.
@@ -794,7 +814,7 @@ session tests reject stale Route previews; CLI tests compile the applied source
 through the shared Node.js path. Template and architecture tests keep Route
 syntax generation outside Angular and ensure that safe repairs, blocking
 diagnostics, source preview, apply, and undo remain explicit UI states. A local
-browser interaction additionally verified relationship selection, dark and
+renderer-harness interaction additionally verified relationship selection, dark and
 light dialog layouts, candidate SVG and source review, corridor-release repair
 copy, a valid Port change, zero diagnostics after apply, one-step undo, and
 restoration of the original clean dirty-state marker.
@@ -832,13 +852,26 @@ and PNG smoke exports exercise all four modes with controlled IBM Plex assets;
 the rendered results are visually inspected before the slice is reported as
 visually validated.
 
-The local Git-adapter gate creates isolated original repositories and proves
+The local Git-revision-adapter gate creates isolated original repositories and proves
 commit and branch loading, explicit multifile manifest loading, invalid-ref
 classification, bounded read-only Git invocation, and unchanged `HEAD` and
 working-tree state. A CLI integration test compares a selected commit with
 working source and receives the same portable rename classification. Session
 tests inject repository paths and refs into stored JSON and require all such
 fields to be discarded.
+
+The desktop working-tree gate additionally creates isolated repositories and
+proves deterministic status parsing, individual and all-file staging, unstage,
+commit-message transport through standard input, commit of staged content only,
+and first push with automatic upstream setup when exactly one remote exists.
+Contract tests reject unknown handles, traversal paths, oversized selections,
+empty commit messages, and unsupported actions. Desktop integration tests MUST
+keep all Git subprocess authority in the main/project-node boundary and MUST
+prove that the sandboxed renderer receives only the versioned Source Control
+contract. Visual validation MUST inspect the localized Source Control activity,
+staged and unstaged groups, disabled commit state for unsaved editor documents,
+operation feedback, the lower Help placement, the Problems toggle, and the
+destination-labelled Diagrams status action.
 
 Migration-story tests require at least two explicitly reviewed canonical
 states, deterministic transition and change provenance, reuse of the portable
@@ -847,7 +880,7 @@ tests require all four comparison modes for every included View and reject
 missing, incompatible, scripted, event-bearing, or externally linked SVG.
 The generated self-contained HTML must expose ordered step navigation,
 review-state provenance, semantic change summaries, and independently
-expandable before, after, overlay, and change-only views. A local browser review
+expandable before, after, overlay, and change-only views. A local offline HTML review
 of the original Garden Pulse example verified those interactions, absence of
 horizontal page overflow and console errors, and legible embedded comparison
 output without network resources.
@@ -860,7 +893,7 @@ Rule and query tests MUST prove that:
   source locations are deterministic;
 - evaluation consumes validated compiler contracts and never derives
   architecture facts solely from rendered geometry;
-- the same rule set returns equivalent findings through CLI and browser-worker
+- the same rule set returns equivalent findings through CLI and compiler-worker
   paths without network access;
 - changing presentation alone cannot change a semantic rule result;
 - a suggested correction is an optional proposed source change set and never a
@@ -876,7 +909,7 @@ query, and an external observation that disagrees with authored architecture.
 The first built-in quality gate proves deterministic conversion of shared
 non-blocking validation guidance, source-located model/View coverage findings,
 empty-View evidence, CLI/worker report parity, stale worker-response rejection,
-and human CLI locations. Browser review verifies that the Output area presents
+and human CLI locations. Renderer-harness review verifies that the Output area presents
 the same finding in light and dark schemes and that selecting it focuses and
 selects the owning Monaco source declaration. Blocking invalid input continues
 through diagnostics and does not fabricate an analysis snapshot.
@@ -888,6 +921,18 @@ for every included item and Relationship. Temporary focus Views are tested as
 reference-only projections with no copied model definitions. Unknown subjects
 and absent paths fail with stable query errors; CLI JSON parity and source-exit
 classification are covered without filesystem mutation or network access.
+
+The first internal policy-contract gate covers all six version-one rule
+families with original Signal Garden identities: a forbidden dependency, a
+missing or disallowed protocol, disallowed ownership, reversed direction,
+missing deployment placement, and missing selected metadata. Reordering the
+same policies must produce byte-equivalent findings. Every violation requires
+authored and derived evidence plus an architecture source location. Separate
+negative tests require stable errors for malformed rule kinds, unknown stable
+identities, and rules that are inapplicable to the selected architecture kind.
+Correction evidence accepts only complete versioned policy-intent source change
+sets, including atomic project changes. Worker and CLI/CI parity remain required
+before the project-policy slice is reported as complete.
 
 ### 2.15 Project and multi-document source
 
@@ -910,7 +955,7 @@ Project-source tests MUST prove that:
 - diagnostics and navigation retain the owning project-relative document URI;
 - a project source change validates all documents against one revision and
   applies several document edits atomically as one transaction; and
-- the Node.js CLI and browser-worker consume the same effective portable project
+- the Node.js CLI and compiler worker consume the same effective portable project
   input;
 - project completion offers type-correct references declared in other source
   documents; and
@@ -1085,7 +1130,7 @@ Before the MVP may be called complete:
 - recommendation and intended-audience metadata is present for every view type;
 - all hard-conflict fixtures fail with expected diagnostics;
 - canonical SVG is deterministic across repeated clean runs;
-- CLI and browser-worker compiler contract results are equivalent;
+- CLI and compiler-worker contract results are equivalent;
 - editor hot compilation, stale-result rejection, last-valid preview, and
   source/preview navigation pass their integration tests;
 - desktop open/save, dirty-state protection, secure bridge behavior, packaged

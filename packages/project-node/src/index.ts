@@ -19,6 +19,7 @@ import {
 } from "@c4ml/compiler-core";
 
 export * from "./git.js";
+export * from "./source-control.js";
 
 export interface LoadedProjectDocumentPath {
   readonly uri: string;

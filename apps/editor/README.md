@@ -1,4 +1,4 @@
-# C4ML editor renderer
+# C4ML desktop renderer
 
 This private Angular application is the renderer UI of the production-bound
 C4ML desktop workbench. Electron owns native application and filesystem
@@ -10,9 +10,10 @@ Implemented:
 
 - Angular 22 standalone application with Signals and zoneless change detection;
 - an original IDE-like shell with simultaneous source and SVG preview tabs,
-  C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
+  C4ML-specific Files, Source Control, Diagrams, Output, and Help activity
+  areas, a Problems/Route
   panel, status bar, and command palette;
-- compilation and language processing in a browser Web Worker;
+- compilation and language processing in a local Web Worker;
 - versioned, request-identified worker messages;
 - rejection of stale worker results;
 - preservation of the last valid SVG while current source is invalid;
@@ -48,6 +49,8 @@ Implemented:
   authoritative main workbench;
 - an optional typed desktop bridge for native Open, Save, and Save As without
   exposing filesystem paths or Node.js APIs to the renderer;
+- a local Source Control area for repository status, staging, unstaging,
+  committing, and pushing through that opaque, validated desktop bridge;
 - a versioned local-preferences service and category-based settings panel for
   English/German workbench copy, workbench color scheme, and source-editor
   typography;
@@ -56,10 +59,10 @@ Implemented:
 - a plain-language new-document wizard for bounded System Context and Container
   starters, with generated-source review, cancel, apply, and one explicit undo.
 
-Monaco owns browser text editing and presentation only. The C4ML worker remains
+Monaco owns source-text editing and presentation only. The C4ML worker remains
 the sole source of completions, highlighting, diagnostics, and navigation
 mappings, and no Monaco language service defines C4ML syntax or semantics. The
-preview uses the accepted browser ELK.js adapter; the linear preview layout
+preview uses the accepted renderer Web Worker ELK.js adapter; the linear preview layout
 remains test-only compatibility code. The detached bootstrap does not create
 the workbench root, Monaco, or compiler worker. It consumes only the restricted
 desktop preview bridge and never receives source or filesystem authority.
@@ -75,14 +78,15 @@ From the repository root:
 
 ```shell
 pnpm run desktop:start
-pnpm run editor:start
-pnpm run editor:build
+pnpm run renderer:start
+pnpm run renderer:build
 ```
 
-`desktop:start` is the normal desktop application path. `editor:start` keeps a
-browser development path for isolated UI work; native file controls are hidden
-there. The built renderer is written to the ignored `build/editor/` directory
-and requires no runtime network connection. The production build keeps the Angular
+`desktop:start` is the only supported application path. `renderer:start` opens
+an internal development harness for isolated UI work; native file controls are
+hidden there, and it is not a browser product or deployment target. The built
+renderer is written to the ignored `build/editor/` directory and requires no
+runtime network connection. The production build keeps the Angular
 shell small, loads the Monaco runtime, stylesheet, and generic editor worker
 locally when the source pane initializes, and includes generated dependency
 licenses plus Monaco's upstream license and third-party notices. The reviewed

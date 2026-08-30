@@ -5,6 +5,7 @@ import {
   loadWorkbenchSession,
   normalizePreviewZoom,
   storeWorkbenchSession,
+  toggleWorkbenchPanel,
   type WorkbenchActivity,
   type WorkbenchPanel,
   type WorkbenchPreviewWindowBounds,
@@ -31,8 +32,8 @@ export class WorkbenchSessionService {
     this.#patch({ bottomPanel, bottomPanelOpen: true });
   }
 
-  togglePanel(): void {
-    this.#patch({ bottomPanelOpen: !this.state().bottomPanelOpen });
+  togglePanel(bottomPanel: WorkbenchPanel): void {
+    this.state.update((state) => toggleWorkbenchPanel(state, bottomPanel));
   }
 
   setPreviewZoom(previewZoom: number): void {

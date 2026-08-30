@@ -241,6 +241,23 @@ export function isProposedProjectSourceChangeSet(
   );
 }
 
+export function isProposedSourceChangeSet(
+  value: unknown,
+): value is ProposedSourceChangeSet {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    value["version"] === sourceChangeSetVersion &&
+    typeof value["id"] === "string" &&
+    isSourceRevision(value["baseRevision"]) &&
+    isSourceChangeIntent(value["intent"]) &&
+    isStringArray(value["affectedIds"]) &&
+    Array.isArray(value["edits"]) &&
+    value["edits"].every(isSourceTextEdit)
+  );
+}
+
 export function isProjectRevision(value: unknown): value is ProjectRevision {
   if (!isRecord(value)) {
     return false;
@@ -605,6 +622,15 @@ function isProjectSourceTextEdit(
   return (
     isRecord(value) &&
     typeof value["documentUri"] === "string" &&
+    Number.isSafeInteger(value["startOffset"]) &&
+    Number.isSafeInteger(value["endOffset"]) &&
+    typeof value["text"] === "string"
+  );
+}
+
+function isSourceTextEdit(value: unknown): value is SourceTextEdit {
+  return (
+    isRecord(value) &&
     Number.isSafeInteger(value["startOffset"]) &&
     Number.isSafeInteger(value["endOffset"]) &&
     typeof value["text"] === "string"

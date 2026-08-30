@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.36
+Status: Draft 0.37
 
 Date: 2026-08-30
 
@@ -98,7 +98,11 @@ The first release will not attempt to provide:
 - animated or presentation-oriented diagrams;
 - a complete icon marketplace;
 - arbitrary user scripting inside source files; or
-- mobile-browser support for the first-release editor.
+- a standalone web-hosted or browser-delivered editor.
+
+The first-release product is the Electron desktop application. Angular,
+Monaco, and Web Workers are implementation technologies inside its sandboxed
+renderer, not a second browser product or deployment target.
 
 The complete C4 abstraction and diagram family is part of the minimum complete
 release. Code, Dynamic, and Deployment views MUST NOT be deferred merely because
@@ -491,7 +495,7 @@ be checked before a public release.
 ### 7.1 Project and multi-document source contract
 
 **Status: Accepted and implemented foundation for architecture source
-documents, the portable compiler contract, language package, CLI, browser
+documents, the portable compiler contract, language package, CLI, compiler
 worker, and desktop editor.**
 
 The project is the compilation unit, a source document is the editing unit, and
@@ -536,7 +540,7 @@ document.
 
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata and a deterministic, URI-sorted set of source
-documents. It MUST NOT open files itself. CLI, Electron, and browser/editor
+documents. It MUST NOT open files itself. CLI, Electron, and renderer
 adapters load documents and enforce their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
@@ -775,7 +779,7 @@ owns UI composition and interaction; Monaco owns source editing, selection,
 completion presentation, markers, keyboard commands, and undo behind a
 C4ML-owned adapter. Neither library may introduce editor-specific semantic,
 layout, routing, scene, or rendering behavior. Compilation and language
-processing remain in a browser Web Worker behind the same C4ML-owned contracts
+processing remain in a local Web Worker behind the same C4ML-owned contracts
 used by the CLI.
 
 Electron 44 is the accepted first desktop application shell. Electron owns only
@@ -796,8 +800,9 @@ The MVP MUST NOT require Python, a Python service, or any other background
 service. Python or native/Wasm modules MAY be evaluated later as replaceable
 algorithm adapters only after a measured need is demonstrated.
 
-The CLI is a thin Node.js frontend over the compiler API. The editor is a
-TypeScript application that invokes the same compiler API in a browser worker.
+The CLI is a thin Node.js frontend over the compiler API. The desktop renderer
+is a TypeScript application that invokes the same compiler API in a local Web
+Worker.
 Packaging the CLI as a standalone executable MAY be considered later without
 changing compiler semantics.
 
@@ -906,7 +911,7 @@ accepted replaceable Node.js PNG adapter behind `PngRenderer`.
 
 ### 9.4 Experimental `draft-1` language slices
 
-An internal, browser-compatible language package implements the executable
+An internal, runtime-portable language package implements the executable
 `draft-1` slices needed by the original `examples/draft/hello-context.c4ml`,
 `examples/draft/hello-container.c4ml`, and
 `examples/draft/hello-static-zoom.c4ml`, plus
@@ -959,7 +964,7 @@ offsets. Exact pins require the explicit `du` suffix.
 
 These controls lower into compiler-owned `DiagramPlacementOptions`, are applied
 after automatic candidate layout and before routing, and are passed identically
-by the CLI and browser worker. Duplicate placement identities, missing relative
+by the CLI and compiler worker. Duplicate placement identities, missing relative
 gaps, inappropriate alignment gaps, unknown or non-visible items, invalid
 coordinates, invalid or duplicate alignment/distribution sets, invalid
 adjustment combinations, conflicting hard pins, and contradictory hard constraints fail
@@ -987,7 +992,7 @@ The first executable view-local routing subset additionally recognizes:
 - a zero-based effective label segment and an integer x/y label offset.
 
 These controls lower into the compiler-owned `DiagramRoutingOptions` for their
-own view and are passed identically by the CLI and browser worker. They do not
+own view and are passed identically by the CLI and compiler worker. They do not
 alter the semantic Relationship or the resolved view. The lowering stage
 rejects duplicate corridor or avoidance identities, duplicate controls for one Relationship,
 missing required corridor properties, non-positive corridor capacity or lane
@@ -1034,7 +1039,7 @@ behavior outside Angular components.
 
 The workbench root component is a composition boundary. Focused Angular
 facades own document/export, preview, help, and command-palette presentation
-state. Those facades may coordinate browser or desktop adapters but MUST NOT
+state. Those facades may coordinate renderer or desktop adapters but MUST NOT
 own C4ML syntax, semantics, layout, or rendering. Worker transport is composed
 from independent Compile, Language, and Authoring contracts over one shared
 version and source-location core. The combined protocol module remains a
@@ -1153,10 +1158,10 @@ worker and 469,600 bytes of IBM Plex WOFF2 files are separate local assets.
 Automated tests protect exact edit,
 diagnostic-range, and semantic-token translation plus stale asynchronous
 completion and highlighting handling.
-Interactive browser evidence covers an in-place context-only popup, exact edit
+Interactive renderer-harness evidence covers an in-place context-only popup, exact edit
 application, marker display, diagnostic navigation, keyboard undo/redo, source
 synchronization, last-valid preview retention, and wizard apply/undo. The
-accessible browser tree exposes the editor as a labelled textbox and the popup
+accessible renderer tree exposes the editor as a labelled textbox and the popup
 as a listbox, but a real assistive-technology pass is still outstanding. All
 runtime assets were served locally without a compiler service or CDN.
 
@@ -1177,7 +1182,7 @@ Sources: [Monaco README](https://github.com/microsoft/monaco-editor/blob/main/RE
 
 #### 9.5.2 Accepted automatic-layout dependency
 
-**Status: Accepted and implemented for Node.js and the browser editor.**
+**Status: Accepted and implemented for Node.js and the desktop renderer.**
 
 ELK.js 0.12.0 is the first production automatic-layout adapter. C4ML owns the
 request and result contracts, validates input before invocation, fixes the
@@ -1186,13 +1191,14 @@ compiler stage sees it. ELK identifiers, configuration objects, and relative
 coordinates MUST remain inside `@c4ml/layout-elk`.
 
 Node.js frontends use the reviewed bundled entry behind a dedicated factory.
-The browser compiler worker uses ELK's API-only entry and starts the unmodified
+The renderer compiler worker uses ELK's API-only entry and starts the unmodified
 published `elk-worker.min.js` as a separate local classic Web Worker. This
 avoids the bundled entry's incompatible internal worker constructor, keeps
 layout work off the Angular UI thread, and requires no network service. The
-editor artifact MUST ship the exact reviewed worker and ELK license. The
-browser and bundled factories are separate exports over the same normalization
-adapter so neither frontend can leak environment concerns into compiler-core.
+desktop renderer artifact MUST ship the exact reviewed worker and ELK license.
+The Web Worker and bundled Node.js factories are separate exports over the same
+normalization adapter so neither frontend can leak environment concerns into
+compiler-core.
 
 The adapter is replaceable; its acceptance does not make ELK options part of
 the C4ML semantic model or source grammar. C4ML routing, explicit Ports,
@@ -1200,7 +1206,7 @@ corridors, waypoints, fixed paths, labels, and author constraints remain C4ML
 contracts applied independently of automatic-layout engine selection.
 
 Source:
-[ELK.js README and browser worker guidance](https://github.com/kieler/elkjs/blob/0.12.0/README.md).
+[ELK.js README and Web Worker guidance](https://github.com/kieler/elkjs/blob/0.12.0/README.md).
 
 ### 9.6 Experimental authoring assistance
 
@@ -1304,10 +1310,10 @@ preview canvas matching the canonical diagram canvas surrounds the rendered
 SVG in both workspaces, independent of workbench brightness and color family,
 without a pattern or sheet shadow. The rendered diagram therefore does not
 appear as a separate pasted sheet. This canvas choice is workbench presentation
-only and MUST NOT alter SVG or PNG output. A
-browser pop-out remains deferred: browser development uses the full-size
-single-window mode until a same-origin messaging and lifecycle design is
-approved; separate development ports are not part of the design.
+only and MUST NOT alter SVG or PNG output. The detachable preview is a native
+Electron window. A browser pop-out, separate development ports, and a hosted
+multi-window variant are outside the product scope. The internal renderer
+harness uses the full-size single-window mode.
 
 The main process also owns native PNG export. The renderer sends only the
 canonical current SVG, a validated suggested name, and a scale of 1x, 2x, or
@@ -1421,13 +1427,15 @@ capabilities to the renderer.
 **Status: Accepted, implemented, automatically validated, and visually
 validated foundation.**
 
-The editor uses an original C4ML workbench with C4ML-specific Files, Diagrams,
-Output, and Help activity areas, simultaneous source, preview, and Handbook tabs, a bottom panel
+The editor uses an original C4ML workbench with C4ML-specific Files, Source
+Control, Diagrams, Output, and Help activity areas, simultaneous source,
+preview, and Handbook tabs, a bottom panel
 for Problems and Route details, a status bar, and a searchable command palette.
 These concepts provide familiar desktop navigation without adopting another
 product's branding, source, extensions, assets, or distinctive interface.
 The activity areas and Settings use a fixed, locally packaged subset of
-Material Symbols Outlined. Symbols are decorative inside already named buttons;
+Material Symbols Outlined plus one original C4ML Source Control symbol. Symbols
+are decorative inside already named buttons;
 localized accessible names and tooltips remain C4ML-owned text. The icon assets
 MUST load offline, follow the active workbench color, and MUST NOT enter diagram
 themes or exported SVG/PNG.
@@ -1439,6 +1447,13 @@ geometry. It MUST reject malformed or unsupported records and MUST NOT persist
 source text, document handles, filesystem paths, compilation results, diagram
 semantics, or uncommitted graphical state. Source files remain the only
 persistent architecture authority.
+
+Primary work areas remain grouped at the top of the activity bar. Help is
+grouped with Settings at the bottom so its global application context is not
+confused with file operations. The visible Problems count and the active panel
+tab both toggle the panel; the panel MUST NOT add a separate unlabeled close
+glyph. A status-bar action that opens the Diagrams area is labelled by that
+destination rather than repeating the authored title of the current View.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
@@ -1464,7 +1479,7 @@ before feature-specific editor work begins:
   path. A proposed correction MAY reference a source change set, but analysis
   MUST NOT mutate the semantic model.
 
-These contracts MUST remain usable in Node.js and a browser Web Worker. Git,
+These contracts MUST remain usable in Node.js and a local Web Worker. Git,
 filesystem, repository scanners, deployment observations, and other external
 inputs belong in frontend or importer adapters. Angular components, Monaco,
 Electron, and CLI argument handling MUST NOT implement competing diff, rule, or
@@ -1542,7 +1557,7 @@ addition. View snapshots retain their typed stable scope reference separately
 from the human-readable resolved scope, so renaming a scoped element does not
 invent a second View change. Comments, formatting, declaration order, source
 files, and source ranges never enter the comparison. The result has a
-deterministic versioned JSON form and category summary. The browser worker and
+deterministic versioned JSON form and category summary. The compiler worker and
 the experimental CLI `diff` command call this portable comparison directly;
 neither frontend owns comparison semantics.
 
@@ -1552,7 +1567,7 @@ Relationship starts at its resolved source and target endpoints; additions use
 the later graph, removals use the earlier graph, and other changes merge both
 states. Presentation- and layout-only changes never invent semantic traversal.
 The portable result also lists directly affected identities and Views and is
-exposed unchanged through the browser worker and CLI.
+exposed unchanged through the compiler worker and CLI.
 
 The implemented comparison-layout stage conservatively retains baseline
 geometry only for compatible leaf nodes. It never overrides nodes participating
@@ -1569,7 +1584,7 @@ SVG metadata and a visible legend describe the encoding; PNG is derived from
 the same SVG. In an overlay, earlier text is suppressed so coincident labels do
 not become illegible while the earlier outline remains visible.
 
-The implemented local Git adapter remains in the existing Node.js
+The implemented local Git revision adapter remains in the existing Node.js
 `project-node` boundary shared by desktop and CLI frontends. It invokes the
 installed Git executable without a shell and uses only read-only object and
 tree queries. A file, implicit project directory, or explicit project manifest
@@ -1578,8 +1593,26 @@ continues through the ordinary filesystem loader. Both paths produce the same
 portable project input before parsing and semantic comparison. Repository paths
 and refs never enter the compiler contracts or persisted workbench session.
 The experimental CLI selects these states with `--before-ref` and
-`--after-ref`, where `working` names the current filesystem state. Hosted
-provider authentication and remote operations remain separate future adapters.
+`--after-ref`, where `working` names the current filesystem state.
+
+The desktop Source Control area uses a separate working-tree adapter in that
+same Node.js boundary. Through an opaque document handle it may discover the
+containing local repository, report branch, upstream, ahead/behind counts,
+remotes, index changes, and working-tree changes, and perform only an explicitly
+requested stage, unstage, commit, or push operation. The renderer receives only
+the repository display name and repository-relative paths; absolute repository
+paths, credentials, and refs MUST NOT enter compiler contracts or the persisted
+workbench session. Git is invoked without a shell, output and input are bounded,
+interactive credential prompts are disabled, and no action may discard working
+files, check out another revision, reset the worktree, pull, fetch, or rewrite
+history.
+
+A commit requires saved editor documents, a non-empty bounded message, and at
+least one staged change. Push uses the configured upstream. If the branch has no
+upstream and exactly one remote exists, an explicit Push sets that remote as the
+upstream; zero or several possible remotes fail visibly. Hosted-provider login,
+remote browsing, pull/sync, branch creation/switching, and conflict resolution
+remain later adapters.
 
 The implemented portable migration-story contract composes two or more
 explicitly reviewed architecture snapshots into ordered transitions. Every
@@ -1597,7 +1630,7 @@ The implemented analysis contract represents findings and query results with
 stable rule/query identity, qualified affected items, ordered evidence, sorted
 source locations, and optional proposed source corrections. Observed evidence
 requires its adapter identity and observation time. A versioned portable analysis
-report combines the canonical snapshot and deterministic findings. The browser
+report combines the canonical snapshot and deterministic findings. The compiler
 worker and the experimental CLI `analyze` command expose that same report.
 
 The implemented version-one built-in quality evaluator promotes non-blocking
@@ -1622,6 +1655,28 @@ stable architecture references and their explanations. It never copies or
 mutates semantic, deployment, Relationship, or authored View definitions. The
 experimental CLI exposes the same portable result and focus projection through
 `query`; no public source-language query syntax is accepted by this decision.
+
+The implemented version-one architecture-policy contract is an internal,
+portable compiler-core boundary over validated canonical snapshots. One
+versioned policy set contains deterministic, uniquely identified rules using
+exact kind-qualified stable architecture identities. Its first rule families
+cover forbidden dependencies, required Relationship protocols, required
+semantic ownership, allowed Relationship direction, required deployment
+instances by Environment, and required element properties, metadata keys, or
+tags. Evaluation never uses scene or renderer geometry. A violation becomes an
+ordinary source-located analysis finding with authored policy evidence and
+derived snapshot evidence. Malformed policies, unknown identities, and rules
+that cannot apply to their selected architecture kinds fail with stable
+`C4ML-POLICY-*` errors instead of being ignored.
+
+An optional policy correction MUST be a complete versioned proposed source
+change set with policy intent. Both a single-document change set and an atomic
+project change set are accepted; raw edits or direct model mutation are not.
+The contract deliberately does not define a project policy file, public
+`.c4ml` policy syntax, CLI flag, editor loading path, or CI configuration yet.
+Those frontend inputs require the next reviewed slice, which must pass one
+identical policy set through the compiler worker and CLI/CI without duplicating
+evaluation semantics.
 
 ## 10. Scene graph and rendering
 
@@ -1820,10 +1875,12 @@ language or release-packaging requirements.
 
 ### 14.1 MVP editor
 
-The first-release editor is an Electron desktop application using the same
-browser runtime as the isolated Angular development path. Mobile-browser and
-mobile-web framework support are outside the first release. The desktop shell
-MUST NOT change the worker, compiler, or source-editor contracts.
+The first-release editor is exclusively an Electron desktop application. Its
+sandboxed Angular renderer uses local web-platform APIs and Web Workers, but it
+is not shipped, hosted, or supported as a standalone browser application. The
+internal renderer harness exists only for isolated development and visual
+testing. The desktop shell MUST NOT change the worker, compiler, or
+source-editor contracts.
 
 The MVP editor MUST provide:
 
@@ -1840,7 +1897,7 @@ The MVP editor MUST provide:
 - navigation from source declarations to preview elements; and
 - navigation from preview elements to source declarations.
 
-Compilation and language processing MUST run outside the browser UI thread.
+Compilation and language processing MUST run outside the renderer UI thread.
 The editor MUST remain responsive while a compile is in progress.
 
 ### 14.2 Source-to-graphics mapping

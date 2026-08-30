@@ -3,7 +3,14 @@ import type { ArchitectureSnapshot } from "./architecture-snapshot.js";
 import type { DiagnosticSeverity } from "./diagnostics.js";
 import { compareText } from "./ordering.js";
 import type { SourceReference } from "./source.js";
-import type { ProposedSourceChangeSet } from "./source-changes.js";
+import type {
+  ProposedProjectSourceChangeSet,
+  ProposedSourceChangeSet,
+} from "./source-changes.js";
+
+export type ProposedAnalysisCorrection =
+  | ProposedProjectSourceChangeSet
+  | ProposedSourceChangeSet;
 
 export type AnalysisEvidenceOrigin = "authored" | "derived" | "observed";
 
@@ -25,7 +32,7 @@ export interface AnalysisFinding {
   readonly subjectKeys: readonly ArchitectureGraphItemKey[];
   readonly evidence: readonly AnalysisEvidence[];
   readonly sourceLocations: readonly SourceReference[];
-  readonly correction?: ProposedSourceChangeSet;
+  readonly correction?: ProposedAnalysisCorrection;
 }
 
 export interface AnalysisFindingInput {
@@ -36,7 +43,7 @@ export interface AnalysisFindingInput {
   readonly subjectKeys: readonly ArchitectureGraphItemKey[];
   readonly evidence: readonly AnalysisEvidence[];
   readonly sourceLocations?: readonly SourceReference[];
-  readonly correction?: ProposedSourceChangeSet;
+  readonly correction?: ProposedAnalysisCorrection;
 }
 
 export type ArchitectureQueryResultKind =
