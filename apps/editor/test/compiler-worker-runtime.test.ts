@@ -11,6 +11,8 @@ import {
   createArchitectureAnalysisReport,
   createArchitectureProjectInput,
   createProposedProjectSourceChangeSet,
+  deriveArchitectureImpacts,
+  evaluateBuiltInArchitectureQuality,
   resolveArchitectureSnapshot,
 } from "@c4ml/compiler-core";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
@@ -167,8 +169,18 @@ describe("compiler worker runtime", () => {
       documents: [{ uri: "architecture.c4ml", text: initialC4mlSource }],
     });
     const parsed = await parseC4mlProjectDraft(project);
+    const snapshot = resolveArchitectureSnapshot(parsed.model!, parsed.views!, {
+        placementByViewId: parsed.placementByViewId,
+        routingByViewId: parsed.routingByViewId,
+      }).snapshot!;
     const expected = createArchitectureAnalysisReport(
-      resolveArchitectureSnapshot(parsed.model!, parsed.views!).snapshot!,
+      snapshot,
+      evaluateBuiltInArchitectureQuality({
+        model: parsed.model!,
+        views: parsed.views!,
+        snapshot,
+        diagnostics: parsed.diagnostics,
+      }),
     );
     const analysisRequest: AnalysisWorkerRequest = {
       protocolVersion: compilerWorkerProtocolVersion,
@@ -212,6 +224,11 @@ describe("compiler worker runtime", () => {
       resolveArchitectureSnapshot(before.model!, before.views!).snapshot!,
       resolveArchitectureSnapshot(after.model!, after.views!).snapshot!,
     );
+    const expectedImpacts = deriveArchitectureImpacts(
+      resolveArchitectureSnapshot(before.model!, before.views!).snapshot!,
+      resolveArchitectureSnapshot(after.model!, after.views!).snapshot!,
+      expected,
+    );
     const request: ComparisonWorkerRequest = {
       protocolVersion: compilerWorkerProtocolVersion,
       type: "compare",
@@ -225,6 +242,7 @@ describe("compiler worker runtime", () => {
     expect(result.status).toBe("valid");
     expect(isComparisonWorkerResponse(result)).toBe(true);
     expect(result.difference).toEqual(expected);
+    expect(result.impacts).toEqual(expectedImpacts);
     expect(result.difference?.changes).toEqual([
       expect.objectContaining({
         category: "model",

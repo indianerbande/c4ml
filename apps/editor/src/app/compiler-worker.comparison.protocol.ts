@@ -1,6 +1,8 @@
 import {
   isArchitectureDifference,
+  isArchitectureImpactReport,
   type ArchitectureDifference,
+  type ArchitectureImpactReport,
 } from "@c4ml/compiler-core";
 
 import {
@@ -39,6 +41,7 @@ export interface ComparisonWorkerResponse {
   readonly status: "failed" | "invalid" | "valid";
   readonly diagnostics: ComparisonWorkerDiagnostics;
   readonly difference: ArchitectureDifference | undefined;
+  readonly impacts: ArchitectureImpactReport | undefined;
 }
 
 export function isComparisonWorkerRequest(
@@ -69,8 +72,9 @@ export function isComparisonWorkerResponse(
       candidate.status === "valid") &&
     isComparisonWorkerDiagnostics(candidate.diagnostics) &&
     (candidate.status === "valid"
-      ? isArchitectureDifference(candidate.difference)
-      : candidate.difference === undefined)
+      ? isArchitectureDifference(candidate.difference) &&
+        isArchitectureImpactReport(candidate.impacts)
+      : candidate.difference === undefined && candidate.impacts === undefined)
   );
 }
 

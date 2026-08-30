@@ -211,48 +211,87 @@ element rename does not appear as unrelated View churn.
 
 ### Slice 2.2 — impact and stable visual comparison
 
-- [ ] derive deterministic upstream and downstream impact paths;
-- [ ] preserve unchanged baseline geometry where compatible with hard layout
+- [x] derive deterministic upstream and downstream impact paths;
+- [x] preserve unchanged baseline geometry where compatible with hard layout
       and collision rules;
-- [ ] provide before, after, overlay, and change-only scene modes; and
-- [ ] ensure exported comparison artifacts explain their visual encoding.
+- [x] provide before, after, overlay, and change-only scene modes; and
+- [x] ensure exported comparison artifacts explain their visual encoding.
+
+The portable version-one impact report, conservative geometry-stability stage,
+comparison-scene projection, browser-worker pass-through, and CLI SVG/PNG export
+are implemented. Geometry decisions explicitly distinguish retention, hard
+layout ownership, additions/removals, incompatibility, containment, and
+collision fallback. Comparison artifacts include visible and machine-readable
+encoding for architecture change, affected paths, and layout-only movement.
 
 ### Slice 2.3 — local version-control adapter
 
-- [ ] keep Git and filesystem access in the desktop/CLI adapter boundary;
-- [ ] compare working source, selected commits, or branches without changing
+- [x] keep Git and filesystem access in the desktop/CLI adapter boundary;
+- [x] compare working source, selected commits, or branches without changing
       portable diff semantics; and
-- [ ] expose comparison results without persisting repository paths in the
+- [x] expose comparison results without persisting repository paths in the
       workbench session record.
+
+The read-only local Git loader is implemented in the existing Node.js project
+adapter already shared by desktop and CLI. It reads blobs and manifests from a
+resolved commit without checkout, returns ordinary portable project documents,
+and never enters compiler-core. The CLI accepts `working`, commit, tag, or
+branch selections. Persisted workbench-session parsing continues to whitelist
+only presentation state and demonstrably drops repository paths and refs.
 
 ### Slice 2.4 — migration stories
 
-- [ ] compose reviewed architecture states into ordered migration steps;
-- [ ] retain identity and change provenance across steps; and
-- [ ] generate a navigable offline review presentation from compiler-owned
+- [x] compose reviewed architecture states into ordered migration steps;
+- [x] retain identity and change provenance across steps; and
+- [x] generate a navigable offline review presentation from compiler-owned
       states.
 
-Pillar 2 is not complete until a rename remains a rename, an unrelated
-reformatting produces an empty semantic diff, and a local architecture change
-can be reviewed without whole-diagram layout churn.
+The portable version-one story contract accepts only explicitly reviewed
+canonical states, derives deterministic transitions through the shared differ
+and impact engine, and retains state provenance for every reported change. Its
+offline HTML renderer embeds all four comparison SVG modes, provides ordered
+step navigation, and rejects active or externally linked SVG content. The
+original Garden Pulse review story has been exercised interactively in a local
+browser without network access.
+
+Pillar 2 is complete at its version-one foundation: a rename remains a rename,
+an unrelated reformatting produces an empty semantic diff, local Git states are
+read without checkout, unchanged compatible geometry remains stable, and
+reviewed states can be composed into a navigable offline migration story.
 
 ## Pillar 3 — architecture proof
 
 ### Slice 3.1 — built-in quality and completeness rules
 
-- [ ] expose existing C4 completeness and semantic validation through the
+- [x] expose existing C4 completeness and semantic validation through the
       shared finding contract;
-- [ ] add deterministic architecture-quality findings only where the evidence
+- [x] add deterministic architecture-quality findings only where the evidence
       is explicit; and
-- [ ] explain each finding in familiar language with source navigation.
+- [x] explain each finding in familiar language with source navigation.
+
+The portable version-one evaluator converts non-blocking shared validation
+guidance and adds evidence-backed View-coverage and empty-View findings over a
+validated snapshot. CLI and browser worker return the same deterministic
+report. The CLI prints source locations; the localized Output area lists the
+plain-language findings and navigates directly to their Monaco declaration.
+Blocking invalid source remains in the existing Problems path because it has
+no canonical snapshot to analyze.
 
 ### Slice 3.2 — graph queries and impact lenses
 
-- [ ] provide upstream, downstream, path, containment, deployment, and
+- [x] provide upstream, downstream, path, containment, deployment, and
       view-coverage queries;
-- [ ] generate temporary focused views from query results without duplicating
+- [x] generate temporary focused views from query results without duplicating
       semantic model definitions; and
-- [ ] explain why every result item is included.
+- [x] explain why every result item is included.
+
+The portable version-one query engine works over canonical, kind-qualified
+graph identities. It covers directional traversal, deterministic shortest
+paths, containment in both directions, static-to-runtime deployment placement,
+and resolved-View coverage. Every returned item and Relationship must carry an
+inclusion explanation. Its temporary focus View stores only references and
+evidence; the experimental CLI exposes the same result without creating or
+changing authored Views.
 
 ### Slice 3.3 — project architecture policies
 

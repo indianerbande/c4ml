@@ -262,6 +262,41 @@
             <p>{{ i18n.t("output.current") }}</p>
             <h2>{{ i18n.t("area.output") }}</h2>
           </header>
+          <section class="export-card quality-card">
+            <span>{{ i18n.t("output.quality") }}</span>
+            <strong>{{ analysisFindings().length }}</strong>
+            @switch (compiler.analysis().phase) {
+              @case ("loading") {
+                <p>{{ i18n.t("output.qualityLoading") }}</p>
+              }
+              @case ("invalid") {
+                <p>{{ i18n.t("output.qualityInvalid") }}</p>
+              }
+              @case ("failed") {
+                <p>{{ i18n.t("output.qualityFailed") }}</p>
+              }
+              @default {
+                @if (analysisFindings().length === 0) {
+                  <p>{{ i18n.t("output.qualityEmpty") }}</p>
+                } @else {
+                  <ol class="quality-findings">
+                    @for (finding of analysisFindings(); track finding.id) {
+                      <li [attr.data-severity]="finding.severity">
+                        <button
+                          type="button"
+                          [disabled]="finding.sourceLocations.length === 0"
+                          (click)="onAnalysisFindingSelected(finding)"
+                        >
+                          <code>{{ finding.ruleId }}</code>
+                          <span>{{ finding.message }}</span>
+                        </button>
+                      </li>
+                    }
+                  </ol>
+                }
+              }
+            }
+          </section>
           <section class="export-card">
             <span>{{ i18n.t("output.vector") }}</span>
             <strong>SVG</strong>

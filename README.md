@@ -34,6 +34,8 @@ Implemented and automatically validated:
 - portable version-one contracts for revision-protected source change sets,
   canonical architecture snapshots, kind-qualified graph traversal, and
   source-located analysis findings and query evidence;
+- explained upstream/downstream, path, containment, deployment, and View-
+  coverage queries with reference-only temporary focus Views;
 - a deterministic semantic architecture differ that matches stable identities,
   recognizes renames, separates architecture, presentation, and layout change,
   and ignores formatting or source-location noise;
@@ -67,9 +69,15 @@ Implemented and automatically validated:
 - an executable Deployment View slice in the original `hello-deployment.c4ml`,
   including environments, nested Deployment Nodes, Infrastructure Nodes,
   static instances, and runtime relationships;
-- an experimental thin Node.js CLI for local validation, semantic comparison,
-  one/all-view SVG and PNG rendering, scaling, human or JSON diagnostics, and
-  classified exits;
+- an experimental thin Node.js CLI for local validation, semantic and visual
+  architecture comparison with deterministic impact paths, stable geometry,
+  explained SVG/PNG overlays, one/all-view rendering, scaling, human or JSON
+  diagnostics, and classified exits;
+- portable reviewed migration stories with deterministic transition
+  provenance and a self-contained offline HTML presentation of all four
+  comparison modes;
+- shared built-in architecture-quality findings with explicit evidence,
+  deterministic source locations, CLI reporting, and workbench navigation;
 - an Angular 22 desktop workbench with simultaneous source/preview tabs,
   C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
   panel, status bar, command palette, local compiler Web Worker, live
@@ -266,6 +274,15 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
 pnpm run c4ml -- check examples/projects/garden-pulse-multifile
 pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
   --diagnostics json
+pnpm run c4ml -- diff path/to/project \
+  --before-ref main \
+  --after-ref working \
+  --diagnostics json
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --comparison overlay \
+  --view garden-pulse-context \
+  --format svg,png \
+  --output build/comparisons
 pnpm run c4ml -- render examples/projects/garden-pulse-multifile \
   --view garden-pulse-context \
   --format svg,png \

@@ -123,11 +123,23 @@ export function createArchitectureQueryResult(
       "Architecture query evidence identities must be unique.",
     );
   }
+  const itemKeys = stableUnique(input.itemKeys);
+  const relationshipKeys = stableUnique(input.relationshipKeys);
+  const explainedKeys = new Set(evidence.map(({ subjectKey }) => subjectKey));
+  const unexplainedKeys = [...itemKeys, ...relationshipKeys].filter(
+    (itemKey) => !explainedKeys.has(itemKey),
+  );
+  if (unexplainedKeys.length > 0) {
+    throw new AnalysisContractError(
+      "C4ML-ANALYSIS-003",
+      `Architecture query results require evidence for every included identity; missing ${unexplainedKeys.join(", ")}.`,
+    );
+  }
   return {
     queryId: input.queryId,
     resultKind: input.resultKind,
-    itemKeys: stableUnique(input.itemKeys),
-    relationshipKeys: stableUnique(input.relationshipKeys),
+    itemKeys,
+    relationshipKeys,
     evidence,
   };
 }

@@ -18,6 +18,7 @@ import type {
   PreviewSemanticChangeWorkerResponse,
   CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
+import type { AnalysisFinding } from "@c4ml/compiler-core";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
@@ -156,6 +157,9 @@ export class AppComponent {
         ({ source }) =>
           source === undefined || source.file === this.activeDocumentUri(),
       ),
+  );
+  readonly analysisFindings = computed(
+    () => this.compiler.analysis().report?.findings ?? [],
   );
   readonly statusLabel = computed(() => {
     switch (this.compiler.state().phase) {
@@ -299,6 +303,20 @@ export class AppComponent {
       this.#compileCurrentProject(this.compiler.state().activeViewId);
     }
     queueMicrotask(() => this.sourceEditor()?.revealDiagnostic(diagnostic));
+  }
+
+  onAnalysisFindingSelected(finding: AnalysisFinding): void {
+    const source = finding.sourceLocations[0];
+    if (source === undefined) return;
+    if (source.file !== this.activeDocumentUri()) {
+      this.documents.selectDocument(source.file);
+      this.#compileCurrentProject(this.compiler.state().activeViewId);
+    }
+    queueMicrotask(() => this.sourceEditor()?.revealSource({
+      file: source.file,
+      start: source.range.start,
+      end: source.range.end,
+    }));
   }
 
   onInspectorSourceSelected(source: CompilerWorkerSource): void {

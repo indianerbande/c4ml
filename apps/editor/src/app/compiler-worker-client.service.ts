@@ -51,6 +51,14 @@ import {
   type EditorSemanticContextState,
   type EditorSemanticPreviewState,
 } from "./editor-semantic-session.js";
+import {
+  EditorAnalysisSession,
+  type EditorAnalysisState,
+} from "./editor-analysis-session.js";
+import {
+  isAnalysisWorkerResponse,
+  type AnalysisWorkerResponse,
+} from "./compiler-worker.analysis.protocol.js";
 import type {
   C4mlPlacementEditRequest,
   C4mlRouteEditRequest,
@@ -70,6 +78,7 @@ export class CompilerWorkerClient {
   readonly #routeSession = new EditorRoutePreviewSession(this.#sequence);
   readonly #semanticContextSession = new EditorSemanticContextSession(this.#sequence);
   readonly #semanticPreviewSession = new EditorSemanticPreviewSession(this.#sequence);
+  readonly #analysisSession = new EditorAnalysisSession(this.#sequence);
   readonly #worker = new Worker(new URL("./compiler.worker", import.meta.url), {
     name: "c4ml-compiler",
     type: "module",
@@ -92,6 +101,7 @@ export class CompilerWorkerClient {
   readonly semanticPreview = signal<EditorSemanticPreviewState>(
     this.#semanticPreviewSession.state,
   );
+  readonly analysis = signal<EditorAnalysisState>(this.#analysisSession.state);
   #activeFile = "editor.c4ml";
   #activeProject: CompilerWorkerProject | undefined;
 
@@ -115,6 +125,9 @@ export class CompilerWorkerClient {
     const request = this.#session.begin(source, file, requestedViewId);
     this.state.set(this.#session.state);
     this.#worker.postMessage(request);
+    const analysisRequest = this.#analysisSession.begin(source, file);
+    this.analysis.set(this.#analysisSession.state);
+    this.#worker.postMessage(analysisRequest);
   }
 
   compileProject(
@@ -124,6 +137,10 @@ export class CompilerWorkerClient {
   ): void {
     this.#activeFile = activeFile;
     this.#activeProject = project;
+    const activeDocument = project.documents.find(({ uri }) => uri === activeFile);
+    if (activeDocument === undefined) {
+      throw new Error(`Active project document "${activeFile}" does not exist.`);
+    }
     const request = this.#session.beginProject(
       project,
       activeFile,
@@ -131,6 +148,13 @@ export class CompilerWorkerClient {
     );
     this.state.set(this.#session.state);
     this.#worker.postMessage(request);
+    const analysisRequest = this.#analysisSession.begin(
+      activeDocument.source,
+      activeFile,
+      project,
+    );
+    this.analysis.set(this.#analysisSession.state);
+    this.#worker.postMessage(analysisRequest);
   }
 
   complete(
@@ -238,6 +262,8 @@ export class CompilerWorkerClient {
   readonly #onMessage = (event: MessageEvent<unknown>): void => {
     if (isCompilerWorkerResponse(event.data)) {
       this.#acceptCompilation(event.data);
+    } else if (isAnalysisWorkerResponse(event.data)) {
+      this.#acceptAnalysis(event.data);
     } else if (isCompletionWorkerResponse(event.data)) {
       this.#acceptCompletion(event.data);
     } else if (isHighlightWorkerResponse(event.data)) {
@@ -275,6 +301,9 @@ export class CompilerWorkerClient {
     this.#semanticPreviewSession.failActive(
       "The architecture change preview worker stopped unexpectedly.",
     );
+    this.#analysisSession.failActive(
+      "The architecture analysis worker stopped unexpectedly.",
+    );
     this.state.set(this.#session.state);
     this.completion.set(this.#completionSession.state);
     this.wizard.set(this.#wizardSession.state);
@@ -283,11 +312,18 @@ export class CompilerWorkerClient {
     this.route.set(this.#routeSession.state);
     this.semanticContext.set(this.#semanticContextSession.state);
     this.semanticPreview.set(this.#semanticPreviewSession.state);
+    this.analysis.set(this.#analysisSession.state);
   };
 
   #acceptCompilation(response: CompilerWorkerResponse): void {
     if (this.#session.accept(response)) {
       this.state.set(this.#session.state);
+    }
+  }
+
+  #acceptAnalysis(response: AnalysisWorkerResponse): void {
+    if (this.#analysisSession.accept(response)) {
+      this.analysis.set(this.#analysisSession.state);
     }
   }
 

@@ -70,6 +70,11 @@ const englishMessages = {
   "help.handbookTab": "Handbook",
   "help.articleLabel": "C4ML handbook article",
   "output.current": "Current diagram",
+  "output.quality": "Architecture findings",
+  "output.qualityLoading": "Checking the architecture…",
+  "output.qualityInvalid": "Fix source problems before checking architecture quality.",
+  "output.qualityFailed": "Architecture quality could not be checked.",
+  "output.qualityEmpty": "No built-in quality findings.",
   "output.vector": "Canonical vector",
   "output.svgDescription":
     "Standalone, selectable and produced directly by the compiler.",
@@ -572,6 +577,11 @@ const germanMessages: WorkbenchMessages = {
   "help.handbookTab": "Handbuch",
   "help.articleLabel": "C4ML-Handbuchartikel",
   "output.current": "Aktuelles Diagramm",
+  "output.quality": "Architekturhinweise",
+  "output.qualityLoading": "Architektur wird geprüft…",
+  "output.qualityInvalid": "Bitte erst die Quelltextfehler beheben.",
+  "output.qualityFailed": "Die Architekturprüfung ist fehlgeschlagen.",
+  "output.qualityEmpty": "Keine Hinweise aus den eingebauten Prüfungen.",
   "output.vector": "Kanonische Vektorgrafik",
   "output.svgDescription":
     "Eigenständig, auswählbar und direkt vom Compiler erzeugt.",

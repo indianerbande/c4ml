@@ -670,6 +670,46 @@ button.tree-row {
   opacity: 0.45;
 }
 
+.quality-findings {
+  display: grid;
+  max-height: 230px;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.quality-findings li {
+  border-left: 3px solid var(--accent);
+}
+
+.quality-findings li[data-severity="warning"] {
+  border-left-color: var(--warning);
+}
+
+.quality-findings button {
+  display: grid;
+  width: 100%;
+  height: auto;
+  gap: 3px;
+  padding: 8px 9px;
+}
+
+.quality-findings code {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quality-findings button > span {
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
 .editor-area {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;

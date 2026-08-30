@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.33
+Status: Draft 0.37
 
 Date: 2026-08-30
 
@@ -339,7 +339,9 @@ testing. Native file-dialog interaction and the Windows installer remain
 manual/platform-specific evidence.
 
 The experimental CLI suite exercises successful validation, semantic comparison
-of two valid sources, empty comparison after a comment-only change,
+of two valid sources, deterministic semantic impact exposure, empty comparison
+after a comment-only change, stable visual comparison export with explained
+encoding and geometry decisions,
 source-located JSON diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
 stable view selection, paths containing spaces and non-ASCII characters,
 invocation with a working directory outside the repository, and distinct usage,
@@ -819,6 +821,37 @@ Visual review MUST inspect before, after, overlay, and change-only presentation
 for at least one local semantic change and one layout-only change. The review
 must demonstrate that layout noise cannot masquerade as architecture change.
 
+The first implemented comparison gate uses original Signal Garden data. Core
+tests cover deterministic element and Relationship impact paths, layout-only
+isolation, baseline retention, hard-position exclusion, collision fallback,
+dimension fallback, all four scene modes, unique overlay identities, and
+semantic-change versus movement encoding. Worker tests require parity with the
+portable difference and impact reports. CLI tests export a standalone overlay
+and assert its visible comparison legend and machine-readable marks. Local SVG
+and PNG smoke exports exercise all four modes with controlled IBM Plex assets;
+the rendered results are visually inspected before the slice is reported as
+visually validated.
+
+The local Git-adapter gate creates isolated original repositories and proves
+commit and branch loading, explicit multifile manifest loading, invalid-ref
+classification, bounded read-only Git invocation, and unchanged `HEAD` and
+working-tree state. A CLI integration test compares a selected commit with
+working source and receives the same portable rename classification. Session
+tests inject repository paths and refs into stored JSON and require all such
+fields to be discarded.
+
+Migration-story tests require at least two explicitly reviewed canonical
+states, deterministic transition and change provenance, reuse of the portable
+difference and impact reports, and byte-stable serialization. Presentation
+tests require all four comparison modes for every included View and reject
+missing, incompatible, scripted, event-bearing, or externally linked SVG.
+The generated self-contained HTML must expose ordered step navigation,
+review-state provenance, semantic change summaries, and independently
+expandable before, after, overlay, and change-only views. A local browser review
+of the original Garden Pulse example verified those interactions, absence of
+horizontal page overflow and console errors, and legible embedded comparison
+output without network resources.
+
 ### 2.14 Architecture proof
 
 Rule and query tests MUST prove that:
@@ -839,6 +872,22 @@ Rule and query tests MUST prove that:
 Original fixtures MUST cover at least a forbidden dependency, a missing
 required protocol, a deployment/static-model inconsistency, a multi-hop impact
 query, and an external observation that disagrees with authored architecture.
+
+The first built-in quality gate proves deterministic conversion of shared
+non-blocking validation guidance, source-located model/View coverage findings,
+empty-View evidence, CLI/worker report parity, stale worker-response rejection,
+and human CLI locations. Browser review verifies that the Output area presents
+the same finding in light and dark schemes and that selecting it focuses and
+selects the owning Monaco source declaration. Blocking invalid input continues
+through diagnostics and does not fabricate an analysis snapshot.
+
+The first query gate covers upstream and downstream traversal, a deterministic
+multi-hop shortest path, ancestor and descendant containment, static-to-runtime
+deployment placement, and resolved-View coverage. Each result asserts evidence
+for every included item and Relationship. Temporary focus Views are tested as
+reference-only projections with no copied model definitions. Unknown subjects
+and absent paths fail with stable query errors; CLI JSON parity and source-exit
+classification are covered without filesystem mutation or network access.
 
 ### 2.15 Project and multi-document source
 

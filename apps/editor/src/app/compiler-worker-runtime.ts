@@ -2,6 +2,8 @@ import {
   compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
+  deriveArchitectureImpacts,
+  evaluateBuiltInArchitectureQuality,
   createArchitectureProjectInput,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
@@ -112,16 +114,26 @@ export async function compareWorkerRequest(
           after: after.diagnostics.map(toWorkerDiagnostic),
         },
         difference: undefined,
+        impacts: undefined,
       };
     }
     const beforeSnapshot = resolveArchitectureSnapshot(
       before.model,
       before.views,
+      {
+        placementByViewId: before.placementByViewId,
+        routingByViewId: before.routingByViewId,
+      },
     ).snapshot!;
     const afterSnapshot = resolveArchitectureSnapshot(
       after.model,
       after.views,
+      {
+        placementByViewId: after.placementByViewId,
+        routingByViewId: after.routingByViewId,
+      },
     ).snapshot!;
+    const difference = compareArchitectureSnapshots(beforeSnapshot, afterSnapshot);
     return {
       protocolVersion: compilerWorkerProtocolVersion,
       type: "comparison-result",
@@ -131,7 +143,8 @@ export async function compareWorkerRequest(
         before: before.diagnostics.map(toWorkerDiagnostic),
         after: after.diagnostics.map(toWorkerDiagnostic),
       },
-      difference: compareArchitectureSnapshots(beforeSnapshot, afterSnapshot),
+      difference,
+      impacts: deriveArchitectureImpacts(beforeSnapshot, afterSnapshot, difference),
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -153,6 +166,7 @@ export async function compareWorkerRequest(
         ],
       },
       difference: undefined,
+      impacts: undefined,
     };
   }
 }
@@ -182,6 +196,10 @@ export async function analyzeWorkerRequest(
     const snapshot = resolveArchitectureSnapshot(
       parsed.model,
       parsed.views,
+      {
+        placementByViewId: parsed.placementByViewId,
+        routingByViewId: parsed.routingByViewId,
+      },
     ).snapshot!;
     return {
       protocolVersion: compilerWorkerProtocolVersion,
@@ -189,7 +207,15 @@ export async function analyzeWorkerRequest(
       requestId: request.requestId,
       status: "valid",
       diagnostics: parsed.diagnostics.map(toWorkerDiagnostic),
-      report: createArchitectureAnalysisReport(snapshot),
+      report: createArchitectureAnalysisReport(
+        snapshot,
+        evaluateBuiltInArchitectureQuality({
+          model: parsed.model,
+          views: parsed.views,
+          snapshot,
+          diagnostics: parsed.diagnostics,
+        }),
+      ),
     };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

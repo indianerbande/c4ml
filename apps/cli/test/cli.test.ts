@@ -1,7 +1,9 @@
+import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -36,6 +38,14 @@ const deploymentUrl = new URL(
 
 let stdout: string[];
 let stderr: string[];
+const runProcess = promisify(execFile);
+
+async function git(cwd: string, ...args: string[]): Promise<string> {
+  const result = await runProcess("git", ["-C", cwd, ...args], {
+    env: { ...process.env, LC_ALL: "C" },
+  });
+  return result.stdout.trim();
+}
 
 beforeEach(() => {
   stdout = [];
@@ -82,6 +92,102 @@ describe("experimental C4ML CLI", () => {
     expect(stderr).toEqual([]);
   });
 
+  it("prints source-located built-in architecture findings", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-analysis-"));
+    const sourcePath = join(directory, "architecture.c4ml");
+    const source = (await readFile(contextUrl, "utf8")).replace(
+      'intent = "Reviews and adjusts the garden work plan"',
+      'intent = "Uses"',
+    );
+    await writeFile(sourcePath, source, "utf8");
+
+    const exitCode = await runCli(["analyze", sourcePath], io(directory));
+    const output = stdout.join("");
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(output).toContain("1 finding(s)");
+    expect(output).toContain("warning c4ml.validation.c4ml-sem-014");
+    expect(output).toContain("State the concrete intent or data flow.");
+    expect(output).toContain("architecture.c4ml:26:3");
+    expect(stderr).toEqual([]);
+  });
+
+  it("returns an explained temporary focus View for a graph query", async () => {
+    const cwd = fileURLToPath(new URL("../../..", import.meta.url));
+    const exitCode = await runCli(
+      [
+        "query",
+        "examples/draft/hello-context.c4ml",
+        "--kind",
+        "downstream",
+        "--subject",
+        "element:caretaker",
+        "--diagnostics",
+        "json",
+      ],
+      io(cwd),
+    );
+    const output = JSON.parse(stdout.join("")) as {
+      readonly command: string;
+      readonly result: {
+        readonly itemKeys: readonly string[];
+        readonly relationshipKeys: readonly string[];
+        readonly evidence: readonly { readonly subjectKey: string }[];
+      };
+      readonly focusView: {
+        readonly version: number;
+        readonly itemKeys: readonly string[];
+        readonly explanations: readonly { readonly subjectKey: string }[];
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(output.command).toBe("query");
+    expect(output.result.itemKeys).toEqual([
+      "element:caretaker",
+      "element:garden-pulse",
+    ]);
+    expect(output.result.relationshipKeys).toEqual([
+      "relationship:caretaker-reviews-plan",
+    ]);
+    expect(output.focusView.version).toBe(1);
+    expect(output.focusView.itemKeys).toEqual(output.result.itemKeys);
+    expect(output.focusView.explanations.map(({ subjectKey }) => subjectKey)).toEqual([
+      "element:caretaker",
+      "element:garden-pulse",
+      "relationship:caretaker-reviews-plan",
+    ]);
+    expect(stderr).toEqual([]);
+  });
+
+  it("reports an unknown graph-query subject as source input", async () => {
+    const cwd = fileURLToPath(new URL("../../..", import.meta.url));
+    const exitCode = await runCli(
+      [
+        "query",
+        "examples/draft/hello-context.c4ml",
+        "--kind",
+        "upstream",
+        "--subject",
+        "element:missing",
+        "--diagnostics",
+        "json",
+      ],
+      io(cwd),
+    );
+    const output = JSON.parse(stdout.join("")) as {
+      readonly valid: boolean;
+      readonly diagnostics: readonly { readonly code: string }[];
+    };
+
+    expect(exitCode).toBe(cliExitCode.source);
+    expect(output.valid).toBe(false);
+    expect(output.diagnostics).toEqual([
+      expect.objectContaining({ code: "C4ML-QUERY-002" }),
+    ]);
+    expect(stderr).toEqual([]);
+  });
+
   it("compares two sources by stable architecture identity", async () => {
     const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-diff-"));
     const beforePath = join(directory, "before.c4ml");
@@ -107,6 +213,7 @@ describe("experimental C4ML CLI", () => {
           readonly subjectKey: string;
         }[];
       };
+      readonly impacts: { readonly impacts: readonly unknown[] };
     };
 
     expect(exitCode).toBe(cliExitCode.success);
@@ -118,6 +225,56 @@ describe("experimental C4ML CLI", () => {
         subjectKey: "element:garden-pulse",
       }),
     ]);
+    expect(result.impacts.impacts).toHaveLength(1);
+    expect(stderr).toEqual([]);
+  });
+
+  it("exports a self-explaining stable visual comparison", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-visual-diff-"));
+    const beforePath = join(directory, "before.c4ml");
+    const afterPath = join(directory, "after.c4ml");
+    const output = join(directory, "comparison");
+    const before = await readFile(contextUrl, "utf8");
+    const after = before.replace(
+      'name = "Garden Pulse"',
+      'name = "Garden Coordination"',
+    );
+    await writeFile(beforePath, before, "utf8");
+    await writeFile(afterPath, after, "utf8");
+
+    const exitCode = await runCli(
+      [
+        "diff",
+        beforePath,
+        afterPath,
+        "--comparison",
+        "overlay",
+        "--view",
+        "garden-pulse-context",
+        "--output",
+        output,
+        "--diagnostics",
+        "json",
+      ],
+      io(directory),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly comparisonArtifact: string;
+      readonly stability: readonly { readonly status: string }[];
+    };
+    const svg = await readFile(result.comparisonArtifact, "utf8");
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.comparisonArtifact).toBe(
+      join(output, "garden-pulse-context.overlay.svg"),
+    );
+    expect(result.stability.every(({ status }) =>
+      status === "retained" || status === "fixed-by-layout"
+    )).toBe(true);
+    expect(svg).toContain('data-c4ml-comparison-mode="overlay"');
+    expect(svg).toContain("Comparison");
+    expect(svg).toContain("Layout movement");
+    expect(svg).toContain('data-c4ml-comparison-state="modified"');
     expect(stderr).toEqual([]);
   });
 
@@ -144,6 +301,58 @@ describe("experimental C4ML CLI", () => {
     expect(exitCode).toBe(cliExitCode.success);
     expect(result.difference.changes).toEqual([]);
     expect(result.difference.summary.total).toBe(0);
+    expect(stderr).toEqual([]);
+  });
+
+  it("compares a selected Git commit with working source without checkout", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-git-diff-"));
+    const sourcePath = join(directory, "architecture.c4ml");
+    const before = await readFile(contextUrl, "utf8");
+    await git(directory, "init", "--initial-branch=main");
+    await git(directory, "config", "user.name", "C4ML Test");
+    await git(directory, "config", "user.email", "c4ml@example.invalid");
+    await writeFile(sourcePath, before, "utf8");
+    await git(directory, "add", "architecture.c4ml");
+    await git(directory, "commit", "-m", "baseline");
+    const baseline = await git(directory, "rev-parse", "HEAD");
+    await writeFile(
+      sourcePath,
+      before.replace('name = "Garden Pulse"', 'name = "Garden Coordination"'),
+      "utf8",
+    );
+
+    const exitCode = await runCli(
+      [
+        "diff",
+        sourcePath,
+        "--before-ref",
+        "HEAD",
+        "--after-ref",
+        "working",
+        "--diagnostics",
+        "json",
+      ],
+      io(directory),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly beforeRef: { readonly kind: string; readonly commit: string };
+      readonly afterRef: { readonly kind: string };
+      readonly difference: {
+        readonly changes: readonly { readonly kind: string; readonly subjectKey: string }[];
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.beforeRef).toEqual({
+      kind: "git",
+      requestedRef: "HEAD",
+      commit: baseline,
+    });
+    expect(result.afterRef).toEqual({ kind: "working", requestedRef: "working" });
+    expect(result.difference.changes).toEqual([
+      expect.objectContaining({ kind: "renamed", subjectKey: "element:garden-pulse" }),
+    ]);
+    expect(await git(directory, "status", "--porcelain=v1")).toBe("M architecture.c4ml");
     expect(stderr).toEqual([]);
   });
 

@@ -429,6 +429,8 @@ function viewPresentation(view: SnapshotView): CanonicalObject {
 function viewLayout(view: SnapshotView): CanonicalObject {
   return toCanonicalValue({
     ...(view.layout === undefined ? {} : { view: view.layout }),
+    ...(view.placement === undefined ? {} : { placement: view.placement }),
+    ...(view.routing === undefined ? {} : { routing: view.routing }),
     groups: view.groups.map(({ id, layout }) => ({ id, layout })),
   }) as CanonicalObject;
 }

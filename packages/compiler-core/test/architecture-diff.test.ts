@@ -183,6 +183,90 @@ describe("semantic architecture difference", () => {
     });
   });
 
+  it("includes executable placement and route controls as layout data", () => {
+    const before = resolveArchitectureSnapshot(signalGardenModel, signalGardenViews, {
+      placementByViewId: {
+        "signal-context": {
+          constraints: [{
+            id: "pin-pulse",
+            kind: "pin",
+            targetId: "signal-garden",
+            x: 520,
+            y: 120,
+            strength: "hard",
+          }],
+        },
+      },
+      routingByViewId: {
+        "signal-context": {
+          controls: [{
+            relationshipId: "grower-uses-system",
+            policy: "automatic",
+            style: "orthogonal",
+          }],
+        },
+      },
+    }).snapshot!;
+    const after = resolveArchitectureSnapshot(signalGardenModel, signalGardenViews, {
+      placementByViewId: {
+        "signal-context": {
+          constraints: [{
+            id: "pin-pulse",
+            kind: "pin",
+            targetId: "signal-garden",
+            x: 600,
+            y: 120,
+            strength: "hard",
+          }],
+        },
+      },
+      routingByViewId: {
+        "signal-context": {
+          controls: [{
+            relationshipId: "grower-uses-system",
+            policy: "automatic",
+            style: "orthogonal",
+          }],
+        },
+      },
+    }).snapshot!;
+
+    expect(compareArchitectureSnapshots(before, after)).toMatchObject({
+      summary: { total: 1, architecture: 0, presentation: 0, layout: 1 },
+      changes: [{ category: "layout", subjectKey: "view:signal-context" }],
+    });
+  });
+
+  it("ignores source movement inside executable layout controls", () => {
+    const snapshotWithSource = (file: string, offset: number): ArchitectureSnapshot =>
+      resolveArchitectureSnapshot(signalGardenModel, signalGardenViews, {
+        placementByViewId: {
+          "signal-context": {
+            constraints: [{
+              id: "pin-pulse",
+              kind: "pin",
+              targetId: "signal-garden",
+              x: 520,
+              y: 120,
+              strength: "hard",
+              source: {
+                file,
+                range: {
+                  start: { offset, line: 1, column: 0 },
+                  end: { offset: offset + 8, line: 1, column: 8 },
+                },
+              },
+            }],
+          },
+        },
+      }).snapshot!;
+
+    expect(compareArchitectureSnapshots(
+      snapshotWithSource("before.c4ml", 10),
+      snapshotWithSource("after.c4ml", 900),
+    ).changes).toEqual([]);
+  });
+
   it("is empty and byte-stable for equivalent canonical snapshots", () => {
     const before = snapshot();
     const equivalent = structuredClone(before);
