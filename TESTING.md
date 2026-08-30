@@ -1,8 +1,8 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.29
+Status: Draft 0.30
 
-Date: 2026-08-29
+Date: 2026-08-30
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
@@ -75,6 +75,12 @@ diagnostics, route-context completion,
 browser bundling without Node.js polyfills, and deterministic SVG through the
 shared compiler pipeline. This evidence does not claim coverage of the complete
 preview grammar.
+
+The larger `examples/draft/signal-garden.c4ml` is also parsed as one executable
+all-seven-view demonstration. A negative language test preserves proposed tags,
+Visual Group, and presentation snippets separately and verifies that each
+receives source-located `C4ML-LANG-005` guidance rather than a misleading
+missing-brace message.
 
 The current constraint-solver foundation covers the executable intent hierarchy
 in `SPEC.md`: left/right/above/below placement, anchored multi-element edge and
@@ -149,6 +155,11 @@ synchronization, visually inspected Component, Code, System Landscape,
 Dynamic, and Deployment previews, view selection, zoom, the guided wizard,
 generated-source review, apply, and undo. The production bundled adapter
 compiles executable slices for all seven view types in worker-runtime tests;
+the platform-shortcut suite advertises `Cmd+I` for macOS user agents and
+`Ctrl+Space` for Windows and Linux, while the visible action triggers the same
+Monaco suggestion command. In the packaged macOS application, the workbench
+displayed `⌘I` and that keystroke opened the four context-valid top-level
+suggestions on 2026-08-30;
 the current browser-specific ELK pass visually covers a System Context with two
 guided routes, distinct target Ports, a named corridor and label shifts, plus a
 nested Deployment View. Route-block completion was inspected with the active
@@ -166,6 +177,14 @@ that the interface resolves IBM Plex Sans and Monaco resolves IBM Plex Mono,
 including regular and bold faces. The preview was visually inspected at 80,
 100, and 120 percent; its rendered box changed size while computed CSS
 `transform` remained `none`.
+
+The Problems panel was visually inspected in the live Angular workbench on
+2026-08-30 with several simultaneous diagnostics. Every card occupied the same
+single 963 px grid track and retained one x position while successive rows
+advanced vertically. The first two cards showed source-located
+`C4ML-LANG-005` messages for proposed element tags and a View presentation
+block; neither reported a missing closing brace. The panel remained vertically
+scrollable and the last valid diagram stayed visible.
 
 The first intent-authoring inspector evidence verifies that the worker returns
 automatic candidate bounds, final scene bounds, movement delta, and stable
@@ -263,16 +282,25 @@ dirty state, and canonical SVG unchanged.
 
 The Electron desktop foundation adds unit and boundary evidence for its
 versioned bridge, runtime request validators, opaque document handles, filename
-normalization, local protocol traversal rejection, and hardened web
-preferences. It also validates the bounded English/German UI-language message,
-bridge, menu, dialog, and close-warning contract. The production boundary check pins the reviewed Electron/Forge
-stack and licenses, verifies that the preload has no filesystem access, checks
-the local-only CSP, and requires the editor, worker, fonts, resvg native binary,
-and notices before packaging. A smoke test from the packaged macOS `.app`
-verifies the bridge, Monaco host, valid compiler state, preview, controlled
-Sans/Mono typography, and in-memory native PNG rasterization.
-The application was
-visually inspected as a native two-pane workbench with its native menu. The
+normalization, local protocol traversal rejection, hardened web preferences,
+and visible-bound normalization for the optional preview window. It also
+validates the bounded English/German UI-language message, bridge, menu, dialog,
+and close-warning contract. The preview tests require a source-neutral,
+versioned projection, a separate restricted preload, rejection of privileged
+main-window methods, deterministic selection hit testing, full-size and
+detached workspace controls, and safe session persistence. The production
+boundary check pins the reviewed Electron/Forge stack and licenses, verifies
+that neither preload has filesystem access and that the preview preload exposes
+no document, save, or export channels, checks the local-only CSP, and requires
+the editor, worker, fonts, resvg native binary, and notices before packaging. A
+smoke test from the packaged macOS `.app` verifies the main bridge, Monaco host,
+valid compiler state, detached projection-only bridge and window, absence of a
+source editor in that window, controlled Sans/Mono typography, and in-memory
+native PNG rasterization.
+The application was visually inspected as a native two-pane workbench, a
+full-size single-window preview, and a separate preview window with its native
+menu. Selection, zoom, Route-overlay changes, and redocking were exercised; the
+detached window showed no source or file controls. The
 macOS application passes strict deep code-signature verification after ad-hoc
 signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
 testing. Native file-dialog interaction and the Windows installer remain
@@ -569,6 +597,8 @@ Editor tests MUST cover:
 - cancellation or rejection of results from superseded compilations;
 - retention of the last valid preview while current source contains errors;
 - current diagnostics replacing obsolete diagnostics;
+- diagnostics displayed as one vertically ordered Problems list rather than a
+  width-dependent multi-column card grid;
 - source-to-preview and preview-to-source navigation;
 - stable mapping from source ranges through semantic and scene IDs to SVG;
 - zoom, pan, and fit-to-view behavior without geometry mutation or CSS
@@ -647,6 +677,18 @@ Desktop tests MUST cover:
   fonts, failure reporting, and faithful canonical-SVG rasterization;
 - safe local workbench-session persistence that excludes source, handles, and
   filesystem paths;
+- full-size preview entry and return without changing source or canonical SVG;
+- a separate preview window with a projection-only preload, no compiler,
+  source-editor, document, save, export, filesystem, or Node authority;
+- a seamless, unpatterned preview canvas matching the canonical diagram canvas
+  in both main and detached workspaces across light and dark workbench schemes,
+  without changing SVG;
+- validated projection synchronization for current view, status, SVG,
+  navigation, selection, zoom, Route overlay, language, scheme, palette, and
+  interface font size;
+- source-neutral selection round trips, redocking, close/reopen behavior, and
+  visible bounded window restoration, including monotonic projection revisions
+  across a main-renderer reload;
 - native Settings opening through the application menu and `Cmd/Ctrl+,`;
 - validated English/German synchronization of C4ML-owned native menu commands,
   dialog labels, failure copy, and unsaved-close protection;
@@ -884,10 +926,10 @@ license.
 
 The desktop dependency check pins Electron, Forge, makers, fuses, Windows
 startup handling, and macOS maker helpers to the reviewed versions and licenses.
-It also protects the local CSP, preload/main separation, and packaged resource
-inventory. A release pipeline MUST additionally inventory the complete
-installer payload and verify platform signatures and notarization where
-applicable.
+It also protects the local CSP, main/preview preload separation, the restricted
+preview channel inventory, and packaged resource inventory. A release pipeline
+MUST additionally inventory the complete installer payload and verify platform
+signatures and notarization where applicable.
 
 No copied third-party example may be introduced as a test fixture.
 

@@ -1,10 +1,20 @@
 import { bootstrapApplication } from "@angular/platform-browser";
 import { provideZonelessChangeDetection } from "@angular/core";
 
-import { AppComponent } from "./app/app.component.js";
+const previewWindow =
+  new URL(globalThis.location.href).searchParams.get("mode") === "preview";
 
-bootstrapApplication(AppComponent, {
-  providers: [provideZonelessChangeDetection()],
-}).catch((error: unknown) => {
-  console.error("C4ML editor bootstrap failed.", error);
-});
+void (previewWindow
+  ? import("./app/detached-preview.component.js").then(
+      ({ DetachedPreviewComponent }) => DetachedPreviewComponent,
+    )
+  : import("./app/app.component.js").then(({ AppComponent }) => AppComponent)
+)
+  .then((rootComponent) =>
+    bootstrapApplication(rootComponent, {
+      providers: [provideZonelessChangeDetection()],
+    }),
+  )
+  .catch((error: unknown) => {
+    console.error("C4ML editor bootstrap failed.", error);
+  });

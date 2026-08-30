@@ -1,8 +1,8 @@
 # C4ML Specification
 
-Status: Draft 0.28
+Status: Draft 0.29
 
-Date: 2026-08-29
+Date: 2026-08-30
 
 Working title: C4ML
 
@@ -911,7 +911,9 @@ An internal, browser-compatible language package implements the executable
 `examples/draft/hello-container.c4ml`, and
 `examples/draft/hello-static-zoom.c4ml`, plus
 `examples/draft/hello-dynamic.c4ml` and
-`examples/draft/hello-deployment.c4ml`. The slices currently recognize:
+`examples/draft/hello-deployment.c4ml`. The larger original
+`examples/draft/signal-garden.c4ml` composes those same executable slices into
+one model covering all seven view types. The slices currently recognize:
 
 - Person and Software System declarations with name, responsibility, and
   internal or external classification;
@@ -1013,6 +1015,15 @@ services. They expose context-completion for the executable subsets, including
 only valid properties and references inside route and corridor blocks. The rest
 of the syntax in `DOCUMENTATION.md` and `examples/draft` remains non-executable
 review material.
+
+When the parser encounters a known, deliberately non-executable construct from
+the language-preview material, it MUST report that limitation directly instead
+of presenting the next expected closing brace as the authoring error. The
+current diagnostic `C4ML-LANG-005` covers proposed element tags, Visual Group
+declarations, and View presentation blocks. It retains the exact source range
+and directs the author to remove the proposal from executable source or keep it
+in a separate language-preview document. Unknown malformed syntax continues to
+use the normal parsing diagnostic.
 
 ### 9.5 Angular editor foundation
 
@@ -1121,6 +1132,12 @@ CSS, HTML, JSON, and native LSP language services are not loaded. C4ML syntax
 highlighting remains C4ML-owned and MUST NOT introduce a second authoritative
 parser or grammar. Monaco only receives already classified, source-located
 semantic-token spans.
+
+The workbench MUST advertise a suggestion shortcut that reaches Monaco on the
+active platform. Windows and Linux use `Ctrl+Space`. macOS uses Monaco's `Cmd+I`
+binding because `Ctrl+Space` is commonly reserved by the operating system for
+input-source switching. The visible suggestion action remains a
+keyboard-independent equivalent.
 
 Superseded evaluation note (2026-08-28): CodeMirror 6 was considered as a
 smaller modular fallback. Monaco's broad adoption, familiar desktop interaction,
@@ -1254,13 +1271,43 @@ the existing module Web Worker and C4ML compiler contracts unchanged. The
 interface is an original C4ML workbench; an IDE-like window model does not imply
 copying Visual Studio Code source, extensions, branding, layout, or assets.
 
-The Electron main process owns application lifecycle, one application window,
-native menus and shortcuts, Open/Save/Save As dialogs, source-file reads and
-writes, title updates, and close protection for unsaved source. The renderer
-receives opaque document handles rather than filesystem paths. File operations
-are limited to validated C4ML source documents up to 8 MiB and report stable
-desktop diagnostic codes. Source remains authoritative and saving writes the
-current editor text, not hidden graphical state.
+The Electron main process owns application lifecycle, the authoritative main
+workbench window, an optional projection-only preview window, native menus and
+shortcuts, Open/Save/Save As dialogs, source-file reads and writes, title
+updates, and close protection for unsaved source. The main renderer receives
+opaque document handles rather than filesystem paths. File operations are
+limited to validated C4ML source documents up to 8 MiB and report stable desktop
+diagnostic codes. Source remains authoritative and saving writes the current
+editor text, not hidden graphical state.
+
+The main workbench provides a single-window full-size preview mode and may open
+the same preview in a separate native window. The second window receives only a
+versioned, validated projection containing the current view and compiler
+status, bounded SVG, source-neutral navigation geometry, stable scene-object
+identities, selection, zoom, Route-overlay state, and safe presentation
+settings. It MUST NOT receive source text or ranges, document URIs or handles,
+filesystem paths, compiler services, export methods, or the main desktop
+bridge. Its separate preload exposes only projection requests and preview
+interactions. The main window remains the only compiler and document authority;
+selection events are resolved against its current navigation before source is
+revealed. The main process assigns the cross-window projection revision so a
+main-renderer reload cannot make a still-open preview reject the replacement
+projection stream. A newly bootstrapped main renderer explicitly reads the
+current preview-window state before resuming synchronization.
+
+Closing, reopening, moving, or redocking the preview window MUST NOT change
+source, canonical geometry, or exported SVG/PNG. Only bounded visible window
+geometry and ordinary workbench presentation state may be restored. Zoom,
+selection, fit, and Route-overlay changes travel through the same projection
+contract so main and detached views converge without a second compiler. A
+preview canvas matching the canonical diagram canvas surrounds the rendered
+SVG in both workspaces, independent of workbench brightness and color family,
+without a pattern or sheet shadow. The rendered diagram therefore does not
+appear as a separate pasted sheet. This canvas choice is workbench presentation
+only and MUST NOT alter SVG or PNG output. A
+browser pop-out remains deferred: browser development uses the full-size
+single-window mode until a same-origin messaging and lifecycle design is
+approved; separate development ports are not part of the design.
 
 The main process also owns native PNG export. The renderer sends only the
 canonical current SVG, a validated suggested name, and a scale of 1x, 2x, or
@@ -1387,10 +1434,11 @@ themes or exported SVG/PNG.
 
 A versioned session record may persist only installation-local presentation
 state: the active activity area, bottom-panel visibility and tab, preview zoom,
-and route-debug visibility. It MUST reject malformed or unsupported records and
-MUST NOT persist source text, document handles, filesystem paths, compilation
-results, diagram semantics, or uncommitted graphical state. Source files remain
-the only persistent architecture authority.
+route-debug visibility, single-window preview mode, and bounded preview-window
+geometry. It MUST reject malformed or unsupported records and MUST NOT persist
+source text, document handles, filesystem paths, compilation results, diagram
+semantics, or uncommitted graphical state. Source files remain the only
+persistent architecture authority.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 

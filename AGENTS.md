@@ -33,11 +33,17 @@ scripts and packaging.
 
 The desktop workbench also has an implemented original IDE-like shell with
 C4ML-specific Files, Diagrams, Output, and Help activity areas, simultaneous
-source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a local command
-palette. A versioned session contract persists only safe UI presentation state
-(active activity area, bottom-panel state, zoom, and route-debug visibility),
-never source, document handles, or filesystem paths. It also has an implemented
-version-one local settings contract and category-based settings panel.
+source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
+local command palette. Its preview can occupy the full main workbench or detach
+into a second Electron window. That window receives only a versioned,
+source-neutral projection and exposes no compiler, source, filesystem,
+document, save, or export authority; selection, zoom, Route-overlay state, and
+redocking synchronize through the authoritative main window. A versioned
+session contract persists only safe UI presentation state (active activity
+area, bottom-panel state, zoom, route-debug visibility, preview workspace mode,
+and bounded preview-window geometry), never source, document handles, or
+filesystem paths. It also has an implemented version-one local settings
+contract and category-based settings panel.
 The activity bar uses five locally packaged, hash-pinned Material Symbols
 Outlined SVGs for Files, Diagrams, Output, Help, and Settings. They remain
 decorative presentation assets inside localized, accessibly named buttons and
@@ -206,8 +212,11 @@ element kinds. Their future author-facing grammar is still draft.
 `DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
 preview. They are deliberately non-normative. Only the `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
-`hello-deployment.c4ml` slices are executable through the internal experimental
-language package. `hello-context.c4ml` also exercises executable placement
+`hello-deployment.c4ml` slices plus the larger all-seven-view
+`signal-garden.c4ml` demonstration are executable through the internal
+experimental language package. Proposed tags, Visual Groups, and View
+presentation remain in a separate non-executable Markdown preview.
+`hello-context.c4ml` also exercises executable placement
 constraints, one pin, relative route anchors, a locked segment, and soft
 avoidance. The remaining preview is not necessarily executable. Treat all of
 it as review material, not as an accepted grammar or a compatibility

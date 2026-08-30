@@ -46,6 +46,7 @@ import { WorkbenchHelpFacade } from "./workbench-help.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
 import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
+import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
 
 @Component({
   selector: "c4ml-root",
@@ -60,6 +61,13 @@ import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
   ],
 })
 export class AppComponent {
+  readonly suggestionShortcut = sourceEditorSuggestionShortcut(
+    globalThis.navigator.userAgent,
+  );
+  readonly suggestionShortcutHint =
+    this.suggestionShortcut === "⌘I"
+      ? "editor.suggestionShortcutMacHint"
+      : "editor.suggestionShortcutHint";
   readonly sourceEditor =
     viewChild<C4mlMonacoSourceEditorComponent>("sourceEditor");
   readonly compiler = inject(CompilerWorkerClient);
@@ -90,6 +98,9 @@ export class AppComponent {
   readonly previewSize = this.preview.displaySize;
   readonly zoomLabel = this.preview.zoomLabel;
   readonly routingDebugEnabled = this.preview.routingDebugEnabled;
+  readonly previewWorkspaceMode = this.preview.workspaceMode;
+  readonly previewDetached = this.preview.detached;
+  readonly previewDetachmentAvailable = this.preview.desktopDetachmentAvailable;
   readonly commandPaletteOpen = this.commands.open;
   readonly commandQuery = this.commands.query;
   readonly filteredCommands = this.commands.commands;
@@ -174,14 +185,24 @@ export class AppComponent {
           case "open-settings":
             this.openSettings();
             break;
+          case "open-preview-window":
+            void this.detachPreview();
+            break;
+          case "toggle-preview-focus":
+            this.togglePreviewFocus();
+            break;
         }
       },
+    );
+    const unsubscribeDetachedSelection = this.preview.onDetachedSelection(
+      (target) => this.#selectTarget(target, true),
     );
     destroyRef.onDestroy(() => {
       if (this.#compileTimer !== undefined) {
         clearTimeout(this.#compileTimer);
       }
       unsubscribeDesktopCommands?.();
+      unsubscribeDetachedSelection();
     });
     this.#compileCurrentProject();
     this.compiler.resolveHelpContext(this.source(), 0);
@@ -321,6 +342,20 @@ export class AppComponent {
     this.preview.toggleRoutingDebug();
   }
 
+  togglePreviewFocus(): void {
+    this.preview.toggleFocusMode();
+    this.help.showDiagram();
+  }
+
+  async detachPreview(): Promise<void> {
+    this.help.showDiagram();
+    await this.preview.detach();
+  }
+
+  redockPreview(): void {
+    this.preview.redock();
+  }
+
   formatGeometry(value: number): string {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
   }
@@ -454,6 +489,12 @@ export class AppComponent {
         break;
       case "diagram.fit":
         this.fitPreview();
+        break;
+      case "diagram.focus":
+        this.togglePreviewFocus();
+        break;
+      case "diagram.detach":
+        void this.detachPreview();
         break;
       case "diagram.route-debug":
         this.toggleRoutingDebug();

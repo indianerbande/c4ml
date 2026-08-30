@@ -1,4 +1,8 @@
-<div class="workbench-shell">
+<div
+  class="workbench-shell"
+  [class.is-preview-focus]="previewWorkspaceMode() === 'focus'"
+  [class.is-preview-detached]="previewDetached()"
+>
   <header class="title-bar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">C4</span>
@@ -20,6 +24,16 @@
     </button>
 
     <div class="title-actions">
+      @if (previewDetached()) {
+        <button
+          type="button"
+          class="title-action"
+          data-preview-action="redock"
+          (click)="redockPreview()"
+        >
+          {{ i18n.t("preview.redock") }}
+        </button>
+      }
       @if (canUndoWizard()) {
         <button type="button" class="title-action" (click)="undoWizard()">
           {{ i18n.t("wizard.undo") }}
@@ -402,7 +416,9 @@
               <button type="button" (click)="triggerSuggestions()">
                 {{ i18n.t("editor.suggestions") }}
               </button>
-              <small>Ctrl+Space</small>
+              <small [title]="i18n.t(suggestionShortcutHint)">
+                {{ suggestionShortcut }}
+              </small>
             </span>
             @if (compiler.completion().phase === "loading") {
               <span>{{ i18n.t("editor.checkingContext") }}</span>
@@ -507,6 +523,38 @@
                 >
                   {{ i18n.t("preview.routes") }}
                 </button>
+                <button
+                  type="button"
+                  class="workspace-button"
+                  data-preview-action="focus"
+                  [class.is-active]="previewWorkspaceMode() === 'focus'"
+                  [attr.aria-pressed]="previewWorkspaceMode() === 'focus'"
+                  (click)="togglePreviewFocus()"
+                  [attr.aria-label]="
+                    previewWorkspaceMode() === 'focus'
+                      ? i18n.t('preview.leaveFocus')
+                      : i18n.t('preview.focus')
+                  "
+                  [title]="
+                    previewWorkspaceMode() === 'focus'
+                      ? i18n.t('preview.leaveFocus')
+                      : i18n.t('preview.focus')
+                  "
+                >
+                  ⛶
+                </button>
+                @if (previewDetachmentAvailable && !previewDetached()) {
+                  <button
+                    type="button"
+                    class="workspace-button"
+                    data-preview-action="detach"
+                    (click)="detachPreview()"
+                    [attr.aria-label]="i18n.t('preview.detach')"
+                    [title]="i18n.t('preview.detach')"
+                  >
+                    ↗
+                  </button>
+                }
               </div>
             }
           </div>

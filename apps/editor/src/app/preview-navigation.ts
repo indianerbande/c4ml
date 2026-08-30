@@ -1,11 +1,7 @@
 import type {
-  CompilerWorkerNavigation,
   CompilerWorkerNavigationPoint,
   CompilerWorkerNavigationTarget,
-  CompilerWorkerCorridorNavigationTarget,
   CompilerWorkerNodeNavigationTarget,
-  CompilerWorkerPortNavigationTarget,
-  CompilerWorkerRouteLabelNavigationTarget,
   CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
 
@@ -21,11 +17,57 @@ export interface PreviewClientPoint {
   readonly y: number;
 }
 
+export interface PreviewNavigationSpace {
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface PreviewOverlayOptions {
   readonly showRouteDebug: boolean;
   readonly width: number;
   readonly height: number;
 }
+
+export type PreviewHitTarget =
+  | {
+      readonly kind: "node";
+      readonly sceneObjectId: string;
+      readonly nodeRole: "boundary" | "element";
+      readonly bounds: {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+      };
+    }
+  | {
+      readonly kind: "route";
+      readonly sceneObjectId: string;
+      readonly points: readonly CompilerWorkerNavigationPoint[];
+    }
+  | {
+      readonly kind: "port";
+      readonly sceneObjectId: string;
+      readonly point: CompilerWorkerNavigationPoint;
+    }
+  | {
+      readonly kind: "route-label";
+      readonly sceneObjectId: string;
+      readonly bounds: {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+      };
+    }
+  | {
+      readonly kind: "corridor";
+      readonly sceneObjectId: string;
+      readonly points: readonly [
+        CompilerWorkerNavigationPoint,
+        CompilerWorkerNavigationPoint,
+      ];
+    };
 
 const routeHitTolerance = 12;
 
@@ -55,12 +97,12 @@ export function navigationTargetForOffset(
     )[0]?.target;
 }
 
-export function navigationTargetAtPoint(
-  targets: readonly CompilerWorkerNavigationTarget[],
+export function navigationTargetAtPoint<T extends PreviewHitTarget>(
+  targets: readonly T[],
   point: PreviewClientPoint,
-): CompilerWorkerNavigationTarget | undefined {
+): T | undefined {
   const nodes = targets.filter(
-    (target): target is CompilerWorkerNodeNavigationTarget =>
+    (target): target is T & Extract<PreviewHitTarget, { kind: "node" }> =>
       target.kind === "node" && contains(target, point),
   );
   const element = smallestNode(
@@ -72,7 +114,7 @@ export function navigationTargetAtPoint(
 
   const port = nearestPointTarget(
     targets.filter(
-      (target): target is CompilerWorkerPortNavigationTarget =>
+      (target): target is T & Extract<PreviewHitTarget, { kind: "port" }> =>
         target.kind === "port",
     ),
     point,
@@ -84,7 +126,8 @@ export function navigationTargetAtPoint(
 
   const label = targets
     .filter(
-      (target): target is CompilerWorkerRouteLabelNavigationTarget =>
+      (target): target is T &
+        Extract<PreviewHitTarget, { kind: "route-label" }> =>
         target.kind === "route-label" && containsBounds(target.bounds, point),
     )
     .sort((left, right) => compareText(left.sceneObjectId, right.sceneObjectId))[0];
@@ -94,7 +137,7 @@ export function navigationTargetAtPoint(
 
   const route = targets
     .filter(
-      (target): target is CompilerWorkerRouteNavigationTarget =>
+      (target): target is T & Extract<PreviewHitTarget, { kind: "route" }> =>
         target.kind === "route",
     )
     .map((target) => ({ target, distance: distanceToRoute(target, point) }))
@@ -110,7 +153,8 @@ export function navigationTargetAtPoint(
 
   const corridor = targets
     .filter(
-      (target): target is CompilerWorkerCorridorNavigationTarget =>
+      (target): target is T &
+        Extract<PreviewHitTarget, { kind: "corridor" }> =>
         target.kind === "corridor",
     )
     .map((target) => ({
@@ -129,7 +173,7 @@ export function navigationTargetAtPoint(
 export function clientPointToScene(
   clientPoint: PreviewClientPoint,
   imageRect: PreviewClientRect,
-  navigation: CompilerWorkerNavigation,
+  navigation: PreviewNavigationSpace,
 ): PreviewClientPoint | undefined {
   const scale = Math.min(
     imageRect.width / navigation.width,
@@ -171,11 +215,11 @@ export function svgWithNavigationHighlight(
   return svg.includes("</svg>") ? svg.replace("</svg>", `${overlay}</svg>`) : svg;
 }
 
-function nearestPointTarget(
-  targets: readonly CompilerWorkerPortNavigationTarget[],
+function nearestPointTarget<T extends Extract<PreviewHitTarget, { kind: "port" }>>(
+  targets: readonly T[],
   point: PreviewClientPoint,
   tolerance: number,
-): CompilerWorkerPortNavigationTarget | undefined {
+): T | undefined {
   return targets
     .map((target) => ({
       target,
@@ -193,7 +237,7 @@ function nearestPointTarget(
 }
 
 function containsBounds(
-  bounds: CompilerWorkerRouteLabelNavigationTarget["bounds"],
+  bounds: Extract<PreviewHitTarget, { kind: "route-label" }>["bounds"],
   point: PreviewClientPoint,
 ): boolean {
   return (
@@ -205,7 +249,7 @@ function containsBounds(
 }
 
 function contains(
-  target: CompilerWorkerNodeNavigationTarget,
+  target: Extract<PreviewHitTarget, { kind: "node" }>,
   point: PreviewClientPoint,
 ): boolean {
   const { bounds } = target;
@@ -217,9 +261,9 @@ function contains(
   );
 }
 
-function smallestNode(
-  targets: readonly CompilerWorkerNodeNavigationTarget[],
-): CompilerWorkerNodeNavigationTarget | undefined {
+function smallestNode<T extends Extract<PreviewHitTarget, { kind: "node" }>>(
+  targets: readonly T[],
+): T | undefined {
   return [...targets].sort(
     (left, right) =>
       left.bounds.width * left.bounds.height -
@@ -229,7 +273,7 @@ function smallestNode(
 }
 
 function distanceToRoute(
-  target: CompilerWorkerRouteNavigationTarget,
+  target: Extract<PreviewHitTarget, { kind: "route" }>,
   point: PreviewClientPoint,
 ): number {
   let distance = Number.POSITIVE_INFINITY;

@@ -6,6 +6,7 @@ import {
   Menu,
   net,
   protocol,
+  screen,
   session,
   type IpcMainEvent,
   type IpcMainInvokeEvent,
@@ -18,8 +19,12 @@ import { pathToFileURL } from "node:url";
 import {
   desktopBridgeProtocolVersion,
   desktopIpcChannels,
+  previewIpcChannels,
   isDesktopDocumentState,
+  isDesktopOpenPreviewRequest,
   isDesktopPngExportRequest,
+  isDesktopPreviewInteraction,
+  isDesktopPreviewProjection,
   isDesktopSaveRequest,
   isDesktopUiLanguage,
   maxDesktopSourceBytes,
@@ -28,8 +33,11 @@ import {
   type DesktopDocumentState,
   type DesktopOpenResult,
   type DesktopOpenProjectResult,
+  type DesktopOpenPreviewResult,
   type DesktopOperationFailure,
   type DesktopPngExportResult,
+  type DesktopPreviewProjection,
+  type DesktopPreviewWindowBounds,
   type DesktopSaveResult,
   type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
@@ -54,18 +62,27 @@ import {
   resolveEditorAssetPath,
 } from "./editor-protocol.js";
 import { createDesktopWebPreferences } from "./window-options.js";
+import {
+  DesktopPreviewProjectionSequence,
+  normalizePreviewWindowBounds,
+} from "./preview-window.js";
 
 const applicationId = "org.c4ml.desktop";
 const smokeArgument = "--c4ml-smoke";
 const currentDirectory = __dirname;
 const preloadPath = join(currentDirectory, "preload.cjs");
+const previewPreloadPath = join(currentDirectory, "preview-preload.cjs");
 const documents = new DesktopDocumentRegistry();
 const documentStates = new WeakMap<BrowserWindow, DesktopDocumentState>();
 const pngRenderer = new ResvgPngRenderer();
 
 let mainWindow: BrowserWindow | undefined;
+let previewWindow: BrowserWindow | undefined;
+let latestPreviewProjection: DesktopPreviewProjection | undefined;
+const previewProjectionSequence = new DesktopPreviewProjectionSequence();
 let uiLanguage: DesktopUiLanguage = "en";
 const trustedEditorUrl = editorEntryUrl;
+const trustedPreviewUrl = `${editorEntryUrl}?mode=preview`;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -127,12 +144,13 @@ async function createMainWindow(): Promise<void> {
     dirty: false,
   });
 
-  protectWindowNavigation(window);
+  protectWindowNavigation(window, trustedEditorUrl);
   protectUnsavedDocument(window);
   window.once("ready-to-show", () => window.show());
   window.on("closed", () => {
     if (mainWindow === window) {
       mainWindow = undefined;
+      previewWindow?.close();
     }
   });
 
@@ -147,6 +165,81 @@ async function createMainWindow(): Promise<void> {
       app.exit(1);
     }
   }
+}
+
+async function createPreviewWindow(
+  requestedBounds?: DesktopPreviewWindowBounds,
+): Promise<BrowserWindow> {
+  if (previewWindow !== undefined && !previewWindow.isDestroyed()) {
+    previewWindow.show();
+    previewWindow.focus();
+    return previewWindow;
+  }
+  const bounds = visiblePreviewBounds(requestedBounds);
+  const window = new BrowserWindow({
+    ...bounds,
+    minWidth: 640,
+    minHeight: 480,
+    show: false,
+    backgroundColor: "#eef3f8",
+    title: "C4ML Preview",
+    webPreferences: createDesktopWebPreferences(previewPreloadPath),
+  });
+  previewWindow = window;
+  protectWindowNavigation(window, trustedPreviewUrl);
+  let lastBounds = window.getBounds();
+  const publishState = (): void => {
+    lastBounds = window.getBounds();
+    sendPreviewWindowState(true, lastBounds);
+  };
+  window.on("move", publishState);
+  window.on("resize", publishState);
+  window.once("ready-to-show", () => {
+    window.show();
+    publishState();
+  });
+  window.on("closed", () => {
+    if (previewWindow === window) {
+      previewWindow = undefined;
+      sendPreviewWindowState(false, lastBounds);
+    }
+  });
+  await window.loadURL(trustedPreviewUrl);
+  return window;
+}
+
+function visiblePreviewBounds(
+  requested?: DesktopPreviewWindowBounds,
+): DesktopPreviewWindowBounds {
+  const display =
+    requested?.x === undefined || requested.y === undefined
+      ? screen.getPrimaryDisplay()
+      : screen.getDisplayMatching({
+          x: requested.x,
+          y: requested.y,
+          width: requested.width,
+          height: requested.height,
+        });
+  const workArea = display.workArea;
+  return normalizePreviewWindowBounds(requested, workArea);
+}
+
+function sendPreviewWindowState(
+  open: boolean,
+  bounds: DesktopPreviewWindowBounds,
+): void {
+  if (mainWindow === undefined || mainWindow.isDestroyed()) {
+    return;
+  }
+  mainWindow.webContents.send(desktopIpcChannels.previewWindowState, {
+    open,
+    bounds: {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+    },
+  });
 }
 
 function resolveEditorRoot(): string {
@@ -171,13 +264,13 @@ function registerEditorProtocol(): void {
   });
 }
 
-function protectWindowNavigation(window: BrowserWindow): void {
+function protectWindowNavigation(window: BrowserWindow, trustedUrl: string): void {
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-attach-webview", (event) => {
     event.preventDefault();
   });
   window.webContents.on("will-navigate", (event, url) => {
-    if (url !== trustedEditorUrl) {
+    if (url !== trustedUrl) {
       event.preventDefault();
     }
   });
@@ -194,8 +287,87 @@ function registerDesktopIpc(): void {
   ipcMain.removeHandler(desktopIpcChannels.exportPng);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
   ipcMain.removeHandler(desktopIpcChannels.openProject);
+  ipcMain.removeHandler(desktopIpcChannels.openPreviewWindow);
+  ipcMain.removeHandler(desktopIpcChannels.previewWindowState);
+  ipcMain.removeHandler(previewIpcChannels.projection);
   ipcMain.removeHandler(desktopIpcChannels.saveDocument);
+  ipcMain.removeAllListeners(desktopIpcChannels.closePreviewWindow);
+  ipcMain.removeAllListeners(previewIpcChannels.interaction);
+  ipcMain.removeAllListeners(previewIpcChannels.projectionChanged);
   ipcMain.removeAllListeners(desktopIpcChannels.setUiLanguage);
+  ipcMain.handle(
+    desktopIpcChannels.openPreviewWindow,
+    async (event, value: unknown): Promise<DesktopOpenPreviewResult> => {
+      const trusted = isTrustedSender(event);
+      const valid = isDesktopOpenPreviewRequest(value);
+      if (!trusted || !valid) {
+        console.error(
+          `C4ML preview-window request rejected (trusted=${trusted}, valid=${valid}).`,
+        );
+        return invalidIpcResult();
+      }
+      latestPreviewProjection = previewProjectionSequence.accept(
+        value.projection,
+      );
+      try {
+        const window = await createPreviewWindow(value.bounds);
+        window.webContents.send(
+          previewIpcChannels.projectionChanged,
+          latestPreviewProjection,
+        );
+        return { status: "opened" };
+      } catch (error) {
+        console.error("C4ML preview window failed to open.", error);
+        return invalidIpcResult();
+      }
+    },
+  );
+  ipcMain.handle(desktopIpcChannels.previewWindowState, (event) => {
+    if (!isTrustedSender(event)) {
+      return { open: false, bounds: undefined };
+    }
+    const window = previewWindow;
+    return window === undefined || window.isDestroyed()
+      ? { open: false, bounds: undefined }
+      : { open: true, bounds: window.getBounds() };
+  });
+  ipcMain.handle(previewIpcChannels.projection, (event) => {
+    return isTrustedPreviewSender(event) ? latestPreviewProjection : undefined;
+  });
+  ipcMain.on(desktopIpcChannels.closePreviewWindow, (event) => {
+    if (isTrustedSender(event)) {
+      previewWindow?.close();
+    }
+  });
+  ipcMain.on(
+    previewIpcChannels.projectionChanged,
+    (event, value: unknown) => {
+      if (!isTrustedSender(event) || !isDesktopPreviewProjection(value)) {
+        return;
+      }
+      latestPreviewProjection = previewProjectionSequence.accept(value);
+      if (previewWindow !== undefined && !previewWindow.isDestroyed()) {
+        previewWindow.webContents.send(
+          previewIpcChannels.projectionChanged,
+          latestPreviewProjection,
+        );
+      }
+    },
+  );
+  ipcMain.on(
+    previewIpcChannels.interaction,
+    (event, value: unknown) => {
+      if (!isTrustedPreviewSender(event) || !isDesktopPreviewInteraction(value)) {
+        return;
+      }
+      if (mainWindow !== undefined && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(previewIpcChannels.interaction, value);
+      }
+      if (value.type === "redock") {
+        previewWindow?.close();
+      }
+    },
+  );
   ipcMain.handle(
     desktopIpcChannels.exportPng,
     async (event, value: unknown): Promise<DesktopPngExportResult> => {
@@ -482,6 +654,12 @@ function isTrustedSender(event: IpcMainEvent | IpcMainInvokeEvent): boolean {
   return event.senderFrame?.url === trustedEditorUrl;
 }
 
+function isTrustedPreviewSender(
+  event: IpcMainEvent | IpcMainInvokeEvent,
+): boolean {
+  return event.senderFrame?.url === trustedPreviewUrl;
+}
+
 function invalidIpcResult(): DesktopOperationFailure {
   return {
     status: "failed",
@@ -500,8 +678,8 @@ function fileReadFailure(): DesktopOperationFailure {
 
 function installApplicationMenu(): void {
   const send = (command: DesktopCommand): void => {
-    const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
-    if (window !== undefined && !window.isDestroyed()) {
+    const window = mainWindow ?? BrowserWindow.getFocusedWindow();
+    if (window !== undefined && window !== null && !window.isDestroyed()) {
       window.webContents.send(desktopIpcChannels.command, command);
     }
   };
@@ -628,6 +806,16 @@ function installApplicationMenu(): void {
       {
         label: desktopMessage(uiLanguage, "menu.view"),
         submenu: [
+          {
+            label: desktopMessage(uiLanguage, "menu.previewFocus"),
+            accelerator: "CmdOrCtrl+Shift+Enter",
+            click: () => send("toggle-preview-focus"),
+          },
+          {
+            label: desktopMessage(uiLanguage, "menu.previewWindow"),
+            click: () => send("open-preview-window"),
+          },
+          { type: "separator" },
           { label: desktopMessage(uiLanguage, "menu.reload"), role: "reload" },
           {
             label: desktopMessage(uiLanguage, "menu.forceReload"),
@@ -733,6 +921,10 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
         const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
           typeof window.c4mlDesktop?.exportPng === 'function' &&
           typeof window.c4mlDesktop?.openProject === 'function' &&
+          typeof window.c4mlDesktop?.openPreviewWindow === 'function' &&
+          typeof window.c4mlDesktop?.getPreviewWindowState === 'function' &&
+          typeof window.c4mlDesktop?.updatePreviewProjection === 'function' &&
+          typeof window.c4mlDesktop?.onPreviewInteraction === 'function' &&
           typeof window.c4mlDesktop?.setUiLanguage === 'function';
         const editorReady = document.querySelector('.source-editor-host') !== null;
         const previewReady = document.querySelector('.diagram') !== null;
@@ -742,10 +934,11 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
           document.fonts.check('14px "IBM Plex Mono"');
         const language = document.documentElement.lang;
         const languageReady = language === 'en' || language === 'de';
-        if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady) {
-          resolve({ ok: true, title: document.title, language });
+        const detachButtonReady = document.querySelector('button[data-preview-action="detach"]') !== null;
+        if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady && detachButtonReady) {
+          resolve({ ok: true, title: document.title, language, detachButtonReady });
         } else if (Date.now() >= deadline) {
-          resolve({ ok: false, bridgeReady, editorReady, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, language });
+          resolve({ ok: false, bridgeReady, editorReady, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, detachButtonReady, language });
         } else {
           setTimeout(check, 100);
         }
@@ -754,6 +947,39 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
     })`,
     true,
   )) as { readonly ok?: boolean };
+  let detachedPreviewReady = false;
+  if (result.ok === true) {
+    await window.webContents.executeJavaScript(
+      `document.querySelector('button[data-preview-action="detach"]')?.click()`,
+      true,
+    );
+    const detachedWindow = await waitForDetachedPreviewWindow();
+    if (detachedWindow !== undefined) {
+      detachedPreviewReady = (await detachedWindow.webContents.executeJavaScript(
+        `new Promise((resolve) => {
+          const deadline = Date.now() + 10000;
+          const check = () => {
+            const bridgeReady = window.c4mlPreview?.protocolVersion === ${desktopBridgeProtocolVersion} &&
+              typeof window.c4mlPreview?.requestProjection === 'function' &&
+              window.c4mlDesktop === undefined;
+            const shellReady = document.querySelector('.detached-preview-shell') !== null;
+            const previewReady = document.querySelector('.diagram') !== null;
+            const sourceAbsent = document.querySelector('.source-editor-host') === null;
+            if (bridgeReady && shellReady && previewReady && sourceAbsent) {
+              resolve(true);
+            } else if (Date.now() >= deadline) {
+              resolve(false);
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+        })`,
+        true,
+      )) as boolean;
+      detachedWindow.close();
+    }
+  }
   let pngReady = false;
   if (result.ok === true) {
     try {
@@ -785,7 +1011,18 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
       pngReady = false;
     }
   }
-  const smokeResult = { ...result, pngReady };
+  const smokeResult = { ...result, detachedPreviewReady, pngReady };
   console.log(`C4ML_DESKTOP_SMOKE ${JSON.stringify(smokeResult)}`);
-  app.exit(result.ok === true && pngReady ? 0 : 1);
+  app.exit(result.ok === true && detachedPreviewReady && pngReady ? 0 : 1);
+}
+
+async function waitForDetachedPreviewWindow(): Promise<BrowserWindow | undefined> {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    if (previewWindow !== undefined && !previewWindow.isDestroyed()) {
+      return previewWindow;
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+  }
+  return undefined;
 }

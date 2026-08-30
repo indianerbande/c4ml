@@ -2,6 +2,8 @@ export type WorkbenchCommandId =
   | "diagram.export-png"
   | "diagram.export-svg"
   | "diagram.fit"
+  | "diagram.focus"
+  | "diagram.detach"
   | "diagram.route-debug"
   | "file.open"
   | "file.open-project"
@@ -82,6 +84,17 @@ const workbenchCommandDefinitions: readonly WorkbenchCommandDefinition[] = [
     id: "diagram.fit",
     label: "command.diagram.fit",
     category: "command.category.diagram",
+  },
+  {
+    id: "diagram.focus",
+    label: "command.diagram.focus",
+    category: "command.category.view",
+  },
+  {
+    id: "diagram.detach",
+    label: "command.diagram.detach",
+    category: "command.category.view",
+    desktopOnly: true,
   },
   {
     id: "diagram.route-debug",

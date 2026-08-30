@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   desktopBridgeProtocolVersion,
   desktopIpcChannels,
+  previewIpcChannels,
   isDesktopCommand,
   type C4mlDesktopApi,
   type DesktopCommand,
@@ -10,7 +11,12 @@ import {
   type DesktopPngExportResult,
   type DesktopOpenResult,
   type DesktopOpenProjectResult,
+  type DesktopOpenPreviewRequest,
+  type DesktopOpenPreviewResult,
   type DesktopPlatform,
+  type DesktopPreviewInteraction,
+  type DesktopPreviewProjection,
+  type DesktopPreviewWindowState,
   type DesktopSaveRequest,
   type DesktopSaveResult,
   type DesktopUiLanguage,
@@ -28,6 +34,21 @@ const api: C4mlDesktopApi = Object.freeze({
     ipcRenderer.invoke(desktopIpcChannels.openDocument) as Promise<DesktopOpenResult>,
   openProject: () =>
     ipcRenderer.invoke(desktopIpcChannels.openProject) as Promise<DesktopOpenProjectResult>,
+  openPreviewWindow: (request: DesktopOpenPreviewRequest) =>
+    ipcRenderer.invoke(
+      desktopIpcChannels.openPreviewWindow,
+      request,
+    ) as Promise<DesktopOpenPreviewResult>,
+  getPreviewWindowState: () =>
+    ipcRenderer.invoke(
+      desktopIpcChannels.previewWindowState,
+    ) as Promise<DesktopPreviewWindowState>,
+  closePreviewWindow: () => {
+    ipcRenderer.send(desktopIpcChannels.closePreviewWindow);
+  },
+  updatePreviewProjection: (projection: DesktopPreviewProjection) => {
+    ipcRenderer.send(previewIpcChannels.projectionChanged, projection);
+  },
   saveDocument: (request: DesktopSaveRequest) =>
     ipcRenderer.invoke(
       desktopIpcChannels.saveDocument,
@@ -47,6 +68,26 @@ const api: C4mlDesktopApi = Object.freeze({
     };
     ipcRenderer.on(desktopIpcChannels.command, handler);
     return () => ipcRenderer.removeListener(desktopIpcChannels.command, handler);
+  },
+  onPreviewInteraction: (
+    listener: (interaction: DesktopPreviewInteraction) => void,
+  ) => {
+    const handler = (_event: unknown, value: unknown): void => {
+      listener(value as DesktopPreviewInteraction);
+    };
+    ipcRenderer.on(previewIpcChannels.interaction, handler);
+    return () =>
+      ipcRenderer.removeListener(previewIpcChannels.interaction, handler);
+  },
+  onPreviewWindowState: (
+    listener: (state: DesktopPreviewWindowState) => void,
+  ) => {
+    const handler = (_event: unknown, value: unknown): void => {
+      listener(value as DesktopPreviewWindowState);
+    };
+    ipcRenderer.on(desktopIpcChannels.previewWindowState, handler);
+    return () =>
+      ipcRenderer.removeListener(desktopIpcChannels.previewWindowState, handler);
   },
 });
 

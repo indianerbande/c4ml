@@ -1,0 +1,210 @@
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+button {
+  font: inherit;
+}
+
+.detached-preview-shell {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: 48px minmax(0, 1fr);
+}
+
+.preview-toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--app-bar-bg);
+  box-shadow: var(--app-bar-shadow);
+}
+
+.preview-title,
+.preview-controls,
+.zoom-controls {
+  display: flex;
+  align-items: center;
+}
+
+.preview-title {
+  min-width: 0;
+  gap: 10px;
+}
+
+.preview-title > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.preview-title strong,
+.preview-title small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-title strong {
+  color: var(--ink);
+  font-size: 1.2rem;
+}
+
+.preview-title small {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.preview-mark {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  box-shadow:
+    5px 5px 0 -3px var(--app-bar-bg),
+    5px 5px 0 -1px var(--accent-border);
+}
+
+.preview-controls {
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.preview-controls button {
+  min-height: 29px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.preview-controls button:hover,
+.preview-controls button:focus-visible,
+.preview-controls button.is-active {
+  border-color: var(--accent-border);
+  background: var(--control-hover);
+  color: var(--accent);
+  outline: 0;
+}
+
+.zoom-controls {
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.zoom-controls button {
+  min-width: 30px;
+  border-radius: 0;
+  border-right: 0;
+}
+
+.zoom-controls button:last-child {
+  border-right: 1px solid var(--line);
+}
+
+.zoom-controls button:nth-child(2) {
+  min-width: 48px;
+}
+
+.preview-controls .redock-button {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.preview-stage {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  place-items: start;
+  overflow: auto;
+  padding: 24px;
+  background-color: var(--preview-stage);
+}
+
+.diagram {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+  transition:
+    width 130ms ease-out,
+    height 130ms ease-out;
+}
+
+.diagram.is-navigable {
+  cursor: crosshair;
+}
+
+.empty-preview {
+  display: grid;
+  max-width: 340px;
+  align-self: center;
+  justify-self: center;
+  justify-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 1rem;
+}
+
+.empty-preview strong {
+  color: var(--ink);
+  font-size: 1.3rem;
+}
+
+.empty-glyph {
+  width: 52px;
+  height: 38px;
+  margin-bottom: 5px;
+  border: 2px solid var(--accent-border);
+  border-radius: 9px;
+  background: var(--control-bg);
+  box-shadow: 14px 10px 0 -5px var(--accent-soft);
+}
+
+.stale-note,
+.selection-note {
+  position: absolute;
+  bottom: 12px;
+  margin: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.stale-note {
+  right: 12px;
+  color: var(--danger);
+}
+
+.selection-note {
+  left: 12px;
+  color: var(--warning);
+}
+
+@media (max-width: 760px) {
+  .preview-title small,
+  .preview-controls > button:not(.redock-button) {
+    display: none;
+  }
+}

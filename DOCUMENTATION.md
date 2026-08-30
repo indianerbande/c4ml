@@ -97,6 +97,17 @@ header mark unsaved changes, and closing a dirty document asks before discarding
 them. The renderer receives only an opaque document handle; native filesystem
 paths and Node.js APIs remain in the Electron main process.
 
+The two buttons beside **Routes** change the preview workspace. **Full-size
+preview** temporarily gives the diagram the complete main workbench and returns
+to source-and-preview with the same button. **Open preview in a separate
+window** frees the main window for source work; **Return preview to the
+workbench** docks it again. Selection, zoom, fit, and the Route overlay stay in
+sync. The detached window is deliberately projection-only: it receives no
+source text, document handle, filesystem path, compiler, save action, or export
+action. Closing or moving it cannot change the `.c4ml` document or exported
+SVG/PNG. Browser development currently uses the full-size mode; a browser
+pop-out is intentionally deferred.
+
 Use **Export PNG** in Output or the File menu to save the current canonical
 diagram at 1x, 2x, or 3x. Rasterization runs locally in the desktop main process
 from the same SVG shown by the preview, with the packaged IBM Plex Sans fonts;
@@ -115,9 +126,10 @@ defaults. The settings catalogue and extension rules are documented in
 `SETTINGS.md`.
 
 The workbench restores the active activity area, bottom-panel state, preview
-zoom, and Route Debug visibility after a relaunch. This local session record
-never stores source text, document handles, or filesystem paths; `.c4ml` files
-remain the architecture source of truth.
+workspace mode, preview zoom, Route Debug visibility, and safe bounded preview
+window geometry after a relaunch. This local session record never stores source
+text, document handles, or filesystem paths; `.c4ml` files remain the
+architecture source of truth.
 
 Open **Help** from the `?` activity or search for **Open C4ML handbook** in the
 command palette. The local handbook groups the currently executable syntax by
@@ -132,9 +144,10 @@ Worker as the isolated Angular development path.
 When an edit is invalid, the diagnostic panel updates while the last valid
 diagram remains visible. The accepted lazy Monaco adapter presents only the
 tokens, values, or references accepted at the current cursor and applies the
-language worker's exact source edit. `Ctrl+Space` opens the in-place popup; the
-visible “C4ML IntelliSense” action provides the same keyboard-independent
-trigger.
+language worker's exact source edit. `Ctrl+Space` opens the in-place popup on
+Windows and Linux. On macOS use `Cmd+I`, because the operating system commonly
+reserves `Ctrl+Space` for switching input sources. The visible “C4ML
+IntelliSense” action provides the same keyboard-independent trigger.
 Compiler ranges appear as inline markers, and selecting a diagnostic reveals
 its source range. Normal Monaco undo/redo remains synchronized with hot
 compilation. The preview can be zoomed, fitted, scrolled while enlarged, and
@@ -281,8 +294,11 @@ for Component and Code, continue with
 [`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) for
 System Landscape and Dynamic, then use
 [`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
-for Deployment. Finally compare them with the complete
-[`signal-garden.c4ml`](examples/draft/signal-garden.c4ml) preview.
+for Deployment. Finally, open the complete and executable
+[`signal-garden.c4ml`](examples/draft/signal-garden.c4ml) demonstration. Proposed
+tags, Visual Groups, and View presentation remain separately reviewable in
+[`signal-garden-language-preview.md`](examples/draft/signal-garden-language-preview.md)
+without making the runnable demo invalid.
 
 ## 3. Proposed source format
 
@@ -1258,7 +1274,8 @@ preview while showing diagnostics for the current invalid source.
 
 ## 11. Demo files
 
-The repository contains seven original syntax previews:
+The repository contains seven original syntax documents plus one separated
+language-preview companion:
 
 - [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml) — a
   minimal model and System Context View;
@@ -1273,16 +1290,20 @@ The repository contains seven original syntax previews:
   — nested runtime environments, instances, runtime relationships, and a
   Deployment View;
 - [`examples/draft/signal-garden.c4ml`](examples/draft/signal-garden.c4ml) — a
-  larger model covering Containers, Components, Code, Dynamic behavior,
-  Deployment, and every view type; and
+  larger executable model covering Containers, Components, Code, Dynamic
+  behavior, Deployment, and every view type;
+- [`examples/draft/signal-garden-language-preview.md`](examples/draft/signal-garden-language-preview.md)
+  — proposed tags, Visual Group, and View presentation constructs kept outside
+  executable source; and
 - [`examples/draft/shape-marker.c4ml`](examples/draft/shape-marker.c4ml) — the
   restricted custom-shape contract and explicit cardinal Ports.
 
 The bounded `hello-context.c4ml`, `hello-container.c4ml`,
-`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and `hello-deployment.c4ml`
-subsets are part of the automated internal language gate. The other files, and
-every construct outside those subsets, remain documentation artifacts. None of
-these previews defines an accepted grammar or compatibility commitment.
+`hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, `hello-deployment.c4ml`, and
+`signal-garden.c4ml` subsets are part of the automated internal language gate.
+The other files, and every construct outside those subsets, remain
+documentation artifacts. None of these previews defines an accepted grammar or
+compatibility commitment.
 
 ## 12. Design principles for reviewing the proposal
 

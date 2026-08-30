@@ -70,6 +70,10 @@ Implemented and automatically validated:
   C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
   panel, status bar, command palette, local compiler Web Worker, live
   diagnostics, stale-result rejection, and retention of the last valid SVG;
+- a full-size preview workspace plus a detachable, projection-only Electron
+  preview window with synchronized selection, zoom, Route overlay, and
+  redocking, but no compiler, source, document, filesystem, save, or export
+  authority;
 - focused workbench facades for document/export, preview, help, and command
   state, plus independent Compile, Language, and Authoring worker contract
   modules behind one combined transport boundary;
@@ -147,10 +151,12 @@ Not implemented yet:
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
 [`examples/draft`](examples/draft) remains a **design preview**. Bounded System
 Context, Container, Component, Code, System Landscape, Dynamic, and Deployment
-slices are executable through an internal package; they are not a public or
-frozen grammar. The first placement slice and the current relative route- and
-Port-control slice are executable. Visual Groups, themes, custom shapes, and
-the remaining preview syntax are not accepted by the source compiler yet.
+slices are executable through an internal package; the larger
+`signal-garden.c4ml` combines all seven in one runnable demonstration. These
+slices are not a public or frozen grammar. The first placement slice and the
+current relative route- and Port-control slice are executable. Visual Groups,
+themes, custom shapes, and the remaining preview syntax are not accepted by the
+source compiler yet.
 
 ## C4 scope
 

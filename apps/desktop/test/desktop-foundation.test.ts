@@ -17,6 +17,10 @@ import {
   resolveEditorAssetPath,
 } from "../src/editor-protocol.js";
 import { createDesktopWebPreferences } from "../src/window-options.js";
+import {
+  DesktopPreviewProjectionSequence,
+  normalizePreviewWindowBounds,
+} from "../src/preview-window.js";
 
 describe("desktop foundation", () => {
   it("keeps privileged Electron capabilities out of the renderer", () => {
@@ -95,6 +99,12 @@ describe("desktop foundation", () => {
     expect(
       resolveEditorAssetPath(
         editorRoot,
+        `${editorEntryUrl}?mode=preview`,
+      ),
+    ).toBe(resolve(editorRoot, "index.html"));
+    expect(
+      resolveEditorAssetPath(
+        editorRoot,
         "c4ml://other/index.html",
       ),
     ).toBeUndefined();
@@ -104,5 +114,48 @@ describe("desktop foundation", () => {
         "c4ml://app/%2e%2e/%2e%2e/private/model.c4ml",
       ),
     ).toBeUndefined();
+  });
+
+  it("restores only visible, bounded preview-window geometry", () => {
+    const workArea = { x: 100, y: 50, width: 1440, height: 900 };
+    expect(
+      normalizePreviewWindowBounds(
+        { x: -900, y: 2000, width: 1200, height: 700 },
+        workArea,
+      ),
+    ).toEqual({ x: 100, y: 250, width: 1200, height: 700 });
+    expect(normalizePreviewWindowBounds(undefined, workArea)).toEqual({
+      x: 148,
+      y: 98,
+      width: 1100,
+      height: 760,
+    });
+  });
+
+  it("keeps preview revisions monotonic across renderer reloads", () => {
+    const sequence = new DesktopPreviewProjectionSequence();
+    const projection = {
+      version: 1 as const,
+      revision: 40,
+      compilerPhase: "valid" as const,
+      statusLabel: "Preview current",
+      view: undefined,
+      svg: undefined,
+      navigation: undefined,
+      selectedSceneObjectId: undefined,
+      selectionLabel: undefined,
+      zoom: 1,
+      routeDebugEnabled: false,
+      stale: false,
+      presentation: {
+        language: "en" as const,
+        colorScheme: "light" as const,
+        colorPalette: "blue" as const,
+        interfaceFontSize: 10,
+      },
+    };
+
+    expect(sequence.accept(projection).revision).toBe(1);
+    expect(sequence.accept({ ...projection, revision: 1 }).revision).toBe(2);
   });
 });
