@@ -49,6 +49,14 @@
           {{ i18n.t("routeEditor.undo") }}
         </button>
       }
+      @if (semanticEditor.canUndo()) {
+        <button type="button" class="title-action" (click)="undoSemantic()">
+          {{ i18n.t("semanticEditor.undo") }}
+        </button>
+      }
+      <button type="button" class="title-action architecture-action" (click)="openSemanticEditor()">
+        {{ i18n.t("semanticEditor.open") }}
+      </button>
       <button type="button" class="primary-action" (click)="startWizard()">
         {{ i18n.t("wizard.open") }}
       </button>
@@ -1002,6 +1010,18 @@
       [route]="route"
       (applied)="applyRoute($event)"
       (cancelled)="closeRouteEditor()"
+    />
+  }
+}
+
+@if (semanticEditor.open()) {
+  @if (compiler.state().activeViewId; as activeViewId) {
+    <c4ml-semantic-editor
+      [project]="semanticEditor.project()"
+      [activeFile]="activeDocumentUri()"
+      [viewId]="activeViewId"
+      (applied)="applySemantic($event)"
+      (cancelled)="closeSemanticEditor()"
     />
   }
 }

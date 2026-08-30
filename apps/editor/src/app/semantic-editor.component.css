@@ -1,0 +1,15 @@
+.semantic-editor { width: min(1160px, 100%); }
+.semantic-editor > header { border-top: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); }
+.semantic-authority { display: grid; gap: 4px; padding: 11px 12px; border-left: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); color: var(--control-ink); }
+.semantic-authority span,
+.semantic-loading,
+.semantic-empty span { color: var(--muted); }
+.semantic-empty { display: grid; gap: 5px; padding: 16px; border: 1px solid var(--line); border-radius: 9px; }
+.semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
+.semantic-preview-button,
+.semantic-apply-button { background: color-mix(in srgb, var(--accent) 72%, var(--danger)); }
+.semantic-conflicts { display: grid; gap: 7px; padding: 11px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 9px; background: color-mix(in srgb, var(--danger) 6%, var(--panel)); }
+.semantic-conflicts ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.semantic-conflicts li { display: grid; gap: 2px; }
+.semantic-conflicts code { color: var(--danger); }
+.semantic-conflicts small { color: var(--muted); }

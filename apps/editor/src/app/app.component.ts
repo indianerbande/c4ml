@@ -15,6 +15,7 @@ import type {
   CompilerWorkerNavigationTarget,
   PreviewPlacementChangeWorkerResponse,
   PreviewRouteChangeWorkerResponse,
+  PreviewSemanticChangeWorkerResponse,
   CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
@@ -38,6 +39,7 @@ import {
   PlacementEditorComponent,
 } from "./placement-editor.component.js";
 import { RouteEditorComponent } from "./route-editor.component.js";
+import { SemanticEditorComponent } from "./semantic-editor.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
 import { HelpArticleComponent } from "./help-article.component.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
@@ -55,6 +57,7 @@ import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
 import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
 import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
 import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
+import { WorkbenchSemanticFacade } from "./workbench-semantic.facade.js";
 
 @Component({
   selector: "c4ml-root",
@@ -66,6 +69,7 @@ import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
     HelpArticleComponent,
     PlacementEditorComponent,
     RouteEditorComponent,
+    SemanticEditorComponent,
     SettingsPanelComponent,
     SystemContextWizardComponent,
   ],
@@ -87,6 +91,7 @@ export class AppComponent {
   readonly commands = inject(WorkbenchCommandFacade);
   readonly placement = inject(WorkbenchPlacementFacade);
   readonly routeEditor = inject(WorkbenchRouteFacade);
+  readonly semanticEditor = inject(WorkbenchSemanticFacade);
   readonly source = this.documents.source;
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
@@ -248,6 +253,7 @@ export class AppComponent {
     this.canUndoWizard.set(false);
     this.placement.sourceChanged();
     this.routeEditor.sourceChanged();
+    this.semanticEditor.sourceChanged();
     this.#refreshHelpContext(source);
     this.#scheduleCompile();
   }
@@ -404,6 +410,22 @@ export class AppComponent {
 
   undoRoute(): void {
     this.routeEditor.undo(this.sourceEditor());
+  }
+
+  openSemanticEditor(): void {
+    this.semanticEditor.show(this.compiler.state().activeViewId);
+  }
+
+  closeSemanticEditor(): void {
+    this.semanticEditor.close();
+  }
+
+  applySemantic(response: PreviewSemanticChangeWorkerResponse): void {
+    this.semanticEditor.apply(response, this.sourceEditor());
+  }
+
+  undoSemantic(): void {
+    this.semanticEditor.undo(this.sourceEditor());
   }
 
   exportSvg(): void {
@@ -656,5 +678,6 @@ export class AppComponent {
     this.canUndoWizard.set(false);
     this.placement.reset();
     this.routeEditor.reset();
+    this.semanticEditor.reset();
   }
 }

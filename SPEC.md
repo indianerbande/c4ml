@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.30
+Status: Draft 0.31
 
 Date: 2026-08-30
 
@@ -1511,6 +1511,21 @@ candidate project and reports hard diagnostics separately before Angular can
 enable apply. Monaco applies an accepted transaction as one undo unit, and the
 editor retains no hidden Route geometry.
 
+The first semantic graphical-authoring slice is implemented for the five
+static C4 views. The language package inspects the active resolved view and
+returns the permitted creation kinds, their scope-derived owner, and valid
+directed relationship endpoint pairs. System Landscape and System Context may
+create People or Software Systems; Container, Component, and Code views create
+only the element type owned by their active Software System, Container, or
+Component scope. Angular asks in familiar architecture language and does not
+own those C4 rules. A requested action becomes a deterministic project-
+addressed source change, the worker compiles the complete candidate project,
+and Monaco applies an accepted single-document transaction as one undo unit.
+The dialog is visibly identified as an architecture-model change and remains a
+separate tool from placement and Route editing. Dynamic interactions and
+deployment topology require dedicated later operations and are not represented
+by a generic element-creation action.
+
 The implemented architecture snapshot removes source locations and parser
 objects, sorts unordered declarations, preserves typed semantic, deployment,
 view, presentation, and layout data, and serializes deterministically. Its graph
@@ -1757,8 +1772,10 @@ in a later release.
 The editor allows intent-based placement, alignment, distribution, nudge, and
 explicit exact-position actions for selected elements. It also allows cardinal
 Port choice and source-backed add, move, remove, and automatic-reset operations
-for selected effective Routes. A later slice MAY add creation of semantic
-elements or relationships.
+for selected effective Routes. For the five static C4 views, it can create the
+context-valid architecture element type or connect a context-valid directed
+pair through source-backed semantic operations. Dynamic interactions and
+deployment topology require their own later graphical actions.
 
 The source text MUST remain the source of truth. A graphical operation must
 produce an explicit, undoable source edit rather than hidden editor-only state.
@@ -1772,9 +1789,10 @@ automatic candidate. Only an explicitly chosen exact-position action SHOULD
 emit a `pin` with `du` coordinates. No graphical operation may persist a hidden
 pixel offset.
 
-Graphical Route manipulation is a current implemented editor slice. Semantic
-model manipulation is not a current acceptance requirement, but the compiler
-and source mapping MUST NOT preclude it.
+Graphical Route manipulation and the bounded static-view semantic operations
+above are current implemented editor slices. Broader semantic manipulation is
+not a current acceptance requirement, but the compiler and source mapping MUST
+NOT preclude it.
 
 ### 14.4 Guided modeling wizard
 

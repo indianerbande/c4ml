@@ -120,8 +120,16 @@ project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
 same boundaries for cardinal Port choice and add/move/remove/reset guidance,
 with explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
-review, and one-step apply/undo. Broader semantic gestures, semantic diffing,
-and executable policy rules remain later slices.
+review, and one-step apply/undo. The first semantic graphical authoring slice
+creates or connects architecture elements in the five static C4 views through
+context-filtered language-worker operations, candidate compilation, explicit
+source review, and one-step apply/undo. Dynamic-interaction and deployment-
+topology authoring remain dedicated later gestures; semantic diffing and
+executable policy rules remain later slices.
+The Pillar 1 persistence acceptance has also passed in the packaged macOS app:
+a semantic edit was saved, the application was fully restarted, the saved file
+was reopened without diagnostics, and the standalone CLI validated the same
+source.
 
 The first portable project-source foundation is also implemented. A direct
 `.c4ml` source or a directory containing exactly one root source remains an

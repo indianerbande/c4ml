@@ -14,6 +14,8 @@ import {
   isHelpWorkerResponse,
   isPreviewPlacementChangeWorkerRequest,
   isPreviewRouteChangeWorkerRequest,
+  isInspectSemanticAuthoringWorkerRequest,
+  isPreviewSemanticChangeWorkerRequest,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
@@ -22,6 +24,8 @@ import {
   type HelpWorkerResponse,
   type PreviewPlacementChangeWorkerResponse,
   type PreviewRouteChangeWorkerResponse,
+  type InspectSemanticAuthoringWorkerResponse,
+  type PreviewSemanticChangeWorkerResponse,
   type WizardWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -35,6 +39,10 @@ import {
   EditorWizardGenerationSession,
   WizardSourceSession,
 } from "../src/app/editor-session.js";
+import {
+  EditorSemanticContextSession,
+  EditorSemanticPreviewSession,
+} from "../src/app/editor-semantic-session.js";
 
 function response(
   requestId: number,
@@ -205,6 +213,39 @@ function routeFailure(requestId: number): PreviewRouteChangeWorkerResponse {
     authoringIssues: [],
     changeIssues: [],
     message: "Route preview failed.",
+  };
+}
+
+function semanticContextFailure(
+  requestId: number,
+): InspectSemanticAuthoringWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "semantic-authoring-context-result",
+    requestId,
+    status: "failed",
+    context: undefined,
+    issues: [],
+    message: "Semantic context failed.",
+  };
+}
+
+function semanticPreviewFailure(
+  requestId: number,
+): PreviewSemanticChangeWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "preview-semantic-change-result",
+    requestId,
+    status: "failed",
+    changeSet: undefined,
+    documentUri: undefined,
+    proposedText: undefined,
+    candidateProject: undefined,
+    compilation: undefined,
+    authoringIssues: [],
+    changeIssues: [],
+    message: "Semantic preview failed.",
   };
 }
 
@@ -591,5 +632,56 @@ describe("editor route preview session", () => {
     expect(session.accept(current)).toBe(true);
     await expect(second.result).resolves.toBe(current);
     expect(session.state).toMatchObject({ phase: "failed", response: current });
+  });
+});
+
+describe("editor semantic authoring sessions", () => {
+  const project = {
+    version: 1 as const,
+    id: "garden",
+    documents: [{ uri: "architecture.c4ml", source: "c4ml draft-1" }],
+  };
+
+  it("settles superseded context requests and accepts only the active result", async () => {
+    const session = new EditorSemanticContextSession();
+    const first = session.beginAsync(project, "architecture.c4ml", "context");
+    const second = session.beginAsync(project, "architecture.c4ml", "context");
+
+    expect(isInspectSemanticAuthoringWorkerRequest(second.request)).toBe(true);
+    await expect(first.result).resolves.toBeUndefined();
+    expect(session.accept(semanticContextFailure(first.request.requestId))).toBe(false);
+    const current = semanticContextFailure(second.request.requestId);
+    expect(session.accept(current)).toBe(true);
+    await expect(second.result).resolves.toBe(current);
+  });
+
+  it("settles superseded semantic previews and accepts only the active result", async () => {
+    const session = new EditorSemanticPreviewSession();
+    const semantic = {
+      id: "semantic:add-system",
+      viewId: "context",
+      intent: {
+        id: "architecture:create-element",
+        kind: "architecture" as const,
+        summary: "Add a system.",
+      },
+      operation: {
+        kind: "create-element" as const,
+        elementKind: "software-system" as const,
+        elementId: "watering-service",
+        name: "Watering Service",
+        responsibility: "Coordinates watering.",
+        classification: "external" as const,
+      },
+    };
+    const first = session.beginAsync(project, "architecture.c4ml", semantic, "context");
+    const second = session.beginAsync(project, "architecture.c4ml", semantic, "context");
+
+    expect(isPreviewSemanticChangeWorkerRequest(second.request)).toBe(true);
+    await expect(first.result).resolves.toBeUndefined();
+    expect(session.accept(semanticPreviewFailure(first.request.requestId))).toBe(false);
+    const current = semanticPreviewFailure(second.request.requestId);
+    expect(session.accept(current)).toBe(true);
+    await expect(second.result).resolves.toBe(current);
   });
 });

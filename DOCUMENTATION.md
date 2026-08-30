@@ -285,6 +285,42 @@ deployments, additional views, Visual Groups, and more context-dependent
 relationship and ownership choices. That complete scope and safe extension of
 existing documents are not implemented or accepted yet.
 
+### Context-sensitive architecture changes
+
+**Change architecture…** extends an existing static view without requiring the
+author to recall the available C4 declaration vocabulary. It is intentionally
+separate from **Arrange element…** and **Edit route…** because it changes the
+architecture model rather than only the diagram layout.
+
+The active view determines the available choices:
+
+- System Landscape and System Context can add a role, team, or group (a C4
+  Person) or an application/software system;
+- a Container view can add a separately running or data-holding part inside
+  its scoped Software System;
+- a Component view can add a part inside its scoped Container;
+- a Code view can add an important code structure inside its scoped Component;
+  and
+- **Connect existing elements** lists only directed endpoint pairs valid for
+  the active view scope.
+
+The dialog asks for readable names, responsibilities, technologies, and the
+direction of a connection in plain language. Stable technical identifiers stay
+visible because they are the durable source identity. In a System Context, a
+new unconnected neighbor enters the shared model first; use **Connect existing
+elements** next so that the relationship brings it into that projection.
+**Preview architecture
+change** first creates an ordinary project-addressed text edit and compiles the
+complete candidate project without changing the active documents. The proposed
+C4ML source, candidate diagram, and blocking diagnostics are shown together.
+Only a valid candidate can be applied; apply is one Monaco edit and **Undo
+architecture change** reverses it once.
+
+The current slice covers the five static C4 views. Dynamic interactions and
+Deployment topology need their own order-, environment-, node-, and instance-
+aware operations and are deliberately not presented as generic element
+creation. The source grammar remains `draft-1` and is not frozen by this UI.
+
 For the quickest syntax review, begin with
 [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), move
 to [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml),

@@ -1,9 +1,4 @@
-import {
-  isAnalysisWorkerRequest,
-  isAnalysisWorkerResponse,
-  type AnalysisWorkerRequest,
-  type AnalysisWorkerResponse,
-} from "./compiler-worker.analysis.protocol.js";
+import { isAnalysisWorkerRequest, isAnalysisWorkerResponse, type AnalysisWorkerRequest, type AnalysisWorkerResponse } from "./compiler-worker.analysis.protocol.js";
 import {
   isPreviewProjectChangeWorkerRequest,
   isPreviewProjectChangeWorkerResponse,
@@ -42,20 +37,21 @@ import {
   type HighlightWorkerRequest,
   type HighlightWorkerResponse,
 } from "./compiler-worker.language.protocol.js";
-export * from "./compiler-worker.authoring.protocol.js";
-export * from "./compiler-worker.analysis.protocol.js";
-export * from "./compiler-worker.compile.protocol.js";
-export * from "./compiler-worker.language.protocol.js";
-export * from "./compiler-worker.shared.js";
+import { isInspectSemanticAuthoringWorkerRequest, isInspectSemanticAuthoringWorkerResponse, isPreviewSemanticChangeWorkerRequest, isPreviewSemanticChangeWorkerResponse, type InspectSemanticAuthoringWorkerRequest, type InspectSemanticAuthoringWorkerResponse, type PreviewSemanticChangeWorkerRequest, type PreviewSemanticChangeWorkerResponse } from "./compiler-worker.semantic-authoring.protocol.js";
+export * from "./compiler-worker.authoring.protocol.js"; export * from "./compiler-worker.analysis.protocol.js";
+export * from "./compiler-worker.compile.protocol.js"; export * from "./compiler-worker.language.protocol.js";
+export * from "./compiler-worker.semantic-authoring.protocol.js"; export * from "./compiler-worker.shared.js";
 export type CompilerWorkerInbound =
   | AnalysisWorkerRequest
   | CompilerWorkerRequest
   | CompletionWorkerRequest
   | HelpWorkerRequest
   | HighlightWorkerRequest
+  | InspectSemanticAuthoringWorkerRequest
   | PreviewPlacementChangeWorkerRequest
   | PreviewProjectChangeWorkerRequest
   | PreviewRouteChangeWorkerRequest
+  | PreviewSemanticChangeWorkerRequest
   | WizardWorkerRequest;
 export type CompilerWorkerOutbound =
   | AnalysisWorkerResponse
@@ -63,9 +59,11 @@ export type CompilerWorkerOutbound =
   | CompletionWorkerResponse
   | HelpWorkerResponse
   | HighlightWorkerResponse
+  | InspectSemanticAuthoringWorkerResponse
   | PreviewPlacementChangeWorkerResponse
   | PreviewProjectChangeWorkerResponse
   | PreviewRouteChangeWorkerResponse
+  | PreviewSemanticChangeWorkerResponse
   | WizardWorkerResponse;
 export function isCompilerWorkerInbound(value: unknown): value is CompilerWorkerInbound {
   return (
@@ -74,9 +72,11 @@ export function isCompilerWorkerInbound(value: unknown): value is CompilerWorker
     isCompletionWorkerRequest(value) ||
     isHelpWorkerRequest(value) ||
     isHighlightWorkerRequest(value) ||
+    isInspectSemanticAuthoringWorkerRequest(value) ||
     isPreviewPlacementChangeWorkerRequest(value) ||
     isPreviewProjectChangeWorkerRequest(value) ||
     isPreviewRouteChangeWorkerRequest(value) ||
+    isPreviewSemanticChangeWorkerRequest(value) ||
     isWizardWorkerRequest(value)
   );
 }
@@ -87,9 +87,11 @@ export function isCompilerWorkerOutbound(value: unknown): value is CompilerWorke
     isCompletionWorkerResponse(value) ||
     isHelpWorkerResponse(value) ||
     isHighlightWorkerResponse(value) ||
+    isInspectSemanticAuthoringWorkerResponse(value) ||
     isPreviewPlacementChangeWorkerResponse(value) ||
     isPreviewProjectChangeWorkerResponse(value) ||
     isPreviewRouteChangeWorkerResponse(value) ||
+    isPreviewSemanticChangeWorkerResponse(value) ||
     isWizardWorkerResponse(value)
   );
 }

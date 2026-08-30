@@ -1,0 +1,156 @@
+<div class="placement-backdrop semantic-backdrop" (click)="cancel()">
+  <section class="placement-editor semantic-editor" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('semanticEditor.title')" (click)="$event.stopPropagation()">
+    <header>
+      <div>
+        <p>{{ i18n.t("semanticEditor.eyebrow") }}</p>
+        <h2>{{ i18n.t("semanticEditor.title") }}</h2>
+        <span>{{ i18n.t("semanticEditor.description") }}</span>
+      </div>
+      <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('semanticEditor.cancel')">×</button>
+    </header>
+
+    <div class="placement-body">
+      <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
+        <aside class="semantic-authority">
+          <strong>{{ i18n.t("semanticEditor.architectureWarning") }}</strong>
+          <span>{{ i18n.t("semanticEditor.architectureWarningText") }}</span>
+        </aside>
+
+        @if (loadingContext()) {
+          <div class="semantic-loading">{{ i18n.t("semanticEditor.loadingContext") }}</div>
+        } @else if (unsupported()) {
+          <div class="semantic-empty">
+            <strong>{{ i18n.t("semanticEditor.unsupported") }}</strong>
+            <span>{{ i18n.t("semanticEditor.unsupportedText") }}</span>
+          </div>
+        } @else if (context()) {
+          <label>
+            <span>{{ i18n.t("semanticEditor.operation") }}</span>
+            <select [value]="operationKind()" (change)="selectOperation($event)">
+              <option value="create-element" [disabled]="createActions().length === 0">{{ i18n.t("semanticEditor.createElement") }}</option>
+              <option value="create-relationship" [disabled]="sourceOptions().length === 0">{{ i18n.t("semanticEditor.createRelationship") }}</option>
+            </select>
+            <small>{{ i18n.t("semanticEditor.contextHint") }}</small>
+          </label>
+
+          @if (operationKind() === "create-element") {
+            <label>
+              <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
+              <select [value]="createKind()" (change)="selectCreateKind($event)">
+                @for (action of createActions(); track action.kind) {
+                  <option [value]="action.kind">{{ kindLabel(action.kind) }}</option>
+                }
+              </select>
+              @if (selectedCreateAction()?.ownerLabel; as ownerLabel) {
+                <small>{{ i18n.t("semanticEditor.owner", { owner: ownerLabel }) }}</small>
+              }
+              @if (context()?.viewKind === "system-context") {
+                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.contextVisibilityHint") }}</small>
+              }
+            </label>
+            <label>
+              <span>{{ i18n.t("semanticEditor.name") }}</span>
+              <input [value]="elementName()" (input)="update(elementName, $event)" [placeholder]="i18n.t('semanticEditor.namePlaceholder')" />
+            </label>
+            <label>
+              <span>{{ i18n.t("semanticEditor.responsibility") }}</span>
+              <textarea [value]="responsibility()" (input)="update(responsibility, $event)" [placeholder]="i18n.t('semanticEditor.responsibilityPlaceholder')"></textarea>
+            </label>
+            <label>
+              <span>{{ i18n.t("semanticEditor.stableId") }}</span>
+              <input [value]="elementId()" (input)="update(elementId, $event)" placeholder="stable-identifier" />
+              <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+            </label>
+            @if (createKind() === "person" || createKind() === "software-system") {
+              <label>
+                <span>{{ i18n.t("semanticEditor.classification") }}</span>
+                <select [value]="classification()" (change)="setClassification($event)">
+                  <option value="internal">{{ i18n.t("semanticEditor.internal") }}</option>
+                  <option value="external">{{ i18n.t("semanticEditor.external") }}</option>
+                </select>
+              </label>
+            }
+            @if (createKind() === "container" || createKind() === "component") {
+              <label>
+                <span>{{ i18n.t("semanticEditor.technology") }}</span>
+                <input [value]="technology()" (input)="update(technology, $event)" [placeholder]="i18n.t('semanticEditor.technologyPlaceholder')" />
+              </label>
+            }
+            @if (createKind() === "code-element") {
+              <div class="field-row">
+                <label>
+                  <span>{{ i18n.t("semanticEditor.codeKind") }}</span>
+                  <input [value]="codeKind()" (input)="update(codeKind, $event)" placeholder="class" />
+                </label>
+                <label>
+                  <span>{{ i18n.t("semanticEditor.language") }}</span>
+                  <input [value]="language()" (input)="update(language, $event)" placeholder="TypeScript" />
+                </label>
+              </div>
+            }
+          } @else {
+            <div class="field-row">
+              <label>
+                <span>{{ i18n.t("semanticEditor.from") }}</span>
+                <select [value]="sourceId()" (change)="selectSource($event)">
+                  @for (element of sourceOptions(); track element.id) {
+                    <option [value]="element.id">{{ element.label }} · {{ element.id }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                <span>{{ i18n.t("semanticEditor.to") }}</span>
+                <select [value]="targetId()" (change)="selectTarget($event)">
+                  @for (element of targetOptions(); track element.id) {
+                    <option [value]="element.id">{{ element.label }} · {{ element.id }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>{{ i18n.t("semanticEditor.connectionIntent") }}</span>
+              <input [value]="relationshipIntent()" (input)="update(relationshipIntent, $event)" [placeholder]="i18n.t('semanticEditor.connectionIntentPlaceholder')" />
+            </label>
+            <label>
+              <span>{{ i18n.t("semanticEditor.connectionId") }}</span>
+              <input [value]="relationshipId()" (input)="update(relationshipId, $event)" placeholder="source-action-target" />
+            </label>
+            <div class="field-row">
+              <label>
+                <span>{{ i18n.t("semanticEditor.protocol") }}</span>
+                <input [value]="protocol()" (input)="update(protocol, $event)" placeholder="HTTPS/JSON" />
+              </label>
+              <label>
+                <span>{{ i18n.t("semanticEditor.relationshipTechnology") }}</span>
+                <input [value]="relationshipTechnology()" (input)="update(relationshipTechnology, $event)" />
+              </label>
+            </div>
+          }
+
+          <button type="submit" class="preview-button semantic-preview-button" [disabled]="!canPreview() || busy()">
+            {{ busy() ? i18n.t("semanticEditor.previewing") : i18n.t("semanticEditor.preview") }}
+          </button>
+        }
+      </form>
+
+      <section class="placement-result" [attr.aria-label]="i18n.t('semanticEditor.result')">
+        @if (previewUrl(); as url) {
+          <div class="candidate-preview"><img [src]="url" [alt]="i18n.t('semanticEditor.previewAlt')" /></div>
+        } @else {
+          <div class="candidate-empty"><strong>{{ i18n.t("semanticEditor.noPreview") }}</strong><span>{{ i18n.t("semanticEditor.noPreviewHint") }}</span></div>
+        }
+        @if (proposedText(); as text) {
+          <div class="source-proposal"><strong>{{ i18n.t("semanticEditor.sourceChange") }}</strong><pre><code>{{ text }}</code></pre></div>
+        }
+        @if (issues().length > 0) {
+          <section class="semantic-conflicts"><strong>{{ i18n.t("semanticEditor.conflicts") }}</strong><ul>@for (issue of issues(); track $index) { <li><code>{{ issue.code }}</code><span>{{ issue.message }}</span>@if (issue.correction) { <small>{{ issue.correction }}</small> }</li> }</ul></section>
+        }
+      </section>
+    </div>
+
+    <footer>
+      <span>{{ i18n.t("semanticEditor.authority") }}</span>
+      <div><button type="button" (click)="cancel()">{{ i18n.t("semanticEditor.cancel") }}</button><button type="button" class="apply-button semantic-apply-button" [disabled]="!canApply()" (click)="apply()">{{ i18n.t("semanticEditor.apply") }}</button></div>
+    </footer>
+  </section>
+</div>

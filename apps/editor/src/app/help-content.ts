@@ -77,11 +77,16 @@ const topics: readonly HelpTopicDefinition[] = [
         "The current language is draft-1. The handbook marks only syntax that the editor and compiler can execute today.",
         "Die aktuelle Sprache heißt draft-1. Dieses Handbuch zeigt nur Syntax, die Editor und Compiler heute tatsächlich ausführen können.",
       ),
+      text(
+        "Use Change architecture to add or connect elements in a static view without recalling C4 vocabulary. The language worker offers only operations valid for that view, then shows the proposed source and compiled candidate before apply.",
+        "Mit Architektur ändern kannst du Elemente in einer statischen Ansicht hinzufügen oder verbinden, ohne das C4-Vokabular parat zu haben. Der Sprach-Worker bietet nur für diese Ansicht gültige Operationen an und zeigt vor dem Übernehmen Quelltextvorschlag und kompilierten Kandidaten.",
+      ),
     ],
     points: [
       text("Use stable identifiers without spaces.", "Verwende stabile Kennungen ohne Leerzeichen."),
       text("Describe responsibilities, not feature lists.", "Beschreibe Verantwortungen statt Funktionslisten."),
       text("Give every relationship a clear direction and intent.", "Gib jeder Verbindung eine klare Richtung und Absicht."),
+      text("Architecture changes, placement, and Route editing are separate tools.", "Architekturänderungen, Platzierung und Routenbearbeitung sind getrennte Werkzeuge."),
     ],
     exampleTitle: text("Small executable structure", "Kleine ausführbare Struktur"),
     example: `c4ml draft-1

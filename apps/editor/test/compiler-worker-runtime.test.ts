@@ -26,9 +26,13 @@ import {
   isPreviewProjectChangeWorkerResponse,
   isPreviewPlacementChangeWorkerResponse,
   isPreviewRouteChangeWorkerResponse,
+  isInspectSemanticAuthoringWorkerResponse,
+  isPreviewSemanticChangeWorkerResponse,
+  type InspectSemanticAuthoringWorkerRequest,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewProjectChangeWorkerRequest,
   type PreviewRouteChangeWorkerRequest,
+  type PreviewSemanticChangeWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -38,9 +42,11 @@ import {
   generateWorkerRequest,
   highlightWorkerRequest,
   helpWorkerRequest,
+  inspectSemanticAuthoringWorkerRequest,
   previewProjectChangeWorkerRequest,
   previewPlacementChangeWorkerRequest,
   previewRouteChangeWorkerRequest,
+  previewSemanticChangeWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -478,6 +484,90 @@ describe("compiler worker runtime", () => {
       sourcePortSelection: "east",
       targetPortSelection: "west",
     });
+  });
+
+  it("derives semantic actions from the active C4 view in the worker", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-semantic-context",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: InspectSemanticAuthoringWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "inspect-semantic-authoring",
+      requestId: 48,
+      file: "architecture.c4ml",
+      project,
+      viewId: "garden-pulse-context",
+    };
+
+    const result = await inspectSemanticAuthoringWorkerRequest(request);
+
+    expect(isInspectSemanticAuthoringWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      context: {
+        viewId: "garden-pulse-context",
+        viewKind: "system-context",
+        createActions: [{ kind: "person" }, { kind: "software-system" }],
+      },
+    });
+    expect(result.context?.connectionOptions).toContainEqual({
+      sourceId: "caretaker",
+      targetIds: expect.arrayContaining(["garden-pulse"]),
+    });
+  });
+
+  it("generates and compiles an architecture edit without mutating active source", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-semantic-preview",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 49,
+      file: "architecture.c4ml",
+      project,
+      requestedViewId: "garden-pulse-context",
+      semantic: {
+        id: "semantic:add-neighbour",
+        viewId: "garden-pulse-context",
+        intent: {
+          id: "architecture:create-element",
+          kind: "architecture",
+          summary: "Add a neighbouring system.",
+        },
+        operation: {
+          kind: "create-element",
+          elementKind: "software-system",
+          elementId: "watering-service",
+          name: "Watering Service",
+          responsibility: "Coordinates automated watering.",
+          classification: "external",
+        },
+      },
+    };
+
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      documentUri: "architecture.c4ml",
+      proposedText: expect.stringContaining("system watering-service"),
+      changeSet: { intent: { kind: "architecture" } },
+      compilation: { status: "valid" },
+    });
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      'name = "Watering Service"',
+    );
+    expect(project.documents[0]?.source).toBe(initialC4mlSource);
   });
 
   it("rejects stale project previews before compilation", async () => {
