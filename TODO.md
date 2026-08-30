@@ -115,7 +115,7 @@ implementation.
       cursor history per project document; and
 - [x] add the separately reviewed typed local architecture-policy resource;
 - [x] add a separately reviewed typed glossary resource;
-- [ ] add a separately reviewed typed narrative resource;
+- [x] add a separately reviewed typed narrative resource;
 - [ ] add a separately reviewed typed publication resource;
 - [ ] add a separately reviewed typed theme resource;
 - [ ] add a separately reviewed typed shape resource; and
@@ -128,6 +128,14 @@ filesystem and read-only Git loaders, desktop bridge, and compiler-worker
 project transport retain it as non-source content. Case-insensitive term and
 alias collisions fail explicitly. This slice does not infer terms from source,
 change architecture semantics, or add a visible workbench editor.
+
+The version-one narrative slice adds an explicit ordered set of local
+`.c4ml-narrative.md` resources. A fixed five-line metadata header supplies
+version, stable identity, and title; the remaining Markdown body permits only
+passive text and local project links. Raw HTML, embedded images, remote links,
+duplicate identities, traversal, and malformed metadata fail explicitly. The
+resources participate in project revisions and cross the typed desktop/worker
+boundary as non-source content without changing compilation or diagrams.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own

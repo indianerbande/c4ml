@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented architecture-source, policy, observation, and glossary foundation
+Status: Implemented architecture-source, policy, observation, glossary, and narrative foundation
 
 Date: 2026-08-31
 
@@ -39,6 +39,8 @@ garden-architecture/
 │   └── inventory.c4ml-observations.json
 ├── knowledge/
 │   └── garden.c4ml-glossary.json
+├── docs/
+│   └── overview.c4ml-narrative.md
 ├── model/
 │   └── systems.c4ml
 ├── relations/
@@ -58,6 +60,7 @@ The version-one manifest lists every architecture source explicitly:
   "policy": "governance.c4ml-policy.json",
   "observations": "evidence/inventory.c4ml-observations.json",
   "glossary": "knowledge/garden.c4ml-glossary.json",
+  "narratives": ["docs/overview.c4ml-narrative.md"],
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -190,14 +193,20 @@ aliases are unique without case distinctions and can be resolved through the
 portable contract. The glossary participates in project revisions but is not
 architecture source and does not change compilation or diagrams.
 
+The optional `narratives` list selects one or more local
+`.c4ml-narrative.md` chapters. Each begins with the fixed version, identity, and
+title header and contains passive Markdown with local links only. C4ML rejects
+raw HTML, embedded images, remote links, traversal, and duplicate identities.
+Narratives are revisioned project context, not architecture source or diagram
+content.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
 Architecture source documents plus local architecture-policy,
-architecture-observation, and glossary resources are executable today. Further
-planned resources include:
+architecture-observation, glossary, and narrative resources are executable
+today. Further planned resources include:
 
-- Markdown-backed narrative sections;
 - publication and print profiles;
 - themes, safe custom shapes, and licensed local assets; and
 - architecture baselines and external scanner adapters.

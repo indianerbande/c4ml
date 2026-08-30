@@ -648,6 +648,9 @@ export async function previewProjectChangeWorkerRequest(
               source: request.project.glossary.source,
             },
           }),
+      ...(request.project.narratives === undefined
+        ? {}
+        : { narratives: request.project.narratives.map((resource) => ({ ...resource })) }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -688,6 +691,9 @@ export async function previewProjectChangeWorkerRequest(
                   source: candidate.glossary.source,
                 },
               }),
+          ...(candidate.narratives === undefined
+            ? {}
+            : { narratives: candidate.narratives.map((resource) => ({ ...resource })) }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -1069,6 +1075,10 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   };
+  readonly narratives?: readonly {
+    readonly uri: string;
+    readonly source: string;
+  }[];
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1104,6 +1114,9 @@ function toArchitectureProject(project: {
             source: project.glossary.source,
           },
         }),
+    ...(project.narratives === undefined
+      ? {}
+      : { narratives: project.narratives.map((resource) => ({ ...resource })) }),
   });
 }
 

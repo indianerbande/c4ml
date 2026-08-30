@@ -13,6 +13,10 @@ The optional `knowledge/garden.c4ml-glossary.json` resource defines one domain
 term and one acronym with deterministic aliases. It is project knowledge, not
 architecture source, and therefore does not change the compiled diagram.
 
+The optional `docs/overview.c4ml-narrative.md` chapter adds passive project
+context with a local glossary link. Its metadata and link safety are validated,
+but it is not compiled as architecture source.
+
 From the repository root:
 
 ```sh

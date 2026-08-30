@@ -16,6 +16,7 @@ import {
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
   parseArchitectureGlossary,
+  parseArchitectureNarrative,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -286,6 +287,49 @@ export async function loadArchitectureProject(
     glossary = { uri, source };
   }
 
+  const narratives: Array<{ readonly uri: string; readonly source: string }> = [];
+  for (const uri of parsedManifest.manifest.narratives ?? []) {
+    const narrativePath = resolve(projectRoot, ...uri.split("/"));
+    let narrativeRealPath: string;
+    try {
+      narrativeRealPath = await realpath(narrativePath);
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-012",
+        `Cannot read project narrative ${narrativePath}: ${errorMessage(error)}`,
+      );
+    }
+    const relativeRealPath = relative(rootRealPath, narrativeRealPath);
+    if (relativeRealPath === ".." || relativeRealPath.split(sep)[0] === ".." || isAbsolute(relativeRealPath)) {
+      return sourceFailure(
+        "C4ML-PROJECT-NODE-013",
+        `Project narrative "${uri}" resolves outside the project directory.`,
+      );
+    }
+    let source: string;
+    try {
+      source = await readFile(narrativeRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-012",
+        `Cannot read project narrative ${narrativePath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedNarrative = parseArchitectureNarrative(source);
+    if (!parsedNarrative.valid) {
+      return sourceFailure(parsedNarrative.error.code, parsedNarrative.error.message);
+    }
+    if (narratives.some((candidate) =>
+      parseArchitectureNarrative(candidate.source).narrative?.id === parsedNarrative.narrative.id
+    )) {
+      return sourceFailure(
+        "C4ML-NARRATIVE-001",
+        `Narrative identity "${parsedNarrative.narrative.id}" is duplicated in this project.`,
+      );
+    }
+    narratives.push({ uri, source });
+  }
+
   return {
     valid: true,
     inputPath,
@@ -302,6 +346,7 @@ export async function loadArchitectureProject(
       ...(policy === undefined ? {} : { policy }),
       ...(observations === undefined ? {} : { observations }),
       ...(glossary === undefined ? {} : { glossary }),
+      ...(narratives.length === 0 ? {} : { narratives }),
     }),
     documentPaths,
   };

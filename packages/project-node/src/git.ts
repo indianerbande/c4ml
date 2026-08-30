@@ -17,6 +17,7 @@ import {
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
   parseArchitectureGlossary,
+  parseArchitectureNarrative,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -297,6 +298,29 @@ async function loadManifestProject(
     }
     glossary = { uri, source: source.text };
   }
+  const narratives: Array<{ readonly uri: string; readonly source: string }> = [];
+  const narrativeIds = new Set<string>();
+  for (const uri of parsed.manifest.narratives ?? []) {
+    const source = await readBlob(
+      repositoryRoot,
+      revision.commit,
+      joinGitPath(projectPath, uri),
+    );
+    if (!source.valid) return source;
+    const parsedNarrative = parseArchitectureNarrative(source.text);
+    if (!parsedNarrative.valid) {
+      return failure("source", parsedNarrative.error.code, parsedNarrative.error.message);
+    }
+    if (narrativeIds.has(parsedNarrative.narrative.id)) {
+      return failure(
+        "source",
+        "C4ML-NARRATIVE-001",
+        `Narrative identity "${parsedNarrative.narrative.id}" is duplicated in this project.`,
+      );
+    }
+    narrativeIds.add(parsedNarrative.narrative.id);
+    narratives.push({ uri, source: source.text });
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -309,6 +333,7 @@ async function loadManifestProject(
       ...(policy === undefined ? {} : { policy }),
       ...(observations === undefined ? {} : { observations }),
       ...(glossary === undefined ? {} : { glossary }),
+      ...(narratives.length === 0 ? {} : { narratives }),
     }),
     revision,
     projectPath,
