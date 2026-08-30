@@ -166,6 +166,48 @@ describe("experimental C4ML CLI", () => {
     )).toBe(cliExitCode.findings);
   });
 
+  it("reports project-local observed drift without reconciling authored source", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-observations-"));
+    await writeObservationContextProject(directory);
+
+    const exitCode = await runCli(
+      ["analyze", directory, "--diagnostics", "json", "--fail-on", "warning"],
+      io(directory),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly report: {
+        readonly snapshot: { readonly elements: readonly { readonly id: string; readonly name: string }[] };
+        readonly findings: readonly {
+          readonly ruleId: string;
+          readonly severity: string;
+          readonly evidence: readonly {
+            readonly origin: string;
+            readonly adapterId?: string;
+            readonly confirmation?: string;
+          }[];
+        }[];
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.findings);
+    expect(result.report.findings).toEqual([
+      expect.objectContaining({
+        ruleId: "c4ml.observation.drift",
+        severity: "warning",
+        evidence: expect.arrayContaining([
+          expect.objectContaining({
+            origin: "observed",
+            adapterId: "c4ml.local-inventory/v1",
+            confirmation: "confirmed",
+          }),
+        ]),
+      }),
+    ]);
+    expect(result.report.snapshot.elements.find(({ id }) => id === "garden-pulse")?.name)
+      .not.toBe("Garden Runtime");
+    expect(stderr).toEqual([]);
+  });
+
   it("rejects unsupported analysis failure thresholds as usage errors", async () => {
     const exitCode = await runCli(
       ["analyze", "architecture.c4ml", "--fail-on", "fatal"],
@@ -865,6 +907,39 @@ async function writePolicyContextProject(
           kind: "required-metadata",
           subjectKeys: ["element:garden-pulse"],
           requirements: [{ kind: "metadata", key: "owner" }],
+        }],
+      }),
+      "utf8",
+    ),
+  ]);
+}
+
+async function writeObservationContextProject(directory: string): Promise<void> {
+  const source = await readFile(contextUrl, "utf8");
+  await Promise.all([
+    writeFile(
+      join(directory, "c4ml.project.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-observation-project",
+        sources: ["architecture.c4ml"],
+        observations: "runtime.c4ml-observations.json",
+      }),
+      "utf8",
+    ),
+    writeFile(join(directory, "architecture.c4ml"), source, "utf8"),
+    writeFile(
+      join(directory, "runtime.c4ml-observations.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-runtime",
+        observations: [{
+          id: "garden-name-drift",
+          subjectKey: "element:garden-pulse",
+          adapterId: "c4ml.local-inventory/v1",
+          observedAt: "2026-08-31T08:15:00Z",
+          confirmation: "confirmed",
+          claim: { kind: "field", field: "name", value: "Garden Runtime" },
         }],
       }),
       "utf8",

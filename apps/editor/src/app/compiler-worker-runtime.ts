@@ -1,12 +1,15 @@
 import {
+  ArchitectureObservationError,
   ArchitecturePolicyError,
   compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
   deriveArchitectureImpacts,
   evaluateArchitecturePolicies,
+  evaluateArchitectureObservations,
   evaluateBuiltInArchitectureQuality,
   createArchitectureProjectInput,
+  parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
@@ -234,6 +237,40 @@ export async function analyzeWorkerRequest(
         throw error;
       }
     }
+    const observationResource = request.project?.observations;
+    if (observationResource !== undefined) {
+      const parsedObservations = parseArchitectureObservationSet(
+        observationResource.source,
+      );
+      if (!parsedObservations.valid) {
+        return invalidObservationAnalysisResponse(
+          request,
+          observationResource,
+          parsedObservations.error,
+        );
+      }
+      try {
+        findings.push(...evaluateArchitectureObservations({
+          model: parsed.model,
+          views: parsed.views,
+          snapshot,
+          observationSet: parsedObservations.observationSet,
+          resourceSource: resourceSource(
+            observationResource.uri,
+            observationResource.source,
+          ),
+        }).findings);
+      } catch (error: unknown) {
+        if (error instanceof ArchitectureObservationError) {
+          return invalidObservationAnalysisResponse(
+            request,
+            observationResource,
+            error,
+          );
+        }
+        throw error;
+      }
+    }
     return {
       protocolVersion: compilerWorkerProtocolVersion,
       type: "analysis-result",
@@ -294,6 +331,48 @@ function invalidPolicyAnalysisResponse(
       correction: "Review the project-local architecture policy resource.",
     }],
     report: undefined,
+  };
+}
+
+function invalidObservationAnalysisResponse(
+  request: AnalysisWorkerRequest,
+  observations: { readonly uri: string; readonly source: string },
+  error: ArchitectureObservationError,
+): AnalysisWorkerResponse {
+  const source = resourceSource(observations.uri, observations.source);
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "analysis-result",
+    requestId: request.requestId,
+    status: "invalid",
+    diagnostics: [{
+      code: error.code,
+      severity: "error",
+      message: error.message,
+      source: {
+        file: source.file,
+        start: source.range.start,
+        end: source.range.end,
+      },
+      correction: "Review the project-local architecture observation resource.",
+    }],
+    report: undefined,
+  };
+}
+
+function resourceSource(file: string, source: string): SourceReference {
+  const lines = source.split("\n");
+  const lastLine = lines.length - 1;
+  return {
+    file,
+    range: {
+      start: { offset: 0, line: 0, column: 0 },
+      end: {
+        offset: source.length,
+        line: lastLine,
+        column: lines[lastLine]?.length ?? 0,
+      },
+    },
   };
 }
 
@@ -553,6 +632,14 @@ export async function previewProjectChangeWorkerRequest(
               source: request.project.policy.source,
             },
           }),
+      ...(request.project.observations === undefined
+        ? {}
+        : {
+            observations: {
+              uri: request.project.observations.uri,
+              source: request.project.observations.source,
+            },
+          }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -575,6 +662,14 @@ export async function previewProjectChangeWorkerRequest(
                 policy: {
                   uri: candidate.policy.uri,
                   source: candidate.policy.source,
+                },
+              }),
+          ...(candidate.observations === undefined
+            ? {}
+            : {
+                observations: {
+                  uri: candidate.observations.uri,
+                  source: candidate.observations.source,
                 },
               }),
         };
@@ -950,6 +1045,10 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   };
+  readonly observations?: {
+    readonly uri: string;
+    readonly source: string;
+  };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -967,6 +1066,14 @@ function toArchitectureProject(project: {
           policy: {
             uri: project.policy.uri,
             source: project.policy.source,
+          },
+        }),
+    ...(project.observations === undefined
+      ? {}
+      : {
+          observations: {
+            uri: project.observations.uri,
+            source: project.observations.source,
           },
         }),
   });

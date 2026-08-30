@@ -135,7 +135,14 @@ explicit project can select one local version-one `.c4ml-policy.json` resource;
 the Node.js filesystem and Git loaders validate it, the compiler worker and CLI
 use the same evaluator, and CLI `analyze --fail-on` provides the first CI exit
 boundary. No public `.c4ml` policy syntax, hosted-provider CI format, or Monaco
-policy-resource editor is accepted yet. The first
+policy-resource editor is accepted yet. The first portable architecture-
+observation contract compares attributed, timestamped, explicitly confirmed
+presence or selected-field claims with canonical snapshots. One optional local
+`.c4ml-observations.json` project resource is loaded through the filesystem and
+read-only Git adapters, transported through the desktop boundary, and evaluated
+identically by worker and CLI. Confirmed mismatches are drift; unreviewed or
+disputed input remains uncertainty; authored source is never reconciled. No
+runtime, repository, cloud, or monitoring scanner format is accepted. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
@@ -205,7 +212,8 @@ transactions are deterministic and document-addressed. Save and Save As apply
 to the active document; Save All processes every dirty source through the same
 validated desktop bridge. Monaco keeps an independent model, undo history,
 cursor, and scroll state for every open project document.
-Glossary/narrative/policy/publication resources remain unimplemented.
+Glossary, narrative, publication, theme, shape, and asset project resources
+remain unimplemented.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views

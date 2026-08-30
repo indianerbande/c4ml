@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented architecture-source and local-policy foundation
+Status: Implemented architecture-source, local-policy, and local-observation foundation
 
 Date: 2026-08-31
 
@@ -35,6 +35,8 @@ Several source files require `c4ml.project.json`:
 garden-architecture/
 ├── c4ml.project.json
 ├── governance.c4ml-policy.json
+├── evidence/
+│   └── inventory.c4ml-observations.json
 ├── model/
 │   └── systems.c4ml
 ├── relations/
@@ -52,6 +54,7 @@ The version-one manifest lists every architecture source explicitly:
   "name": "Garden Architecture",
   "description": "Architecture model and review views.",
   "policy": "governance.c4ml-policy.json",
+  "observations": "evidence/inventory.c4ml-observations.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -90,6 +93,30 @@ Policy identities refer to exact qualified architecture identities. The other
 implemented rule families cover forbidden dependencies, required protocols,
 ownership, allowed direction, and deployment consistency. Malformed, unknown,
 or inapplicable rules fail explicitly rather than being ignored.
+
+The optional `observations` field selects exactly one bounded local version-one
+JSON observation set whose path ends in `.c4ml-observations.json`. Each entry
+names a qualified architecture identity, adapter, timestamp with timezone,
+confirmation state, and either a presence or selected-field claim:
+
+```json
+{
+  "version": 1,
+  "id": "garden-local-inventory",
+  "observations": [{
+    "id": "garden-runtime-name",
+    "subjectKey": "element:garden-pulse",
+    "adapterId": "local-inventory/v1",
+    "observedAt": "2026-08-31T08:15:00Z",
+    "confirmation": "confirmed",
+    "claim": { "kind": "field", "field": "name", "value": "Garden Runtime" }
+  }]
+}
+```
+
+Only a confirmed mismatch becomes drift. `unreviewed` and `disputed`
+observations remain uncertainty. C4ML never copies the observed value into the
+authored model.
 
 ## Source fragments
 
@@ -149,17 +176,22 @@ affected architecture declaration. The policy resource is read-only to this
 first editor slice: it is not opened as a Monaco tab and Save/Save All do not
 rewrite it.
 
+The optional observation set follows the same read-only desktop boundary.
+Confirmed drift and uncertainty appear in **Output → Architecture findings**;
+the source, model, diagrams, and project files are not reconciled automatically.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
-Architecture source documents and one local architecture-policy resource are
-executable today. Further planned resources include:
+Architecture source documents plus one local architecture-policy and one local
+architecture-observation resource are executable today. Further planned
+resources include:
 
 - glossaries for terms and acronyms;
 - Markdown-backed narrative sections;
 - publication and print profiles;
 - themes, safe custom shapes, and licensed local assets; and
-- architecture baselines and attributed external evidence.
+- architecture baselines and external scanner adapters.
 
 These resources will receive independent contracts. A publication profile must
 not change architecture semantics, and local workbench preferences remain

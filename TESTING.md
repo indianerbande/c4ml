@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.39
+Status: Draft 0.40
 
 Date: 2026-08-31
 
@@ -114,8 +114,9 @@ separate deployment, View, presentation, and layout categories, layout-only
 changes without architecture noise, deterministic serialization, and empty
 results for equivalent snapshots. Compiler-worker/direct-core parity and CLI
 tests cover the same rename result; a separate CLI pair proves that comments do
-not create a semantic change. Project-selected policy evaluation now adds the
-same worker and CLI report path without duplicating evaluator semantics.
+not create a semantic change. Project-selected policy and observation
+evaluation now add the same worker and CLI report paths without duplicating
+evaluator semantics.
 
 The first project-source foundation adds contract evidence for canonical
 project-relative document URIs, deterministic document ordering, explicit
@@ -940,6 +941,28 @@ or inapplicable resources. CLI tests prove that the default emits findings
 without failing, `--fail-on error` fails only for errors, and `--fail-on
 warning` fails for warnings or errors using classified exit code `6`.
 
+The first observation-contract gate proves versioned JSON parsing, normalized
+timestamps, deterministic observation ordering, unique identities, applicable
+field selection, presence claims, and distinct `consistent`, `drift`, and
+`uncertain` comparisons. Original Signal Garden evidence includes a confirmed
+field mismatch, a confirmed match, an unreviewed match, a disputed mismatch,
+and an observed-only identity. Tests assert that only confirmed mismatches emit
+warning drift, while unreviewed and disputed input emit information-level
+uncertainty. Every observed evidence item retains adapter identity, timestamp,
+confirmation state, and resource source; authored state and canonical snapshots
+remain byte-equivalent before and after evaluation. Negative tests require
+stable errors for malformed resources, duplicate observation identities,
+invalid timestamps or confirmation state, and fields inapplicable to their
+selected architecture kind. The project-observation gate additionally covers
+local path containment, filesystem and read-only Git-revision loading,
+deterministic project-revision participation, source-located malformed-resource
+diagnostics, worker/CLI findings, and CLI warning thresholds without network
+access or source reconciliation. The packaged macOS workbench was also opened
+with the original multifile Garden Pulse example: the Output activity visibly
+showed two separate cards for `c4ml.observation.drift` and
+`c4ml.observation.uncertain`, while the three authored source tabs and unchanged
+diagram remained present.
+
 ### 2.15 Project and multi-document source
 
 Project-source tests MUST prove that:
@@ -951,6 +974,9 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-policy.json` manifest resource is loaded locally through
   the same filesystem and Git-revision adapters, participates in the project
   revision, and never becomes an architecture source document;
+- an optional `.c4ml-observations.json` manifest resource follows the same
+  filesystem and Git containment rules, participates in the project revision,
+  and never becomes an architecture source document;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

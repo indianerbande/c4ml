@@ -69,6 +69,7 @@ describe("Git project revision adapter", () => {
         id: "garden",
         sources: ["model.c4ml", "views.c4ml"],
         policy: "garden.c4ml-policy.json",
+        observations: "garden.c4ml-observations.json",
       }),
       "utf8",
     );
@@ -89,6 +90,22 @@ describe("Git project revision adapter", () => {
       }),
       "utf8",
     );
+    await writeFile(
+      join(projectDirectory, "garden.c4ml-observations.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-runtime",
+        observations: [{
+          id: "garden-present",
+          subjectKey: "element:garden",
+          adapterId: "test/git-inventory",
+          observedAt: "2026-08-31T08:00:00Z",
+          confirmation: "confirmed",
+          claim: { kind: "presence", value: true },
+        }],
+      }),
+      "utf8",
+    );
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -104,6 +121,9 @@ describe("Git project revision adapter", () => {
     expect(result.projectPath).toBe("architecture");
     expect(result.project.policy).toMatchObject({
       uri: "garden.c4ml-policy.json",
+    });
+    expect(result.project.observations).toMatchObject({
+      uri: "garden.c4ml-observations.json",
     });
   });
 

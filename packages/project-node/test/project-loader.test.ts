@@ -18,6 +18,7 @@ describe("Node.js architecture project loader", () => {
         version: 1,
         id: "garden",
         policy: "governance/garden.c4ml-policy.json",
+        observations: "governance/garden.c4ml-observations.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -38,6 +39,21 @@ describe("Node.js architecture project loader", () => {
         }],
       }),
     );
+    await writeFile(
+      join(directory, "governance", "garden.c4ml-observations.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-runtime",
+        observations: [{
+          id: "runtime-technology",
+          subjectKey: "element:garden",
+          adapterId: "test/local-inventory",
+          observedAt: "2026-08-31T08:00:00Z",
+          confirmation: "confirmed",
+          claim: { kind: "presence", value: true },
+        }],
+      }),
+    );
 
     const result = await loadArchitectureProject(directory);
 
@@ -54,7 +70,31 @@ describe("Node.js architecture project loader", () => {
       expect(result.project.policy).toMatchObject({
         uri: "governance/garden.c4ml-policy.json",
       });
+      expect(result.project.observations).toMatchObject({
+        uri: "governance/garden.c4ml-observations.json",
+      });
     }
+  });
+
+  it("rejects malformed project observation resources with a stable observation code", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-project-observations-"));
+    await writeFile(
+      join(directory, "c4ml.project.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden",
+        sources: ["architecture.c4ml"],
+        observations: "garden.c4ml-observations.json",
+      }),
+    );
+    await writeFile(join(directory, "architecture.c4ml"), "c4ml draft-1\n");
+    await writeFile(join(directory, "garden.c4ml-observations.json"), "{");
+
+    expect(await loadArchitectureProject(directory)).toMatchObject({
+      valid: false,
+      classification: "source",
+      code: "C4ML-OBSERVATION-001",
+    });
   });
 
   it("loads one direct source and one-source directory as implicit projects", async () => {

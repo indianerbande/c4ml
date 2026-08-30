@@ -3,6 +3,7 @@ import { compareText } from "./ordering.js";
 export const architectureProjectVersion = 1 as const;
 export const architectureProjectManifestName = "c4ml.project.json" as const;
 export const architecturePolicyResourceSuffix = ".c4ml-policy.json" as const;
+export const architectureObservationResourceSuffix = ".c4ml-observations.json" as const;
 
 export interface ArchitectureProjectDocument {
   readonly uri: string;
@@ -14,6 +15,11 @@ export interface ArchitectureProjectPolicyResource {
   readonly source: string;
 }
 
+export interface ArchitectureProjectObservationResource {
+  readonly uri: string;
+  readonly source: string;
+}
+
 export interface ArchitectureProjectInput {
   readonly version: typeof architectureProjectVersion;
   readonly id: string;
@@ -21,6 +27,7 @@ export interface ArchitectureProjectInput {
   readonly description?: string;
   readonly documents: readonly ArchitectureProjectDocument[];
   readonly policy?: ArchitectureProjectPolicyResource;
+  readonly observations?: ArchitectureProjectObservationResource;
 }
 
 export interface ArchitectureProjectManifest {
@@ -30,6 +37,7 @@ export interface ArchitectureProjectManifest {
   readonly description?: string;
   readonly sources: readonly string[];
   readonly policy?: string;
+  readonly observations?: string;
 }
 
 export type ArchitectureProjectIssueCode =
@@ -38,7 +46,8 @@ export type ArchitectureProjectIssueCode =
   | "C4ML-PROJECT-003"
   | "C4ML-PROJECT-004"
   | "C4ML-PROJECT-005"
-  | "C4ML-PROJECT-006";
+  | "C4ML-PROJECT-006"
+  | "C4ML-PROJECT-007";
 
 export interface ArchitectureProjectIssue {
   readonly code: ArchitectureProjectIssueCode;
@@ -70,6 +79,7 @@ export function createArchitectureProjectInput(input: {
   readonly description?: string;
   readonly documents: readonly ArchitectureProjectDocument[];
   readonly policy?: ArchitectureProjectPolicyResource;
+  readonly observations?: ArchitectureProjectObservationResource;
 }): ArchitectureProjectInput {
   const project: ArchitectureProjectInput = {
     version: architectureProjectVersion,
@@ -82,6 +92,14 @@ export function createArchitectureProjectInput(input: {
     ...(input.policy === undefined
       ? {}
       : { policy: { uri: input.policy.uri, source: input.policy.source } }),
+    ...(input.observations === undefined
+      ? {}
+      : {
+          observations: {
+            uri: input.observations.uri,
+            source: input.observations.source,
+          },
+        }),
   };
   const issues = validateArchitectureProjectInput(project);
   if (issues.length > 0) {
@@ -161,6 +179,24 @@ export function validateArchitectureProjectInput(
       });
     }
   }
+  if (project.observations !== undefined) {
+    const observationCaseFolded = project.observations.uri.toLocaleLowerCase("en-US");
+    if (
+      !isPortableProjectUri(project.observations.uri) ||
+      !project.observations.uri.endsWith(architectureObservationResourceSuffix) ||
+      project.observations.source.trim().length === 0 ||
+      seenCaseFolded.has(observationCaseFolded) ||
+      project.policy?.uri.toLocaleLowerCase("en-US") === observationCaseFolded
+    ) {
+      issues.push({
+        code: "C4ML-PROJECT-007",
+        message:
+          `Project observation URI "${project.observations.uri}" must be a unique normalized relative ` +
+          `${architectureObservationResourceSuffix} path with non-empty local content.`,
+        uri: project.observations.uri,
+      });
+    }
+  }
   return issues;
 }
 
@@ -183,7 +219,7 @@ export function parseArchitectureProjectManifest(
     return invalidManifest("The project manifest must contain one JSON object.");
   }
 
-  const { version, id, name, description, sources, policy } = candidate;
+  const { version, id, name, description, sources, policy, observations } = candidate;
   if (
     version !== architectureProjectVersion ||
     typeof id !== "string" ||
@@ -195,11 +231,13 @@ export function parseArchitectureProjectManifest(
     sources.length === 0 ||
     sources.some((value) => typeof value !== "string") ||
     (policy !== undefined &&
-      (typeof policy !== "string" || policy.trim().length === 0))
+      (typeof policy !== "string" || policy.trim().length === 0)) ||
+    (observations !== undefined &&
+      (typeof observations !== "string" || observations.trim().length === 0))
   ) {
     return invalidManifest(
       "The project manifest requires version 1, a stable id, a non-empty sources array, " +
-        "and at most one non-empty policy resource path.",
+        "and at most one non-empty policy and observation resource path.",
     );
   }
 
@@ -212,6 +250,9 @@ export function parseArchitectureProjectManifest(
     documents: normalizedSources.map((uri) => ({ uri, text: "" })),
     ...(typeof policy === "string"
       ? { policy: { uri: policy, source: "{}" } }
+      : {}),
+    ...(typeof observations === "string"
+      ? { observations: { uri: observations, source: "{}" } }
       : {}),
   });
   if (projectIssues.length > 0) {
@@ -226,6 +267,7 @@ export function parseArchitectureProjectManifest(
       ...(typeof description === "string" ? { description } : {}),
       sources: normalizedSources,
       ...(typeof policy === "string" ? { policy } : {}),
+      ...(typeof observations === "string" ? { observations } : {}),
     },
     issues: [],
   };
