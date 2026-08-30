@@ -210,6 +210,36 @@ compiler packages as the editor worker:
 # Validate without rendering.
 pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
 
+# Compare two valid architecture states by stable identity.
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --diagnostics json
+
+# Export one stable visual comparison as canonical SVG and derived PNG.
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --comparison overlay \
+  --view garden-pulse-context \
+  --format svg,png \
+  --output build/comparisons
+
+# Compare a branch or commit with the current working source, without checkout.
+pnpm run c4ml -- diff path/to/project \
+  --before-ref main \
+  --after-ref working \
+  --diagnostics json
+
+# Ask which architecture items are downstream and receive an explained focus.
+pnpm run c4ml -- query examples/draft/hello-context.c4ml \
+  --kind downstream \
+  --subject element:caretaker \
+  --diagnostics json
+
+# Trace one deterministic path between two stable architecture identities.
+pnpm run c4ml -- query path/to/project \
+  --kind path \
+  --subject element:browser-app \
+  --target element:records-store \
+  --diagnostics json
+
 # Render one view as canonical SVG and derived PNG.
 pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --view arrangement-engine-code \
@@ -228,6 +258,64 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
 experimental frontend and language versions. Exit classes distinguish success,
 usage, source/view selection, layout/render compilation, and filesystem or
 environment failures.
+
+`analyze` runs the compiler-owned built-in architecture checks. Blocking source
+or semantic failures remain normal diagnostics; a valid architecture receives
+deterministic findings with rule identity, severity, evidence, affected stable
+identities, and source locations. The first catalogue includes non-blocking
+shared validation guidance, architecture declarations that occur in no resolved
+View, and Views that resolve to no content. Human CLI output prints each source
+location. The editor presents the same report in **Output → Architecture
+findings**; selecting a finding opens and marks its owning source declaration.
+
+`query` answers upstream, downstream, path, containment, deployment, and
+resolved-View-coverage questions. Subjects and path targets use qualified
+stable identities such as `element:browser-app`, `relationship:api-writes`, or
+`deployment-node:production-cluster`. Containment accepts `--scope ancestors`,
+`descendants`, or `both`; paths accept `--direction upstream` or `downstream`.
+JSON output includes the portable query result and a temporary focus View.
+That focus contains only references to canonical identities plus an explanation
+for every included item and Relationship; it does not duplicate or modify the
+authored architecture or create source code.
+
+`diff` accepts two files, manifests, or project directories. It reports model,
+Relationship, deployment, View, presentation, and layout changes separately.
+Stable identifiers make an element name change a rename; comments, formatting,
+declaration order, and source locations do not create changes. The current CLI
+returns the portable version-one difference and deterministic upstream/downstream
+impact report directly and never infers semantic change from rendered pixels.
+
+With `--comparison`, `diff` also accepts `before`, `after`, `overlay`, or
+`change-only` plus a View identifier that exists with the same stable identity
+and kind in both states. Unchanged compatible leaf geometry is retained unless
+hard placement, changed dimensions or parentage, containment, or collision
+rules require the later automatic result. The artifact visibly distinguishes
+added, removed, changed, affected-path, and layout-movement states and includes
+the same explanation in SVG metadata. `--format svg,png` derives PNG from that
+canonical SVG; `--scale` controls PNG resolution.
+
+`--before-ref` and `--after-ref` accept a local commit, tag, branch, or the
+special value `working`. If only one project path is supplied, both selected
+states use that path. Git revisions are read directly from the local object
+database without changing `HEAD`, the index, or working files. This requires a
+locally installed Git executable but no network access. Hosted GitHub, GitLab,
+or Bitbucket authentication is not part of this local adapter.
+
+### Reviewed migration stories
+
+The portable compiler foundation can compose two or more reviewed canonical
+architecture states into an ordered migration story. Each state records a
+stable identity, a human-readable title, and authored or Git provenance. Each
+step then carries the ordinary semantic difference, its impact paths, and the
+identities of the source states.
+
+The offline presentation renderer expects the four comparison SVG modes for
+each included View: `before`, `after`, `overlay`, and `change-only`. It embeds
+those diagrams in one self-contained HTML file with step navigation and
+expandable comparison sections. It does not fetch fonts, scripts, styles, or
+other resources from a network. Frontends still decide which states have been
+reviewed and which Views belong in a presentation; no hidden editor state is
+treated as architecture history.
 
 The CLI is contributor evidence, not a frozen public command contract. It
 accepts the current placement and route-control slices, including relative

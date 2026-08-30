@@ -115,6 +115,17 @@ identity namespaces distinct; observed evidence requires adapter attribution.
 The first syntax-aware element-property edit generator, non-mutating compiler
 worker preview, one-unit Monaco application adapter, canonical worker parity,
 and versioned worker/CLI analysis-report exposure are implemented. The first
+compiler-owned quality catalogue is implemented as well: non-blocking shared
+validation guidance, model/View coverage, and empty-View evidence produce
+deterministic source-located findings over validated snapshots. CLI and browser
+worker use the same evaluator; the localized Output area navigates findings to
+Monaco source. Blocking invalid input remains in compiler diagnostics because
+it cannot produce a canonical analysis snapshot. The first
+portable query engine is implemented too: upstream/downstream traversal,
+deterministic paths, containment, deployment placement, and resolved-View
+coverage produce fully explained results and reference-only temporary focus
+Views. The experimental CLI exposes those contracts without introducing public
+query grammar or duplicating architecture definitions. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
@@ -124,8 +135,38 @@ review, and one-step apply/undo. The first semantic graphical authoring slice
 creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
 source review, and one-step apply/undo. Dynamic-interaction and deployment-
-topology authoring remain dedicated later gestures; semantic diffing and
-executable policy rules remain later slices.
+topology authoring remain dedicated later gestures. The portable version-one
+semantic differ is implemented and automatically validated: it matches
+kind-qualified stable identities, separates model, Relationship, deployment,
+View, presentation, and layout changes, recognizes renames, ignores source and
+formatting noise, and is exposed through the browser worker and experimental
+CLI `diff` command.
+The semantic-evolution foundation now also includes a version-one deterministic
+impact report, a conservative baseline-geometry stability stage, and
+renderer-neutral before/after/overlay/change-only comparison scenes. Impact
+paths come only from validated graph references. Geometry retention excludes
+hard-placement participants and visibly falls back on size, parent,
+containment, or collision incompatibility. Comparison SVG/PNG artifacts expose
+separate added, removed, modified, affected-path, and layout-movement encodings
+through both a visible legend and SVG metadata. The browser worker returns the
+portable difference and impact reports; the experimental CLI can export a
+selected shared View in every comparison mode. Executable policy rules remain
+a later slice.
+The local version-control slice is implemented in the existing Node.js
+`project-node` adapter used by desktop and CLI boundaries. It reads a `.c4ml`
+file, implicit directory, or explicit manifest from a commit, tag, or branch
+through bounded read-only Git subprocess calls and never checks out or mutates
+repository state. The CLI can compare those revisions with each other or with
+working source through the unchanged portable comparison path. Repository
+paths and refs remain excluded from the whitelisted workbench session record.
+Hosted-provider connections and remote mutation remain later adapters.
+Reviewed canonical snapshots can now be composed into a deterministic portable
+migration story. Ordered transitions retain authored or Git provenance and
+reuse the shared difference and impact reports. The compiler core can generate
+a self-contained offline HTML review containing before, after, overlay, and
+change-only SVG views with step navigation; it rejects active or externally
+linked SVG content. State selection and comparison rendering remain frontend
+responsibilities.
 The Pillar 1 persistence acceptance has also passed in the packaged macOS app:
 a semantic edit was saved, the application was fully restarted, the saved file
 was reopened without diagnostics, and the standalone CLI validated the same

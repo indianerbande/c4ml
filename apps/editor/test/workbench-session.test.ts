@@ -27,6 +27,9 @@ describe("workbench session", () => {
         previewWindowBounds: { x: 80, y: 120, width: 1280, height: 820 },
         source: "must not survive",
         path: "/private/model.c4ml",
+        repositoryPath: "/private/repository",
+        beforeRef: "main",
+        afterRef: "feature/private-work",
       }),
     );
 
@@ -42,6 +45,9 @@ describe("workbench session", () => {
     });
     expect(parsed).not.toHaveProperty("source");
     expect(parsed).not.toHaveProperty("path");
+    expect(parsed).not.toHaveProperty("repositoryPath");
+    expect(parsed).not.toHaveProperty("beforeRef");
+    expect(parsed).not.toHaveProperty("afterRef");
   });
 
   it("persists the local help activity like the other workbench areas", () => {

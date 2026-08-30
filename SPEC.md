@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.31
+Status: Draft 0.36
 
 Date: 2026-08-30
 
@@ -1533,14 +1533,95 @@ index uses kind-qualified keys so identities in different namespaces cannot
 collide. It exposes deterministic containment, relationship, deployment-instance,
 view-membership, upstream, and downstream traversal.
 
+The implemented version-one semantic differ compares two canonical snapshots
+by their kind-qualified stable identities. It classifies additions, removals,
+renames, and other property changes independently for model elements,
+Relationships, deployment, Views, presentation, and layout. One changed name
+therefore remains a rename of the same object rather than a removal plus an
+addition. View snapshots retain their typed stable scope reference separately
+from the human-readable resolved scope, so renaming a scoped element does not
+invent a second View change. Comments, formatting, declaration order, source
+files, and source ranges never enter the comparison. The result has a
+deterministic versioned JSON form and category summary. The browser worker and
+the experimental CLI `diff` command call this portable comparison directly;
+neither frontend owns comparison semantics.
+
+The implemented version-one impact report derives deterministic shortest
+upstream and downstream paths from the validated architecture graph. A changed
+Relationship starts at its resolved source and target endpoints; additions use
+the later graph, removals use the earlier graph, and other changes merge both
+states. Presentation- and layout-only changes never invent semantic traversal.
+The portable result also lists directly affected identities and Views and is
+exposed unchanged through the browser worker and CLI.
+
+The implemented comparison-layout stage conservatively retains baseline
+geometry only for compatible leaf nodes. It never overrides nodes participating
+in hard placement constraints and falls back to the later automatic geometry
+when size, containment, parentage, or sibling-collision checks fail. Its
+deterministic decisions make retained and rejected geometry inspectable rather
+than hidden renderer behavior.
+
+The renderer-neutral comparison scene provides `before`, `after`, `overlay`,
+and `change-only` modes. Stable identities distinguish added, removed,
+modified, semantically impacted, geometrically moved, and unchanged objects.
+Semantic change and layout-only movement have separate encodings. Standalone
+SVG metadata and a visible legend describe the encoding; PNG is derived from
+the same SVG. In an overlay, earlier text is suppressed so coincident labels do
+not become illegible while the earlier outline remains visible.
+
+The implemented local Git adapter remains in the existing Node.js
+`project-node` boundary shared by desktop and CLI frontends. It invokes the
+installed Git executable without a shell and uses only read-only object and
+tree queries. A file, implicit project directory, or explicit project manifest
+can be loaded from a commit, tag, or branch without checkout; working source
+continues through the ordinary filesystem loader. Both paths produce the same
+portable project input before parsing and semantic comparison. Repository paths
+and refs never enter the compiler contracts or persisted workbench session.
+The experimental CLI selects these states with `--before-ref` and
+`--after-ref`, where `working` names the current filesystem state. Hosted
+provider authentication and remote operations remain separate future adapters.
+
+The implemented portable migration-story contract composes two or more
+explicitly reviewed architecture snapshots into ordered transitions. Every
+state has its own stable identity and authored or Git provenance; every change
+retains the transition identities from which it was derived. Transitions reuse
+the canonical semantic difference and impact contracts rather than inferring
+change from rendered pixels. A deterministic offline HTML presentation embeds
+the before, after, overlay, and change-only SVG for every included View,
+provides step navigation and visible provenance, and contains no network
+resources or executable page content. Frontends remain responsible for
+selecting reviewed states and producing the comparison SVGs; the portable core
+owns story validation, ordering, provenance, and presentation serialization.
+
 The implemented analysis contract represents findings and query results with
 stable rule/query identity, qualified affected items, ordered evidence, sorted
 source locations, and optional proposed source corrections. Observed evidence
 requires its adapter identity and observation time. A versioned portable analysis
 report combines the canonical snapshot and deterministic findings. The browser
-worker and the experimental CLI `analyze` command expose that same report. Until
-concrete rules are implemented, its findings list is correctly empty rather than
-implying checks that did not run.
+worker and the experimental CLI `analyze` command expose that same report.
+
+The implemented version-one built-in quality evaluator promotes non-blocking
+shared semantic/View diagnostics into source-located findings and adds only
+facts that can be proven from the validated architecture: architecture items
+that occur in no resolved View and Views that resolve to no static, dynamic, or
+deployment content. Blocking syntax or semantic errors remain diagnostics
+because no canonical snapshot exists for an invalid model. Findings carry a
+plain-language explanation, stable rule and subject identities, authored or
+derived evidence, and deterministic source locations. The CLI prints those
+locations, and the workbench Output area navigates from a finding to its owning
+source declaration. This built-in catalogue is compiler-owned and introduces
+no public policy syntax.
+
+The implemented version-one architecture-query engine evaluates upstream,
+downstream, shortest-path, containment, deployment-placement, and resolved-View
+coverage questions over the canonical snapshot and its kind-qualified graph.
+Every returned item and Relationship has derived evidence explaining its
+inclusion; unknown identities and absent requested paths fail explicitly.
+Query results can be projected into a temporary focus View containing only
+stable architecture references and their explanations. It never copies or
+mutates semantic, deployment, Relationship, or authored View definitions. The
+experimental CLI exposes the same portable result and focus projection through
+`query`; no public source-language query syntax is accepted by this decision.
 
 ## 10. Scene graph and rendering
 
@@ -1717,7 +1798,9 @@ A thin Node.js CLI is implemented for the currently executable `draft-1`
 language slices. It delegates parsing, semantic validation, view
 resolution, layout, scene construction, SVG serialization, and PNG
 rasterization to the same packages used elsewhere. It supports validation,
-one-view or all-view rendering, SVG and PNG selection, PNG scale, output
+semantic comparison of two valid files or projects, optional stable visual
+comparison of one shared View in all four comparison modes, one-view or
+all-view rendering, SVG and PNG selection, PNG scale, output
 directory selection, human or JSON diagnostics, version reporting, and the
 documented exit classes `0`, `2`, `3`, `4`, and `5`.
 

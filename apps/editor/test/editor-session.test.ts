@@ -27,6 +27,7 @@ import {
   type InspectSemanticAuthoringWorkerResponse,
   type PreviewSemanticChangeWorkerResponse,
   type WizardWorkerResponse,
+  type AnalysisWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
   EditorCompilationSession,
@@ -43,6 +44,28 @@ import {
   EditorSemanticContextSession,
   EditorSemanticPreviewSession,
 } from "../src/app/editor-semantic-session.js";
+import { EditorAnalysisSession } from "../src/app/editor-analysis-session.js";
+
+describe("editor analysis session", () => {
+  it("rejects stale architecture-analysis responses", () => {
+    const sequence = new EditorRequestSequence();
+    const session = new EditorAnalysisSession(sequence);
+    const first = session.begin("first", "editor.c4ml");
+    const second = session.begin("second", "editor.c4ml");
+    const response = (requestId: number): AnalysisWorkerResponse => ({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analysis-result",
+      requestId,
+      status: "invalid",
+      diagnostics: [],
+      report: undefined,
+    });
+
+    expect(session.accept(response(first.requestId))).toBe(false);
+    expect(session.accept(response(second.requestId))).toBe(true);
+    expect(session.state.phase).toBe("invalid");
+  });
+});
 
 function response(
   requestId: number,

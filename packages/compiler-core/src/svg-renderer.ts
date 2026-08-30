@@ -1,7 +1,9 @@
 import { ContractError, type Point } from "./layout.js";
+import { comparisonEncoding } from "./comparison-scene.js";
 import type {
   DiagramScene,
   SceneArrowhead,
+  SceneComparisonMark,
   SceneNode,
   ScenePort,
   SceneRoute,
@@ -42,11 +44,11 @@ export function renderDiagramSvg(
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${scene.width}" height="${scene.height}" viewBox="0 0 ${scene.width} ${scene.height}" role="img" aria-labelledby="diagram-title diagram-description" font-family="${escapeXml(scene.fontFamily)}" data-c4ml-theme="${escapeXml(scene.theme.id)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${scene.width}" height="${scene.height}" viewBox="0 0 ${scene.width} ${scene.height}" role="img" aria-labelledby="diagram-title diagram-description" font-family="${escapeXml(scene.fontFamily)}" data-c4ml-theme="${escapeXml(scene.theme.id)}"${scene.comparison === undefined ? "" : ` data-c4ml-comparison-mode="${scene.comparison.mode}"`}>`,
     `  <title id="diagram-title">${escapeXml(scene.title)}</title>`,
     `  <desc id="diagram-description">${escapeXml(scene.description)}</desc>`,
-    `  <metadata>${escapeXml(JSON.stringify({ generator: "C4ML", sceneId: scene.id, viewKind: scene.viewKind, scope: scene.scope, themeId: scene.theme.id }))}</metadata>`,
-    renderDefinitions(scene.theme, embeddedFontFaces),
+    `  <metadata>${escapeXml(JSON.stringify({ generator: "C4ML", sceneId: scene.id, viewKind: scene.viewKind, scope: scene.scope, themeId: scene.theme.id, ...(scene.comparison === undefined ? {} : { comparison: scene.comparison }) }))}</metadata>`,
+    renderDefinitions(scene, embeddedFontFaces),
     `  <rect class="canvas" x="0" y="0" width="${scene.width}" height="${scene.height}"/>`,
     `  <g id="diagram-header">`,
     `    <text class="diagram-title" x="40" y="42">${escapeXml(scene.title)}</text>`,
@@ -74,15 +76,17 @@ export function renderDiagramSvg(
     ...scene.routes.map(renderRouteLabel),
     `  </g>`,
     renderLegend(scene),
+    renderComparisonLegend(scene),
     `</svg>`,
     "",
   ].join("\n");
 }
 
 function renderDefinitions(
-  theme: SceneTheme,
+  scene: DiagramScene,
   embeddedFontFaces: readonly SvgEmbeddedFontFace[],
 ): string {
+  const theme = scene.theme;
   validateSceneTheme(theme);
   return `  <defs>
     <style>
@@ -125,8 +129,30 @@ ${renderElementThemeStyles(theme)}
       .legend-title { fill: ${theme.canvas.foreground}; font-size: 12px; font-weight: 700; }
       .legend-text { fill: ${theme.canvas.muted}; font-size: 10px; }
       .legend-swatch { stroke-width: 1.5; }
+${renderComparisonStyles(scene)}
     </style>
   </defs>`;
+}
+
+function renderComparisonStyles(scene: DiagramScene): string {
+  if (scene.comparison === undefined) return "";
+  return scene.comparison.encoding.map((entry) => {
+    const selector = `.comparison-${entry.state}`;
+    const dash = entry.lineStyle === "dashed" ? " stroke-dasharray: 8 5;" : "";
+    return [
+      `      ${selector}.route { stroke: ${entry.color} !important; stroke-width: 3;${dash} }`,
+      `      ${selector}.route-arrow { fill: ${entry.color} !important; }`,
+      `      ${selector} .element-surface, ${selector} .boundary-surface { stroke: ${entry.color} !important; stroke-width: 4;${dash} }`,
+      `      ${selector} .element-accent { fill: ${entry.color} !important; }`,
+      `      ${selector}.comparison-revision-before { opacity: 0.72; }`,
+    ].join("\n");
+  }).join("\n") + `
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before > text,
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before > .element-content,
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before.route-label-group { display: none; }
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before .element-surface,
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before .boundary-surface { fill-opacity: 0.08; stroke-dasharray: 7 5; }
+      [data-c4ml-comparison-mode="overlay"] .comparison-revision-before.route { stroke-dasharray: 7 5; }`;
 }
 
 function renderEmbeddedFontFace(face: SvgEmbeddedFontFace): string {
@@ -163,8 +189,8 @@ function renderBoundary(node: SceneNode): string {
     (line, index) =>
       `<tspan x="${number(node.x + 14)}" dy="${index === 0 ? 0 : 17}">${escapeXml(line)}</tspan>`,
   );
-  return `    <g id="${svgSceneObjectId(node.id)}" class="boundary-node ${cssClass}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${sourceAttribute(node.sourceId)}>
-      <rect class="boundary-surface" x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}" rx="12"/>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="boundary-node ${cssClass}${comparisonClass(node.comparison)}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}"${comparisonAttributes(node.comparison)}${sourceAttribute(node.sourceId)}>
+      <rect class="boundary-surface"${comparisonPaintStyle(node.comparison, "stroke")} x="${number(node.x)}" y="${number(node.y)}" width="${number(node.width)}" height="${number(node.height)}" rx="12"/>
       <text class="boundary-title" x="${number(node.x + 14)}" y="${number(node.y + 24)}">${titleLines.join("")}</text>
       <text class="boundary-type" x="${number(node.x + 14)}" y="${number(node.y + 43)}">${escapeXml(node.typeLabel)}</text>
     </g>`;
@@ -195,7 +221,7 @@ function renderElement(node: SceneNode, shape: ShapeDefinition): string {
     descriptionY,
     15,
   );
-  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}${comparisonClass(node.comparison)}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${comparisonAttributes(node.comparison)}${sourceAttribute(node.sourceId)}>
       <g class="element-shape">${shape.primitives.map((primitive) => renderShapePrimitive(node, shape, primitive)).join("")}</g>
       <text class="element-title">${titleLines}</text>
       <text class="element-type" x="${number(textX)}" y="${number(typeY)}">${escapeXml(node.typeLabel)}</text>
@@ -231,7 +257,7 @@ function renderBuiltInPerson(
     14,
   );
 
-  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${sourceAttribute(node.sourceId)}>
+  return `    <g id="${svgSceneObjectId(node.id)}" class="element-node element-role-${node.elementRole} element-state-${state}${comparisonClass(node.comparison)}" data-c4ml-id="${escapeXml(node.referenceId)}" data-c4ml-kind="${node.kind}" data-c4ml-element-role="${node.elementRole}" data-c4ml-element-state="${state}" data-c4ml-shape="${escapeXml(shape.id)}"${comparisonAttributes(node.comparison)}${sourceAttribute(node.sourceId)}>
       <g class="element-shape">${shape.primitives.map((primitive) => renderShapePrimitive(node, shape, primitive)).join("")}</g>
       <g class="element-content element-content-person">
         <text class="element-type person-type" x="${number(textX)}" y="${number(typeY)}">${escapeXml(node.typeLabel)}</text>
@@ -253,6 +279,10 @@ function renderShapePrimitive(
       : primitive.paint === "accent"
         ? "element-accent"
         : "element-detail";
+  const comparisonStyle = comparisonPaintStyle(
+    node.comparison,
+    primitive.paint === "accent" ? "fill" : "stroke",
+  );
   switch (primitive.kind) {
     case "rectangle": {
       const box = scaledBox(node, primitive);
@@ -260,21 +290,21 @@ function renderShapePrimitive(
         primitive.cornerRadius === undefined
           ? 0
           : (primitive.cornerRadius / shape.canvas.width) * node.width;
-      return `<rect class="${className}" x="${number(box.x)}" y="${number(box.y)}" width="${number(box.width)}" height="${number(box.height)}" rx="${number(radius)}"/>`;
+      return `<rect class="${className}"${comparisonStyle} x="${number(box.x)}" y="${number(box.y)}" width="${number(box.width)}" height="${number(box.height)}" rx="${number(radius)}"/>`;
     }
     case "ellipse": {
       const center = scaledPoint(node, shape, {
         x: primitive.centerX,
         y: primitive.centerY,
       });
-      return `<ellipse class="${className}" cx="${number(center.x)}" cy="${number(center.y)}" rx="${number((primitive.radiusX / shape.canvas.width) * node.width)}" ry="${number((primitive.radiusY / shape.canvas.height) * node.height)}"/>`;
+      return `<ellipse class="${className}"${comparisonStyle} cx="${number(center.x)}" cy="${number(center.y)}" rx="${number((primitive.radiusX / shape.canvas.width) * node.width)}" ry="${number((primitive.radiusY / shape.canvas.height) * node.height)}"/>`;
     }
     case "polygon":
-      return `<polygon class="${className}" points="${primitive.points.map((point) => pointAttribute(scaledPoint(node, shape, point))).join(" ")}"/>`;
+      return `<polygon class="${className}"${comparisonStyle} points="${primitive.points.map((point) => pointAttribute(scaledPoint(node, shape, point))).join(" ")}"/>`;
     case "line": {
       const start = scaledPoint(node, shape, primitive.start);
       const end = scaledPoint(node, shape, primitive.end);
-      return `<line class="${className}" x1="${number(start.x)}" y1="${number(start.y)}" x2="${number(end.x)}" y2="${number(end.y)}"/>`;
+      return `<line class="${className}"${comparisonStyle} x1="${number(start.x)}" y1="${number(start.y)}" x2="${number(end.x)}" y2="${number(end.y)}"/>`;
     }
   }
 }
@@ -321,7 +351,7 @@ function requiredShape(
 }
 
 function renderRoutePath(route: SceneRoute): string {
-  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}" data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}" d="${routePath(route.points)}"/>`;
+  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}${comparisonClass(route.comparison)}"${comparisonPaintStyle(route.comparison, "stroke")} data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}"${comparisonAttributes(route.comparison)} d="${routePath(route.points)}"/>`;
 }
 
 function renderPort(port: ScenePort): string {
@@ -335,7 +365,7 @@ function renderRouteArrow(arrowhead: SceneArrowhead): string {
         `${index === 0 ? "M" : "L"} ${number(point.x)} ${number(point.y)}`,
     )
     .join(" ");
-  return `    <path id="${svgSceneObjectId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}" data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${svgSceneObjectId(arrowhead.routeId)}" d="${path} Z"/>`;
+  return `    <path id="${svgSceneObjectId(arrowhead.id)}" class="route-arrow${routePolicyClass(arrowhead.policy, "route-arrow")}${comparisonClass(arrowhead.comparison)}"${comparisonPaintStyle(arrowhead.comparison, "fill")} data-c4ml-id="${escapeXml(arrowhead.relationshipId)}" data-c4ml-route="${svgSceneObjectId(arrowhead.routeId)}"${comparisonAttributes(arrowhead.comparison)} d="${path} Z"/>`;
 }
 
 function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string {
@@ -351,7 +381,7 @@ function renderRouteLabel(route: SceneRoute): string {
     route.technology === undefined
       ? route.labelPoint.y + 4
       : route.labelPoint.y - 4;
-  return `    <g id="${svgSceneObjectId(`${route.id}:label`)}" data-c4ml-id="${escapeXml(route.relationshipId)}">
+  return `    <g id="${svgSceneObjectId(`${route.id}:label`)}" class="route-label-group${comparisonClass(route.comparison)}" data-c4ml-id="${escapeXml(route.relationshipId)}"${comparisonAttributes(route.comparison)}>
       <text class="route-label" x="${number(route.labelPoint.x)}" y="${number(labelY)}">${escapeXml(route.label)}</text>
       ${route.technology === undefined ? "" : `<text class="route-technology" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y + 11)}">${escapeXml(route.technology)}</text>`}
     </g>`;
@@ -362,7 +392,7 @@ function renderRouteLabelBackground(route: SceneRoute): string {
 }
 
 function renderLegend(scene: DiagramScene): string {
-  const y = scene.height - 42;
+  const y = scene.height - (scene.comparison === undefined ? 42 : 86);
   const entries = scene.legend.slice(0, 6);
   return `  <g id="diagram-legend">
     <text class="legend-title" x="40" y="${y}">Notation</text>
@@ -373,6 +403,44 @@ function renderLegend(scene: DiagramScene): string {
       })
       .join("\n    ")}
   </g>`;
+}
+
+function renderComparisonLegend(scene: DiagramScene): string {
+  if (scene.comparison === undefined) return "";
+  const y = scene.height - 28;
+  const spacing = Math.max(122, (scene.width - 152) / scene.comparison.encoding.length);
+  return `  <g id="comparison-legend" data-c4ml-comparison-mode="${scene.comparison.mode}">
+    <text class="legend-title" x="40" y="${y}">Comparison</text>
+    ${scene.comparison.encoding.map((entry, index) => {
+      const x = 124 + index * spacing;
+      return `<g class="comparison-legend-entry" data-c4ml-comparison-state="${entry.state}">
+      <title>${escapeXml(entry.description)}</title>
+      <line x1="${number(x)}" y1="${number(y - 4)}" x2="${number(x + 18)}" y2="${number(y - 4)}" stroke="${entry.color}" stroke-width="4"${entry.lineStyle === "dashed" ? ` stroke-dasharray="5 3"` : ""}/>
+      <text class="legend-text" x="${number(x + 24)}" y="${y}">${escapeXml(entry.label)}</text>
+    </g>`;
+    }).join("\n    ")}
+  </g>`;
+}
+
+function comparisonClass(mark: SceneComparisonMark | undefined): string {
+  return mark === undefined
+    ? ""
+    : ` comparison-${mark.state} comparison-revision-${mark.revision}`;
+}
+
+function comparisonAttributes(mark: SceneComparisonMark | undefined): string {
+  return mark === undefined
+    ? ""
+    : ` data-c4ml-comparison-state="${mark.state}" data-c4ml-comparison-revision="${mark.revision}"`;
+}
+
+function comparisonPaintStyle(
+  mark: SceneComparisonMark | undefined,
+  property: "fill" | "stroke",
+): string {
+  if (mark === undefined || mark.state === "unchanged") return "";
+  const color = comparisonEncoding.find(({ state }) => state === mark.state)?.color;
+  return color === undefined ? "" : ` style="${property}:${color}"`;
 }
 
 function renderLegendEntry(

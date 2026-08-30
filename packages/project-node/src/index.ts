@@ -18,6 +18,8 @@ import {
   type ArchitectureProjectInput,
 } from "@c4ml/compiler-core";
 
+export * from "./git.js";
+
 export interface LoadedProjectDocumentPath {
   readonly uri: string;
   readonly path: string;

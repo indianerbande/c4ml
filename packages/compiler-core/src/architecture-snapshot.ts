@@ -1,5 +1,7 @@
 import type { Diagnostic } from "./diagnostics.js";
 import { compareText } from "./ordering.js";
+import type { DiagramPlacementOptions } from "./placement.js";
+import type { DiagramRoutingOptions } from "./routing.js";
 import { validateArchitectureModel } from "./semantic-validation.js";
 import type {
   ArchitectureModel,
@@ -142,6 +144,7 @@ export interface SnapshotView {
   readonly title: string;
   readonly purpose: string;
   readonly scope: string;
+  readonly scopeIdentity?: CanonicalObject;
   readonly audience: readonly string[];
   readonly recommendation: string;
   readonly legend: CanonicalObject;
@@ -157,6 +160,8 @@ export interface SnapshotView {
   readonly deploymentRelationshipIds: readonly string[];
   readonly presentation?: CanonicalObject;
   readonly layout?: CanonicalObject;
+  readonly placement?: CanonicalObject;
+  readonly routing?: CanonicalObject;
 }
 
 export interface ArchitectureSnapshot {
@@ -173,6 +178,11 @@ export interface ArchitectureSnapshotResolution {
   readonly snapshot?: ArchitectureSnapshot;
 }
 
+export interface ArchitectureSnapshotOptions {
+  readonly placementByViewId?: Readonly<Record<string, DiagramPlacementOptions>> | undefined;
+  readonly routingByViewId?: Readonly<Record<string, DiagramRoutingOptions>> | undefined;
+}
+
 export class ArchitectureSnapshotError extends Error {
   constructor(
     readonly code: "C4ML-SNAPSHOT-001" | "C4ML-SNAPSHOT-002",
@@ -186,13 +196,14 @@ export class ArchitectureSnapshotError extends Error {
 export function resolveArchitectureSnapshot(
   model: ArchitectureModel,
   views: readonly ArchitectureView[],
+  options: ArchitectureSnapshotOptions = {},
 ): ArchitectureSnapshotResolution {
   const resolution = resolveArchitectureViews(model, views);
   return resolution.valid
     ? {
         valid: true,
         diagnostics: resolution.diagnostics,
-        snapshot: createArchitectureSnapshot(model, resolution),
+        snapshot: createArchitectureSnapshot(model, resolution, views, options),
       }
     : { valid: false, diagnostics: resolution.diagnostics };
 }
@@ -200,6 +211,8 @@ export function resolveArchitectureSnapshot(
 export function createArchitectureSnapshot(
   model: ArchitectureModel,
   resolution: ViewResolutionResult,
+  sourceViews?: readonly ArchitectureView[],
+  options: ArchitectureSnapshotOptions = {},
 ): ArchitectureSnapshot {
   const validation = validateArchitectureModel(model);
   if (!validation.valid || !resolution.valid) {
@@ -229,7 +242,13 @@ export function createArchitectureSnapshot(
     ...(model.deployment === undefined
       ? {}
       : { deployment: snapshotDeployment(model.deployment) }),
-    views: stableById(resolution.views).map(snapshotView),
+    views: stableById(resolution.views).map((view) =>
+      snapshotView(
+        view,
+        sourceViews?.find(({ id }) => id === view.id),
+        options,
+      ),
+    ),
   };
 }
 
@@ -336,13 +355,22 @@ function staticElementId(
     : instance.softwareSystemId;
 }
 
-function snapshotView(view: ResolvedView): SnapshotView {
+function snapshotView(
+  view: ResolvedView,
+  sourceView?: ArchitectureView,
+  options: ArchitectureSnapshotOptions = {},
+): SnapshotView {
+  const placement = snapshotPlacement(options.placementByViewId?.[view.id]);
+  const routing = snapshotRouting(options.routingByViewId?.[view.id]);
   return {
     id: view.id,
     kind: view.kind,
     title: view.title,
     purpose: view.purpose,
     scope: view.scope,
+    ...(sourceView === undefined
+      ? {}
+      : { scopeIdentity: snapshotViewScopeIdentity(sourceView) }),
     audience: [...view.audience],
     recommendation: view.recommendation,
     legend: canonicalObject(view.legend),
@@ -393,7 +421,66 @@ function snapshotView(view: ResolvedView): SnapshotView {
       ? {}
       : { presentation: canonicalObject(view.presentation) }),
     ...(view.layout === undefined ? {} : { layout: canonicalObject(view.layout) }),
+    ...(placement === undefined ? {} : { placement }),
+    ...(routing === undefined ? {} : { routing }),
   };
+}
+
+function snapshotPlacement(
+  placement: DiagramPlacementOptions | undefined,
+): CanonicalObject | undefined {
+  if ((placement?.constraints.length ?? 0) === 0) return undefined;
+  return canonicalObject({
+    constraints: stableById(placement!.constraints).map(stripSources),
+  });
+}
+
+function snapshotRouting(
+  routing: DiagramRoutingOptions | undefined,
+): CanonicalObject | undefined {
+  const hasRouting =
+    (routing?.controls?.length ?? 0) > 0 ||
+    (routing?.avoidanceRegions?.length ?? 0) > 0 ||
+    (routing?.corridors?.length ?? 0) > 0;
+  if (!hasRouting) return undefined;
+  return canonicalObject({
+    controls: [...(routing?.controls ?? [])]
+      .sort((left, right) => compareText(left.relationshipId, right.relationshipId))
+      .map(stripSources),
+    avoidanceRegions: stableById(routing?.avoidanceRegions ?? []).map(stripSources),
+    corridors: stableById(routing?.corridors ?? []).map(stripSources),
+  });
+}
+
+function stripSources(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripSources);
+  if (typeof value !== "object" || value === null) return value;
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (key !== "source" && item !== undefined) result[key] = stripSources(item);
+  }
+  return result;
+}
+
+function snapshotViewScopeIdentity(view: ArchitectureView): CanonicalObject {
+  switch (view.kind) {
+    case "code":
+      return { componentId: view.componentId };
+    case "component":
+      return { containerId: view.containerId };
+    case "container":
+    case "system-context":
+      return { softwareSystemId: view.softwareSystemId };
+    case "deployment":
+      return {
+        environmentId: view.environmentId,
+        softwareSystemIds: stableUnique(view.softwareSystemIds),
+      };
+    case "dynamic":
+      return { scenario: view.scenario };
+    case "system-landscape":
+      return { scope: view.scope };
+  }
 }
 
 function snapshotGroupMember(member: ResolvedVisualGroupMember): SnapshotGroupMember {

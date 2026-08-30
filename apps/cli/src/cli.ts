@@ -2,11 +2,28 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  ArchitectureQueryError,
+  compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
+  createArchitectureComparisonScene,
+  createDiagramScene,
+  createTemporaryArchitectureView,
+  deriveArchitectureImpacts,
+  evaluateBuiltInArchitectureQuality,
+  executeArchitectureQuery,
+  renderDiagramSvg,
   resolveArchitectureSnapshot,
+  routeDiagram,
+  stabilizeLayoutAgainstBaseline,
   type ArchitectureView,
+  type ArchitectureGraphDirection,
+  type ArchitectureGraphItemKey,
+  type ArchitectureQuery,
   type Diagnostic,
+  type DiagramPlacementOptions,
+  type PreparedDiagram,
+  type SceneComparisonMode,
   type SvgEmbeddedFontFace,
 } from "@c4ml/compiler-core";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
@@ -21,7 +38,12 @@ import {
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import { ResvgPngRenderer } from "@c4ml/render-resvg";
 
-import { loadArchitectureProject } from "@c4ml/project-node";
+import {
+  loadArchitectureProject,
+  loadArchitectureProjectAtGitRevision,
+  type GitProjectLoadResult,
+  type ProjectLoadResult,
+} from "@c4ml/project-node";
 
 export const cliVersion = "0.0.0" as const;
 
@@ -54,6 +76,37 @@ interface AnalyzeCommand {
   readonly diagnostics: DiagnosticFormat;
 }
 
+interface QueryCommand {
+  readonly kind: "query";
+  readonly file: string;
+  readonly diagnostics: DiagnosticFormat;
+  readonly queryKind:
+    | "containment"
+    | "deployment"
+    | "downstream"
+    | "path"
+    | "upstream"
+    | "view-coverage";
+  readonly subjectKey: ArchitectureGraphItemKey;
+  readonly targetKey?: ArchitectureGraphItemKey;
+  readonly direction?: ArchitectureGraphDirection;
+  readonly scope?: "ancestors" | "both" | "descendants";
+}
+
+interface DiffCommand {
+  readonly kind: "diff";
+  readonly beforeFile: string;
+  readonly afterFile: string;
+  readonly beforeRef: string;
+  readonly afterRef: string;
+  readonly diagnostics: DiagnosticFormat;
+  readonly comparison?: SceneComparisonMode;
+  readonly formats: readonly RenderFormat[];
+  readonly output: string;
+  readonly scale: number;
+  readonly view?: string;
+}
+
 interface RenderCommand {
   readonly kind: "render";
   readonly file: string;
@@ -65,13 +118,26 @@ interface RenderCommand {
 }
 
 type CliCommand =
-  AnalyzeCommand | CheckCommand | RenderCommand | { readonly kind: "version" };
+  | AnalyzeCommand
+  | CheckCommand
+  | DiffCommand
+  | QueryCommand
+  | RenderCommand
+  | { readonly kind: "version" };
 
 const usage = `C4ML experimental CLI
 
 Usage:
   c4ml analyze <file-or-project> [--diagnostics human|json]
   c4ml check <file-or-project> [--diagnostics human|json]
+  c4ml query <file-or-project> --kind upstream|downstream|path|containment|deployment|view-coverage
+             --subject <kind:id> [--target <kind:id>] [--direction upstream|downstream]
+             [--scope ancestors|descendants|both] [--diagnostics human|json]
+  c4ml diff <before-file-or-project> <after-file-or-project> [--diagnostics human|json]
+            [--comparison before|after|overlay|change-only --view <id>]
+            [--before-ref <commit-or-branch|working>]
+            [--after-ref <commit-or-branch|working>]
+            [--format svg|png|svg,png] [--output <directory>] [--scale <number>]
   c4ml render <file-or-project> (--view <id> | --all) [--format svg|png|svg,png]
               [--output <directory>] [--scale <number>]
               [--diagnostics human|json]
@@ -92,6 +158,9 @@ export async function runCli(
       `C4ML CLI ${cliVersion} (language ${c4mlDraftLanguageVersion})\n`,
     );
     return cliExitCode.success;
+  }
+  if (parsedCommand.kind === "diff") {
+    return runDiffCommand(parsedCommand, io);
   }
 
   const sourcePath = resolve(io.cwd, parsedCommand.file);
@@ -135,6 +204,10 @@ export async function runCli(
     const snapshot = resolveArchitectureSnapshot(
       parsed.model,
       parsed.views,
+      {
+        placementByViewId: parsed.placementByViewId,
+        routingByViewId: parsed.routingByViewId,
+      },
     ).snapshot!;
     reportSuccess(
       {
@@ -142,12 +215,63 @@ export async function runCli(
         file: sourcePath,
         languageVersion: parsed.languageVersion,
         valid: true,
-        report: createArchitectureAnalysisReport(snapshot),
+        report: createArchitectureAnalysisReport(
+          snapshot,
+          evaluateBuiltInArchitectureQuality({
+            model: parsed.model,
+            views: parsed.views,
+            snapshot,
+            diagnostics: parsed.diagnostics,
+          }),
+        ),
       },
       parsedCommand.diagnostics,
       io,
     );
     return cliExitCode.success;
+  }
+  if (parsedCommand.kind === "query") {
+    const snapshot = resolveArchitectureSnapshot(
+      parsed.model,
+      parsed.views,
+      {
+        placementByViewId: parsed.placementByViewId,
+        routingByViewId: parsed.routingByViewId,
+      },
+    ).snapshot!;
+    try {
+      const query = cliArchitectureQuery(parsedCommand);
+      const result = executeArchitectureQuery(snapshot, query);
+      const focusView = createTemporaryArchitectureView(result, {
+        id: `focus:${query.id}`,
+        title: `${query.kind} focus for ${query.subjectKey}`,
+      });
+      reportSuccess(
+        {
+          command: "query",
+          file: sourcePath,
+          languageVersion: parsed.languageVersion,
+          valid: true,
+          query,
+          result,
+          focusView,
+        },
+        parsedCommand.diagnostics,
+        io,
+      );
+      return cliExitCode.success;
+    } catch (error: unknown) {
+      if (error instanceof ArchitectureQueryError) {
+        reportCliFailure(
+          error.code,
+          error.message,
+          parsedCommand.diagnostics,
+          io,
+        );
+        return cliExitCode.source;
+      }
+      throw error;
+    }
   }
 
   const selectedViews = selectViews(parsed.views, parsedCommand.view);
@@ -278,8 +402,17 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   if (command === "version" && rest.length === 0) {
     return { kind: "version" };
   }
-  if (command !== "analyze" && command !== "check" && command !== "render") {
-    return "Expected analyze, check, render, or version.";
+  if (
+    command !== "analyze" &&
+    command !== "check" &&
+    command !== "diff" &&
+    command !== "query" &&
+    command !== "render"
+  ) {
+    return "Expected analyze, check, diff, query, render, or version.";
+  }
+  if (command === "diff") {
+    return parseDiffCommand(rest);
   }
   const file = rest[0];
   if (file === undefined || file.startsWith("--")) {
@@ -314,6 +447,15 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   const allowed =
     command === "analyze" || command === "check"
       ? new Set(["--diagnostics"])
+      : command === "query"
+        ? new Set([
+            "--diagnostics",
+            "--direction",
+            "--kind",
+            "--scope",
+            "--subject",
+            "--target",
+          ])
       : new Set(["--diagnostics", "--format", "--output", "--scale", "--view"]);
   for (const option of options.keys()) {
     if (!allowed.has(option)) {
@@ -328,6 +470,10 @@ function parseCommand(args: readonly string[]): CliCommand | string {
     return typeof diagnostics === "string"
       ? diagnostics
       : { kind: command, file, diagnostics: diagnostics.value };
+  }
+  if (command === "query") {
+    if (flags.size > 0) return "--all is available only for render.";
+    return parseQueryCommand(file, options);
   }
 
   const hasAll = flags.has("--all");
@@ -356,6 +502,425 @@ function parseCommand(args: readonly string[]): CliCommand | string {
     scale,
     view: hasAll ? "all" : view!,
   };
+}
+
+function parseQueryCommand(
+  file: string,
+  options: ReadonlyMap<string, string>,
+): QueryCommand | string {
+  const diagnostics = diagnosticFormat(options.get("--diagnostics"));
+  if (typeof diagnostics === "string") return diagnostics;
+  const queryKind = options.get("--kind");
+  if (
+    queryKind !== "containment" &&
+    queryKind !== "deployment" &&
+    queryKind !== "downstream" &&
+    queryKind !== "path" &&
+    queryKind !== "upstream" &&
+    queryKind !== "view-coverage"
+  ) {
+    return "Query --kind must be upstream, downstream, path, containment, deployment, or view-coverage.";
+  }
+  const subjectKey = parseArchitectureGraphItemKey(options.get("--subject"));
+  if (typeof subjectKey === "string") return subjectKey;
+  const target = options.get("--target");
+  const targetKey = target === undefined
+    ? undefined
+    : parseArchitectureGraphItemKey(target);
+  if (typeof targetKey === "string") return targetKey;
+  if (queryKind === "path" && targetKey === undefined) {
+    return "Path queries require --target <kind:id>.";
+  }
+  if (queryKind !== "path" && targetKey !== undefined) {
+    return "--target is available only for path queries.";
+  }
+  const direction = options.get("--direction");
+  if (
+    direction !== undefined &&
+    direction !== "downstream" &&
+    direction !== "upstream"
+  ) {
+    return "--direction must be upstream or downstream.";
+  }
+  if (queryKind !== "path" && direction !== undefined) {
+    return "--direction is available only for path queries.";
+  }
+  const scope = options.get("--scope");
+  if (
+    scope !== undefined &&
+    scope !== "ancestors" &&
+    scope !== "both" &&
+    scope !== "descendants"
+  ) {
+    return "--scope must be ancestors, descendants, or both.";
+  }
+  if (queryKind !== "containment" && scope !== undefined) {
+    return "--scope is available only for containment queries.";
+  }
+  return {
+    kind: "query",
+    file,
+    diagnostics: diagnostics.value,
+    queryKind,
+    subjectKey: subjectKey.value,
+    ...(targetKey === undefined ? {} : { targetKey: targetKey.value }),
+    ...(direction === undefined ? {} : { direction }),
+    ...(scope === undefined ? {} : { scope }),
+  };
+}
+
+function parseArchitectureGraphItemKey(
+  value: string | undefined,
+): { readonly value: ArchitectureGraphItemKey } | string {
+  if (value === undefined) return "Query requires --subject <kind:id>.";
+  if (
+    !/^(deployment-environment|deployment-instance|deployment-node|deployment-relationship|element|group|infrastructure-node|interaction|relationship|view):[^:]+$/.test(
+      value,
+    )
+  ) {
+    return `Invalid architecture identity "${value}"; expected kind:id.`;
+  }
+  return { value: value as ArchitectureGraphItemKey };
+}
+
+function cliArchitectureQuery(command: QueryCommand): ArchitectureQuery {
+  const id = [
+    "cli-query",
+    command.queryKind,
+    command.subjectKey,
+    command.targetKey,
+    command.direction,
+    command.scope,
+  ].filter((value) => value !== undefined).join(":");
+  switch (command.queryKind) {
+    case "path":
+      return {
+        id,
+        kind: "path",
+        subjectKey: command.subjectKey,
+        targetKey: command.targetKey!,
+        ...(command.direction === undefined ? {} : { direction: command.direction }),
+      };
+    case "containment":
+      return {
+        id,
+        kind: "containment",
+        subjectKey: command.subjectKey,
+        ...(command.scope === undefined ? {} : { scope: command.scope }),
+      };
+    default:
+      return { id, kind: command.queryKind, subjectKey: command.subjectKey };
+  }
+}
+
+function parseDiffCommand(rest: readonly string[]): DiffCommand | string {
+  const beforeFile = rest[0];
+  const second = rest[1];
+  const hasAfterFile = second !== undefined && !second.startsWith("--");
+  if (beforeFile === undefined || beforeFile.startsWith("--")) {
+    return "The diff command requires a before source or project.";
+  }
+  const afterFile = hasAfterFile ? second! : beforeFile;
+  const options = new Map<string, string>();
+  for (let index = hasAfterFile ? 2 : 1; index < rest.length; index += 1) {
+    const option = rest[index]!;
+    if (!["--after-ref", "--before-ref", "--comparison", "--diagnostics", "--format", "--output", "--scale", "--view"].includes(option)) {
+      return `Unknown option ${option} for diff.`;
+    }
+    if (options.has(option)) return `${option} may be declared only once.`;
+    const value = rest[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      return `${option} requires a value.`;
+    }
+    options.set(option, value);
+    index += 1;
+  }
+  const diagnostics = diagnosticFormat(options.get("--diagnostics"));
+  const comparison = comparisonMode(options.get("--comparison"));
+  if (typeof comparison === "string") return comparison;
+  const formats = renderFormats(options.get("--format"));
+  if (typeof formats === "string") return formats;
+  const scale = Number(options.get("--scale") ?? "1");
+  if (!Number.isFinite(scale) || scale <= 0) {
+    return "--scale must be a finite number greater than zero.";
+  }
+  const view = options.get("--view");
+  if ((comparison.value === undefined) !== (view === undefined)) {
+    return "Visual diff requires both --comparison <mode> and --view <id>.";
+  }
+  return typeof diagnostics === "string"
+    ? diagnostics
+    : {
+        kind: "diff",
+        beforeFile,
+        afterFile,
+        beforeRef: options.get("--before-ref") ?? "working",
+        afterRef: options.get("--after-ref") ?? "working",
+        diagnostics: diagnostics.value,
+        ...(comparison.value === undefined ? {} : { comparison: comparison.value }),
+        formats,
+        output: options.get("--output") ?? "build/comparisons",
+        scale,
+        ...(view === undefined ? {} : { view }),
+      };
+}
+
+function comparisonMode(
+  value: string | undefined,
+): { readonly value: SceneComparisonMode | undefined } | string {
+  if (
+    value === undefined ||
+    value === "before" ||
+    value === "after" ||
+    value === "overlay" ||
+    value === "change-only"
+  ) {
+    return { value };
+  }
+  return "--comparison must be before, after, overlay, or change-only.";
+}
+
+async function runDiffCommand(
+  command: DiffCommand,
+  io: CliIo,
+): Promise<number> {
+  const beforePath = resolve(io.cwd, command.beforeFile);
+  const afterPath = resolve(io.cwd, command.afterFile);
+  const beforeLoaded = await loadComparisonProject(beforePath, command.beforeRef);
+  if (!beforeLoaded.valid) {
+    reportCliFailure(
+      cliProjectFailureCode(beforeLoaded.code),
+      beforeLoaded.message,
+      command.diagnostics,
+      io,
+    );
+    return beforeLoaded.classification === "source"
+      ? cliExitCode.source
+      : cliExitCode.environment;
+  }
+  const afterLoaded = await loadComparisonProject(afterPath, command.afterRef);
+  if (!afterLoaded.valid) {
+    reportCliFailure(
+      cliProjectFailureCode(afterLoaded.code),
+      afterLoaded.message,
+      command.diagnostics,
+      io,
+    );
+    return afterLoaded.classification === "source"
+      ? cliExitCode.source
+      : cliExitCode.environment;
+  }
+  const before = await parseC4mlProjectDraft(beforeLoaded.project);
+  if (!before.valid || before.model === undefined || before.views === undefined) {
+    reportDiagnostics(before.diagnostics, command.diagnostics, io);
+    return cliExitCode.source;
+  }
+  const after = await parseC4mlProjectDraft(afterLoaded.project);
+  if (!after.valid || after.model === undefined || after.views === undefined) {
+    reportDiagnostics(after.diagnostics, command.diagnostics, io);
+    return cliExitCode.source;
+  }
+  const beforeSnapshot = resolveArchitectureSnapshot(before.model, before.views, {
+    placementByViewId: before.placementByViewId,
+    routingByViewId: before.routingByViewId,
+  }).snapshot!;
+  const afterSnapshot = resolveArchitectureSnapshot(after.model, after.views, {
+    placementByViewId: after.placementByViewId,
+    routingByViewId: after.routingByViewId,
+  }).snapshot!;
+  const difference = compareArchitectureSnapshots(beforeSnapshot, afterSnapshot);
+  const impacts = deriveArchitectureImpacts(beforeSnapshot, afterSnapshot, difference);
+  let comparisonArtifacts: string[] | undefined;
+  let stability: ReturnType<typeof stabilizeLayoutAgainstBaseline>["decisions"] | undefined;
+  if (command.comparison !== undefined && command.view !== undefined) {
+    const beforeView = before.views.find(({ id }) => id === command.view);
+    const afterView = after.views.find(({ id }) => id === command.view);
+    if (beforeView === undefined || afterView === undefined || beforeView.kind !== afterView.kind) {
+      reportCliFailure(
+        "C4ML-CLI-DIFF-001",
+        `Visual comparison requires stable view "${command.view}" with the same kind in both states.`,
+        command.diagnostics,
+        io,
+      );
+      return cliExitCode.source;
+    }
+    try {
+      const embeddedFontFaces = await loadIbmPlexSansSvgFontFaces();
+      const beforeCompiled = await compileArchitectureDiagram({
+        model: before.model,
+        view: beforeView,
+        layoutAdapter: createBundledElkLayoutAdapter(),
+        ...(before.placementByViewId?.[beforeView.id] === undefined
+          ? {}
+          : { placement: before.placementByViewId[beforeView.id] }),
+        ...(before.routingByViewId?.[beforeView.id] === undefined
+          ? {}
+          : { routing: before.routingByViewId[beforeView.id] }),
+        scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+        svg: { embeddedFontFaces },
+      });
+      const afterCompiled = await compileArchitectureDiagram({
+        model: after.model,
+        view: afterView,
+        layoutAdapter: createBundledElkLayoutAdapter(),
+        ...(after.placementByViewId?.[afterView.id] === undefined
+          ? {}
+          : { placement: after.placementByViewId[afterView.id] }),
+        ...(after.routingByViewId?.[afterView.id] === undefined
+          ? {}
+          : { routing: after.routingByViewId[afterView.id] }),
+        scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+        svg: { embeddedFontFaces },
+      });
+      if (
+        !beforeCompiled.valid || beforeCompiled.scene === undefined ||
+        beforeCompiled.layout === undefined ||
+        !afterCompiled.valid || afterCompiled.preparedDiagram === undefined ||
+        afterCompiled.layout === undefined
+      ) {
+        reportDiagnostics(
+          [...beforeCompiled.diagnostics, ...afterCompiled.diagnostics],
+          command.diagnostics,
+          io,
+        );
+        return cliExitCode.compilation;
+      }
+      const stabilized = stabilizeLayoutAgainstBaseline(
+        afterCompiled.preparedDiagram,
+        beforeCompiled.layout,
+        afterCompiled.layout,
+        {
+          fixedNodeIds: hardPlacementNodeIds(
+            afterCompiled.preparedDiagram,
+            after.placementByViewId?.[afterView.id],
+          ),
+        },
+      );
+      stability = stabilized.decisions;
+      const stabilizedRoutes = routeDiagram(
+        afterCompiled.preparedDiagram,
+        stabilized.layout,
+        after.routingByViewId?.[afterView.id],
+      );
+      const stabilizedAfterScene = createDiagramScene(
+        afterCompiled.preparedDiagram,
+        stabilized.layout,
+        stabilizedRoutes,
+        { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+      );
+      const comparisonScene = createArchitectureComparisonScene(
+        beforeCompiled.scene,
+        stabilizedAfterScene,
+        difference,
+        impacts,
+        command.comparison,
+      );
+      const svg = renderDiagramSvg(comparisonScene, { embeddedFontFaces });
+      const outputDirectory = resolve(io.cwd, command.output);
+      comparisonArtifacts = [];
+      await mkdir(outputDirectory, { recursive: true });
+      if (command.formats.includes("svg")) {
+        const svgPath = resolve(outputDirectory, `${command.view}.${command.comparison}.svg`);
+        await writeFile(svgPath, svg);
+        comparisonArtifacts.push(svgPath);
+      }
+      if (command.formats.includes("png")) {
+        const pngPath = resolve(outputDirectory, `${command.view}.${command.comparison}.png`);
+        const png = await new ResvgPngRenderer().render(svg, {
+          scale: command.scale,
+          fontFiles: ibmPlexSansTtfFontFiles,
+          loadSystemFonts: false,
+          defaultFontFamily: ibmPlexSansFamily,
+          background: comparisonScene.theme.canvas.background,
+        });
+        await writeFile(pngPath, png.bytes);
+        comparisonArtifacts.push(pngPath);
+      }
+    } catch (error: unknown) {
+      reportCliFailure(
+        "C4ML-CLI-DIFF-002",
+        `Cannot render architecture comparison: ${errorMessage(error)}`,
+        command.diagnostics,
+        io,
+      );
+      return cliExitCode.compilation;
+    }
+  }
+  reportSuccess(
+    {
+      command: "diff",
+      beforeFile: beforePath,
+      afterFile: afterPath,
+      beforeRef: comparisonRevision(beforeLoaded, command.beforeRef),
+      afterRef: comparisonRevision(afterLoaded, command.afterRef),
+      valid: true,
+      difference,
+      impacts,
+      ...(comparisonArtifacts === undefined
+        ? {}
+        : {
+            comparisonArtifact: comparisonArtifacts[0],
+            comparisonArtifacts,
+          }),
+      ...(stability === undefined ? {} : { stability }),
+    },
+    command.diagnostics,
+    io,
+  );
+  return cliExitCode.success;
+}
+
+type ComparisonProjectLoadResult = ProjectLoadResult | GitProjectLoadResult;
+
+async function loadComparisonProject(
+  path: string,
+  reference: string,
+): Promise<ComparisonProjectLoadResult> {
+  return reference === "working"
+    ? loadArchitectureProject(path)
+    : loadArchitectureProjectAtGitRevision(path, reference);
+}
+
+function comparisonRevision(
+  result: Extract<ComparisonProjectLoadResult, { readonly valid: true }>,
+  requestedRef: string,
+): Readonly<Record<string, string>> {
+  return "revision" in result
+    ? {
+        kind: "git",
+        requestedRef: result.revision.requestedRef,
+        commit: result.revision.commit,
+      }
+    : { kind: "working", requestedRef };
+}
+
+function hardPlacementNodeIds(
+  diagram: PreparedDiagram,
+  placement: DiagramPlacementOptions | undefined,
+): string[] {
+  const references = new Set<string>();
+  for (const constraint of placement?.constraints ?? []) {
+    if (constraint.strength !== "hard") continue;
+    switch (constraint.kind) {
+      case "adjust":
+      case "pin":
+        references.add(constraint.targetId);
+        break;
+      case "alignment":
+      case "relative":
+        references.add(constraint.subjectId);
+        references.add(constraint.targetId);
+        break;
+      case "align":
+      case "distribute":
+        constraint.nodeIds.forEach((id) => references.add(id));
+        break;
+    }
+  }
+  return diagram.nodes
+    .filter(({ referenceId }) => references.has(referenceId))
+    .map(({ id }) => id)
+    .sort();
 }
 
 function diagnosticFormat(
@@ -438,7 +1003,17 @@ function reportSuccess(
         readonly relationships: readonly unknown[];
         readonly views: readonly unknown[];
       };
-      readonly findings: readonly unknown[];
+      readonly findings: readonly {
+        readonly ruleId: string;
+        readonly severity: string;
+        readonly message: string;
+        readonly sourceLocations: readonly {
+          readonly file: string;
+          readonly range: {
+            readonly start: { readonly line: number; readonly column: number };
+          };
+        }[];
+      }[];
     };
     io.stdout(
       `Analyzed C4ML: ${report.snapshot.elements.length} element(s), ` +
@@ -446,6 +1021,52 @@ function reportSuccess(
         `${report.snapshot.views.length} view(s), ` +
         `${report.findings.length} finding(s)\n`,
     );
+    for (const finding of report.findings) {
+      const source = finding.sourceLocations[0];
+      io.stdout(
+        `${source === undefined
+          ? "<architecture>"
+          : `${source.file}:${source.range.start.line + 1}:${source.range.start.column + 1}`} ` +
+          `${finding.severity} ${finding.ruleId}: ${finding.message}\n`,
+      );
+    }
+  } else if (value.command === "diff") {
+    const difference = value.difference as {
+      readonly summary: {
+        readonly total: number;
+        readonly architecture: number;
+        readonly presentation: number;
+        readonly layout: number;
+      };
+    };
+    const impacts = value.impacts as { readonly impacts: readonly unknown[] };
+    const comparisonArtifact = value.comparisonArtifact as string | undefined;
+    io.stdout(
+      `Compared C4ML: ${difference.summary.total} change(s), ` +
+        `${difference.summary.architecture} architecture, ` +
+        `${difference.summary.presentation} presentation, ` +
+        `${difference.summary.layout} layout, ` +
+        `${impacts.impacts.length} impact set(s)` +
+      (comparisonArtifact === undefined ? "\n" : `; wrote ${comparisonArtifact}\n`),
+    );
+  } else if (value.command === "query") {
+    const query = value.query as ArchitectureQuery;
+    const result = value.result as {
+      readonly itemKeys: readonly string[];
+      readonly relationshipKeys: readonly string[];
+      readonly evidence: readonly {
+        readonly subjectKey: string;
+        readonly statement: string;
+      }[];
+    };
+    io.stdout(
+      `Queried C4ML: ${query.kind} from ${query.subjectKey}; ` +
+        `${result.itemKeys.length} item(s), ` +
+        `${result.relationshipKeys.length} relationship(s)\n`,
+    );
+    for (const evidence of result.evidence) {
+      io.stdout(`${evidence.subjectKey}: ${evidence.statement}\n`);
+    }
   } else {
     const artifacts = value.artifacts as readonly string[];
     io.stdout(

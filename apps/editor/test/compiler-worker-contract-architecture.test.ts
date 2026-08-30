@@ -10,6 +10,7 @@ describe("compiler-worker contract architecture", () => {
       "compiler-worker.compile.protocol.ts",
       "compiler-worker.language.protocol.ts",
       "compiler-worker.authoring.protocol.ts",
+      "compiler-worker.comparison.protocol.ts",
     ];
     const sources = await Promise.all(
       domainFiles.map((file) =>
@@ -32,6 +33,7 @@ describe("compiler-worker contract architecture", () => {
     expect(source).toContain("./compiler-worker.compile.protocol.js");
     expect(source).toContain("./compiler-worker.language.protocol.js");
     expect(source).toContain("./compiler-worker.authoring.protocol.js");
+    expect(source).toContain("./compiler-worker.comparison.protocol.js");
     expect(source.split("\n").length).toBeLessThan(100);
   });
 });

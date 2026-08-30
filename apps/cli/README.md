@@ -9,6 +9,8 @@ From the repository root:
 ```shell
 pnpm run c4ml -- version
 pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --diagnostics json
 pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --view arrangement-engine-code \
   --format svg,png \
@@ -18,6 +20,8 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
 Implemented commands and options:
 
 - `check <file>` validates without creating output;
+- `diff <before> <after>` compares two valid files or projects by stable
+  architecture identity;
 - `render <file> --view <id>` renders one declared view;
 - `render <file> --all` renders every declared view;
 - `--format svg`, `png`, or `svg,png` selects output formats;

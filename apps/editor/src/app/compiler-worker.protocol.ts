@@ -1,4 +1,5 @@
 import { isAnalysisWorkerRequest, isAnalysisWorkerResponse, type AnalysisWorkerRequest, type AnalysisWorkerResponse } from "./compiler-worker.analysis.protocol.js";
+import { isComparisonWorkerRequest, isComparisonWorkerResponse, type ComparisonWorkerRequest, type ComparisonWorkerResponse } from "./compiler-worker.comparison.protocol.js";
 import {
   isPreviewProjectChangeWorkerRequest,
   isPreviewProjectChangeWorkerResponse,
@@ -38,11 +39,9 @@ import {
   type HighlightWorkerResponse,
 } from "./compiler-worker.language.protocol.js";
 import { isInspectSemanticAuthoringWorkerRequest, isInspectSemanticAuthoringWorkerResponse, isPreviewSemanticChangeWorkerRequest, isPreviewSemanticChangeWorkerResponse, type InspectSemanticAuthoringWorkerRequest, type InspectSemanticAuthoringWorkerResponse, type PreviewSemanticChangeWorkerRequest, type PreviewSemanticChangeWorkerResponse } from "./compiler-worker.semantic-authoring.protocol.js";
-export * from "./compiler-worker.authoring.protocol.js"; export * from "./compiler-worker.analysis.protocol.js";
-export * from "./compiler-worker.compile.protocol.js"; export * from "./compiler-worker.language.protocol.js";
+export * from "./compiler-worker.authoring.protocol.js"; export * from "./compiler-worker.analysis.protocol.js"; export * from "./compiler-worker.comparison.protocol.js"; export * from "./compiler-worker.compile.protocol.js"; export * from "./compiler-worker.language.protocol.js";
 export * from "./compiler-worker.semantic-authoring.protocol.js"; export * from "./compiler-worker.shared.js";
-export type CompilerWorkerInbound =
-  | AnalysisWorkerRequest
+export type CompilerWorkerInbound = AnalysisWorkerRequest | ComparisonWorkerRequest
   | CompilerWorkerRequest
   | CompletionWorkerRequest
   | HelpWorkerRequest
@@ -54,7 +53,7 @@ export type CompilerWorkerInbound =
   | PreviewSemanticChangeWorkerRequest
   | WizardWorkerRequest;
 export type CompilerWorkerOutbound =
-  | AnalysisWorkerResponse
+  | AnalysisWorkerResponse | ComparisonWorkerResponse
   | CompilerWorkerResponse
   | CompletionWorkerResponse
   | HelpWorkerResponse
@@ -68,6 +67,7 @@ export type CompilerWorkerOutbound =
 export function isCompilerWorkerInbound(value: unknown): value is CompilerWorkerInbound {
   return (
     isAnalysisWorkerRequest(value) ||
+    isComparisonWorkerRequest(value) ||
     isCompilerWorkerRequest(value) ||
     isCompletionWorkerRequest(value) ||
     isHelpWorkerRequest(value) ||
@@ -83,6 +83,7 @@ export function isCompilerWorkerInbound(value: unknown): value is CompilerWorker
 export function isCompilerWorkerOutbound(value: unknown): value is CompilerWorkerOutbound {
   return (
     isAnalysisWorkerResponse(value) ||
+    isComparisonWorkerResponse(value) ||
     isCompilerWorkerResponse(value) ||
     isCompletionWorkerResponse(value) ||
     isHelpWorkerResponse(value) ||

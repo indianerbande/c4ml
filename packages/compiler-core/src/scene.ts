@@ -33,6 +33,34 @@ export interface SceneTextBlock {
   readonly lines: readonly string[];
 }
 
+export type SceneComparisonMode = "after" | "before" | "change-only" | "overlay";
+export type SceneComparisonState =
+  | "added"
+  | "impacted"
+  | "modified"
+  | "moved"
+  | "removed"
+  | "unchanged";
+export type SceneComparisonRevision = "after" | "before" | "shared";
+
+export interface SceneComparisonMark {
+  readonly state: SceneComparisonState;
+  readonly revision: SceneComparisonRevision;
+}
+
+export interface SceneComparisonEncodingEntry {
+  readonly state: Exclude<SceneComparisonState, "unchanged">;
+  readonly label: string;
+  readonly description: string;
+  readonly color: string;
+  readonly lineStyle: "dashed" | "solid";
+}
+
+export interface SceneComparisonMetadata {
+  readonly mode: SceneComparisonMode;
+  readonly encoding: readonly SceneComparisonEncodingEntry[];
+}
+
 export interface SceneNode {
   readonly id: string;
   readonly referenceId: string;
@@ -50,6 +78,7 @@ export interface SceneNode {
   readonly external: boolean;
   readonly parentId?: string;
   readonly sourceId?: string;
+  readonly comparison?: SceneComparisonMark;
 }
 
 export interface SceneRoute {
@@ -71,6 +100,7 @@ export interface SceneRoute {
   readonly waypoints: readonly EffectiveRouteWaypoint[];
   readonly lockedSegments: readonly EffectiveLockedSegment[];
   readonly avoidanceRegions: readonly EffectiveAvoidanceRegion[];
+  readonly comparison?: SceneComparisonMark;
 }
 
 export interface SceneBounds extends Point {
@@ -85,6 +115,7 @@ export interface ScenePort {
   readonly nodeId: string;
   readonly side: CardinalPortSide;
   readonly point: Point;
+  readonly comparison?: SceneComparisonMark;
 }
 
 export interface SceneArrowhead {
@@ -93,6 +124,7 @@ export interface SceneArrowhead {
   readonly routeId: string;
   readonly policy: RoutePolicy;
   readonly points: readonly Point[];
+  readonly comparison?: SceneComparisonMark;
 }
 
 export interface DiagramScene {
@@ -111,6 +143,7 @@ export interface DiagramScene {
   readonly routes: readonly SceneRoute[];
   readonly arrowheads: readonly SceneArrowhead[];
   readonly legend: readonly LegendEntry[];
+  readonly comparison?: SceneComparisonMetadata;
 }
 
 export interface SceneOptions {

@@ -28,18 +28,38 @@ export interface ArchitectureGraphTraversal {
   readonly relationshipKeys: readonly ArchitectureGraphItemKey[];
 }
 
+export interface ArchitectureGraphPath {
+  readonly startKey: ArchitectureGraphItemKey;
+  readonly endKey: ArchitectureGraphItemKey;
+  readonly direction: ArchitectureGraphDirection;
+  readonly itemKeys: readonly ArchitectureGraphItemKey[];
+  readonly relationshipKeys: readonly ArchitectureGraphItemKey[];
+}
+
+export interface ArchitectureGraphRelationshipEndpoints {
+  readonly sourceKey: ArchitectureGraphItemKey;
+  readonly targetKey: ArchitectureGraphItemKey;
+}
+
 export interface ArchitectureGraphIndex {
   readonly itemKeys: readonly ArchitectureGraphItemKey[];
   parentOf(itemKey: ArchitectureGraphItemKey): ArchitectureGraphItemKey | undefined;
   childrenOf(itemKey: ArchitectureGraphItemKey): readonly ArchitectureGraphItemKey[];
   incomingRelationshipKeys(itemKey: ArchitectureGraphItemKey): readonly ArchitectureGraphItemKey[];
   outgoingRelationshipKeys(itemKey: ArchitectureGraphItemKey): readonly ArchitectureGraphItemKey[];
+  relationshipEndpoints(
+    relationshipKey: ArchitectureGraphItemKey,
+  ): ArchitectureGraphRelationshipEndpoints | undefined;
   instancesOf(staticElementId: string): readonly ArchitectureGraphItemKey[];
   viewsContaining(itemKey: ArchitectureGraphItemKey): readonly ArchitectureGraphItemKey[];
   traverse(
     startKey: ArchitectureGraphItemKey,
     direction: ArchitectureGraphDirection,
   ): ArchitectureGraphTraversal;
+  tracePaths(
+    startKey: ArchitectureGraphItemKey,
+    direction: ArchitectureGraphDirection,
+  ): readonly ArchitectureGraphPath[];
 }
 
 export function architectureGraphItemKey(
@@ -195,10 +215,21 @@ export function createArchitectureGraphIndex(
     childrenOf: (itemKey) => stable(childrenByKey.get(itemKey)),
     incomingRelationshipKeys: (itemKey) => stable(incomingByKey.get(itemKey)),
     outgoingRelationshipKeys: (itemKey) => stable(outgoingByKey.get(itemKey)),
+    relationshipEndpoints: (relationshipKey) => {
+      const relationship = relationshipByKey.get(relationshipKey);
+      return relationship === undefined
+        ? undefined
+        : {
+            sourceKey: relationship.sourceKey,
+            targetKey: relationship.targetKey,
+          };
+    },
     instancesOf: (staticElementId) => stable(instancesByStaticId.get(staticElementId)),
     viewsContaining: (itemKey) => stable(viewsByItemKey.get(itemKey)),
     traverse: (startKey, direction) =>
       traverse(startKey, direction, relationshipByKey, incomingByKey, outgoingByKey),
+    tracePaths: (startKey, direction) =>
+      tracePaths(startKey, direction, relationshipByKey, incomingByKey, outgoingByKey),
   };
 
   function addViewMembership(
@@ -208,6 +239,57 @@ export function createArchitectureGraphIndex(
     itemKeys.add(itemKey);
     addToSet(viewsByItemKey, itemKey, viewKey);
   }
+}
+
+function tracePaths(
+  startKey: ArchitectureGraphItemKey,
+  direction: ArchitectureGraphDirection,
+  relationshipByKey: ReadonlyMap<ArchitectureGraphItemKey, GraphRelationship>,
+  incomingByKey: ReadonlyMap<ArchitectureGraphItemKey, ReadonlySet<ArchitectureGraphItemKey>>,
+  outgoingByKey: ReadonlyMap<ArchitectureGraphItemKey, ReadonlySet<ArchitectureGraphItemKey>>,
+): ArchitectureGraphPath[] {
+  const result: ArchitectureGraphPath[] = [];
+  const visited = new Set<ArchitectureGraphItemKey>([startKey]);
+  const queue: Array<{
+    readonly current: ArchitectureGraphItemKey;
+    readonly itemKeys: readonly ArchitectureGraphItemKey[];
+    readonly relationshipKeys: readonly ArchitectureGraphItemKey[];
+  }> = [{ current: startKey, itemKeys: [startKey], relationshipKeys: [] }];
+
+  while (queue.length > 0) {
+    const path = queue.shift()!;
+    const adjacent = direction === "downstream"
+      ? outgoingByKey.get(path.current)
+      : incomingByKey.get(path.current);
+    for (const relationshipKey of [...(adjacent ?? [])].sort(compareText)) {
+      const relationship = relationshipByKey.get(relationshipKey);
+      if (relationship === undefined) continue;
+      const next = direction === "downstream"
+        ? relationship.targetKey
+        : relationship.sourceKey;
+      if (visited.has(next)) continue;
+      visited.add(next);
+      const nextPath = {
+        current: next,
+        itemKeys: [...path.itemKeys, next],
+        relationshipKeys: [...path.relationshipKeys, relationshipKey],
+      };
+      result.push({
+        startKey,
+        endKey: next,
+        direction,
+        itemKeys: nextPath.itemKeys,
+        relationshipKeys: nextPath.relationshipKeys,
+      });
+      queue.push(nextPath);
+    }
+  }
+
+  return result.sort(
+    (left, right) =>
+      compareText(left.endKey, right.endKey) ||
+      compareText(left.relationshipKeys.join("\u0000"), right.relationshipKeys.join("\u0000")),
+  );
 }
 
 interface GraphRelationship {

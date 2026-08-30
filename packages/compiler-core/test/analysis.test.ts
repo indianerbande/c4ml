@@ -6,6 +6,7 @@ import {
   createAnalysisFinding,
   createArchitectureAnalysisReport,
   createArchitectureQueryResult,
+  evaluateBuiltInArchitectureQuality,
   createProposedSourceChangeSet,
   type SourceReference,
 } from "../src/index.js";
@@ -26,6 +27,90 @@ function source(line: number): SourceReference {
 }
 
 describe("analysis finding and evidence contracts", () => {
+  it("turns shared validation guidance into source-located findings", () => {
+    const model = {
+      ...signalGardenModel,
+      relationships: signalGardenModel.relationships.map((relationship) =>
+        relationship.id === "grower-plans-system"
+          ? { ...relationship, description: "Uses" }
+          : relationship,
+      ),
+    };
+    const resolved = resolveArchitectureSnapshot(model, signalGardenViews);
+    const findings = evaluateBuiltInArchitectureQuality({
+      model,
+      views: signalGardenViews,
+      snapshot: resolved.snapshot!,
+      diagnostics: resolved.diagnostics,
+    });
+    const finding = findings.find(({ ruleId }) =>
+      ruleId === "c4ml.validation.c4ml-sem-014"
+    );
+
+    expect(finding).toMatchObject({
+      severity: "warning",
+      subjectKeys: ["relationship:grower-plans-system"],
+      sourceLocations: [signalGardenModel.relationships[0]!.source],
+    });
+    expect(finding?.message).toContain("State the concrete intent");
+  });
+
+  it("reports only explicit coverage and empty-view evidence", () => {
+    const uncovered = {
+      id: "uncovered-observer",
+      kind: "code-element" as const,
+      componentId: "plan-controller",
+      name: "Uncovered Observer",
+      description: "Reviews a model-only concern.",
+      codeKind: "module",
+      source: source(80),
+    };
+    const model = {
+      ...signalGardenModel,
+      elements: [...signalGardenModel.elements, uncovered],
+    };
+    const resolved = resolveArchitectureSnapshot(model, signalGardenViews);
+    const findings = evaluateBuiltInArchitectureQuality({
+      model,
+      views: signalGardenViews,
+      snapshot: resolved.snapshot!,
+      diagnostics: resolved.diagnostics,
+    });
+    expect(findings.find(({ id }) =>
+      id === "finding:quality:view-coverage:element:uncovered-observer"
+    )).toMatchObject({
+      severity: "information",
+      sourceLocations: [source(80)],
+    });
+
+    const emptyView = {
+      id: "empty-landscape",
+      kind: "system-landscape" as const,
+      title: "Empty landscape",
+      purpose: "Shows an intentionally empty selection.",
+      scope: "Garden portfolio",
+      selection: {
+        excludeElementIds: model.elements
+          .filter(({ kind }) => kind === "person" || kind === "software-system")
+          .map(({ id }) => id),
+      },
+      source: source(90),
+    };
+    const emptyResolved = resolveArchitectureSnapshot(model, [emptyView]);
+    const emptyFindings = evaluateBuiltInArchitectureQuality({
+      model,
+      views: [emptyView],
+      snapshot: emptyResolved.snapshot!,
+      diagnostics: emptyResolved.diagnostics,
+    });
+    expect(emptyFindings.find(({ ruleId }) =>
+      ruleId === "c4ml.quality.empty-view"
+    )).toMatchObject({
+      subjectKeys: ["view:empty-landscape"],
+      sourceLocations: [source(90)],
+    });
+  });
+
   it("creates a deterministic portable analysis report", () => {
     const snapshot = resolveArchitectureSnapshot(
       signalGardenModel,
@@ -160,16 +245,34 @@ describe("analysis finding and evidence contracts", () => {
       ],
       evidence: [
         {
-          id: "path:1",
+          id: "path:ledger",
           origin: "derived",
-          subjectKey: architectureGraphItemKey("element", "cultivation-api"),
-          statement: "Traversal starts at Cultivation API.",
+          subjectKey: architectureGraphItemKey("element", "ledger-store"),
+          statement: "The storage relationship reaches the ledger.",
         },
         {
-          id: "path:2",
+          id: "path:notice",
           origin: "derived",
           subjectKey: architectureGraphItemKey("element", "notify-worker"),
           statement: "The notification relationship reaches this worker.",
+        },
+        {
+          id: "relationship:notice",
+          origin: "derived",
+          subjectKey: architectureGraphItemKey(
+            "relationship",
+            "api-enqueues-notice",
+          ),
+          statement: "This relationship carries the notification path.",
+        },
+        {
+          id: "relationship:ledger",
+          origin: "derived",
+          subjectKey: architectureGraphItemKey(
+            "relationship",
+            "api-writes-ledger",
+          ),
+          statement: "This relationship carries the storage path.",
         },
       ],
     });
@@ -182,6 +285,27 @@ describe("analysis finding and evidence contracts", () => {
       "relationship:api-enqueues-notice",
       "relationship:api-writes-ledger",
     ]);
-    expect(result.evidence.map(({ id }) => id)).toEqual(["path:1", "path:2"]);
+    expect(result.evidence.map(({ id }) => id)).toEqual([
+      "path:ledger",
+      "path:notice",
+      "relationship:notice",
+      "relationship:ledger",
+    ]);
+  });
+
+  it("rejects unexplained query result identities", () => {
+    expect(() =>
+      createArchitectureQueryResult({
+        queryId: "unexplained",
+        resultKind: "downstream",
+        itemKeys: [architectureGraphItemKey("element", "cultivation-api")],
+        relationshipKeys: [],
+        evidence: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<AnalysisContractError>>({
+        code: "C4ML-ANALYSIS-003",
+      }),
+    );
   });
 });
