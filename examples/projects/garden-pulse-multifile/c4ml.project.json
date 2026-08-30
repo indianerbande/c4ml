@@ -7,6 +7,7 @@
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],
   "publication": "publication/review.c4ml-publication.json",
+  "theme": "presentation/garden.c4ml-theme.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",

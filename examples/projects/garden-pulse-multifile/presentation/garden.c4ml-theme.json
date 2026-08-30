@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "garden-pulse-review",
+  "preset": "c4ml-garden",
+  "canvas": {
+    "background": "#F2F7EE"
+  },
+  "routes": {
+    "automatic": "#356859"
+  }
+}

@@ -4,6 +4,7 @@ export * from "./architecture-graph.js";
 export * from "./architecture-glossary.js";
 export * from "./architecture-narrative.js";
 export * from "./architecture-publication.js";
+export * from "./architecture-theme-resource.js";
 export * from "./architecture-impact.js";
 export * from "./architecture-migration.js";
 export * from "./architecture-observation.js";

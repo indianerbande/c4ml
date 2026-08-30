@@ -27,6 +27,8 @@ The shell currently provides:
   non-source project context;
 - one validated `.c4ml-publication.json` resource whose View references are
   checked by the compiler worker;
+- one validated project `.c4ml-theme.json` selection applied by the worker's
+  shared semantic scene resolver;
 - bounded shell-free Git subprocesses in the main/project-node boundary, with
   repository-relative change paths and no checkout, discard, pull, fetch, or
   history-rewrite operation;

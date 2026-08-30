@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented architecture-source, policy, observation, glossary, narrative, and publication foundation
+Status: Implemented source, policy, observation, glossary, narrative, publication, and theme foundation
 
 Date: 2026-08-31
 
@@ -62,6 +62,7 @@ The version-one manifest lists every architecture source explicitly:
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],
   "publication": "publication/review.c4ml-publication.json",
+  "theme": "presentation/garden.c4ml-theme.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -207,14 +208,20 @@ captions plus deterministic SVG/PNG profiles with explicit scale and background
 mode. CLI and worker reject references to Views not present in the compiled
 project. Publication settings do not change source, architecture, or layout.
 
+The optional `theme` field selects one local `.c4ml-theme.json` resource. It
+chooses a built-in semantic diagram preset and may deeply override canvas,
+element, boundary, and route colors. The same validated selection drives CLI
+and desktop-worker rendering. It does not affect architecture semantics or the
+workbench's installation-local appearance.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
 Architecture source documents plus local architecture-policy,
-architecture-observation, glossary, narrative, and publication resources are
-executable today. Further planned resources include:
+architecture-observation, glossary, narrative, publication, and theme resources
+are executable today. Further planned resources include:
 
-- themes, safe custom shapes, and licensed local assets; and
+- safe custom shapes and licensed local assets; and
 - architecture baselines and external scanner adapters.
 
 These resources will receive independent contracts. A publication profile must

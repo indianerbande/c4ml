@@ -209,6 +209,10 @@ export function createProjectRevision(
         ? ""
         : createSourceRevision(project.publication.source).hash
     }`,
+    `${project.theme?.uri.length ?? -1}:${project.theme?.uri ?? ""}`,
+    `${project.theme?.source.length ?? -1}:${
+      project.theme === undefined ? "" : createSourceRevision(project.theme.source).hash
+    }`,
     ...documents.map(
       ({ uri, revision }) =>
         `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
@@ -383,6 +387,7 @@ export function applyProjectSourceChangeSet(
     ...(project.glossary === undefined ? {} : { glossary: project.glossary }),
     ...(project.narratives === undefined ? {} : { narratives: project.narratives }),
     ...(project.publication === undefined ? {} : { publication: project.publication }),
+    ...(project.theme === undefined ? {} : { theme: project.theme }),
   });
   return {
     valid: true,

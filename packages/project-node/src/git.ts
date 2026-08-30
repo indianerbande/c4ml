@@ -19,6 +19,7 @@ import {
   parseArchitectureGlossary,
   parseArchitectureNarrative,
   parseArchitecturePublication,
+  parseArchitectureThemeResource,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -337,6 +338,15 @@ async function loadManifestProject(
     }
     publication = { uri, source: source.text };
   }
+  let theme: { readonly uri: string; readonly source: string } | undefined;
+  if (parsed.manifest.theme !== undefined) {
+    const uri = parsed.manifest.theme;
+    const source = await readBlob(repositoryRoot, revision.commit, joinGitPath(projectPath, uri));
+    if (!source.valid) return source;
+    const parsedTheme = parseArchitectureThemeResource(source.text);
+    if (!parsedTheme.valid) return failure("source", parsedTheme.error.code, parsedTheme.error.message);
+    theme = { uri, source: source.text };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -351,6 +361,7 @@ async function loadManifestProject(
       ...(glossary === undefined ? {} : { glossary }),
       ...(narratives.length === 0 ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
+      ...(theme === undefined ? {} : { theme }),
     }),
     revision,
     projectPath,

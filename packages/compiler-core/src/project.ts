@@ -7,6 +7,7 @@ export const architectureObservationResourceSuffix = ".c4ml-observations.json" a
 export const architectureGlossaryResourceSuffix = ".c4ml-glossary.json" as const;
 export const architectureNarrativeResourceSuffix = ".c4ml-narrative.md" as const;
 export const architecturePublicationResourceSuffix = ".c4ml-publication.json" as const;
+export const architectureThemeResourceSuffix = ".c4ml-theme.json" as const;
 
 export interface ArchitectureProjectDocument {
   readonly uri: string;
@@ -38,6 +39,11 @@ export interface ArchitectureProjectPublicationResource {
   readonly source: string;
 }
 
+export interface ArchitectureProjectThemeResource {
+  readonly uri: string;
+  readonly source: string;
+}
+
 export interface ArchitectureProjectInput {
   readonly version: typeof architectureProjectVersion;
   readonly id: string;
@@ -49,6 +55,7 @@ export interface ArchitectureProjectInput {
   readonly glossary?: ArchitectureProjectGlossaryResource;
   readonly narratives?: readonly ArchitectureProjectNarrativeResource[];
   readonly publication?: ArchitectureProjectPublicationResource;
+  readonly theme?: ArchitectureProjectThemeResource;
 }
 
 export interface ArchitectureProjectManifest {
@@ -62,6 +69,7 @@ export interface ArchitectureProjectManifest {
   readonly glossary?: string;
   readonly narratives?: readonly string[];
   readonly publication?: string;
+  readonly theme?: string;
 }
 
 export type ArchitectureProjectIssueCode =
@@ -74,7 +82,8 @@ export type ArchitectureProjectIssueCode =
   | "C4ML-PROJECT-007"
   | "C4ML-PROJECT-008"
   | "C4ML-PROJECT-009"
-  | "C4ML-PROJECT-010";
+  | "C4ML-PROJECT-010"
+  | "C4ML-PROJECT-011";
 
 export interface ArchitectureProjectIssue {
   readonly code: ArchitectureProjectIssueCode;
@@ -110,6 +119,7 @@ export function createArchitectureProjectInput(input: {
   readonly glossary?: ArchitectureProjectGlossaryResource;
   readonly narratives?: readonly ArchitectureProjectNarrativeResource[];
   readonly publication?: ArchitectureProjectPublicationResource;
+  readonly theme?: ArchitectureProjectThemeResource;
 }): ArchitectureProjectInput {
   const project: ArchitectureProjectInput = {
     version: architectureProjectVersion,
@@ -139,6 +149,9 @@ export function createArchitectureProjectInput(input: {
     ...(input.publication === undefined
       ? {}
       : { publication: { uri: input.publication.uri, source: input.publication.source } }),
+    ...(input.theme === undefined
+      ? {}
+      : { theme: { uri: input.theme.uri, source: input.theme.source } }),
   };
   const issues = validateArchitectureProjectInput(project);
   if (issues.length > 0) {
@@ -296,6 +309,24 @@ export function validateArchitectureProjectInput(
       });
     }
   }
+  if (project.theme !== undefined) {
+    const caseFolded = project.theme.uri.toLocaleLowerCase("en-US");
+    if (
+      !isPortableProjectUri(project.theme.uri) ||
+      !project.theme.uri.endsWith(architectureThemeResourceSuffix) ||
+      project.theme.source.trim().length === 0 ||
+      supplementalUris.has(caseFolded) ||
+      project.publication?.uri.toLocaleLowerCase("en-US") === caseFolded
+    ) {
+      issues.push({
+        code: "C4ML-PROJECT-011",
+        message:
+          `Project theme URI "${project.theme.uri}" must be a unique normalized relative ` +
+          `${architectureThemeResourceSuffix} path with non-empty local content.`,
+        uri: project.theme.uri,
+      });
+    }
+  }
   return issues;
 }
 
@@ -318,7 +349,7 @@ export function parseArchitectureProjectManifest(
     return invalidManifest("The project manifest must contain one JSON object.");
   }
 
-  const { version, id, name, description, sources, policy, observations, glossary, narratives, publication } = candidate;
+  const { version, id, name, description, sources, policy, observations, glossary, narratives, publication, theme } = candidate;
   if (
     version !== architectureProjectVersion ||
     typeof id !== "string" ||
@@ -339,7 +370,8 @@ export function parseArchitectureProjectManifest(
       (!Array.isArray(narratives) || narratives.length === 0 ||
         narratives.some((value) => typeof value !== "string"))) ||
     (publication !== undefined &&
-      (typeof publication !== "string" || publication.trim().length === 0))
+      (typeof publication !== "string" || publication.trim().length === 0)) ||
+    (theme !== undefined && (typeof theme !== "string" || theme.trim().length === 0))
   ) {
     return invalidManifest(
       "The project manifest requires version 1, a stable id, a non-empty sources array, " +
@@ -369,6 +401,7 @@ export function parseArchitectureProjectManifest(
     ...(typeof publication === "string"
       ? { publication: { uri: publication, source: "{}" } }
       : {}),
+    ...(typeof theme === "string" ? { theme: { uri: theme, source: "{}" } } : {}),
   });
   if (projectIssues.length > 0) {
     return { valid: false, issues: projectIssues };
@@ -388,6 +421,7 @@ export function parseArchitectureProjectManifest(
         ? { narratives: [...narratives].sort(compareText) as string[] }
         : {}),
       ...(typeof publication === "string" ? { publication } : {}),
+      ...(typeof theme === "string" ? { theme } : {}),
     },
     issues: [],
   };

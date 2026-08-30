@@ -18,6 +18,7 @@ import {
   parseArchitectureGlossary,
   parseArchitectureNarrative,
   parseArchitecturePublication,
+  parseArchitectureThemeResource,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -367,6 +368,31 @@ export async function loadArchitectureProject(
     publication = { uri, source };
   }
 
+  let theme: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.theme !== undefined) {
+    const uri = parsedManifest.manifest.theme;
+    const themePath = resolve(projectRoot, ...uri.split("/"));
+    let themeRealPath: string;
+    try {
+      themeRealPath = await realpath(themePath);
+    } catch (error: unknown) {
+      return environmentFailure("C4ML-PROJECT-NODE-016", `Cannot read project theme ${themePath}: ${errorMessage(error)}`);
+    }
+    const relativeRealPath = relative(rootRealPath, themeRealPath);
+    if (relativeRealPath === ".." || relativeRealPath.split(sep)[0] === ".." || isAbsolute(relativeRealPath)) {
+      return sourceFailure("C4ML-PROJECT-NODE-017", `Project theme "${uri}" resolves outside the project directory.`);
+    }
+    let source: string;
+    try {
+      source = await readFile(themeRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure("C4ML-PROJECT-NODE-016", `Cannot read project theme ${themePath}: ${errorMessage(error)}`);
+    }
+    const parsedTheme = parseArchitectureThemeResource(source);
+    if (!parsedTheme.valid) return sourceFailure(parsedTheme.error.code, parsedTheme.error.message);
+    theme = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -385,6 +411,7 @@ export async function loadArchitectureProject(
       ...(glossary === undefined ? {} : { glossary }),
       ...(narratives.length === 0 ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
+      ...(theme === undefined ? {} : { theme }),
     }),
     documentPaths,
   };

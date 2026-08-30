@@ -22,6 +22,7 @@ describe("Node.js architecture project loader", () => {
         glossary: "governance/garden.c4ml-glossary.json",
         narratives: ["governance/overview.c4ml-narrative.md"],
         publication: "governance/review.c4ml-publication.json",
+        theme: "governance/garden.c4ml-theme.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -81,6 +82,9 @@ describe("Node.js architecture project loader", () => {
       views: [{ viewId: "context" }],
       profiles: [{ id: "svg", formats: ["svg"], scale: 1, background: "theme" }],
     }));
+    await writeFile(join(directory, "governance", "garden.c4ml-theme.json"), JSON.stringify({
+      version: 1, id: "garden", preset: "c4ml-garden",
+    }));
 
     const result = await loadArchitectureProject(directory);
 
@@ -109,6 +113,7 @@ describe("Node.js architecture project loader", () => {
       expect(result.project.publication).toMatchObject({
         uri: "governance/review.c4ml-publication.json",
       });
+      expect(result.project.theme).toMatchObject({ uri: "governance/garden.c4ml-theme.json" });
     }
   });
 

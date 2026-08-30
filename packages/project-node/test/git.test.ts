@@ -73,6 +73,7 @@ describe("Git project revision adapter", () => {
         glossary: "garden.c4ml-glossary.json",
         narratives: ["overview.c4ml-narrative.md"],
         publication: "review.c4ml-publication.json",
+        theme: "garden.c4ml-theme.json",
       }),
       "utf8",
     );
@@ -135,6 +136,9 @@ describe("Git project revision adapter", () => {
       views: [{ viewId: "context" }],
       profiles: [{ id: "svg", formats: ["svg"], scale: 1, background: "theme" }],
     }), "utf8");
+    await writeFile(join(projectDirectory, "garden.c4ml-theme.json"), JSON.stringify({
+      version: 1, id: "garden", preset: "c4ml-garden",
+    }), "utf8");
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -161,6 +165,7 @@ describe("Git project revision adapter", () => {
       { uri: "overview.c4ml-narrative.md" },
     ]);
     expect(result.project.publication).toMatchObject({ uri: "review.c4ml-publication.json" });
+    expect(result.project.theme).toMatchObject({ uri: "garden.c4ml-theme.json" });
   });
 
   it("classifies unknown revisions without changing repository state", async () => {

@@ -21,6 +21,10 @@ The optional `publication/review.c4ml-publication.json` resource selects the
 Context View, supplies its review caption, and defines a deterministic SVG
 profile without changing the View itself.
 
+The optional `presentation/garden.c4ml-theme.json` resource applies the Garden
+diagram preset and a pale project background consistently in CLI and desktop
+worker rendering.
+
 From the repository root:
 
 ```sh
