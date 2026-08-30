@@ -2,7 +2,7 @@
 
 Status: Active roadmap
 
-Date: 2026-08-29
+Date: 2026-08-30
 
 `SPEC.md` defines product behavior and architecture. `TESTING.md` defines the
 evidence required to claim that behavior works. This file orders implementation
@@ -133,19 +133,24 @@ placement and routing intent, preview hit testing, and Monaco undo support.
 
 ### Slice 1.2 — detachable preview workspace
 
-- [ ] add a full-size preview mode inside the main workbench as the immediate
+- [x] add a full-size preview mode inside the main workbench as the immediate
       single-window workspace;
-- [ ] define a versioned, read-only preview-projection contract for the current
+- [x] define a versioned, read-only preview-projection contract for the current
       SVG, view, compiler status, navigation targets, selection, zoom, and Route
       overlay state;
-- [ ] open that projection in a second Electron window without giving the
+- [x] open that projection in a second Electron window without giving the
       preview window compiler, source, filesystem, or document authority;
-- [ ] synchronize selection and source navigation in both directions, support
+- [x] synchronize selection and source navigation in both directions, support
       redocking, and restore only safe window bounds and presentation state;
       and
-- [ ] evaluate an optional same-origin browser pop-out using a browser messaging
+- [x] evaluate an optional same-origin browser pop-out using a browser messaging
       channel after the desktop workflow is proven; separate development ports
       are not part of the intended design.
+
+The browser evaluation deliberately keeps pop-out deferred. Browser development
+uses the implemented full-size single-window workspace until a same-origin
+messaging, popup lifecycle, and recovery contract offers clear value beyond the
+accepted desktop workflow.
 
 The main workbench and its compiler worker remain authoritative. Closing,
 reopening, or moving the preview window MUST NOT change source, canonical

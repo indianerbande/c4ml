@@ -11,6 +11,10 @@ The shell currently provides:
   disabled;
 - a small typed preload bridge for Open, Save, Save As, native PNG export, menu
   commands, document state, and validated English/German UI-language selection;
+- an optional second preview window with its own projection-only preload and no
+  document, source, compiler, save, export, filesystem, or Node authority;
+- full-size, detach, synchronized selection/zoom/Route-overlay, safe window
+  bounds, and redock behavior owned by the authoritative workbench;
 - opaque document handles, so renderer code never receives filesystem paths;
 - local-only editor assets served through the owned `c4ml://app` protocol;
 - native menus, shortcuts, dialogs, title updates, and unsaved-close

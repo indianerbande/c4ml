@@ -35,6 +35,9 @@ Implemented:
   for source, and standalone SVG font embedding;
 - vector-preserving zoom without CSS transform scaling, fit, scroll-pan, local
   SVG download, and native desktop PNG export at 1x, 2x, or 3x;
+- a full-size single-window preview and a detachable projection-only preview
+  that synchronizes selection, zoom, Route overlay, and redocking through the
+  authoritative main workbench;
 - an optional typed desktop bridge for native Open, Save, and Save As without
   exposing filesystem paths or Node.js APIs to the renderer;
 - a versioned local-preferences service and category-based settings panel for
@@ -49,7 +52,9 @@ Monaco owns browser text editing and presentation only. The C4ML worker remains
 the sole source of completions, highlighting, diagnostics, and navigation
 mappings, and no Monaco language service defines C4ML syntax or semantics. The
 preview uses the accepted browser ELK.js adapter; the linear preview layout
-remains test-only compatibility code.
+remains test-only compatibility code. The detached bootstrap does not create
+the workbench root, Monaco, or compiler worker. It consumes only the restricted
+desktop preview bridge and never receives source or filesystem authority.
 
 The current wizard is intentionally narrower than the future guided-modeling
 scope recorded in `SPEC.md`. It creates one complete `draft-1` System Context
