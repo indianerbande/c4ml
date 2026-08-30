@@ -202,7 +202,7 @@ describe("workbench preferences", () => {
     expect(editorFontFeatureSettingsCss("fira-code", false)).toBe("normal");
   });
 
-  it("continues with session defaults when browser storage is unavailable", () => {
+  it("continues with session defaults when renderer storage is unavailable", () => {
     const unavailableStorage = {
       getItem: () => {
         throw new Error("storage denied");

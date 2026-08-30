@@ -22,12 +22,12 @@ describe("workbench command catalogue", () => {
       .toEqual(["help.context"]);
   });
 
-  it("does not offer native-only commands in the browser path", () => {
-    const browserIds = filterWorkbenchCommands("", false).map(({ id }) => id);
-    expect(browserIds).not.toContain("file.open");
-    expect(browserIds).not.toContain("file.save-all");
-    expect(browserIds).not.toContain("diagram.export-png");
-    expect(browserIds).toContain("diagram.export-svg");
+  it("does not offer native-only commands without the desktop bridge", () => {
+    const rendererOnlyIds = filterWorkbenchCommands("", false).map(({ id }) => id);
+    expect(rendererOnlyIds).not.toContain("file.open");
+    expect(rendererOnlyIds).not.toContain("file.save-all");
+    expect(rendererOnlyIds).not.toContain("diagram.export-png");
+    expect(rendererOnlyIds).toContain("diagram.export-svg");
   });
 
   it("offers Save All in the desktop command catalogue", () => {

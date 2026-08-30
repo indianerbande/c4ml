@@ -22,5 +22,5 @@ for (const [name, entryPoint] of probes) {
     (sum, outputFile) => sum + outputFile.contents.byteLength,
     0,
   );
-  console.log(`${name}: browser bundle verified (${bytes} bytes)`);
+  console.log(`${name}: renderer Web Worker bundle verified (${bytes} bytes)`);
 }
