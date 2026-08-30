@@ -13,6 +13,7 @@ import {
 import type {
   CompilerWorkerDiagnostic,
   CompilerWorkerNavigationTarget,
+  PreviewPlacementChangeWorkerResponse,
   CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
@@ -32,6 +33,9 @@ import type {
   SourceEditorHighlightProvider,
 } from "./source-editor.contract.js";
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
+import {
+  PlacementEditorComponent,
+} from "./placement-editor.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
 import { HelpArticleComponent } from "./help-article.component.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
@@ -47,6 +51,7 @@ import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
 import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
 import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
+import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
 
 @Component({
   selector: "c4ml-root",
@@ -56,6 +61,7 @@ import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
   imports: [
     C4mlMonacoSourceEditorComponent,
     HelpArticleComponent,
+    PlacementEditorComponent,
     SettingsPanelComponent,
     SystemContextWizardComponent,
   ],
@@ -75,6 +81,7 @@ export class AppComponent {
   readonly preview = inject(WorkbenchPreviewFacade);
   readonly help = inject(WorkbenchHelpFacade);
   readonly commands = inject(WorkbenchCommandFacade);
+  readonly placement = inject(WorkbenchPlacementFacade);
   readonly source = this.documents.source;
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
@@ -234,6 +241,7 @@ export class AppComponent {
     this.#wizardSourceSession.invalidateUndo();
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
+    this.placement.sourceChanged();
     this.#refreshHelpContext(source);
     this.#scheduleCompile();
   }
@@ -358,6 +366,22 @@ export class AppComponent {
 
   formatGeometry(value: number): string {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  }
+
+  openPlacementEditor(): void {
+    this.placement.show();
+  }
+
+  closePlacementEditor(): void {
+    this.placement.close();
+  }
+
+  applyPlacement(response: PreviewPlacementChangeWorkerResponse): void {
+    this.placement.apply(response, this.sourceEditor());
+  }
+
+  undoPlacement(): void {
+    this.placement.undo(this.sourceEditor());
   }
 
   exportSvg(): void {
@@ -608,5 +632,6 @@ export class AppComponent {
     this.#wizardSourceSession.invalidateUndo();
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
+    this.placement.reset();
   }
 }

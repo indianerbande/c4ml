@@ -100,11 +100,11 @@ production dependencies rather than active UI-library experiments. It accepts
 the current executable slices for all seven view types: System Landscape,
 System Context, Container, Component, Code, Dynamic, and Deployment.
 
-The workbench root component delegates document/export, preview, help, and
-command-palette state to focused Angular facades. The versioned worker transport
-is composed from independent Compile, Language, and Authoring contracts plus a
-small shared protocol core; the compatibility barrel remains the only combined
-transport boundary.
+The workbench root component delegates document/export, preview, placement,
+help, and command-palette state to focused Angular facades. The versioned worker
+transport is composed from independent Compile, Language, and Authoring
+contracts plus a small shared protocol core; the compatibility barrel remains
+the only combined transport boundary.
 
 The portable compiler core also owns implemented version-one foundation
 contracts for proposed source change sets, canonical architecture snapshots,
@@ -114,9 +114,11 @@ edits; snapshots exclude source formatting and parser objects; graph keys keep
 identity namespaces distinct; observed evidence requires adapter attribution.
 The first syntax-aware element-property edit generator, non-mutating compiler
 worker preview, one-unit Monaco application adapter, canonical worker parity,
-and versioned worker/CLI analysis-report exposure are implemented. Broader
-syntax-aware commands, UI gestures, semantic diffing, and executable policy
-rules remain later slices.
+and versioned worker/CLI analysis-report exposure are implemented. The first
+graphical placement editor also generates, previews, applies, and undoes
+project-addressed relative placement, nudge, alignment, distribution, and exact
+pin changes through those boundaries. Broader semantic and Route gestures,
+semantic diffing, and executable policy rules remain later slices.
 
 The first portable project-source foundation is also implemented. A direct
 `.c4ml` source or a directory containing exactly one root source remains an

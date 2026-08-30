@@ -30,6 +30,10 @@ Implemented:
   effective-route inspector;
 - separate preview targets for Ports, route labels, and corridors that reveal
   their owning route-control source;
+- a source-backed placement editor opened from selected element geometry, with
+  relative placement, automatic-relative nudge, alignment, ordered
+  distribution, an explicit exact-pin escape hatch, non-mutating candidate
+  source/SVG review, and one-step Monaco apply/undo;
 - selection among the executable views declared in the current document;
 - locally packaged IBM Plex Sans for the interface and diagrams, IBM Plex Mono
   for source, and standalone SVG font embedding;

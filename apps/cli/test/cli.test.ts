@@ -5,10 +5,20 @@ import { fileURLToPath } from "node:url";
 
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { proposeC4mlPlacementEdit } from "@c4ml/language-c4ml";
+import {
+  applyProjectSourceChangeSet,
+  createArchitectureProjectInput,
+} from "@c4ml/compiler-core";
+
 import { cliExitCode, runCli, type CliIo } from "../src/cli.js";
 
 const staticZoomUrl = new URL(
   "../../../examples/draft/hello-static-zoom.c4ml",
+  import.meta.url,
+);
+const contextUrl = new URL(
+  "../../../examples/draft/hello-context.c4ml",
   import.meta.url,
 );
 const dynamicUrl = new URL(
@@ -74,6 +84,45 @@ describe("experimental C4ML CLI", () => {
       ["check", "examples/draft/hello-static-zoom.c4ml"],
       io(cwd),
     );
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(stdout.join("")).toContain("Valid C4ML:");
+    expect(stderr).toEqual([]);
+  });
+
+  it("checks source produced by the graphical placement authoring contract", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-placement-"));
+    const source = await readFile(contextUrl, "utf8");
+    const project = createArchitectureProjectInput({
+      id: "garden-placement",
+      documents: [{ uri: "architecture.c4ml", text: source }],
+    });
+    const proposal = await proposeC4mlPlacementEdit(project, {
+      id: "place-garden-pulse",
+      viewId: "garden-pulse-context",
+      intent: {
+        id: "layout:relative",
+        kind: "layout",
+        summary: "Place Garden Pulse relative to the caretaker.",
+      },
+      operation: {
+        kind: "relative",
+        subjectId: "garden-pulse",
+        anchorId: "caretaker",
+        relation: "right-of",
+        gap: "small",
+        strength: "soft",
+      },
+    });
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    const application = applyProjectSourceChangeSet(project, proposal.changeSet);
+    expect(application.valid).toBe(true);
+    if (!application.valid) return;
+    const sourcePath = join(directory, "architecture.c4ml");
+    await writeFile(sourcePath, application.project.documents[0]!.text, "utf8");
+
+    const exitCode = await runCli(["check", sourcePath], io(tmpdir()));
 
     expect(exitCode).toBe(cliExitCode.success);
     expect(stdout.join("")).toContain("Valid C4ML:");

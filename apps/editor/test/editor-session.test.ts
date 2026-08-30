@@ -12,12 +12,14 @@ import {
   isHighlightWorkerResponse,
   isHelpWorkerRequest,
   isHelpWorkerResponse,
+  isPreviewPlacementChangeWorkerRequest,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
   type CompletionWorkerResponse,
   type HighlightWorkerResponse,
   type HelpWorkerResponse,
+  type PreviewPlacementChangeWorkerResponse,
   type WizardWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -25,6 +27,7 @@ import {
   EditorCompletionSession,
   EditorHighlightSession,
   EditorHelpSession,
+  EditorPlacementPreviewSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   WizardSourceSession,
@@ -162,6 +165,25 @@ function highlightResponse(
       },
     ],
     message: undefined,
+  };
+}
+
+function placementFailure(
+  requestId: number,
+): PreviewPlacementChangeWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "preview-placement-change-result",
+    requestId,
+    status: "failed",
+    changeSet: undefined,
+    documentUri: undefined,
+    proposedText: undefined,
+    candidateProject: undefined,
+    compilation: undefined,
+    authoringIssues: [],
+    changeIssues: [],
+    message: "Preview failed.",
   };
 }
 
@@ -468,5 +490,53 @@ describe("editor wizard sessions", () => {
     expect(session.undo("generated")).toBe("original");
     expect(session.canUndo).toBe(false);
     expect(session.undo("original plus edits")).toBe("original plus edits");
+  });
+});
+
+describe("editor placement preview session", () => {
+  it("settles a superseded preview and accepts only the active result", async () => {
+    const session = new EditorPlacementPreviewSession();
+    const project = {
+      version: 1 as const,
+      id: "garden",
+      documents: [{ uri: "architecture.c4ml", source: "c4ml draft-1" }],
+    };
+    const placement = {
+      id: "place-garden",
+      viewId: "context",
+      intent: {
+        id: "layout:relative",
+        kind: "layout" as const,
+        summary: "Place garden.",
+      },
+      operation: {
+        kind: "relative" as const,
+        subjectId: "garden",
+        anchorId: "caretaker",
+        relation: "right-of" as const,
+        gap: "small" as const,
+        strength: "soft" as const,
+      },
+    };
+    const first = session.beginAsync(
+      project,
+      "architecture.c4ml",
+      placement,
+      "context",
+    );
+    const second = session.beginAsync(
+      project,
+      "architecture.c4ml",
+      placement,
+      "context",
+    );
+
+    expect(isPreviewPlacementChangeWorkerRequest(second.request)).toBe(true);
+    await expect(first.result).resolves.toBeUndefined();
+    expect(session.accept(placementFailure(first.request.requestId))).toBe(false);
+    const current = placementFailure(second.request.requestId);
+    expect(session.accept(current)).toBe(true);
+    await expect(second.result).resolves.toBe(current);
+    expect(session.state).toMatchObject({ phase: "failed", response: current });
   });
 });

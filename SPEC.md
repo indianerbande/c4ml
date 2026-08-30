@@ -1486,6 +1486,17 @@ rejects stale or unknown documents, and can preview a complete candidate project
 without mutating active documents. The original single-document contract remains
 available as the implicit-project convenience boundary.
 
+The first graphical placement-authoring slice is implemented in the editor.
+A selected source-mapped element can be placed relative to another element,
+nudged from its automatic candidate, aligned with a selected set, distributed
+in explicit order, or pinned to its current `du` position through a deliberately
+last-listed exact-position action. The language package owns the syntax-aware,
+project-addressed change generation; the worker compiles the complete candidate
+project without changing the active documents. Angular presents the proposed
+source and candidate SVG, and Monaco applies an accepted one-document
+transaction as one undo unit. Applying and undoing restore the preceding source
+and dirty-state semantics; no hidden geometry is retained by the editor.
+
 The implemented architecture snapshot removes source locations and parser
 objects, sorts unordered declarations, preserves typed semantic, deployment,
 view, presentation, and layout data, and serializes deterministically. Its graph
@@ -1727,10 +1738,12 @@ nodes, stable semantic IDs, scene-graph nodes, and SVG elements. This mapping is
 required for diagnostics and navigation in the MVP and for direct manipulation
 in a later release.
 
-### 14.3 Future direct manipulation
+### 14.3 Graphical source manipulation
 
-Later editor versions MAY allow moving elements, aligning selections, choosing
-ports, editing routes, and creating semantic elements or relationships.
+The first editor slice allows intent-based placement, alignment, distribution,
+nudge, and explicit exact-position actions for selected elements. Later slices
+MAY add Port choice, route editing, and creation of semantic elements or
+relationships.
 
 The source text MUST remain the source of truth. A graphical operation must
 produce an explicit, undoable source edit rather than hidden editor-only state.
@@ -1744,8 +1757,8 @@ automatic candidate. Only an explicitly chosen exact-position action SHOULD
 emit a `pin` with `du` coordinates. No graphical operation may persist a hidden
 pixel offset.
 
-Direct manipulation is not an MVP acceptance requirement, but the compiler and
-source mapping MUST NOT preclude it.
+Graphical route and semantic-model manipulation are not current acceptance
+requirements, but the compiler and source mapping MUST NOT preclude them.
 
 ### 14.4 Guided modeling wizard
 

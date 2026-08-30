@@ -39,6 +39,11 @@
           {{ i18n.t("wizard.undo") }}
         </button>
       }
+      @if (placement.canUndo()) {
+        <button type="button" class="title-action" (click)="undoPlacement()">
+          {{ i18n.t("placement.undo") }}
+        </button>
+      }
       <button type="button" class="primary-action" (click)="startWizard()">
         {{ i18n.t("wizard.open") }}
       </button>
@@ -659,6 +664,15 @@
                     }}</span>
                     <strong>{{ node.label }}</strong>
                   </div>
+                  @if (node.nodeRole === "element") {
+                    <button
+                      type="button"
+                      class="inspector-source"
+                      (click)="openPlacementEditor()"
+                    >
+                      {{ i18n.t("placement.open") }}
+                    </button>
+                  }
                   <dl>
                     <div>
                       <dt>{{ i18n.t("panel.candidateGeometry") }}</dt>
@@ -947,4 +961,22 @@
 
 @if (settingsOpen()) {
   <c4ml-settings-panel (closed)="closeSettings()" />
+}
+
+@if (
+  placement.open() &&
+  selectedNode();
+  as node
+) {
+  @if (compiler.state().activeViewId; as activeViewId) {
+    <c4ml-placement-editor
+      [project]="placement.project()"
+      [activeFile]="activeDocumentUri()"
+      [viewId]="activeViewId"
+      [nodes]="placement.nodes()"
+      [selectedId]="node.referenceId"
+      (applied)="applyPlacement($event)"
+      (cancelled)="closePlacementEditor()"
+    />
+  }
 }

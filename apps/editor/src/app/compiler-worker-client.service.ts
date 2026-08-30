@@ -16,7 +16,9 @@ import {
   type HelpWorkerResponse,
 } from "./compiler-worker.language.protocol.js";
 import {
+  isPreviewPlacementChangeWorkerResponse,
   isWizardWorkerResponse,
+  type PreviewPlacementChangeWorkerResponse,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
 import {
@@ -24,14 +26,19 @@ import {
   EditorCompletionSession,
   EditorHighlightSession,
   EditorHelpSession,
+  EditorPlacementPreviewSession,
   EditorRequestSequence,
   EditorWizardGenerationSession,
   type EditorCompilationState,
   type EditorCompletionState,
   type EditorHelpState,
+  type EditorPlacementPreviewState,
   type EditorWizardGenerationState,
 } from "./editor-session.js";
-import type { C4mlSystemContextWizardAnswers } from "@c4ml/language-c4ml";
+import type {
+  C4mlPlacementEditRequest,
+  C4mlSystemContextWizardAnswers,
+} from "@c4ml/language-c4ml";
 
 @Injectable({ providedIn: "root" })
 export class CompilerWorkerClient {
@@ -41,6 +48,7 @@ export class CompilerWorkerClient {
   readonly #highlightSession = new EditorHighlightSession(this.#sequence);
   readonly #helpSession = new EditorHelpSession(this.#sequence);
   readonly #wizardSession = new EditorWizardGenerationSession(this.#sequence);
+  readonly #placementSession = new EditorPlacementPreviewSession(this.#sequence);
   readonly #worker = new Worker(new URL("./compiler.worker", import.meta.url), {
     name: "c4ml-compiler",
     type: "module",
@@ -53,6 +61,9 @@ export class CompilerWorkerClient {
     this.#wizardSession.state,
   );
   readonly help = signal<EditorHelpState>(this.#helpSession.state);
+  readonly placement = signal<EditorPlacementPreviewState>(
+    this.#placementSession.state,
+  );
   #activeFile = "editor.c4ml";
   #activeProject: CompilerWorkerProject | undefined;
 
@@ -130,6 +141,23 @@ export class CompilerWorkerClient {
     this.#worker.postMessage(request);
   }
 
+  previewPlacementChange(
+    project: CompilerWorkerProject,
+    file: string,
+    placement: C4mlPlacementEditRequest,
+    requestedViewId?: string,
+  ): Promise<PreviewPlacementChangeWorkerResponse | undefined> {
+    const { request, result } = this.#placementSession.beginAsync(
+      project,
+      file,
+      placement,
+      requestedViewId,
+    );
+    this.placement.set(this.#placementSession.state);
+    this.#worker.postMessage(request);
+    return result;
+  }
+
   readonly #onMessage = (event: MessageEvent<unknown>): void => {
     if (isCompilerWorkerResponse(event.data)) {
       this.#acceptCompilation(event.data);
@@ -141,6 +169,8 @@ export class CompilerWorkerClient {
       this.#acceptHelp(event.data);
     } else if (isWizardWorkerResponse(event.data)) {
       this.#acceptWizard(event.data);
+    } else if (isPreviewPlacementChangeWorkerResponse(event.data)) {
+      this.#acceptPlacement(event.data);
     }
   };
 
@@ -152,10 +182,14 @@ export class CompilerWorkerClient {
     this.#highlightSession.failActive();
     this.#helpSession.failActive("The language worker stopped unexpectedly.");
     this.#wizardSession.failActive("The source generator stopped unexpectedly.");
+    this.#placementSession.failActive(
+      "The placement preview worker stopped unexpectedly.",
+    );
     this.state.set(this.#session.state);
     this.completion.set(this.#completionSession.state);
     this.wizard.set(this.#wizardSession.state);
     this.help.set(this.#helpSession.state);
+    this.placement.set(this.#placementSession.state);
   };
 
   #acceptCompilation(response: CompilerWorkerResponse): void {
@@ -183,6 +217,12 @@ export class CompilerWorkerClient {
   #acceptWizard(response: WizardWorkerResponse): void {
     if (this.#wizardSession.accept(response)) {
       this.wizard.set(this.#wizardSession.state);
+    }
+  }
+
+  #acceptPlacement(response: PreviewPlacementChangeWorkerResponse): void {
+    if (this.#placementSession.accept(response)) {
+      this.placement.set(this.#placementSession.state);
     }
   }
 }

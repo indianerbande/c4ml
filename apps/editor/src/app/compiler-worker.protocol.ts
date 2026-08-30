@@ -7,10 +7,14 @@ import {
 import {
   isPreviewProjectChangeWorkerRequest,
   isPreviewProjectChangeWorkerResponse,
+  isPreviewPlacementChangeWorkerRequest,
+  isPreviewPlacementChangeWorkerResponse,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type PreviewProjectChangeWorkerRequest,
   type PreviewProjectChangeWorkerResponse,
+  type PreviewPlacementChangeWorkerRequest,
+  type PreviewPlacementChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
@@ -47,6 +51,7 @@ export type CompilerWorkerInbound =
   | CompletionWorkerRequest
   | HelpWorkerRequest
   | HighlightWorkerRequest
+  | PreviewPlacementChangeWorkerRequest
   | PreviewProjectChangeWorkerRequest
   | WizardWorkerRequest;
 
@@ -56,6 +61,7 @@ export type CompilerWorkerOutbound =
   | CompletionWorkerResponse
   | HelpWorkerResponse
   | HighlightWorkerResponse
+  | PreviewPlacementChangeWorkerResponse
   | PreviewProjectChangeWorkerResponse
   | WizardWorkerResponse;
 
@@ -68,6 +74,7 @@ export function isCompilerWorkerInbound(
     isCompletionWorkerRequest(value) ||
     isHelpWorkerRequest(value) ||
     isHighlightWorkerRequest(value) ||
+    isPreviewPlacementChangeWorkerRequest(value) ||
     isPreviewProjectChangeWorkerRequest(value) ||
     isWizardWorkerRequest(value)
   );
@@ -82,6 +89,7 @@ export function isCompilerWorkerOutbound(
     isCompletionWorkerResponse(value) ||
     isHelpWorkerResponse(value) ||
     isHighlightWorkerResponse(value) ||
+    isPreviewPlacementChangeWorkerResponse(value) ||
     isPreviewProjectChangeWorkerResponse(value) ||
     isWizardWorkerResponse(value)
   );

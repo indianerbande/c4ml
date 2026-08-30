@@ -734,6 +734,19 @@ Tests MUST distinguish semantic architecture operations from view-local layout
 operations. UI event coordinates and Monaco edit objects MUST NOT enter the
 portable authoring contract.
 
+The first graphical placement slice is automatically validated with original
+Signal Garden fixtures. Language tests cover deterministic, syntax-aware
+generation for relative placement, automatic-relative nudge, anchored
+alignment, ordered distribution, and exact pins, including declaration-order
+preservation when replacing a later pin with an earlier placement form. Worker
+tests compile the proposed candidate through the normal browser pipeline without
+mutating the active project; CLI tests check the applied source through the
+shared Node.js pipeline. Editor adapter tests prove project-to-document
+narrowing and one Monaco undo unit. A local browser interaction additionally
+verified selected-element synchronization, candidate SVG and source review,
+zero diagnostics after apply, restoration of the preceding pin in one undo, and
+restoration of the original clean dirty-state marker.
+
 ### 2.13 Semantic architecture evolution
 
 Semantic comparison tests MUST use original before/after fixture pairs and
