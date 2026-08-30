@@ -640,6 +640,14 @@ export async function previewProjectChangeWorkerRequest(
               source: request.project.observations.source,
             },
           }),
+      ...(request.project.glossary === undefined
+        ? {}
+        : {
+            glossary: {
+              uri: request.project.glossary.uri,
+              source: request.project.glossary.source,
+            },
+          }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -670,6 +678,14 @@ export async function previewProjectChangeWorkerRequest(
                 observations: {
                   uri: candidate.observations.uri,
                   source: candidate.observations.source,
+                },
+              }),
+          ...(candidate.glossary === undefined
+            ? {}
+            : {
+                glossary: {
+                  uri: candidate.glossary.uri,
+                  source: candidate.glossary.source,
                 },
               }),
         };
@@ -1049,6 +1065,10 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   };
+  readonly glossary?: {
+    readonly uri: string;
+    readonly source: string;
+  };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1074,6 +1094,14 @@ function toArchitectureProject(project: {
           observations: {
             uri: project.observations.uri,
             source: project.observations.source,
+          },
+        }),
+    ...(project.glossary === undefined
+      ? {}
+      : {
+          glossary: {
+            uri: project.glossary.uri,
+            source: project.glossary.source,
           },
         }),
   });

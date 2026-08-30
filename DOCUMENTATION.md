@@ -481,6 +481,7 @@ sources:
   "name": "Garden Architecture",
   "policy": "governance.c4ml-policy.json",
   "observations": "evidence/local-inventory.c4ml-observations.json",
+  "glossary": "knowledge/garden.c4ml-glossary.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -515,6 +516,12 @@ set. Each observation has a qualified `subjectKey`, an `adapterId`, an ISO
 `unreviewed`, or `disputed`, and either a presence or selected-field `claim`.
 The analysis report keeps observed evidence separate from authored evidence and
 never rewrites the architecture.
+
+The optional `glossary` path selects one local version-one JSON glossary.
+Entries distinguish terms from acronyms, require explanations, give acronyms an
+expansion, and may include aliases. Lookup is case-insensitive, while duplicate
+identities, terms, or aliases fail explicitly. The resource is project content,
+not `.c4ml` architecture source, and does not change diagrams.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

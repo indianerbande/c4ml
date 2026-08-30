@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.40
+Status: Draft 0.41
 
 Date: 2026-08-31
 
@@ -132,8 +132,12 @@ Node.js loader, while Angular provides project tabs, explorer selection,
 per-document buffers and dirty markers, aggregate close protection,
 cross-document source navigation, sequential Save All with partial-result and
 cancel behavior, and independent Monaco models with restored cursor and scroll
-state. Glossary/narrative/publication resources, reusable project
-libraries, and remote imports remain unimplemented.
+state. The glossary-resource slice additionally proves versioned parsing,
+deterministic ordering and lookup, acronym expansion, alias handling,
+case-insensitive collision rejection, project-revision participation, local and
+read-only Git loading, and non-source desktop/worker transport. Narrative and
+publication resources, reusable project libraries, and remote imports remain
+unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -977,6 +981,9 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-observations.json` manifest resource follows the same
   filesystem and Git containment rules, participates in the project revision,
   and never becomes an architecture source document;
+- an optional `.c4ml-glossary.json` manifest resource follows the same
+  containment rules, validates its typed entries before use, participates in
+  the project revision, and never becomes an architecture source document;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

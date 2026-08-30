@@ -49,6 +49,8 @@ Implemented and automatically validated:
 - one optional project-local version-one architecture-observation resource that
   reports confirmed drift and unreviewed or disputed uncertainty without
   changing authored source;
+- one optional project-local version-one glossary resource with deterministic
+  term, acronym, expansion, definition, and alias lookup;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,

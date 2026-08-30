@@ -206,6 +206,30 @@ describe("portable multi-document source change sets", () => {
     );
   });
 
+  it("includes the optional architecture glossary in the project revision", () => {
+    const projectWithGlossary = createArchitectureProjectInput({
+      ...project,
+      glossary: {
+        uri: "knowledge/team.c4ml-glossary.json",
+        source: '{"version":1,"id":"terms","entries":[]}',
+      },
+    });
+    const changedGlossary = createArchitectureProjectInput({
+      ...project,
+      glossary: {
+        uri: "knowledge/team.c4ml-glossary.json",
+        source: '{"version":1,"id":"terms","name":"Team","entries":[]}',
+      },
+    });
+
+    expect(createProjectRevision(projectWithGlossary)).not.toEqual(
+      createProjectRevision(project),
+    );
+    expect(createProjectRevision(changedGlossary)).not.toEqual(
+      createProjectRevision(projectWithGlossary),
+    );
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

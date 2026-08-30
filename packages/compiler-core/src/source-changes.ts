@@ -194,6 +194,12 @@ export function createProjectRevision(
         ? ""
         : createSourceRevision(project.observations.source).hash
     }`,
+    `${project.glossary?.uri.length ?? -1}:${project.glossary?.uri ?? ""}`,
+    `${project.glossary?.source.length ?? -1}:${
+      project.glossary === undefined
+        ? ""
+        : createSourceRevision(project.glossary.source).hash
+    }`,
     ...documents.map(
       ({ uri, revision }) =>
         `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
@@ -365,6 +371,7 @@ export function applyProjectSourceChangeSet(
     ...(project.observations === undefined
       ? {}
       : { observations: project.observations }),
+    ...(project.glossary === undefined ? {} : { glossary: project.glossary }),
   });
   return {
     valid: true,

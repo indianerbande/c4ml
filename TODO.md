@@ -114,8 +114,20 @@ implementation.
 - [x] add an explicit Save All command and preserve independent Monaco undo and
       cursor history per project document; and
 - [x] add the separately reviewed typed local architecture-policy resource;
-- [ ] add typed glossary, narrative, publication, theme, shape, and asset
-      resources only through separately reviewed slices.
+- [x] add a separately reviewed typed glossary resource;
+- [ ] add a separately reviewed typed narrative resource;
+- [ ] add a separately reviewed typed publication resource;
+- [ ] add a separately reviewed typed theme resource;
+- [ ] add a separately reviewed typed shape resource; and
+- [ ] add a separately reviewed typed licensed-asset resource.
+
+The version-one glossary slice adds one optional local
+`.c4ml-glossary.json` resource with deterministic term, acronym, expansion,
+definition, and alias contracts. The portable project input, project revision,
+filesystem and read-only Git loaders, desktop bridge, and compiler-worker
+project transport retain it as non-source content. Case-insensitive term and
+alias collisions fail explicitly. This slice does not infer terms from source,
+change architecture semantics, or add a visible workbench editor.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own

@@ -16,6 +16,7 @@ import {
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
+  parseArchitectureGlossary,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -277,6 +278,25 @@ async function loadManifestProject(
     }
     observations = { uri, source: source.text };
   }
+  let glossary: { readonly uri: string; readonly source: string } | undefined;
+  if (parsed.manifest.glossary !== undefined) {
+    const uri = parsed.manifest.glossary;
+    const source = await readBlob(
+      repositoryRoot,
+      revision.commit,
+      joinGitPath(projectPath, uri),
+    );
+    if (!source.valid) return source;
+    const parsedGlossary = parseArchitectureGlossary(source.text);
+    if (!parsedGlossary.valid) {
+      return failure(
+        "source",
+        parsedGlossary.error.code,
+        parsedGlossary.error.message,
+      );
+    }
+    glossary = { uri, source: source.text };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -288,6 +308,7 @@ async function loadManifestProject(
       documents,
       ...(policy === undefined ? {} : { policy }),
       ...(observations === undefined ? {} : { observations }),
+      ...(glossary === undefined ? {} : { glossary }),
     }),
     revision,
     projectPath,

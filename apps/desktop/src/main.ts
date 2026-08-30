@@ -544,6 +544,9 @@ function registerDesktopIpc(): void {
             maxDesktopSourceBytes) ||
         (loaded.project.observations !== undefined &&
           Buffer.byteLength(loaded.project.observations.source, "utf8") >
+            maxDesktopSourceBytes) ||
+        (loaded.project.glossary !== undefined &&
+          Buffer.byteLength(loaded.project.glossary.source, "utf8") >
             maxDesktopSourceBytes)
       ) {
         return {
@@ -579,6 +582,14 @@ function registerDesktopIpc(): void {
                 observations: {
                   uri: loaded.project.observations.uri,
                   source: loaded.project.observations.source,
+                },
+              }),
+          ...(loaded.project.glossary === undefined
+            ? {}
+            : {
+                glossary: {
+                  uri: loaded.project.glossary.uri,
+                  source: loaded.project.glossary.source,
                 },
               }),
           documents: loaded.project.documents.map(({ uri, text }) => {
