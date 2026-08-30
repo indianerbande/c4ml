@@ -862,7 +862,23 @@ button.editor-tab {
 }
 
 .preview-tab-strip {
+  position: relative;
   align-items: stretch;
+  padding-right: 220px;
+}
+
+.preview-tab-strip:has(.view-picker) {
+  padding-right: 340px;
+}
+
+.preview-tab-strip > .editor-tab {
+  flex: 1 1 150px;
+  max-width: 230px;
+}
+
+.preview-tab-strip > .tab-fill {
+  min-width: 0;
+  flex: 0 1 10px;
 }
 
 .preview-actions,
@@ -872,13 +888,22 @@ button.editor-tab {
 }
 
 .preview-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  flex: 0 0 auto;
   gap: 5px;
-  padding-right: 6px;
+  padding: 0 6px;
+  background: var(--surface-subtle);
+  box-shadow: -8px 0 12px -10px var(--muted);
 }
 
 .view-picker select,
 .zoom-controls button,
-.debug-button {
+.debug-button,
+.workspace-button {
   min-height: 27px;
   border: 1px solid var(--line);
   background: var(--control-bg);
@@ -923,11 +948,22 @@ button.editor-tab {
   cursor: pointer;
 }
 
+.workspace-button {
+  min-width: 29px;
+  padding: 0 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
 .zoom-controls button:hover,
 .zoom-controls button:focus-visible,
 .debug-button:hover,
 .debug-button:focus-visible,
-.debug-button.is-active {
+.debug-button.is-active,
+.workspace-button:hover,
+.workspace-button:focus-visible,
+.workspace-button.is-active {
   background: var(--control-hover);
   color: var(--accent);
   outline: 0;
@@ -935,6 +971,36 @@ button.editor-tab {
 
 .debug-button.is-active {
   border-color: var(--accent-border);
+}
+
+.workspace-button.is-active {
+  border-color: var(--accent-border);
+}
+
+.workbench-shell.is-preview-focus .workbench-main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workbench-shell.is-preview-focus .activity-bar,
+.workbench-shell.is-preview-focus .side-bar,
+.workbench-shell.is-preview-focus .source-group,
+.workbench-shell.is-preview-focus .bottom-panel {
+  display: none;
+}
+
+.workbench-shell.is-preview-focus .editor-area {
+  grid-column: 1;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workbench-shell.is-preview-focus .editor-groups,
+.workbench-shell.is-preview-detached .editor-groups {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workbench-shell.is-preview-detached .preview-group {
+  display: none;
 }
 
 .preview-stage {
@@ -945,11 +1011,6 @@ button.editor-tab {
   overflow: auto;
   padding: 24px;
   background-color: var(--preview-stage);
-  background-image: radial-gradient(
-    var(--preview-grid-dot) 0.7px,
-    transparent 0.7px
-  );
-  background-size: 17px 17px;
 }
 
 .diagram {
@@ -961,7 +1022,6 @@ button.editor-tab {
   transition:
     width 130ms ease-out,
     height 130ms ease-out;
-  filter: drop-shadow(0 8px 15px rgba(28, 50, 72, 0.1));
 }
 
 .diagram.is-navigable {
@@ -1079,7 +1139,7 @@ button.editor-tab {
 
 .diagnostics ol {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  grid-template-columns: 1fr;
   gap: 6px;
   margin: 0;
   padding: 8px;

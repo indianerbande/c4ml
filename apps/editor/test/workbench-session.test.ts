@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultWorkbenchSession,
   loadWorkbenchSession,
+  normalizePreviewWindowBounds,
   normalizePreviewZoom,
   parseWorkbenchSession,
   storeWorkbenchSession,
@@ -22,6 +23,8 @@ describe("workbench session", () => {
         bottomPanelOpen: false,
         previewZoom: 1.6,
         routingDebugEnabled: false,
+        previewWorkspaceMode: "focus",
+        previewWindowBounds: { x: 80, y: 120, width: 1280, height: 820 },
         source: "must not survive",
         path: "/private/model.c4ml",
       }),
@@ -34,6 +37,8 @@ describe("workbench session", () => {
       bottomPanelOpen: false,
       previewZoom: 1.6,
       routingDebugEnabled: false,
+      previewWorkspaceMode: "focus",
+      previewWindowBounds: { x: 80, y: 120, width: 1280, height: 820 },
     });
     expect(parsed).not.toHaveProperty("source");
     expect(parsed).not.toHaveProperty("path");
@@ -60,14 +65,31 @@ describe("workbench session", () => {
           bottomPanelOpen: "yes",
           previewZoom: 99,
           routingDebugEnabled: "yes",
+          previewWorkspaceMode: "detached",
+          previewWindowBounds: { x: "left", width: 40, height: 99_999 },
         }),
       ),
     ).toEqual({
       ...defaultWorkbenchSession,
       previewZoom: 2.5,
+      previewWindowBounds: { width: 640, height: 10_000 },
     });
     expect(parseWorkbenchSession('{"version":2}')).toEqual(
       defaultWorkbenchSession,
+    );
+  });
+
+  it("normalizes only finite, bounded detached-window geometry", () => {
+    expect(
+      normalizePreviewWindowBounds({
+        x: 20.4,
+        y: -12.6,
+        width: 1280.2,
+        height: 720.8,
+      }),
+    ).toEqual({ x: 20, y: -13, width: 1280, height: 721 });
+    expect(normalizePreviewWindowBounds(null)).toEqual(
+      defaultWorkbenchSession.previewWindowBounds,
     );
   });
 

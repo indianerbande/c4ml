@@ -101,6 +101,9 @@ assert.doesNotMatch(
 
 const mainBundle = readRequired("apps/desktop/dist/main.cjs");
 const preloadBundle = readRequired("apps/desktop/dist/preload.cjs");
+const previewPreloadBundle = readRequired(
+  "apps/desktop/dist/preview-preload.cjs",
+);
 const forgeConfig = readRequired("apps/desktop/forge.config.cjs");
 const desktopNotices = readRequired("apps/desktop/THIRD_PARTY_NOTICES.txt");
 const packagedLauncher = readRequired(
@@ -139,6 +142,23 @@ assert.ok(
   "desktop preload must expose the owned UI-language channel",
 );
 assert.ok(
+  preloadBundle.includes("c4ml:desktop:open-preview-window"),
+  "desktop preload must expose the owned preview-window channel",
+);
+assert.ok(
+  previewPreloadBundle.includes("c4mlPreview"),
+  "preview preload must expose the projection-only C4ML bridge",
+);
+assert.ok(
+  previewPreloadBundle.includes("c4ml:desktop:preview-projection"),
+  "preview preload must expose the read-only projection channel",
+);
+assert.doesNotMatch(
+  previewPreloadBundle,
+  /c4mlDesktop|open-document|open-project|save-document|export-png/,
+  "preview preload must not expose document, project, save, or export authority",
+);
+assert.ok(
   mainBundle.includes("C4ML-DESKTOP-EXPORT-001"),
   "desktop main bundle must validate PNG rendering failures",
 );
@@ -146,6 +166,11 @@ assert.doesNotMatch(
   preloadBundle,
   /node:fs|require\(["']fs["']\)/,
   "desktop preload must not expose filesystem access",
+);
+assert.doesNotMatch(
+  previewPreloadBundle,
+  /node:fs|require\(["']fs["']\)/,
+  "preview preload must not expose filesystem access",
 );
 for (const requiredFuse of [
   "RunAsNode",
@@ -197,7 +222,7 @@ assert.ok(
 );
 
 console.log(
-  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, secure preload, local editor assets, controlled resvg PNG export).",
+  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, separated secure preloads, local editor assets, controlled resvg PNG export).",
 );
 
 function readRequired(relativePath) {

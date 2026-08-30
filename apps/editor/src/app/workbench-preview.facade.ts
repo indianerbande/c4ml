@@ -1,4 +1,16 @@
-import { Injectable, computed, effect, inject, signal } from "@angular/core";
+import {
+  DestroyRef,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+} from "@angular/core";
+import type {
+  DesktopPreviewInteraction,
+  DesktopPreviewProjection,
+  DesktopPreviewWindowState,
+} from "@c4ml/desktop-contract";
 
 import type {
   CompilerWorkerNavigationTarget,
@@ -6,23 +18,38 @@ import type {
   CompilerWorkerRouteNavigationTarget,
 } from "./compiler-worker.protocol.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
+import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
+import { createPreviewProjection } from "./preview-projection.js";
 import { svgWithNavigationHighlight } from "./preview-navigation.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
 
 @Injectable({ providedIn: "root" })
 export class WorkbenchPreviewFacade {
   readonly selectedSceneObjectId = signal<string | undefined>(undefined);
   readonly previewUrl = signal<string | undefined>(undefined);
+  readonly detached = signal(false);
 
   readonly #compiler = inject(CompilerWorkerClient);
   readonly #i18n = inject(WorkbenchLocalizationService);
+  readonly #preferences = inject(WorkbenchPreferencesService);
   readonly #session = inject(WorkbenchSessionService);
+  readonly #destroyRef = inject(DestroyRef);
+  readonly #desktop = resolveC4mlDesktopApi();
+  readonly #detachedSelectionListeners = new Set<
+    (target: CompilerWorkerNavigationTarget | undefined) => void
+  >();
+  #projectionRevision = 0;
 
   readonly zoom = computed(() => this.#session.state().previewZoom);
   readonly routingDebugEnabled = computed(
     () => this.#session.state().routingDebugEnabled,
   );
+  readonly workspaceMode = computed(
+    () => this.#session.state().previewWorkspaceMode,
+  );
+  readonly desktopDetachmentAvailable = this.#desktop !== undefined;
   readonly lastValidSvg = computed(() => this.#compiler.state().lastValidSvg);
   readonly navigation = computed(
     () => this.#compiler.state().lastValidNavigation,
@@ -111,6 +138,27 @@ export class WorkbenchPreviewFacade {
       this.previewUrl.set(url);
       onCleanup(() => URL.revokeObjectURL(url));
     });
+
+    const unsubscribeInteraction = this.#desktop?.onPreviewInteraction(
+      (interaction) => this.#handleDetachedInteraction(interaction),
+    );
+    const unsubscribeWindowState = this.#desktop?.onPreviewWindowState(
+      (state) => this.#acceptWindowState(state),
+    );
+    void this.#desktop
+      ?.getPreviewWindowState()
+      .then((state) => this.#acceptWindowState(state));
+    this.#destroyRef.onDestroy(() => {
+      unsubscribeInteraction?.();
+      unsubscribeWindowState?.();
+    });
+
+    effect(() => {
+      const projection = this.#nextProjection();
+      if (this.detached()) {
+        this.#desktop?.updatePreviewProjection(projection);
+      }
+    });
   }
 
   clearSelection(): void {
@@ -142,5 +190,115 @@ export class WorkbenchPreviewFacade {
 
   toggleRoutingDebug(): void {
     this.#session.toggleRoutingDebug();
+  }
+
+  toggleFocusMode(): void {
+    this.#session.setPreviewWorkspaceMode(
+      this.workspaceMode() === "focus" ? "split" : "focus",
+    );
+  }
+
+  async detach(): Promise<boolean> {
+    if (this.#desktop === undefined) {
+      return false;
+    }
+    this.#session.setPreviewWorkspaceMode("split");
+    const result = await this.#desktop.openPreviewWindow({
+      projection: this.#nextProjection(),
+      bounds: this.#session.state().previewWindowBounds,
+    });
+    if (result.status === "opened") {
+      this.detached.set(true);
+      return true;
+    }
+    return false;
+  }
+
+  redock(): void {
+    this.#desktop?.closePreviewWindow();
+    this.detached.set(false);
+    this.#session.setPreviewWorkspaceMode("split");
+  }
+
+  onDetachedSelection(
+    listener: (target: CompilerWorkerNavigationTarget | undefined) => void,
+  ): () => void {
+    this.#detachedSelectionListeners.add(listener);
+    return () => this.#detachedSelectionListeners.delete(listener);
+  }
+
+  #nextProjection(): DesktopPreviewProjection {
+    const compiler = this.#compiler.state();
+    const preferences = this.#preferences.preferences();
+    return createPreviewProjection({
+      revision: ++this.#projectionRevision,
+      compilerPhase: compiler.phase,
+      statusLabel: this.#statusLabel(compiler.phase),
+      views: compiler.views,
+      activeViewId: compiler.activeViewId,
+      svg: this.displaySvg(),
+      navigation: compiler.lastValidNavigation,
+      selectedSceneObjectId: this.selectedSceneObjectId(),
+      selectionLabel: this.selectedLabel(),
+      zoom: this.zoom(),
+      routeDebugEnabled: this.routingDebugEnabled(),
+      stale:
+        compiler.phase === "invalid" && compiler.lastValidSvg !== undefined,
+      language: preferences.uiLanguage,
+      colorScheme: this.#preferences.effectiveColorScheme(),
+      colorPalette: preferences.colorPalette,
+      interfaceFontSize: preferences.interfaceFontSize,
+    });
+  }
+
+  #handleDetachedInteraction(interaction: DesktopPreviewInteraction): void {
+    switch (interaction.type) {
+      case "fit":
+        this.fit();
+        break;
+      case "redock":
+        this.redock();
+        break;
+      case "select": {
+        const target = this.navigation()?.targets.find(
+          ({ sceneObjectId }) => sceneObjectId === interaction.sceneObjectId,
+        );
+        for (const listener of this.#detachedSelectionListeners) {
+          listener(target);
+        }
+        break;
+      }
+      case "toggle-route-debug":
+        this.toggleRoutingDebug();
+        break;
+      case "zoom-in":
+        this.zoomIn();
+        break;
+      case "zoom-out":
+        this.zoomOut();
+        break;
+    }
+  }
+
+  #acceptWindowState(state: DesktopPreviewWindowState): void {
+    this.detached.set(state.open);
+    if (state.bounds !== undefined) {
+      this.#session.setPreviewWindowBounds(state.bounds);
+    }
+  }
+
+  #statusLabel(phase: "compiling" | "failed" | "idle" | "invalid" | "valid"): string {
+    switch (phase) {
+      case "compiling":
+        return this.#i18n.t("status.compiling");
+      case "failed":
+        return this.#i18n.t("status.failed");
+      case "invalid":
+        return this.#i18n.t("status.invalid");
+      case "valid":
+        return this.#i18n.t("status.valid");
+      default:
+        return this.#i18n.t("status.waiting");
+    }
   }
 }

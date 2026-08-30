@@ -142,8 +142,7 @@
   --source-status: #eef3f8;
   --source-action: #40566b;
   --source-action-hover: #dceff5;
-  --preview-stage: #f4f7fa;
-  --preview-grid-dot: #cdd7e2;
+  --preview-stage: #f5f8fb;
   --panel-shadow: 0 12px 35px rgba(35, 57, 82, 0.08);
   --app-bar-shadow: 0 2px 14px rgba(26, 44, 68, 0.06);
   --dialog-shadow: 0 28px 80px rgba(15, 28, 44, 0.3);
@@ -181,8 +180,6 @@
   --source-status: #122638;
   --source-action: #d8e4ef;
   --source-action-hover: #204058;
-  --preview-stage: #111e2b;
-  --preview-grid-dot: #314355;
   --panel-shadow: 0 12px 35px rgba(0, 0, 0, 0.24);
   --app-bar-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
   --dialog-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
@@ -256,8 +253,6 @@
   --source-panel: color-mix(in srgb, var(--accent) 3%, #f6f8fa);
   --source-status: color-mix(in srgb, var(--accent) 4%, #f0f3f6);
   --source-action-hover: color-mix(in srgb, var(--accent) 10%, #eef2f5);
-  --preview-stage: color-mix(in srgb, var(--accent) 3%, #f5f7f9);
-  --preview-grid-dot: color-mix(in srgb, var(--accent) 18%, #d5dce3);
 }
 
 :root[data-color-scheme="dark"][data-color-palette="gray"] {
@@ -329,8 +324,6 @@
   --source-border: color-mix(in srgb, var(--accent) 17%, #2b3b4b);
   --source-status: color-mix(in srgb, var(--accent) 7%, #112131);
   --source-action-hover: color-mix(in srgb, var(--accent) 15%, #1d3549);
-  --preview-stage: color-mix(in srgb, var(--accent) 5%, #101a25);
-  --preview-grid-dot: color-mix(in srgb, var(--accent) 16%, #2f3c4b);
 }
 
 * {

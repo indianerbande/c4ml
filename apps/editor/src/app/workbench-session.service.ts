@@ -7,6 +7,8 @@ import {
   storeWorkbenchSession,
   type WorkbenchActivity,
   type WorkbenchPanel,
+  type WorkbenchPreviewWindowBounds,
+  type WorkbenchPreviewWorkspaceMode,
   type WorkbenchSession,
 } from "./workbench-session.js";
 
@@ -41,6 +43,18 @@ export class WorkbenchSessionService {
     this.#patch({
       routingDebugEnabled: !this.state().routingDebugEnabled,
     });
+  }
+
+  setPreviewWorkspaceMode(
+    previewWorkspaceMode: WorkbenchPreviewWorkspaceMode,
+  ): void {
+    this.#patch({ previewWorkspaceMode });
+  }
+
+  setPreviewWindowBounds(
+    previewWindowBounds: WorkbenchPreviewWindowBounds,
+  ): void {
+    this.#patch({ previewWindowBounds });
   }
 
   #patch(change: Partial<Omit<WorkbenchSession, "version">>): void {

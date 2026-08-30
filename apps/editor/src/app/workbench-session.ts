@@ -11,6 +11,15 @@ export type WorkbenchActivity = (typeof workbenchActivities)[number];
 export const workbenchPanels = ["problems", "route"] as const;
 export type WorkbenchPanel = (typeof workbenchPanels)[number];
 
+export type WorkbenchPreviewWorkspaceMode = "focus" | "split";
+
+export interface WorkbenchPreviewWindowBounds {
+  readonly x?: number;
+  readonly y?: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface WorkbenchSession {
   readonly version: 1;
   readonly activeActivity: WorkbenchActivity;
@@ -18,6 +27,8 @@ export interface WorkbenchSession {
   readonly bottomPanelOpen: boolean;
   readonly previewZoom: number;
   readonly routingDebugEnabled: boolean;
+  readonly previewWorkspaceMode: WorkbenchPreviewWorkspaceMode;
+  readonly previewWindowBounds: WorkbenchPreviewWindowBounds;
 }
 
 export interface WorkbenchSessionStorage {
@@ -32,6 +43,8 @@ export const defaultWorkbenchSession: WorkbenchSession = {
   bottomPanelOpen: true,
   previewZoom: 1,
   routingDebugEnabled: true,
+  previewWorkspaceMode: "split",
+  previewWindowBounds: { width: 1100, height: 760 },
 };
 
 export function parseWorkbenchSession(
@@ -62,6 +75,13 @@ export function parseWorkbenchSession(
         typeof value["routingDebugEnabled"] === "boolean"
           ? value["routingDebugEnabled"]
           : defaultWorkbenchSession.routingDebugEnabled,
+      previewWorkspaceMode:
+        value["previewWorkspaceMode"] === "focus"
+          ? "focus"
+          : defaultWorkbenchSession.previewWorkspaceMode,
+      previewWindowBounds: normalizePreviewWindowBounds(
+        value["previewWindowBounds"],
+      ),
     };
   } catch {
     return defaultWorkbenchSession;
@@ -100,6 +120,24 @@ export function normalizePreviewZoom(value: unknown): number {
   return Math.min(2.5, Math.max(0.4, rounded));
 }
 
+export function normalizePreviewWindowBounds(
+  value: unknown,
+): WorkbenchPreviewWindowBounds {
+  if (!isRecord(value)) {
+    return defaultWorkbenchSession.previewWindowBounds;
+  }
+  const width = normalizeDimension(value["width"], 640, 10_000, 1100);
+  const height = normalizeDimension(value["height"], 480, 10_000, 760);
+  const x = normalizeCoordinate(value["x"]);
+  const y = normalizeCoordinate(value["y"]);
+  return {
+    ...(x === undefined ? {} : { x }),
+    ...(y === undefined ? {} : { y }),
+    width,
+    height,
+  };
+}
+
 function isActivity(value: unknown): value is WorkbenchActivity {
   return workbenchActivities.some((candidate) => candidate === value);
 }
@@ -110,4 +148,21 @@ function isPanel(value: unknown): value is WorkbenchPanel {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function normalizeDimension(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.round(Math.min(maximum, Math.max(minimum, value)))
+    : fallback;
+}
+
+function normalizeCoordinate(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.round(value)
+    : undefined;
 }

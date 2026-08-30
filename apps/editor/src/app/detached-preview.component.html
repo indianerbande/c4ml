@@ -1,0 +1,76 @@
+<main class="detached-preview-shell">
+  <header class="preview-toolbar">
+    <div class="preview-title">
+      <span class="preview-mark" aria-hidden="true"></span>
+      <span>
+        <strong>{{ projection()?.view?.title ?? "C4ML Preview" }}</strong>
+        <small>{{ projection()?.statusLabel ?? message("waiting") }}</small>
+      </span>
+    </div>
+
+    <div class="preview-controls">
+      <div class="zoom-controls">
+        <button
+          type="button"
+          (click)="send('zoom-out')"
+          [attr.aria-label]="message('zoomOut')"
+        >
+          −
+        </button>
+        <button type="button" (click)="send('fit')" [title]="message('fit')">
+          {{ zoomLabel() }}
+        </button>
+        <button
+          type="button"
+          (click)="send('zoom-in')"
+          [attr.aria-label]="message('zoomIn')"
+        >
+          +
+        </button>
+      </div>
+      <button
+        type="button"
+        [class.is-active]="projection()?.routeDebugEnabled"
+        [attr.aria-pressed]="projection()?.routeDebugEnabled ?? false"
+        (click)="send('toggle-route-debug')"
+      >
+        {{ message("routes") }}
+      </button>
+      <button
+        type="button"
+        class="redock-button"
+        data-preview-action="redock"
+        (click)="send('redock')"
+      >
+        {{ message("redock") }}
+      </button>
+    </div>
+  </header>
+
+  <section class="preview-stage">
+    @if (previewUrl(); as url) {
+      <img
+        class="diagram"
+        [class.is-navigable]="projection()?.compilerPhase === 'valid'"
+        [src]="url"
+        [style.width]="previewSize()"
+        [style.height]="previewSize()"
+        (click)="onPreviewClick($event)"
+        [alt]="message('alt')"
+      />
+    } @else {
+      <div class="empty-preview">
+        <span class="empty-glyph" aria-hidden="true"></span>
+        <strong>{{ message("building") }}</strong>
+        <span>{{ message("waiting") }}</span>
+      </div>
+    }
+
+    @if (projection()?.stale) {
+      <p class="stale-note">{{ message("stale") }}</p>
+    }
+    @if (projection()?.selectionLabel; as label) {
+      <p class="selection-note">{{ label }}</p>
+    }
+  </section>
+</main>
