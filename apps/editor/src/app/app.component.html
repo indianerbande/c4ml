@@ -44,6 +44,19 @@
           {{ i18n.t("placement.undo") }}
         </button>
       }
+      @if (routeEditor.canUndo()) {
+        <button type="button" class="title-action" (click)="undoRoute()">
+          {{ i18n.t("routeEditor.undo") }}
+        </button>
+      }
+      @if (semanticEditor.canUndo()) {
+        <button type="button" class="title-action" (click)="undoSemantic()">
+          {{ i18n.t("semanticEditor.undo") }}
+        </button>
+      }
+      <button type="button" class="title-action architecture-action" (click)="openSemanticEditor()">
+        {{ i18n.t("semanticEditor.open") }}
+      </button>
       <button type="button" class="primary-action" (click)="startWizard()">
         {{ i18n.t("wizard.open") }}
       </button>
@@ -765,6 +778,13 @@
                   >
                     {{ i18n.t("panel.openRouteSource") }}
                   </button>
+                  <button
+                    type="button"
+                    class="inspector-source"
+                    (click)="openRouteEditor()"
+                  >
+                    {{ i18n.t("routeEditor.open") }}
+                  </button>
                 </div>
                 <dl>
                   <div>
@@ -977,6 +997,31 @@
       [selectedId]="node.referenceId"
       (applied)="applyPlacement($event)"
       (cancelled)="closePlacementEditor()"
+    />
+  }
+}
+
+@if (routeEditor.open() && selectedRoute(); as route) {
+  @if (compiler.state().activeViewId; as activeViewId) {
+    <c4ml-route-editor
+      [project]="routeEditor.project()"
+      [activeFile]="activeDocumentUri()"
+      [viewId]="activeViewId"
+      [route]="route"
+      (applied)="applyRoute($event)"
+      (cancelled)="closeRouteEditor()"
+    />
+  }
+}
+
+@if (semanticEditor.open()) {
+  @if (compiler.state().activeViewId; as activeViewId) {
+    <c4ml-semantic-editor
+      [project]="semanticEditor.project()"
+      [activeFile]="activeDocumentUri()"
+      [viewId]="activeViewId"
+      (applied)="applySemantic($event)"
+      (cancelled)="closeSemanticEditor()"
     />
   }
 }

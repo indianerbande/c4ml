@@ -32,7 +32,10 @@ import {
   highlightC4mlDraft,
   parseC4mlDraft,
   parseC4mlProjectDraft,
+  inspectC4mlSemanticAuthoringContext,
   proposeC4mlPlacementEdit,
+  proposeC4mlRouteEdit,
+  proposeC4mlSemanticEdit,
 } from "@c4ml/language-c4ml";
 
 import {
@@ -60,9 +63,17 @@ import {
   type PreviewProjectChangeWorkerResponse,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerRequest,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
+import type {
+  InspectSemanticAuthoringWorkerRequest,
+  InspectSemanticAuthoringWorkerResponse,
+  PreviewSemanticChangeWorkerRequest,
+  PreviewSemanticChangeWorkerResponse,
+} from "./compiler-worker.semantic-authoring.protocol.js";
 import { compilerWorkerProtocolVersion } from "./compiler-worker.shared.js";
 import type {
   CompilerWorkerInbound,
@@ -524,6 +535,196 @@ export async function previewPlacementChangeWorkerRequest(
   }
 }
 
+export async function previewRouteChangeWorkerRequest(
+  request: PreviewRouteChangeWorkerRequest,
+  layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
+  embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
+): Promise<PreviewRouteChangeWorkerResponse> {
+  try {
+    const project = toArchitectureProject(request.project);
+    const proposal = await proposeC4mlRouteEdit(project, request.route);
+    if (!proposal.valid) {
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-route-change-result",
+        requestId: request.requestId,
+        status: "invalid",
+        changeSet: undefined,
+        documentUri: undefined,
+        proposedText: undefined,
+        candidateProject: undefined,
+        compilation: undefined,
+        repairs: [],
+        authoringIssues: proposal.issues,
+        changeIssues: [],
+        message: undefined,
+      };
+    }
+    const preview = await previewProjectChangeWorkerRequest(
+      {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-project-change",
+        requestId: request.requestId,
+        file: request.file,
+        project: request.project,
+        changeSet: proposal.changeSet,
+        ...(request.requestedViewId === undefined
+          ? {}
+          : { requestedViewId: request.requestedViewId }),
+      },
+      layoutAdapter,
+      embeddedFontFaces,
+    );
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change-result",
+      requestId: request.requestId,
+      status: preview.status,
+      changeSet: proposal.changeSet,
+      documentUri: proposal.documentUri,
+      proposedText: proposal.proposedText,
+      candidateProject: preview.candidateProject,
+      compilation: preview.compilation,
+      repairs: proposal.repairs,
+      authoringIssues: [],
+      changeIssues: preview.issues,
+      message: preview.message,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change-result",
+      requestId: request.requestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      repairs: [],
+      authoringIssues: [],
+      changeIssues: [],
+      message: `Route preview failed: ${message}`,
+    };
+  }
+}
+
+export async function inspectSemanticAuthoringWorkerRequest(
+  request: InspectSemanticAuthoringWorkerRequest,
+): Promise<InspectSemanticAuthoringWorkerResponse> {
+  try {
+    const result = await inspectC4mlSemanticAuthoringContext(
+      toArchitectureProject(request.project),
+      request.viewId,
+    );
+    return result.valid
+      ? {
+          protocolVersion: compilerWorkerProtocolVersion,
+          type: "semantic-authoring-context-result",
+          requestId: request.requestId,
+          status: "valid",
+          context: result.context,
+          issues: [],
+          message: undefined,
+        }
+      : {
+          protocolVersion: compilerWorkerProtocolVersion,
+          type: "semantic-authoring-context-result",
+          requestId: request.requestId,
+          status: "invalid",
+          context: undefined,
+          issues: result.issues,
+          message: undefined,
+        };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "semantic-authoring-context-result",
+      requestId: request.requestId,
+      status: "failed",
+      context: undefined,
+      issues: [],
+      message: `Architecture authoring context failed: ${message}`,
+    };
+  }
+}
+
+export async function previewSemanticChangeWorkerRequest(
+  request: PreviewSemanticChangeWorkerRequest,
+  layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
+  embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
+): Promise<PreviewSemanticChangeWorkerResponse> {
+  try {
+    const proposal = await proposeC4mlSemanticEdit(
+      toArchitectureProject(request.project),
+      request.semantic,
+    );
+    if (!proposal.valid) {
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-semantic-change-result",
+        requestId: request.requestId,
+        status: "invalid",
+        changeSet: undefined,
+        documentUri: undefined,
+        proposedText: undefined,
+        candidateProject: undefined,
+        compilation: undefined,
+        authoringIssues: proposal.issues,
+        changeIssues: [],
+        message: undefined,
+      };
+    }
+    const preview = await previewProjectChangeWorkerRequest(
+      {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-project-change",
+        requestId: request.requestId,
+        file: request.file,
+        project: request.project,
+        changeSet: proposal.changeSet,
+        ...(request.requestedViewId === undefined
+          ? {}
+          : { requestedViewId: request.requestedViewId }),
+      },
+      layoutAdapter,
+      embeddedFontFaces,
+    );
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change-result",
+      requestId: request.requestId,
+      status: preview.status,
+      changeSet: proposal.changeSet,
+      documentUri: proposal.documentUri,
+      proposedText: proposal.proposedText,
+      candidateProject: preview.candidateProject,
+      compilation: preview.compilation,
+      authoringIssues: [],
+      changeIssues: preview.issues,
+      message: preview.message,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change-result",
+      requestId: request.requestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      authoringIssues: [],
+      changeIssues: [],
+      message: `Architecture change preview failed: ${message}`,
+    };
+  }
+}
+
 export function executeWorkerRequest(
   request: CompilerWorkerInbound,
 ): Promise<CompilerWorkerOutbound> {
@@ -538,10 +739,16 @@ export function executeWorkerRequest(
       return highlightWorkerRequest(request);
     case "help-context":
       return helpWorkerRequest(request);
+    case "inspect-semantic-authoring":
+      return inspectSemanticAuthoringWorkerRequest(request);
     case "preview-project-change":
       return previewProjectChangeWorkerRequest(request);
     case "preview-placement-change":
       return previewPlacementChangeWorkerRequest(request);
+    case "preview-route-change":
+      return previewRouteChangeWorkerRequest(request);
+    case "preview-semantic-change":
+      return previewSemanticChangeWorkerRequest(request);
     case "generate-system-context":
       return generateWorkerRequest(request);
   }
@@ -669,9 +876,10 @@ function toWorkerNavigation(
         ) {
           return [];
         }
-        const controlSource = routing?.controls?.find(
+        const control = routing?.controls?.find(
           ({ relationshipId }) => relationshipId === route.relationshipId,
-        )?.source;
+        );
+        const controlSource = control?.source;
         const relationshipSource = toWorkerSource(source);
         const detailSource = toWorkerSource(controlSource ?? source);
         const sourceForRoutingDetail = (
@@ -691,6 +899,8 @@ function toWorkerNavigation(
             controlSource === undefined ? [] : [toWorkerSource(controlSource)],
           policy: route.policy,
           style: route.style,
+          sourcePortSelection: control?.sourcePort ?? "automatic",
+          targetPortSelection: control?.targetPort ?? "automatic",
           points: route.points,
           sourcePort: toWorkerPort(sourcePort),
           targetPort: toWorkerPort(targetPort),

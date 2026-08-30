@@ -34,6 +34,10 @@ Implemented:
   relative placement, automatic-relative nudge, alignment, ordered
   distribution, an explicit exact-pin escape hatch, non-mutating candidate
   source/SVG review, and one-step Monaco apply/undo;
+- a source-backed Route editor opened from a selected effective Route, with
+  graphical cardinal Port selection, add/move/remove guidance operations,
+  removal of incompatible controls, non-mutating candidate source/SVG review,
+  safe-repair and hard-conflict reporting, and one-step Monaco apply/undo;
 - selection among the executable views declared in the current document;
 - locally packaged IBM Plex Sans for the interface and diagrams, IBM Plex Mono
   for source, and standalone SVG font embedding;

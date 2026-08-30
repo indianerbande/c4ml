@@ -144,6 +144,11 @@ kbd {
   color: var(--control-ink);
 }
 
+.architecture-action {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--danger));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 55%, var(--danger));
+}
+
 .primary-action {
   border: 1px solid var(--accent-strong);
   background: var(--accent);

@@ -1,6 +1,9 @@
 import type {
   C4mlPlacementAuthoringIssue,
   C4mlPlacementEditRequest,
+  C4mlRouteAuthoringIssue,
+  C4mlRouteEditRequest,
+  C4mlRouteRepair,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
@@ -89,6 +92,32 @@ export interface PreviewPlacementChangeWorkerResponse {
   readonly message: string | undefined;
 }
 
+export interface PreviewRouteChangeWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-route-change";
+  readonly requestId: number;
+  readonly file: string;
+  readonly project: CompilerWorkerProject;
+  readonly route: C4mlRouteEditRequest;
+  readonly requestedViewId?: string;
+}
+
+export interface PreviewRouteChangeWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-route-change-result";
+  readonly requestId: number;
+  readonly status: "failed" | "invalid" | "valid";
+  readonly changeSet: ProposedProjectSourceChangeSet | undefined;
+  readonly documentUri: string | undefined;
+  readonly proposedText: string | undefined;
+  readonly candidateProject: CompilerWorkerProject | undefined;
+  readonly compilation: CompilerWorkerResponse | undefined;
+  readonly repairs: readonly C4mlRouteRepair[];
+  readonly authoringIssues: readonly C4mlRouteAuthoringIssue[];
+  readonly changeIssues: readonly ProjectSourceChangeIssue[];
+  readonly message: string | undefined;
+}
+
 export function isWizardWorkerRequest(
   value: unknown,
 ): value is WizardWorkerRequest {
@@ -164,6 +193,24 @@ export function isPreviewPlacementChangeWorkerRequest(
     isCompilerWorkerProject(candidate.project) &&
     candidate.project.documents.some(({ uri }) => uri === candidate.file) &&
     isPlacementEditRequest(candidate.placement) &&
+    (candidate.requestedViewId === undefined ||
+      typeof candidate.requestedViewId === "string")
+  );
+}
+
+export function isPreviewRouteChangeWorkerRequest(
+  value: unknown,
+): value is PreviewRouteChangeWorkerRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<PreviewRouteChangeWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-route-change" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    isCompilerWorkerProject(candidate.project) &&
+    candidate.project.documents.some(({ uri }) => uri === candidate.file) &&
+    isRouteEditRequest(candidate.route) &&
     (candidate.requestedViewId === undefined ||
       typeof candidate.requestedViewId === "string")
   );
@@ -268,6 +315,65 @@ export function isPreviewPlacementChangeWorkerResponse(
   );
 }
 
+export function isPreviewRouteChangeWorkerResponse(
+  value: unknown,
+): value is PreviewRouteChangeWorkerResponse {
+  if (!isRecord(value)) return false;
+  const candidate = value as Partial<PreviewRouteChangeWorkerResponse>;
+  const common =
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-route-change-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "failed" ||
+      candidate.status === "invalid" ||
+      candidate.status === "valid") &&
+    Array.isArray(candidate.repairs) &&
+    candidate.repairs.every(isRouteRepair) &&
+    Array.isArray(candidate.authoringIssues) &&
+    candidate.authoringIssues.every(isRouteAuthoringIssue) &&
+    Array.isArray(candidate.changeIssues) &&
+    candidate.changeIssues.every(isProjectSourceChangeIssue) &&
+    (candidate.message === undefined || typeof candidate.message === "string");
+  if (!common) return false;
+
+  if (candidate.changeSet === undefined) {
+    return (
+      candidate.documentUri === undefined &&
+      candidate.proposedText === undefined &&
+      candidate.candidateProject === undefined &&
+      candidate.compilation === undefined &&
+      ((candidate.status === "failed" && typeof candidate.message === "string") ||
+        (candidate.status === "invalid" &&
+          candidate.authoringIssues.length + candidate.changeIssues.length > 0))
+    );
+  }
+  const hasProposal =
+    isProposedProjectSourceChangeSet(candidate.changeSet) &&
+    typeof candidate.documentUri === "string" &&
+    typeof candidate.proposedText === "string" &&
+    candidate.authoringIssues.length === 0;
+  if (!hasProposal) return false;
+  if (candidate.candidateProject === undefined) {
+    return (
+      candidate.compilation === undefined &&
+      ((candidate.status === "invalid" &&
+        candidate.changeIssues.length > 0 &&
+        candidate.message === undefined) ||
+        (candidate.status === "failed" &&
+          candidate.changeIssues.length === 0 &&
+          typeof candidate.message === "string"))
+    );
+  }
+  return (
+    isCompilerWorkerProject(candidate.candidateProject) &&
+    isCompilerWorkerResponse(candidate.compilation) &&
+    candidate.compilation.requestId === candidate.requestId &&
+    candidate.compilation.status === candidate.status &&
+    candidate.changeIssues.length === 0 &&
+    candidate.message === undefined
+  );
+}
+
 function isPlacementEditRequest(value: unknown): value is C4mlPlacementEditRequest {
   if (!isRecord(value)) return false;
   const intent = value["intent"];
@@ -282,6 +388,55 @@ function isPlacementEditRequest(value: unknown): value is C4mlPlacementEditReque
     intent["kind"] === "layout" &&
     typeof intent["summary"] === "string" &&
     isPlacementOperation(operation)
+  );
+}
+
+function isRouteEditRequest(value: unknown): value is C4mlRouteEditRequest {
+  if (!isRecord(value)) return false;
+  const intent = value["intent"];
+  const operation = value["operation"];
+  return (
+    isId(value["id"]) &&
+    isId(value["viewId"]) &&
+    isRecord(intent) &&
+    isId(intent["id"]) &&
+    intent["kind"] === "route" &&
+    typeof intent["summary"] === "string" &&
+    isRouteOperation(operation)
+  );
+}
+
+function isRouteOperation(value: unknown): boolean {
+  if (!isRecord(value) || !isId(value["relationshipId"])) return false;
+  switch (value["kind"]) {
+    case "ports":
+      return isRoutePort(value["sourcePort"]) && isRoutePort(value["targetPort"]);
+    case "add-waypoint":
+      return isIntegerPoint(value["point"]);
+    case "move-waypoint":
+      return (
+        Number.isSafeInteger(value["waypointIndex"]) &&
+        Number(value["waypointIndex"]) >= 0 &&
+        isIntegerPoint(value["delta"])
+      );
+    case "remove-waypoint":
+      return Number.isSafeInteger(value["waypointIndex"]) && Number(value["waypointIndex"]) >= 0;
+    case "clear-guidance":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function isRoutePort(value: unknown): boolean {
+  return ["automatic", "east", "north", "south", "west"].includes(String(value));
+}
+
+function isIntegerPoint(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    Number.isSafeInteger(value["x"]) &&
+    Number.isSafeInteger(value["y"])
   );
 }
 
@@ -341,6 +496,32 @@ function isPlacementAuthoringIssue(
       "C4ML-AUTHORING-005",
       "C4ML-AUTHORING-006",
       "C4ML-AUTHORING-007",
+    ].includes(String(value["code"])) &&
+    typeof value["message"] === "string"
+  );
+}
+
+function isRouteAuthoringIssue(value: unknown): value is C4mlRouteAuthoringIssue {
+  return (
+    isRecord(value) &&
+    [
+      "C4ML-AUTHORING-101",
+      "C4ML-AUTHORING-102",
+      "C4ML-AUTHORING-103",
+      "C4ML-AUTHORING-104",
+    ].includes(String(value["code"])) &&
+    typeof value["message"] === "string"
+  );
+}
+
+function isRouteRepair(value: unknown): value is C4mlRouteRepair {
+  return (
+    isRecord(value) &&
+    [
+      "C4ML-ROUTE-REPAIR-001",
+      "C4ML-ROUTE-REPAIR-002",
+      "C4ML-ROUTE-REPAIR-003",
+      "C4ML-ROUTE-REPAIR-004",
     ].includes(String(value["code"])) &&
     typeof value["message"] === "string"
   );

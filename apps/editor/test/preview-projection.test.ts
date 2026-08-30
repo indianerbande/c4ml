@@ -34,8 +34,10 @@ describe("detached preview projection", () => {
           label: "Publishes observations",
           source,
           relatedSources: [],
-          policy: "guided",
-          style: "orthogonal",
+        policy: "guided",
+        style: "orthogonal",
+        sourcePortSelection: "east",
+        targetPortSelection: "west",
           points: [
             { x: 260, y: 120 },
             { x: 520, y: 120 },

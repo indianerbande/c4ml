@@ -121,6 +121,8 @@ export interface CompilerWorkerRouteNavigationTarget extends CompilerWorkerNavig
   readonly kind: "route";
   readonly policy: "automatic" | "fixed" | "guided";
   readonly style: "direct" | "orthogonal";
+  readonly sourcePortSelection: "automatic" | "east" | "north" | "south" | "west";
+  readonly targetPortSelection: "automatic" | "east" | "north" | "south" | "west";
   readonly points: readonly CompilerWorkerNavigationPoint[];
   readonly sourcePort: CompilerWorkerRoutePort;
   readonly targetPort: CompilerWorkerRoutePort;
@@ -412,6 +414,8 @@ function isCompilerWorkerNavigationTarget(
       route.policy === "fixed" ||
       route.policy === "guided") &&
     (route.style === "direct" || route.style === "orthogonal") &&
+    isPortSelection(route.sourcePortSelection) &&
+    isPortSelection(route.targetPortSelection) &&
     Array.isArray(route.points) &&
     route.points.length >= 2 &&
     route.points.every(isNavigationPoint) &&
@@ -429,6 +433,16 @@ function isCompilerWorkerNavigationTarget(
     route.lockedSegments.every(isLockedSegment) &&
     Array.isArray(route.avoidanceRegions) &&
     route.avoidanceRegions.every(isAvoidanceRegion)
+  );
+}
+
+function isPortSelection(value: unknown): boolean {
+  return (
+    value === "automatic" ||
+    value === "east" ||
+    value === "north" ||
+    value === "south" ||
+    value === "west"
   );
 }
 

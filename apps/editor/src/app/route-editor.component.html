@@ -1,0 +1,119 @@
+<div class="placement-backdrop" (click)="cancel()">
+  <section class="placement-editor route-editor" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('routeEditor.title')" (click)="$event.stopPropagation()">
+    <header>
+      <div>
+        <p>{{ i18n.t("routeEditor.eyebrow") }}</p>
+        <h2>{{ i18n.t("routeEditor.title") }}</h2>
+        <span>{{ i18n.t("routeEditor.description") }}</span>
+      </div>
+      <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('routeEditor.cancel')">×</button>
+    </header>
+
+    <div class="placement-body">
+      <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
+        <div class="route-identity"><small>{{ i18n.t("routeEditor.relationship") }}</small><strong>{{ route().label }}</strong><code>{{ route().referenceId }}</code></div>
+
+        <label>
+          <span>{{ i18n.t("routeEditor.operation") }}</span>
+          <select [value]="operationKind()" (change)="selectOperation($event)">
+            <option value="ports">{{ i18n.t("routeEditor.ports") }}</option>
+            <option value="add-waypoint">{{ i18n.t("routeEditor.addWaypoint") }}</option>
+            <option value="move-waypoint" [disabled]="route().waypoints.length === 0">{{ i18n.t("routeEditor.moveWaypoint") }}</option>
+            <option value="remove-waypoint" [disabled]="route().waypoints.length === 0">{{ i18n.t("routeEditor.removeWaypoint") }}</option>
+            <option value="clear-guidance">{{ i18n.t("routeEditor.clearGuidance") }}</option>
+          </select>
+          <small>{{ i18n.t("routeEditor.operationHint") }}</small>
+        </label>
+
+        @if (operationKind() === "ports") {
+          <div class="port-pair">
+            @for (role of ["source", "target"]; track role) {
+              <fieldset class="port-fieldset">
+                <legend>{{ i18n.t(role === "source" ? "routeEditor.sourcePort" : "routeEditor.targetPort") }}</legend>
+                <div class="port-compass" [attr.aria-label]="i18n.t(role === 'source' ? 'routeEditor.sourcePort' : 'routeEditor.targetPort')">
+                  <button type="button" class="north" [class.is-selected]="(role === 'source' ? sourcePort() : targetPort()) === 'north'" [attr.aria-pressed]="(role === 'source' ? sourcePort() : targetPort()) === 'north'" (click)="setPort($any(role), 'north')">N</button>
+                  <button type="button" class="west" [class.is-selected]="(role === 'source' ? sourcePort() : targetPort()) === 'west'" [attr.aria-pressed]="(role === 'source' ? sourcePort() : targetPort()) === 'west'" (click)="setPort($any(role), 'west')">W</button>
+                  <button type="button" class="automatic" [class.is-selected]="(role === 'source' ? sourcePort() : targetPort()) === 'automatic'" [attr.aria-pressed]="(role === 'source' ? sourcePort() : targetPort()) === 'automatic'" (click)="setPort($any(role), 'automatic')">A</button>
+                  <button type="button" class="east" [class.is-selected]="(role === 'source' ? sourcePort() : targetPort()) === 'east'" [attr.aria-pressed]="(role === 'source' ? sourcePort() : targetPort()) === 'east'" (click)="setPort($any(role), 'east')">E</button>
+                  <button type="button" class="south" [class.is-selected]="(role === 'source' ? sourcePort() : targetPort()) === 'south'" [attr.aria-pressed]="(role === 'source' ? sourcePort() : targetPort()) === 'south'" (click)="setPort($any(role), 'south')">S</button>
+                </div>
+                <small>{{ i18n.t("routeEditor.automaticPortHint") }}</small>
+              </fieldset>
+            }
+          </div>
+        } @else if (operationKind() === "add-waypoint") {
+          <label>
+            <span>{{ i18n.t("routeEditor.segment") }}</span>
+            <select [value]="segmentIndex()" (change)="setSegment($event)">
+              @for (segment of segments(); track segment.index) {
+                <option [value]="segment.index">{{ i18n.t("routeEditor.segmentNumber", { number: segment.index + 1 }) }} · ({{ segment.point.x }}, {{ segment.point.y }})</option>
+              }
+            </select>
+            <small>{{ i18n.t("routeEditor.addHint") }}</small>
+          </label>
+        } @else if (operationKind() === "move-waypoint" || operationKind() === "remove-waypoint") {
+          <label>
+            <span>{{ i18n.t("routeEditor.waypoint") }}</span>
+            <select [value]="waypointIndex()" (change)="setWaypoint($event)">
+              @for (waypoint of route().waypoints; track $index) {
+                <option [value]="$index">{{ waypointLabel($index) }}</option>
+              }
+            </select>
+          </label>
+          @if (operationKind() === "move-waypoint") {
+            <div class="field-row">
+              <label>
+                <span>{{ i18n.t("routeEditor.direction") }}</span>
+                <select [value]="moveDirection()" (change)="setMoveDirection($event)">
+                  <option value="left">{{ i18n.t("placement.left") }}</option>
+                  <option value="right">{{ i18n.t("placement.right") }}</option>
+                  <option value="up">{{ i18n.t("placement.up") }}</option>
+                  <option value="down">{{ i18n.t("placement.down") }}</option>
+                </select>
+              </label>
+              <label>
+                <span>{{ i18n.t("routeEditor.distance") }}</span>
+                <select [value]="moveSteps()" (change)="setMoveSteps($event)">
+                  <option value="1">1 × 16 du</option>
+                  <option value="2">2 × 16 du</option>
+                  <option value="4">4 × 16 du</option>
+                </select>
+              </label>
+            </div>
+            <small>{{ i18n.t("routeEditor.moveHint") }}</small>
+          } @else {
+            <aside class="route-warning">{{ i18n.t("routeEditor.removeHint") }}</aside>
+          }
+        } @else {
+          <aside class="route-warning">{{ i18n.t("routeEditor.clearHint") }}</aside>
+        }
+
+        <button type="submit" class="preview-button" [disabled]="!canPreview() || busy()">
+          {{ busy() ? i18n.t("routeEditor.previewing") : i18n.t("routeEditor.preview") }}
+        </button>
+      </form>
+
+      <section class="placement-result" [attr.aria-label]="i18n.t('routeEditor.result')">
+        @if (previewUrl(); as url) {
+          <div class="candidate-preview"><img [src]="url" [alt]="i18n.t('routeEditor.previewAlt')" /></div>
+        } @else {
+          <div class="candidate-empty"><strong>{{ i18n.t("routeEditor.noPreview") }}</strong><span>{{ i18n.t("routeEditor.noPreviewHint") }}</span></div>
+        }
+        @if (repairs().length > 0) {
+          <section class="route-repairs"><strong>{{ i18n.t("routeEditor.safeRepairs") }}</strong><ul>@for (repair of repairs(); track repair.code) { <li><code>{{ repair.code }}</code><span>{{ repair.message }}</span></li> }</ul></section>
+        }
+        @if (proposedText(); as text) {
+          <div class="source-proposal"><strong>{{ i18n.t("routeEditor.sourceChange") }}</strong><pre><code>{{ text }}</code></pre></div>
+        }
+        @if (issues().length > 0) {
+          <section class="route-conflicts"><strong>{{ i18n.t("routeEditor.conflicts") }}</strong><ul>@for (issue of issues(); track $index) { <li><code>{{ issue.code }}</code><span>{{ issue.message }}</span>@if (issue.correction) { <small>{{ issue.correction }}</small> }</li> }</ul></section>
+        }
+      </section>
+    </div>
+
+    <footer>
+      <span>{{ i18n.t("routeEditor.authority") }}</span>
+      <div><button type="button" (click)="cancel()">{{ i18n.t("routeEditor.cancel") }}</button><button type="button" class="apply-button" [disabled]="!canApply()" (click)="apply()">{{ i18n.t("routeEditor.apply") }}</button></div>
+    </footer>
+  </section>
+</div>

@@ -167,21 +167,32 @@ geometry, or exported SVG/PNG.
 
 ### Slice 1.4 — graphical route edits
 
-- [ ] select source and target Ports graphically;
-- [ ] add, move, or remove route guidance through source change sets;
-- [ ] remove obsolete route controls when an operation no longer needs them;
+- [x] select source and target Ports graphically;
+- [x] add, move, or remove route guidance through source change sets;
+- [x] remove obsolete route controls when an operation no longer needs them;
       and
-- [ ] show hard conflicts and safe compiler-proposed repairs before apply.
+- [x] show hard conflicts and safe compiler-proposed repairs before apply.
 
 ### Slice 1.5 — semantic graphical authoring
 
-- [ ] create or connect architecture elements through explicit source edits;
-- [ ] keep semantic actions visually distinct from layout actions; and
-- [ ] offer only context-valid C4 operations from the language/authoring
+- [x] create or connect architecture elements through explicit source edits;
+- [x] keep semantic actions visually distinct from layout actions; and
+- [x] offer only context-valid C4 operations from the language/authoring
       contract.
 
-Pillar 1 is not complete until the source alone reproduces the edited result
-after application restart and CLI compilation.
+The implemented first slice covers creation and connection in the five static
+C4 views. System Landscape and System Context offer People and Software
+Systems; Container, Component, and Code views create only the element owned by
+their active scope. Relationship endpoints are filtered through the same view
+rules. Dynamic interactions and deployment topology deliberately remain
+separate future semantic operations rather than being forced through a generic
+"add box" action.
+
+Pillar 1 is complete. The packaged desktop application applied and saved a
+semantic architecture edit, was fully quit and restarted, reopened the saved
+source without problems, and the standalone CLI validated that same file. The
+source alone therefore reproduces the accepted edit without hidden workbench
+state.
 
 ## Pillar 2 — semantic architecture evolution
 

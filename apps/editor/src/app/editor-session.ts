@@ -16,11 +16,14 @@ import {
   type HelpWorkerResponse,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerRequest,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import type {
   C4mlPlacementEditRequest,
+  C4mlRouteEditRequest,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
@@ -131,6 +134,108 @@ export class EditorPlacementPreviewSession {
   #finishPending(
     response: PreviewPlacementChangeWorkerResponse | undefined,
   ): void {
+    const resolve = this.#resolvePending;
+    this.#resolvePending = undefined;
+    resolve?.(response);
+  }
+}
+
+export type EditorRoutePreviewPhase =
+  | "failed"
+  | "idle"
+  | "invalid"
+  | "loading"
+  | "valid";
+
+export interface EditorRoutePreviewState {
+  readonly phase: EditorRoutePreviewPhase;
+  readonly activeRequestId: number;
+  readonly response: PreviewRouteChangeWorkerResponse | undefined;
+}
+
+const initialRoutePreviewState: EditorRoutePreviewState = {
+  phase: "idle",
+  activeRequestId: 0,
+  response: undefined,
+};
+
+export class EditorRoutePreviewSession {
+  #state = initialRoutePreviewState;
+  #resolvePending:
+    | ((response: PreviewRouteChangeWorkerResponse | undefined) => void)
+    | undefined;
+
+  constructor(readonly sequence = new EditorRequestSequence()) {}
+
+  get state(): EditorRoutePreviewState {
+    return this.#state;
+  }
+
+  beginAsync(
+    project: CompilerWorkerProject,
+    file: string,
+    route: C4mlRouteEditRequest,
+    requestedViewId?: string,
+  ): {
+    readonly request: PreviewRouteChangeWorkerRequest;
+    readonly result: Promise<PreviewRouteChangeWorkerResponse | undefined>;
+  } {
+    this.#finishPending(undefined);
+    const requestId = this.sequence.next();
+    this.#state = {
+      phase: "loading",
+      activeRequestId: requestId,
+      response: undefined,
+    };
+    const request: PreviewRouteChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change",
+      requestId,
+      file,
+      project,
+      route,
+      ...(requestedViewId === undefined ? {} : { requestedViewId }),
+    };
+    const result = new Promise<PreviewRouteChangeWorkerResponse | undefined>(
+      (resolve) => {
+        this.#resolvePending = resolve;
+      },
+    );
+    return { request, result };
+  }
+
+  accept(response: PreviewRouteChangeWorkerResponse): boolean {
+    if (response.requestId !== this.#state.activeRequestId) return false;
+    this.#state = {
+      phase: response.status,
+      activeRequestId: response.requestId,
+      response,
+    };
+    this.#finishPending(response);
+    return true;
+  }
+
+  failActive(message: string): void {
+    const response: PreviewRouteChangeWorkerResponse = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change-result",
+      requestId: this.#state.activeRequestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      repairs: [],
+      authoringIssues: [],
+      changeIssues: [],
+      message,
+    };
+    this.#state = { ...this.#state, phase: "failed", response };
+    this.#finishPending(response);
+  }
+
+  #finishPending(response: PreviewRouteChangeWorkerResponse | undefined): void {
     const resolve = this.#resolvePending;
     this.#resolvePending = undefined;
     resolve?.(response);

@@ -70,6 +70,8 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
   ],
   policy: "guided",
   style: "orthogonal",
+  sourcePortSelection: "east",
+  targetPortSelection: "west",
   points: [
     { x: 220, y: 300 },
     { x: 460, y: 300 },

@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.30
+Status: Draft 0.32
 
 Date: 2026-08-30
 
@@ -202,6 +202,32 @@ transport boundary. Production build validation covers the focused workbench
 facades for document/export, preview, help, and command-palette state. Existing
 runtime and session suites continue to exercise the unchanged public protocol
 barrel and stale-response behavior.
+
+The first semantic graphical-authoring evidence verifies context-derived
+creation kinds and relationship endpoint pairs for all five static C4 views,
+scope-owned Container, Component, and Code Element insertion, top-level Person
+and Software System insertion, missing-block creation, project-relative
+multifile targeting, duplicate and invalid-input rejection, and preservation of
+existing comments and unrelated formatting. Worker tests prove non-mutating
+candidate compilation; session tests reject stale context and preview results;
+the editor architecture suite keeps C4 operation discovery and source rewriting
+outside Angular. CLI parity checks the ordinary source produced by the same
+portable generator. The production Angular build validates the integrated
+dialog and worker chunks. The live dark workbench was visually and
+interactively inspected on 2026-08-30: the architecture warning and separate
+action treatment were legible; a multi-word name, responsibility, and stable ID
+remained in their fields without focus loss; element and directed-relationship
+candidates compiled and exposed their exact proposed source; apply produced one
+dirty Monaco edit; and Undo restored the clean starting document. The System
+Context form also explains that an unconnected new neighbor enters the model
+first and becomes visible after the next context-valid connection operation.
+The packaged macOS application completed the Pillar 1 persistence acceptance on
+2026-08-30. It applied the same semantic Person creation, saved the resulting
+source through the native Save As dialog, fully quit, restarted, and reopened
+the saved file with zero diagnostics and a current preview. An independent CLI
+`check` then loaded that file from disk, found the new stable element identity,
+and reported valid C4ML. No editor-only semantic state participated in the
+restart or CLI result.
 
 The English workbench and the live German switch were visually inspected in the
 packaged macOS application. The Settings panel, activity and output areas,
@@ -745,6 +771,23 @@ shared Node.js pipeline. Editor adapter tests prove project-to-document
 narrowing and one Monaco undo unit. A local browser interaction additionally
 verified selected-element synchronization, candidate SVG and source review,
 zero diagnostics after apply, restoration of the preceding pin in one undo, and
+restoration of the original clean dirty-state marker.
+
+The first graphical Route slice is automatically validated with original
+Signal Garden fixtures. Language tests cover cardinal and automatic Port
+selection; addition, symbolic-shift movement, and removal of waypoint guidance;
+locked-segment preservation; automatic-reset cleanup; obsolete block removal;
+and source-comment preservation. They also require explicit repair codes when
+fixed points, an old waypoint list, a corridor lane, or a guided policy becomes
+incompatible with the requested operation. Worker tests prove non-mutating
+candidate compilation, project-addressed changes, and route-navigation parity;
+session tests reject stale Route previews; CLI tests compile the applied source
+through the shared Node.js path. Template and architecture tests keep Route
+syntax generation outside Angular and ensure that safe repairs, blocking
+diagnostics, source preview, apply, and undo remain explicit UI states. A local
+browser interaction additionally verified relationship selection, dark and
+light dialog layouts, candidate SVG and source review, corridor-release repair
+copy, a valid Port change, zero diagnostics after apply, one-step undo, and
 restoration of the original clean dirty-state marker.
 
 ### 2.13 Semantic architecture evolution

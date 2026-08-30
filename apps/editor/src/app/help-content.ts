@@ -77,11 +77,16 @@ const topics: readonly HelpTopicDefinition[] = [
         "The current language is draft-1. The handbook marks only syntax that the editor and compiler can execute today.",
         "Die aktuelle Sprache heißt draft-1. Dieses Handbuch zeigt nur Syntax, die Editor und Compiler heute tatsächlich ausführen können.",
       ),
+      text(
+        "Use Change architecture to add or connect elements in a static view without recalling C4 vocabulary. The language worker offers only operations valid for that view, then shows the proposed source and compiled candidate before apply.",
+        "Mit Architektur ändern kannst du Elemente in einer statischen Ansicht hinzufügen oder verbinden, ohne das C4-Vokabular parat zu haben. Der Sprach-Worker bietet nur für diese Ansicht gültige Operationen an und zeigt vor dem Übernehmen Quelltextvorschlag und kompilierten Kandidaten.",
+      ),
     ],
     points: [
       text("Use stable identifiers without spaces.", "Verwende stabile Kennungen ohne Leerzeichen."),
       text("Describe responsibilities, not feature lists.", "Beschreibe Verantwortungen statt Funktionslisten."),
       text("Give every relationship a clear direction and intent.", "Gib jeder Verbindung eine klare Richtung und Absicht."),
+      text("Architecture changes, placement, and Route editing are separate tools.", "Architekturänderungen, Platzierung und Routenbearbeitung sind getrennte Werkzeuge."),
     ],
     exampleTitle: text("Small executable structure", "Kleine ausführbare Struktur"),
     example: `c4ml draft-1
@@ -420,12 +425,17 @@ code priority-rule inside scheduler {
         "Relative guide anchors follow Ports or element sides after automatic layout. Hard avoidance must be satisfied; soft avoidance may be relaxed only with a compiler warning.",
         "Relative guide-Anker folgen Ports oder Elementseiten nach dem automatischen Layout. Harte Meidezonen müssen eingehalten werden; weiche dürfen nur mit Compilerwarnung aufgeweicht werden.",
       ),
+      text(
+        "Select a relationship line, open Route details, and choose Edit route to change Ports or add, move, and remove guidance. Preview compiles the candidate source and separates safe cleanup from hard conflicts before apply.",
+        "Wähle eine Verbindungslinie, öffne Routendetails und dann Route bearbeiten, um Ports zu ändern oder Führungspunkte hinzuzufügen, zu verschieben und zu entfernen. Die Vorschau kompiliert den Quelltextkandidaten und trennt sichere Bereinigungen von harten Konflikten, bevor du ihn übernimmst.",
+      ),
     ],
     points: [
       text("guided may use absolute via points, one corridor, or an ordered relative guide.", "guided kann absolute via-Punkte, einen Korridor oder einen geordneten relativen guide verwenden."),
       text("guide supports waypoints and locked segments; avoid selects view-local regions.", "guide unterstützt Wegpunkte und gesperrte Segmente; avoid wählt ansichtslokale Meidezonen."),
       text("fixed requires the complete points list.", "fixed benötigt die vollständige points-Liste."),
       text("Hard impossible routes fail visibly.", "Nicht erfüllbare feste Routen schlagen sichtbar fehl."),
+      text("A valid graphical Route change is one source edit and one undo step.", "Eine gültige grafische Routenänderung ist eine Quelltextänderung und ein Rücknahmeschritt."),
     ],
     exampleTitle: text("Guided orthogonal route", "Geführte orthogonale Route"),
     example: `avoidance sensor-clearance {
