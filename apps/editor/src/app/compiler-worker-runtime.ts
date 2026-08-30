@@ -32,6 +32,7 @@ import {
   highlightC4mlDraft,
   parseC4mlDraft,
   parseC4mlProjectDraft,
+  proposeC4mlPlacementEdit,
 } from "@c4ml/language-c4ml";
 
 import {
@@ -57,6 +58,8 @@ import {
 import {
   type PreviewProjectChangeWorkerRequest,
   type PreviewProjectChangeWorkerResponse,
+  type PreviewPlacementChangeWorkerRequest,
+  type PreviewPlacementChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
@@ -449,6 +452,78 @@ export async function previewProjectChangeWorkerRequest(
   }
 }
 
+export async function previewPlacementChangeWorkerRequest(
+  request: PreviewPlacementChangeWorkerRequest,
+  layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
+  embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
+): Promise<PreviewPlacementChangeWorkerResponse> {
+  try {
+    const project = toArchitectureProject(request.project);
+    const proposal = await proposeC4mlPlacementEdit(project, request.placement);
+    if (!proposal.valid) {
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-placement-change-result",
+        requestId: request.requestId,
+        status: "invalid",
+        changeSet: undefined,
+        documentUri: undefined,
+        proposedText: undefined,
+        candidateProject: undefined,
+        compilation: undefined,
+        authoringIssues: proposal.issues,
+        changeIssues: [],
+        message: undefined,
+      };
+    }
+    const preview = await previewProjectChangeWorkerRequest(
+      {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-project-change",
+        requestId: request.requestId,
+        file: request.file,
+        project: request.project,
+        changeSet: proposal.changeSet,
+        ...(request.requestedViewId === undefined
+          ? {}
+          : { requestedViewId: request.requestedViewId }),
+      },
+      layoutAdapter,
+      embeddedFontFaces,
+    );
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-placement-change-result",
+      requestId: request.requestId,
+      status: preview.status,
+      changeSet: proposal.changeSet,
+      documentUri: proposal.documentUri,
+      proposedText: proposal.proposedText,
+      candidateProject: preview.candidateProject,
+      compilation: preview.compilation,
+      authoringIssues: [],
+      changeIssues: preview.issues,
+      message: preview.message,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-placement-change-result",
+      requestId: request.requestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      authoringIssues: [],
+      changeIssues: [],
+      message: `Placement preview failed: ${message}`,
+    };
+  }
+}
+
 export function executeWorkerRequest(
   request: CompilerWorkerInbound,
 ): Promise<CompilerWorkerOutbound> {
@@ -465,6 +540,8 @@ export function executeWorkerRequest(
       return helpWorkerRequest(request);
     case "preview-project-change":
       return previewProjectChangeWorkerRequest(request);
+    case "preview-placement-change":
+      return previewPlacementChangeWorkerRequest(request);
     case "generate-system-context":
       return generateWorkerRequest(request);
   }

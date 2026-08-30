@@ -1,0 +1,177 @@
+<div class="placement-backdrop" (click)="cancel()">
+  <section class="placement-editor" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('placement.title')" (click)="$event.stopPropagation()">
+    <header>
+      <div>
+        <p>{{ i18n.t("placement.eyebrow") }}</p>
+        <h2>{{ i18n.t("placement.title") }}</h2>
+        <span>{{ i18n.t("placement.description") }}</span>
+      </div>
+      <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('placement.cancel')">×</button>
+    </header>
+
+    <div class="placement-body">
+      <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
+        <label>
+          <span>{{ i18n.t("placement.operation") }}</span>
+          <select [value]="operationKind()" (change)="selectOperation($event)">
+            <option value="relative">{{ i18n.t("placement.relative") }}</option>
+            <option value="nudge">{{ i18n.t("placement.nudge") }}</option>
+            <option value="align">{{ i18n.t("placement.align") }}</option>
+            <option value="distribute">{{ i18n.t("placement.distribute") }}</option>
+            <option value="pin">{{ i18n.t("placement.pin") }}</option>
+          </select>
+          <small>{{ i18n.t("placement.operationHint") }}</small>
+        </label>
+
+        <label>
+          <span>{{ i18n.t("placement.primary") }}</span>
+          <select [value]="primaryId()" (change)="selectPrimary($event)">
+            @for (node of nodes(); track node.id) {
+              <option
+                [value]="node.id"
+                [selected]="node.id === primaryId()"
+              >
+                {{ node.label }}
+              </option>
+            }
+          </select>
+        </label>
+
+        @if (operationKind() === "relative") {
+          <div class="field-row">
+            <label>
+              <span>{{ i18n.t("placement.direction") }}</span>
+              <select [value]="relation()" (change)="setRelation($event)">
+                <option value="left-of">{{ i18n.t("placement.leftOf") }}</option>
+                <option value="right-of">{{ i18n.t("placement.rightOf") }}</option>
+                <option value="above">{{ i18n.t("placement.above") }}</option>
+                <option value="below">{{ i18n.t("placement.below") }}</option>
+              </select>
+            </label>
+            <label>
+              <span>{{ i18n.t("placement.anchor") }}</span>
+              <select [value]="anchorId()" (change)="selectAnchor($event)">
+                @for (node of otherNodes(); track node.id) {
+                  <option
+                    [value]="node.id"
+                    [selected]="node.id === anchorId()"
+                  >
+                    {{ node.label }}
+                  </option>
+                }
+              </select>
+            </label>
+          </div>
+        } @else if (operationKind() === "nudge") {
+          <label>
+            <span>{{ i18n.t("placement.direction") }}</span>
+            <select [value]="direction()" (change)="setDirection($event)">
+              <option value="left">{{ i18n.t("placement.left") }}</option>
+              <option value="right">{{ i18n.t("placement.right") }}</option>
+              <option value="up">{{ i18n.t("placement.up") }}</option>
+              <option value="down">{{ i18n.t("placement.down") }}</option>
+            </select>
+          </label>
+        } @else if (operationKind() === "align" || operationKind() === "distribute") {
+          <fieldset>
+            <legend>{{ i18n.t("placement.elements") }}</legend>
+            <div class="element-options">
+              @for (node of nodes(); track node.id) {
+                <label>
+                  <input type="checkbox" [checked]="itemIds().includes(node.id)" (change)="toggleItem(node.id, $event)" />
+                  <span>{{ node.label }}</span>
+                </label>
+              }
+            </div>
+          </fieldset>
+          @if (operationKind() === "align") {
+            <div class="field-row">
+              <label>
+                <span>{{ i18n.t("placement.edge") }}</span>
+                <select [value]="alignment()" (change)="setAlignment($event)">
+                  <option value="left">{{ i18n.t("placement.left") }}</option>
+                  <option value="center-x">{{ i18n.t("placement.centerX") }}</option>
+                  <option value="right">{{ i18n.t("placement.right") }}</option>
+                  <option value="top">{{ i18n.t("placement.top") }}</option>
+                  <option value="center-y">{{ i18n.t("placement.centerY") }}</option>
+                  <option value="bottom">{{ i18n.t("placement.bottom") }}</option>
+                </select>
+              </label>
+              <label>
+                <span>{{ i18n.t("placement.anchor") }}</span>
+                <select [value]="anchorId()" (change)="selectAnchor($event)">
+                  @for (node of chosenNodes(); track node.id) {
+                    <option
+                      [value]="node.id"
+                      [selected]="node.id === anchorId()"
+                    >
+                      {{ node.label }}
+                    </option>
+                  }
+                </select>
+              </label>
+            </div>
+          } @else {
+            <label>
+              <span>{{ i18n.t("placement.orientation") }}</span>
+              <select [value]="orientation()" (change)="setOrientation($event)">
+                <option value="horizontal">{{ i18n.t("placement.horizontal") }}</option>
+                <option value="vertical">{{ i18n.t("placement.vertical") }}</option>
+              </select>
+            </label>
+            <ol class="element-order">
+              @for (node of chosenNodes(); track node.id; let index = $index) {
+                <li><span>{{ index + 1 }}. {{ node.label }}</span><span><button type="button" (click)="moveItem(node.id, -1)" [disabled]="index === 0">↑</button><button type="button" (click)="moveItem(node.id, 1)" [disabled]="index === chosenNodes().length - 1">↓</button></span></li>
+              }
+            </ol>
+          }
+        } @else {
+          <aside class="pin-note">{{ i18n.t("placement.pinHint") }}</aside>
+        }
+
+        @if (operationKind() !== "pin" && operationKind() !== "align") {
+          <label>
+            <span>{{ i18n.t("placement.distance") }}</span>
+            <select [value]="gap()" (change)="setGap($event)">
+              <option value="tiny">{{ i18n.t("placement.tiny") }}</option>
+              <option value="small">{{ i18n.t("placement.small") }}</option>
+              <option value="normal">{{ i18n.t("placement.normal") }}</option>
+              <option value="large">{{ i18n.t("placement.large") }}</option>
+            </select>
+          </label>
+        }
+
+        <label>
+          <span>{{ i18n.t("placement.strength") }}</span>
+          <select [value]="strength()" (change)="setStrength($event)">
+            <option value="soft">{{ i18n.t("placement.soft") }}</option>
+            <option value="hard">{{ i18n.t("placement.hard") }}</option>
+          </select>
+        </label>
+
+        <button type="submit" class="preview-button" [disabled]="!canPreview() || busy()">
+          {{ busy() ? i18n.t("placement.previewing") : i18n.t("placement.preview") }}
+        </button>
+      </form>
+
+      <section class="placement-result" [attr.aria-label]="i18n.t('placement.result')">
+        @if (previewUrl(); as url) {
+          <div class="candidate-preview"><img [src]="url" [alt]="i18n.t('placement.previewAlt')" /></div>
+        } @else {
+          <div class="candidate-empty"><strong>{{ i18n.t("placement.noPreview") }}</strong><span>{{ i18n.t("placement.noPreviewHint") }}</span></div>
+        }
+        @if (proposedText(); as text) {
+          <div class="source-proposal"><strong>{{ i18n.t("placement.sourceChange") }}</strong><pre><code>{{ text }}</code></pre></div>
+        }
+        @if (issues().length > 0) {
+          <ul class="placement-issues">@for (issue of issues(); track $index) { <li>{{ issue }}</li> }</ul>
+        }
+      </section>
+    </div>
+
+    <footer>
+      <span>{{ i18n.t("placement.authority") }}</span>
+      <div><button type="button" (click)="cancel()">{{ i18n.t("placement.cancel") }}</button><button type="button" class="apply-button" [disabled]="!canApply()" (click)="apply()">{{ i18n.t("placement.apply") }}</button></div>
+    </footer>
+  </section>
+</div>

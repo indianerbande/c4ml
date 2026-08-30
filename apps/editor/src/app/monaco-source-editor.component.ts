@@ -206,6 +206,10 @@ export class C4mlMonacoSourceEditorComponent
     });
   }
 
+  undoAuthoringChange(): void {
+    this.#editor?.trigger("c4ml.authoring", "undo", undefined);
+  }
+
   revealSource(source: NonNullable<CompilerWorkerDiagnostic["source"]>): void {
     if (this.#editor === undefined) {
       return;

@@ -24,6 +24,8 @@ import {
   type HighlightWorkerRequest,
   type HelpWorkerRequest,
   isPreviewProjectChangeWorkerResponse,
+  isPreviewPlacementChangeWorkerResponse,
+  type PreviewPlacementChangeWorkerRequest,
   type PreviewProjectChangeWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
@@ -35,6 +37,7 @@ import {
   highlightWorkerRequest,
   helpWorkerRequest,
   previewProjectChangeWorkerRequest,
+  previewPlacementChangeWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -359,6 +362,61 @@ describe("compiler worker runtime", () => {
     expect(result.compilation?.svg).toContain("Garden Coordinator");
     expect(activeSource).toBe(initialC4mlSource);
     expect((await parseC4mlProjectDraft(project)).valid).toBe(true);
+  });
+
+  it("generates and compiles a placement edit without mutating active source", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-placement-preview",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: PreviewPlacementChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-placement-change",
+      requestId: 46,
+      file: "architecture.c4ml",
+      project,
+      requestedViewId: "garden-pulse-context",
+      placement: {
+        id: "placement:garden-pulse",
+        viewId: "garden-pulse-context",
+        intent: {
+          id: "layout:relative",
+          kind: "layout",
+          summary: "Place Garden Pulse near the caretaker.",
+        },
+        operation: {
+          kind: "relative",
+          subjectId: "garden-pulse",
+          anchorId: "caretaker",
+          relation: "right-of",
+          gap: "small",
+          strength: "soft",
+        },
+      },
+    };
+
+    const result = await previewPlacementChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewPlacementChangeWorkerResponse(result)).toBe(true);
+    expect(result.compilation?.diagnostics).toEqual([]);
+    expect(result).toMatchObject({
+      status: "valid",
+      documentUri: "architecture.c4ml",
+      proposedText: expect.stringContaining(
+        "place garden-pulse right-of caretaker",
+      ),
+      changeSet: { intent: { kind: "layout" } },
+      compilation: { status: "valid" },
+    });
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      "gap = small",
+    );
+    expect(project.documents[0]?.source).toBe(initialC4mlSource);
   });
 
   it("rejects stale project previews before compilation", async () => {

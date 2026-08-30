@@ -14,10 +14,13 @@ import {
   type HighlightWorkerSpan,
   type HelpWorkerRequest,
   type HelpWorkerResponse,
+  type PreviewPlacementChangeWorkerRequest,
+  type PreviewPlacementChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import type {
+  C4mlPlacementEditRequest,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
@@ -28,6 +31,109 @@ export class EditorRequestSequence {
 
   next(): number {
     return ++this.#nextRequestId;
+  }
+}
+
+export type EditorPlacementPreviewPhase =
+  | "failed"
+  | "idle"
+  | "invalid"
+  | "loading"
+  | "valid";
+
+export interface EditorPlacementPreviewState {
+  readonly phase: EditorPlacementPreviewPhase;
+  readonly activeRequestId: number;
+  readonly response: PreviewPlacementChangeWorkerResponse | undefined;
+}
+
+const initialPlacementPreviewState: EditorPlacementPreviewState = {
+  phase: "idle",
+  activeRequestId: 0,
+  response: undefined,
+};
+
+export class EditorPlacementPreviewSession {
+  #state = initialPlacementPreviewState;
+  #resolvePending:
+    | ((response: PreviewPlacementChangeWorkerResponse | undefined) => void)
+    | undefined;
+
+  constructor(readonly sequence = new EditorRequestSequence()) {}
+
+  get state(): EditorPlacementPreviewState {
+    return this.#state;
+  }
+
+  beginAsync(
+    project: CompilerWorkerProject,
+    file: string,
+    placement: C4mlPlacementEditRequest,
+    requestedViewId?: string,
+  ): {
+    readonly request: PreviewPlacementChangeWorkerRequest;
+    readonly result: Promise<PreviewPlacementChangeWorkerResponse | undefined>;
+  } {
+    this.#finishPending(undefined);
+    const requestId = this.sequence.next();
+    this.#state = {
+      phase: "loading",
+      activeRequestId: requestId,
+      response: undefined,
+    };
+    const request: PreviewPlacementChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-placement-change",
+      requestId,
+      file,
+      project,
+      placement,
+      ...(requestedViewId === undefined ? {} : { requestedViewId }),
+    };
+    const result = new Promise<PreviewPlacementChangeWorkerResponse | undefined>(
+      (resolve) => {
+        this.#resolvePending = resolve;
+      },
+    );
+    return { request, result };
+  }
+
+  accept(response: PreviewPlacementChangeWorkerResponse): boolean {
+    if (response.requestId !== this.#state.activeRequestId) return false;
+    this.#state = {
+      phase: response.status,
+      activeRequestId: response.requestId,
+      response,
+    };
+    this.#finishPending(response);
+    return true;
+  }
+
+  failActive(message: string): void {
+    const response: PreviewPlacementChangeWorkerResponse = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-placement-change-result",
+      requestId: this.#state.activeRequestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      authoringIssues: [],
+      changeIssues: [],
+      message,
+    };
+    this.#state = { ...this.#state, phase: "failed", response };
+    this.#finishPending(response);
+  }
+
+  #finishPending(
+    response: PreviewPlacementChangeWorkerResponse | undefined,
+  ): void {
+    const resolve = this.#resolvePending;
+    this.#resolvePending = undefined;
+    resolve?.(response);
   }
 }
 

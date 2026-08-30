@@ -984,6 +984,19 @@ The first useful result should require no layout block. Automatic layout
 creates candidate geometry before C4ML applies author controls.
 Layout blocks belong to the view they refine.
 
+In the desktop editor, select an element in the diagram, open **Geometry
+details**, and choose **Arrange element…**. The placement editor offers the
+same controls in intent-first order: relative placement, a small movement from
+the automatic result, alignment, and ordered distribution. It shows both the
+generated C4ML block and the fully compiled candidate diagram before anything
+changes. **Apply to source** performs one ordinary Monaco edit and **Undo
+arrangement** restores it in one step.
+
+**Fix exact current position** is intentionally last. It records the current
+top-left position in diagram units with `pin`; use it only when the relative
+controls below cannot express the required result. The editor never stores a
+private drag offset or geometry that is absent from the source.
+
 ### 9.1 Flow direction
 
 ```c4ml

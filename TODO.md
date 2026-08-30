@@ -158,12 +158,12 @@ geometry, or exported SVG/PNG.
 
 ### Slice 1.3 — graphical placement edits
 
-- [ ] offer relative move, nudge, align, and distribute commands for selected
+- [x] offer relative move, nudge, align, and distribute commands for selected
       elements;
-- [ ] show the proposed source and resulting preview before apply;
-- [ ] emit semantic placement intent first, relative adjustment second, and an
+- [x] show the proposed source and resulting preview before apply;
+- [x] emit semantic placement intent first, relative adjustment second, and an
       exact `du` pin only through an explicit escape-hatch action; and
-- [ ] apply or undo the operation atomically.
+- [x] apply or undo the operation atomically.
 
 ### Slice 1.4 — graphical route edits
 

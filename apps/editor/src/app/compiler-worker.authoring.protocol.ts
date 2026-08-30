@@ -1,4 +1,6 @@
 import type {
+  C4mlPlacementAuthoringIssue,
+  C4mlPlacementEditRequest,
   C4mlSystemContextWizardAnswers,
   C4mlWizardIssue,
 } from "@c4ml/language-c4ml";
@@ -59,6 +61,31 @@ export interface PreviewProjectChangeWorkerResponse {
   readonly revision: ProjectRevision | undefined;
   readonly compilation: CompilerWorkerResponse | undefined;
   readonly issues: readonly ProjectSourceChangeIssue[];
+  readonly message: string | undefined;
+}
+
+export interface PreviewPlacementChangeWorkerRequest {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-placement-change";
+  readonly requestId: number;
+  readonly file: string;
+  readonly project: CompilerWorkerProject;
+  readonly placement: C4mlPlacementEditRequest;
+  readonly requestedViewId?: string;
+}
+
+export interface PreviewPlacementChangeWorkerResponse {
+  readonly protocolVersion: typeof compilerWorkerProtocolVersion;
+  readonly type: "preview-placement-change-result";
+  readonly requestId: number;
+  readonly status: "failed" | "invalid" | "valid";
+  readonly changeSet: ProposedProjectSourceChangeSet | undefined;
+  readonly documentUri: string | undefined;
+  readonly proposedText: string | undefined;
+  readonly candidateProject: CompilerWorkerProject | undefined;
+  readonly compilation: CompilerWorkerResponse | undefined;
+  readonly authoringIssues: readonly C4mlPlacementAuthoringIssue[];
+  readonly changeIssues: readonly ProjectSourceChangeIssue[];
   readonly message: string | undefined;
 }
 
@@ -124,6 +151,24 @@ export function isPreviewProjectChangeWorkerRequest(
   );
 }
 
+export function isPreviewPlacementChangeWorkerRequest(
+  value: unknown,
+): value is PreviewPlacementChangeWorkerRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<PreviewPlacementChangeWorkerRequest>;
+  return (
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-placement-change" &&
+    isPositiveRequestId(candidate.requestId) &&
+    typeof candidate.file === "string" &&
+    isCompilerWorkerProject(candidate.project) &&
+    candidate.project.documents.some(({ uri }) => uri === candidate.file) &&
+    isPlacementEditRequest(candidate.placement) &&
+    (candidate.requestedViewId === undefined ||
+      typeof candidate.requestedViewId === "string")
+  );
+}
+
 export function isPreviewProjectChangeWorkerResponse(
   value: unknown,
 ): value is PreviewProjectChangeWorkerResponse {
@@ -164,6 +209,157 @@ export function isPreviewProjectChangeWorkerResponse(
     candidate.compilation.status === candidate.status &&
     candidate.issues.length === 0
   );
+}
+
+export function isPreviewPlacementChangeWorkerResponse(
+  value: unknown,
+): value is PreviewPlacementChangeWorkerResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<PreviewPlacementChangeWorkerResponse>;
+  const common =
+    candidate.protocolVersion === compilerWorkerProtocolVersion &&
+    candidate.type === "preview-placement-change-result" &&
+    isPositiveRequestId(candidate.requestId) &&
+    (candidate.status === "failed" ||
+      candidate.status === "invalid" ||
+      candidate.status === "valid") &&
+    Array.isArray(candidate.authoringIssues) &&
+    candidate.authoringIssues.every(isPlacementAuthoringIssue) &&
+    Array.isArray(candidate.changeIssues) &&
+    candidate.changeIssues.every(isProjectSourceChangeIssue) &&
+    (candidate.message === undefined || typeof candidate.message === "string");
+  if (!common) return false;
+
+  if (candidate.changeSet === undefined) {
+    return (
+      candidate.documentUri === undefined &&
+      candidate.proposedText === undefined &&
+      candidate.candidateProject === undefined &&
+      candidate.compilation === undefined &&
+      ((candidate.status === "failed" && typeof candidate.message === "string") ||
+        (candidate.status === "invalid" &&
+          candidate.authoringIssues.length + candidate.changeIssues.length > 0))
+    );
+  }
+  const hasProposal =
+    isProposedProjectSourceChangeSet(candidate.changeSet) &&
+    typeof candidate.documentUri === "string" &&
+    typeof candidate.proposedText === "string" &&
+    candidate.authoringIssues.length === 0;
+  if (!hasProposal) return false;
+  if (candidate.candidateProject === undefined) {
+    return (
+      candidate.compilation === undefined &&
+      ((candidate.status === "invalid" &&
+        candidate.changeIssues.length > 0 &&
+        candidate.message === undefined) ||
+        (candidate.status === "failed" &&
+          candidate.changeIssues.length === 0 &&
+          typeof candidate.message === "string"))
+    );
+  }
+  return (
+    isCompilerWorkerProject(candidate.candidateProject) &&
+    isCompilerWorkerResponse(candidate.compilation) &&
+    candidate.compilation.requestId === candidate.requestId &&
+    candidate.compilation.status === candidate.status &&
+    candidate.changeIssues.length === 0 &&
+    candidate.message === undefined
+  );
+}
+
+function isPlacementEditRequest(value: unknown): value is C4mlPlacementEditRequest {
+  if (!isRecord(value)) return false;
+  const intent = value["intent"];
+  const operation = value["operation"];
+  return (
+    typeof value["id"] === "string" &&
+    value["id"].length > 0 &&
+    typeof value["viewId"] === "string" &&
+    value["viewId"].length > 0 &&
+    isRecord(intent) &&
+    typeof intent["id"] === "string" &&
+    intent["kind"] === "layout" &&
+    typeof intent["summary"] === "string" &&
+    isPlacementOperation(operation)
+  );
+}
+
+function isPlacementOperation(value: unknown): boolean {
+  if (!isRecord(value) || typeof value["kind"] !== "string") return false;
+  const strength = value["strength"];
+  if (strength !== "hard" && strength !== "soft") return false;
+  switch (value["kind"]) {
+    case "relative":
+      return (
+        isId(value["subjectId"]) &&
+        isId(value["anchorId"]) &&
+        ["above", "below", "left-of", "right-of"].includes(
+          String(value["relation"]),
+        ) &&
+        isGap(value["gap"])
+      );
+    case "nudge":
+      return (
+        isId(value["targetId"]) &&
+        ["down", "left", "right", "up"].includes(String(value["direction"])) &&
+        isGap(value["distance"])
+      );
+    case "align":
+      return (
+        isIdArray(value["itemIds"]) &&
+        ["bottom", "center-x", "center-y", "left", "right", "top"].includes(
+          String(value["alignment"]),
+        ) &&
+        isId(value["anchorId"])
+      );
+    case "distribute":
+      return (
+        isIdArray(value["itemIds"]) &&
+        (value["orientation"] === "horizontal" ||
+          value["orientation"] === "vertical") &&
+        isGap(value["gap"])
+      );
+    case "pin":
+      return (
+        isId(value["targetId"]) &&
+        Number.isSafeInteger(value["x"]) &&
+        Number.isSafeInteger(value["y"])
+      );
+    default:
+      return false;
+  }
+}
+
+function isPlacementAuthoringIssue(
+  value: unknown,
+): value is C4mlPlacementAuthoringIssue {
+  return (
+    isRecord(value) &&
+    [
+      "C4ML-AUTHORING-001",
+      "C4ML-AUTHORING-005",
+      "C4ML-AUTHORING-006",
+      "C4ML-AUTHORING-007",
+    ].includes(String(value["code"])) &&
+    typeof value["message"] === "string"
+  );
+}
+
+function isGap(value: unknown): boolean {
+  return value === "tiny" || value === "small" || value === "normal" || value === "large";
+}
+
+function isId(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function isIdArray(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every(isId);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function isWizardAnswers(
