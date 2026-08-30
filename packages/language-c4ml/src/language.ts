@@ -180,7 +180,7 @@ export async function parseC4mlDraft(
 
   const syntaxDiagnostics = sortDiagnostics(
     (document.diagnostics ?? []).map((diagnostic) =>
-      fromLangiumDiagnostic(diagnostic, document.textDocument, file),
+      fromLangiumDiagnostic(diagnostic, document.textDocument, file, source),
     ),
   );
   if (hasErrors(syntaxDiagnostics)) {
@@ -270,6 +270,7 @@ export async function parseC4mlProjectDraft(
           diagnostic,
           document.textDocument,
           sourceDocument.uri,
+          sourceDocument.text,
         ),
       ),
     ),
@@ -2289,36 +2290,88 @@ function fromLangiumDiagnostic(
     offsetAt(position: { readonly line: number; readonly character: number }): number;
   },
   file: string,
+  sourceText: string,
 ): Diagnostic {
   const langiumCode = diagnosticCode(diagnostic.data);
+  const startOffset = textDocument.offsetAt(diagnostic.range.start);
+  const endOffset = textDocument.offsetAt(diagnostic.range.end);
+  const previewConstruct =
+    langiumCode === "parsing-error"
+      ? plannedPreviewConstructAt(sourceText, startOffset, endOffset)
+      : undefined;
   const source = {
     file,
     range: {
       start: {
-        offset: textDocument.offsetAt(diagnostic.range.start),
+        offset: startOffset,
         line: diagnostic.range.start.line,
         column: diagnostic.range.start.character,
       },
       end: {
-        offset: textDocument.offsetAt(diagnostic.range.end),
+        offset: endOffset,
         line: diagnostic.range.end.line,
         column: diagnostic.range.end.character,
       },
     },
   };
   return createDiagnostic({
-    code: stableSyntaxCode(langiumCode),
+    code:
+      previewConstruct === undefined
+        ? stableSyntaxCode(langiumCode)
+        : "C4ML-LANG-005",
     severity: diagnosticSeverity(diagnostic.severity),
     message:
-      typeof diagnostic.message === "string"
-        ? diagnostic.message
-        : diagnostic.message.value,
+      previewConstruct === undefined
+        ? typeof diagnostic.message === "string"
+          ? diagnostic.message
+          : diagnostic.message.value
+        : `${previewConstruct.label} is planned C4ML syntax and is not executable in ${c4mlDraftLanguageVersion}.`,
     source,
     correction:
-      langiumCode === "linking-error"
-        ? "Reference an identifier declared in the current document."
-        : "Correct the source syntax at the reported range.",
+      previewConstruct === undefined
+        ? langiumCode === "linking-error"
+          ? "Reference an identifier declared in the current document."
+          : "Correct the source syntax at the reported range."
+        : previewConstruct.correction,
   });
+}
+
+const plannedPreviewConstructs = {
+  group: {
+    label: "The Visual Group declaration",
+    correction:
+      "Remove this declaration from executable source and keep the proposed Visual Group intent in a separate language-preview document.",
+  },
+  presentation: {
+    label: "The View presentation block",
+    correction:
+      "Remove this block from executable source and keep the proposed presentation intent in a separate language-preview document.",
+  },
+  tags: {
+    label: "The element tags property",
+    correction:
+      "Remove this property from executable source and keep the proposed tag intent in a separate language-preview document.",
+  },
+} as const;
+
+function plannedPreviewConstructAt(
+  source: string,
+  startOffset: number,
+  endOffset: number,
+):
+  | (typeof plannedPreviewConstructs)[keyof typeof plannedPreviewConstructs]
+  | undefined {
+  const reportedText = source.slice(startOffset, endOffset).trim();
+  const followingText = source
+    .slice(startOffset)
+    .match(/^\s*([a-z][a-z-]*)/u)?.[1];
+  const keyword = reportedText.match(/^([a-z][a-z-]*)/u)?.[1] ?? followingText;
+  if (keyword === undefined || !(keyword in plannedPreviewConstructs)) {
+    return undefined;
+  }
+  return plannedPreviewConstructs[
+    keyword as keyof typeof plannedPreviewConstructs
+  ];
 }
 
 function diagnosticCode(data: unknown): string | undefined {

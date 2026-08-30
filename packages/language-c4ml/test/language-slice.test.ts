@@ -41,6 +41,10 @@ const helloDeploymentUrl = new URL(
   "../../../examples/draft/hello-deployment.c4ml",
   import.meta.url,
 );
+const signalGardenUrl = new URL(
+  "../../../examples/draft/signal-garden.c4ml",
+  import.meta.url,
+);
 
 class RowLayoutAdapter implements LayoutAdapter {
   readonly adapterId = "test.language-row-layout";
@@ -101,6 +105,10 @@ async function helloDeploymentSource(): Promise<string> {
   return readFile(helloDeploymentUrl, "utf8");
 }
 
+async function signalGardenSource(): Promise<string> {
+  return readFile(signalGardenUrl, "utf8");
+}
+
 function replaceContextLayout(source: string, layoutLines: readonly string[]): string {
   return source.replace(
     /  layout \{[\s\S]*?\n  \}\n\}\s*$/,
@@ -109,6 +117,85 @@ function replaceContextLayout(source: string, layoutLines: readonly string[]): s
 }
 
 describe("C4ML draft-1 language slice", () => {
+  it("parses the complete executable Signal Garden demonstration", async () => {
+    const result = await parseC4mlDraft(await signalGardenSource(), {
+      file: "examples/draft/signal-garden.c4ml",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.views?.map(({ kind }) => kind)).toEqual([
+      "system-landscape",
+      "system-context",
+      "container",
+      "component",
+      "code",
+      "dynamic",
+      "deployment",
+    ]);
+  });
+
+  it.each([
+    {
+      keyword: "tags",
+      plannedSource: "    tags = [core, cultivation]\n",
+      expectedMessage:
+        "The element tags property is planned C4ML syntax and is not executable in draft-1.",
+      insertAfter: "    classification = internal\n",
+    },
+    {
+      keyword: "group",
+      plannedSource: [
+        "  group cultivation-services {",
+        '    title = "Cultivation Services"',
+        "  }",
+        "",
+      ].join("\n"),
+      expectedMessage:
+        "The Visual Group declaration is planned C4ML syntax and is not executable in draft-1.",
+      insertAfter: "  legend = generated\n",
+    },
+    {
+      keyword: "presentation",
+      plannedSource: [
+        "  presentation {",
+        "    theme = c4ml-blue",
+        "  }",
+        "",
+      ].join("\n"),
+      expectedMessage:
+        "The View presentation block is planned C4ML syntax and is not executable in draft-1.",
+      insertAfter: "  legend = generated\n",
+    },
+  ])("explains planned $keyword syntax instead of reporting a missing brace", async ({
+    keyword,
+    plannedSource,
+    expectedMessage,
+    insertAfter,
+  }) => {
+    const source = (await helloContextSource()).replace(
+      insertAfter,
+      `${insertAfter}${plannedSource}`,
+    );
+    const result = await parseC4mlDraft(source, {
+      file: `planned-${keyword}.c4ml`,
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0]).toMatchObject({
+      code: "C4ML-LANG-005",
+      message: expectedMessage,
+    });
+    expect(result.diagnostics[0]?.source?.range.start.offset).toBe(
+      source.indexOf(keyword),
+    );
+    expect(result.diagnostics[0]?.correction).toContain("language-preview");
+    expect(result.diagnostics[0]?.message).not.toContain(
+      "Expecting token of type '}'",
+    );
+  });
+
   it("parses and lowers the original hello-context source", async () => {
     const source = await helloContextSource();
     const result = await parseC4mlDraft(source, {

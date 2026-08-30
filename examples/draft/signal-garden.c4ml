@@ -1,7 +1,6 @@
 c4ml draft-1
 
-// Documentation preview only. No C4ML parser exists yet.
-// Signal Garden is an original C4ML example architecture.
+// Executable draft-1 demonstration of an original C4ML architecture.
 
 model {
   person grower {
@@ -14,7 +13,6 @@ model {
     name = "Signal Garden"
     responsibility = "Coordinates cultivation plans from environmental signals."
     classification = internal
-    tags = [core, cultivation]
   }
 
   system weather-beacon {
@@ -252,14 +250,6 @@ view cultivation-portfolio {
   purpose = "Shows the people and systems exchanging cultivation signals."
   audience = default
   legend = generated
-
-  group cultivation-services {
-    title = "Cultivation Services"
-    description = "Systems participating in cultivation planning."
-    members = [signal-garden, weather-beacon]
-    keep-together = true
-    padding = 32
-  }
 }
 
 view signal-context {
@@ -292,10 +282,6 @@ view signal-containers {
   purpose = "Explains the deployable responsibilities inside Signal Garden."
   audience = default
   legend = generated
-
-  presentation {
-    theme = c4ml-blue
-  }
 }
 
 view api-components {
