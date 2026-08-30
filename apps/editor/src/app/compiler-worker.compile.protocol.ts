@@ -213,6 +213,11 @@ export interface CompilerWorkerNarrativeResource {
   readonly source: string;
 }
 
+export interface CompilerWorkerPublicationResource {
+  readonly uri: string;
+  readonly source: string;
+}
+
 export interface CompilerWorkerProject {
   readonly version: 1;
   readonly id: string;
@@ -223,6 +228,7 @@ export interface CompilerWorkerProject {
   readonly observations?: CompilerWorkerObservationResource;
   readonly glossary?: CompilerWorkerGlossaryResource;
   readonly narratives?: readonly CompilerWorkerNarrativeResource[];
+  readonly publication?: CompilerWorkerPublicationResource;
 }
 
 export interface CompilerWorkerRequest {
@@ -319,6 +325,12 @@ export function isCompilerWorkerProject(
           typeof (resource as Partial<CompilerWorkerNarrativeResource>).source === "string" &&
           (resource as Partial<CompilerWorkerNarrativeResource>).source!.length > 0
         ))) &&
+    (candidate.publication === undefined ||
+      (typeof candidate.publication === "object" && candidate.publication !== null &&
+        typeof (candidate.publication as Partial<CompilerWorkerPublicationResource>).uri === "string" &&
+        (candidate.publication as Partial<CompilerWorkerPublicationResource>).uri!.length > 0 &&
+        typeof (candidate.publication as Partial<CompilerWorkerPublicationResource>).source === "string" &&
+        (candidate.publication as Partial<CompilerWorkerPublicationResource>).source!.length > 0)) &&
     Array.isArray(candidate.documents) &&
     candidate.documents.length > 0 &&
     candidate.documents.every(

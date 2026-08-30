@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.42
+Status: Draft 0.43
 
 Date: 2026-08-31
 
@@ -135,12 +135,15 @@ cancel behavior, and independent Monaco models with restored cursor and scroll
 state. The glossary-resource slice additionally proves versioned parsing,
 deterministic ordering and lookup, acronym expansion, alias handling,
 case-insensitive collision rejection, project-revision participation, local and
-read-only Git loading, and non-source desktop/worker transport. Narrative and
-The narrative-resource slice adds metadata/version parsing, deterministic URI
+read-only Git loading, and non-source desktop/worker transport. The
+narrative-resource slice adds metadata/version parsing, deterministic URI
 ordering, unique identities, local-link extraction, rejection of raw HTML,
 images, remote links, and traversal, revision participation, filesystem/Git
-loading, and non-source desktop/worker transport. Publication resources,
-reusable project libraries, and remote imports remain unimplemented.
+loading, and non-source desktop/worker transport. The publication-resource
+slice proves ordered View selection, captions, deterministic profiles, formats,
+scales, backgrounds, compiled-View reference validation in CLI and worker,
+revision participation, and filesystem/Git loading. Reusable project libraries
+and remote imports remain unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -990,6 +993,9 @@ Project-source tests MUST prove that:
 - optional `.c4ml-narrative.md` resources validate safe passive Markdown,
   unique stable identities, containment, and deterministic ordering, participate
   in the project revision, and never become architecture source documents;
+- an optional `.c4ml-publication.json` resource validates ordered declared View
+  references and deterministic render profiles, participates in the project
+  revision, and never mutates source or architecture semantics;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

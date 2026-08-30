@@ -17,6 +17,10 @@ The optional `docs/overview.c4ml-narrative.md` chapter adds passive project
 context with a local glossary link. Its metadata and link safety are validated,
 but it is not compiled as architecture source.
 
+The optional `publication/review.c4ml-publication.json` resource selects the
+Context View, supplies its review caption, and defines a deterministic SVG
+profile without changing the View itself.
+
 From the repository root:
 
 ```sh

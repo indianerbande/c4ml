@@ -1,4 +1,4 @@
-export const desktopBridgeProtocolVersion = 11 as const;
+export const desktopBridgeProtocolVersion = 12 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
@@ -68,6 +68,11 @@ export interface DesktopProjectNarrativeResource {
   readonly source: string;
 }
 
+export interface DesktopProjectPublicationResource {
+  readonly uri: string;
+  readonly source: string;
+}
+
 export interface DesktopSourceProject {
   readonly id: string;
   readonly name?: string;
@@ -77,6 +82,7 @@ export interface DesktopSourceProject {
   readonly observations?: DesktopProjectObservationResource;
   readonly glossary?: DesktopProjectGlossaryResource;
   readonly narratives?: readonly DesktopProjectNarrativeResource[];
+  readonly publication?: DesktopProjectPublicationResource;
 }
 
 export interface DesktopSaveRequest {

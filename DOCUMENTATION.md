@@ -483,6 +483,7 @@ sources:
   "observations": "evidence/local-inventory.c4ml-observations.json",
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],
+  "publication": "publication/review.c4ml-publication.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -529,6 +530,11 @@ Their fixed header records version, stable identity, and title. Bodies are
 passive Markdown: local links are allowed, while raw HTML, embedded images,
 remote links, and traversal fail validation. Narratives do not change the
 architecture or its diagrams.
+
+The optional `publication` path selects ordered Views, optional captions, and
+named SVG/PNG profiles with scale and background mode. Every View reference is
+validated against the compiled project; publication data never changes source,
+architecture semantics, or layout.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

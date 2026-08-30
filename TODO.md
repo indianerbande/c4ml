@@ -116,7 +116,7 @@ implementation.
 - [x] add the separately reviewed typed local architecture-policy resource;
 - [x] add a separately reviewed typed glossary resource;
 - [x] add a separately reviewed typed narrative resource;
-- [ ] add a separately reviewed typed publication resource;
+- [x] add a separately reviewed typed publication resource;
 - [ ] add a separately reviewed typed theme resource;
 - [ ] add a separately reviewed typed shape resource; and
 - [ ] add a separately reviewed typed licensed-asset resource.
@@ -136,6 +136,13 @@ passive text and local project links. Raw HTML, embedded images, remote links,
 duplicate identities, traversal, and malformed metadata fail explicitly. The
 resources participate in project revisions and cross the typed desktop/worker
 boundary as non-source content without changing compilation or diagrams.
+
+The version-one publication slice adds one local `.c4ml-publication.json`
+resource with ordered View selection, optional captions, and named SVG/PNG
+render profiles with explicit scale and background mode. CLI and compiler
+worker validate every selected View against the compiled project. The resource
+participates in project revisions but does not alter semantic architecture,
+View definitions, layout, or source.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own

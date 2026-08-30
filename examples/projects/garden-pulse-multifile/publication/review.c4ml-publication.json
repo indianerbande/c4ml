@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "id": "garden-pulse-review",
+  "title": "Garden Pulse architecture review",
+  "views": [
+    {
+      "viewId": "garden-pulse-context",
+      "caption": "People and software systems around Garden Pulse."
+    }
+  ],
+  "profiles": [
+    {
+      "id": "review-svg",
+      "formats": ["svg"],
+      "scale": 1,
+      "background": "theme"
+    }
+  ]
+}

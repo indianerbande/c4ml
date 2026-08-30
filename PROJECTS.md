@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented architecture-source, policy, observation, glossary, and narrative foundation
+Status: Implemented architecture-source, policy, observation, glossary, narrative, and publication foundation
 
 Date: 2026-08-31
 
@@ -61,6 +61,7 @@ The version-one manifest lists every architecture source explicitly:
   "observations": "evidence/inventory.c4ml-observations.json",
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],
+  "publication": "publication/review.c4ml-publication.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -200,14 +201,19 @@ raw HTML, embedded images, remote links, traversal, and duplicate identities.
 Narratives are revisioned project context, not architecture source or diagram
 content.
 
+The optional `publication` field selects one local
+`.c4ml-publication.json` resource. It preserves ordered View selection and
+captions plus deterministic SVG/PNG profiles with explicit scale and background
+mode. CLI and worker reject references to Views not present in the compiled
+project. Publication settings do not change source, architecture, or layout.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
 Architecture source documents plus local architecture-policy,
-architecture-observation, glossary, and narrative resources are executable
-today. Further planned resources include:
+architecture-observation, glossary, narrative, and publication resources are
+executable today. Further planned resources include:
 
-- publication and print profiles;
 - themes, safe custom shapes, and licensed local assets; and
 - architecture baselines and external scanner adapters.
 

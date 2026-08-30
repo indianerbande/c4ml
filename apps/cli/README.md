@@ -50,6 +50,8 @@ error findings, while `warning` fails on warnings or errors. A project-selected
 `.c4ml-glossary.json` is validated and retained as non-source project knowledge
 without changing compilation. Listed `.c4ml-narrative.md` chapters are likewise
 validated as passive local Markdown and never enter architecture compilation.
+A project publication resource is also validated against compiled View
+identities before CLI commands proceed.
 
 The CLI currently accepts the bounded experimental language slices for all
 seven view types, including Deployment. Its command names and output contract
