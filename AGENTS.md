@@ -8,9 +8,9 @@ An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium and ELK.js
 technical spikes are authorized. The accepted resvg-js adapter has moved from
 its historical spike into the production `packages/render-resvg` boundary.
 
-The runtime architecture is accepted: one browser-compatible TypeScript
-compiler core, a thin Node.js CLI, and a TypeScript editor that runs the compiler
-in a Web Worker. Angular 22 with the pinned TypeScript 6.0.x toolchain and Monaco
+The runtime architecture is accepted: one runtime-portable TypeScript compiler
+core, a thin Node.js CLI, and a desktop renderer that runs the compiler in a
+local Web Worker. Angular 22 with the pinned TypeScript 6.0.x toolchain and Monaco
 Editor 0.56.0 are the accepted desktop editor stack. Angular owns UI composition
 and interaction, while Monaco owns source editing and editor affordances behind
 a C4ML-owned adapter. Compiler and language processing remain in the worker
@@ -32,7 +32,7 @@ releases. The exact pnpm-managed Node.js 24.19.0 runtime is used for repository
 scripts and packaging.
 
 The desktop workbench also has an implemented original IDE-like shell with
-C4ML-specific Files, Diagrams, Output, and Help activity areas, simultaneous
+C4ML-specific Files, Source Control, Diagrams, Output, and Help activity areas, simultaneous
 source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
 local command palette. Its preview can occupy the full main workbench or detach
 into a second Electron window. That window receives only a versioned,
@@ -45,7 +45,8 @@ and bounded preview-window geometry), never source, document handles, or
 filesystem paths. It also has an implemented version-one local settings
 contract and category-based settings panel.
 The activity bar uses five locally packaged, hash-pinned Material Symbols
-Outlined SVGs for Files, Diagrams, Output, Help, and Settings. They remain
+Outlined SVGs for Files, Diagrams, Output, Help, and Settings plus one original,
+hash-checked C4ML Source Control SVG. They remain
 decorative presentation assets inside localized, accessibly named buttons and
 never enter diagrams or exports.
 English/German interface language, System/Light/Dark brightness, eight quiet
@@ -63,7 +64,7 @@ The production-bound Angular editor foundation is implemented under
 `apps/editor`. It uses Angular standalone components, Signals, zoneless change
 detection, a lazy
 Monaco source-editor adapter, and a versioned request/response contract to run
-the experimental language package and shared compiler in a browser Web Worker.
+the experimental language package and shared compiler in a local Web Worker.
 It rejects stale responses, retains the last valid SVG during invalid edits,
 and displays source-located diagnostics in a two-pane layout. The same worker
 provides the only context-completion, help-context, syntax-highlighting, and diagnostic
@@ -90,7 +91,7 @@ explanations, route controls, avoidance regions, and corridors navigate to their
 owning source ranges. The desktop UI and diagrams use the
 locally packaged
 IBM Plex family: Sans for interface and diagrams, Mono only for source. SVG
-exports embed the controlled Sans WOFF2 faces, and browser zoom changes actual
+exports embed the controlled Sans WOFF2 faces, and preview zoom changes actual
 preview dimensions instead of applying a rasterizing CSS transform. The
 compiler worker
 uses ELK's API-only entry and a separate local ELK Web Worker for automatic
@@ -117,15 +118,21 @@ worker preview, one-unit Monaco application adapter, canonical worker parity,
 and versioned worker/CLI analysis-report exposure are implemented. The first
 compiler-owned quality catalogue is implemented as well: non-blocking shared
 validation guidance, model/View coverage, and empty-View evidence produce
-deterministic source-located findings over validated snapshots. CLI and browser
-worker use the same evaluator; the localized Output area navigates findings to
+deterministic source-located findings over validated snapshots. CLI and the
+renderer compiler worker use the same evaluator; the localized Output area navigates findings to
 Monaco source. Blocking invalid input remains in compiler diagnostics because
 it cannot produce a canonical analysis snapshot. The first
 portable query engine is implemented too: upstream/downstream traversal,
 deterministic paths, containment, deployment placement, and resolved-View
 coverage produce fully explained results and reference-only temporary focus
 Views. The experimental CLI exposes those contracts without introducing public
-query grammar or duplicating architecture definitions. The first
+query grammar or duplicating architecture definitions. The first portable
+architecture-policy contract evaluates forbidden dependencies, required
+protocols, ownership, allowed direction, deployment consistency, and selected
+metadata requirements over canonical snapshots. It produces source-located
+findings and accepts corrections only as reviewable source change sets. No
+policy file format or public syntax is accepted yet, and worker/CLI/CI
+policy-set injection remains the next slice. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
@@ -139,7 +146,7 @@ topology authoring remain dedicated later gestures. The portable version-one
 semantic differ is implemented and automatically validated: it matches
 kind-qualified stable identities, separates model, Relationship, deployment,
 View, presentation, and layout changes, recognizes renames, ignores source and
-formatting noise, and is exposed through the browser worker and experimental
+formatting noise, and is exposed through the compiler worker and experimental
 CLI `diff` command.
 The semantic-evolution foundation now also includes a version-one deterministic
 impact report, a conservative baseline-geometry stability stage, and
@@ -148,18 +155,25 @@ paths come only from validated graph references. Geometry retention excludes
 hard-placement participants and visibly falls back on size, parent,
 containment, or collision incompatibility. Comparison SVG/PNG artifacts expose
 separate added, removed, modified, affected-path, and layout-movement encodings
-through both a visible legend and SVG metadata. The browser worker returns the
+through both a visible legend and SVG metadata. The compiler worker returns the
 portable difference and impact reports; the experimental CLI can export a
 selected shared View in every comparison mode. Executable policy rules remain
-a later slice.
+an internal compiler-core contract; frontend policy-set injection remains a
+later slice.
 The local version-control slice is implemented in the existing Node.js
-`project-node` adapter used by desktop and CLI boundaries. It reads a `.c4ml`
+`project-node` adapter used by desktop and CLI boundaries. Its revision loader reads a `.c4ml`
 file, implicit directory, or explicit manifest from a commit, tag, or branch
 through bounded read-only Git subprocess calls and never checks out or mutates
 repository state. The CLI can compare those revisions with each other or with
 working source through the unchanged portable comparison path. Repository
 paths and refs remain excluded from the whitelisted workbench session record.
-Hosted-provider connections and remote mutation remain later adapters.
+The separate desktop working-tree adapter reports branch, upstream,
+ahead/behind, index, and working-tree state and performs only explicit stage,
+unstage, commit, and push actions from the Source Control area. It never checks
+out, discards, pulls, fetches, or rewrites user work. The renderer receives only
+opaque document handles and repository-relative change paths. Hosted-provider
+connections, remote browsing, pull/sync, branch switching, and conflict
+resolution remain later adapters.
 Reviewed canonical snapshots can now be composed into a deterministic portable
 migration story. Ordered transitions retain authored or Git provenance and
 reuse the shared difference and impact reports. The compiler core can generate
@@ -180,7 +194,7 @@ language package merges executable top-level fragments, resolves cross-document
 references in one flat project, and retains project-relative source locations.
 The CLI and desktop shell accept files, manifests, and project directories
 through the same Node.js loading adapter. The editor compiles every project
-document through the browser worker, offers cross-document references in
+document through the compiler worker, offers cross-document references in
 context completion, displays the explicit source set in its project explorer
 and source tabs, preserves per-document dirty state, and navigates diagnostics
 and preview objects to the owning document. Project revisions and source-change
@@ -212,7 +226,7 @@ automatic, guided, or fixed route contracts, converted into a renderer-neutral
 scene, serialized as standalone SVG, and rasterized as PNG through the accepted
 resvg-js Node adapter in `packages/render-resvg`. Automatic geometry is
 provided by the accepted,
-replaceable ELK.js adapter in both Node.js frontends and the browser compiler
+replaceable ELK.js adapter in both Node.js frontends and the renderer compiler
 worker. A compiler-owned placement stage now applies hard or soft relative
 above/below/left/right intent, anchored multi-element edge/axis alignment,
 ordered equal-gap distribution, adjustment from automatic geometry, and
@@ -242,7 +256,7 @@ exceptions recorded in `SPEC.md` and `DEPENDENCIES.md`.
 IBM Plex v6.4.2 is the accepted controlled font asset. Exact unmodified Sans
 and Mono files from the tagged official release are isolated in
 `packages/font-ibm-plex` with their OFL-1.1 license and recorded hashes. The
-browser packages only WOFF2 assets; standalone SVG embeds the required Sans
+renderer packages only WOFF2 assets; standalone SVG embeds the required Sans
 faces; Node PNG rendering receives the matching Sans TTF files explicitly and
 keeps system-font discovery disabled. Font choice is presentation behavior and
 MUST NOT enter the semantic model or author-facing source grammar.
@@ -323,7 +337,7 @@ change:
 
 - semantic model, views, layout, scene graph, and renderers are separate layers;
 - CLI and editor execute the same compiler core and compiler contracts;
-- the compiler core remains usable in both Node.js and a browser Web Worker;
+- the compiler core remains usable in both Node.js and a local Web Worker;
 - layout-only constraints are never fake architecture relationships;
 - stable identity never depends on display names or declaration order;
 - automatic layout and local manual control can coexist in one view;
@@ -419,7 +433,7 @@ When implementation is authorized:
 
 - keep the portable compiler core free of DOM, Node.js filesystem, process, and
   network dependencies;
-- place Node.js, browser, filesystem, and UI behavior behind frontend adapters;
+- place Node.js, renderer, filesystem, and UI behavior behind frontend adapters;
 - run editor compilation and language processing in a Web Worker;
 - attach source ranges and stable semantic IDs through the scene graph and SVG;
 - reject stale worker results and retain the last valid preview during invalid
@@ -476,8 +490,8 @@ repository:
 - `pnpm install` installs the pinned workspace dependency graph;
 - `pnpm run build` regenerates the disposable Langium probe and builds all
   packages;
-- `pnpm run check:browser` bundles the portable core, Langium services, and the
-  production ELK browser adapter without writing bundle artifacts;
+- `pnpm run check:worker-bundles` bundles the portable core, Langium services,
+  and the production renderer Web Worker adapter without writing artifacts;
 - `pnpm run check:editor-production` verifies the accepted Monaco version, its
   pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run check:desktop-production` verifies the pinned Electron/Forge stack,
@@ -485,13 +499,13 @@ repository:
 - `pnpm run typecheck` builds source and type-checks test code;
 - `pnpm run test` runs the semantic, view-resolution, adapter, language,
   editor, and CLI tests;
-- `pnpm run check` runs the complete current build, browser, type, and test
+- `pnpm run check` runs the complete current build, worker-bundle, type, and test
   gate;
 - `pnpm run demo:render` regenerates the ignored Signal Garden SVG and PNG
   reference output under `apps/reference-export/build/reference/`;
-- `pnpm run editor:build` creates the ignored production-mode Angular editor
+- `pnpm run renderer:build` creates the ignored production-mode Angular renderer
   build under `build/editor/`;
-- `pnpm run editor:start` starts the local Angular editor development server;
+- `pnpm run renderer:start` starts the internal Angular renderer harness;
 - `pnpm run desktop:start` builds and starts the Electron desktop application;
 - `pnpm run desktop:smoke` builds and smoke-tests the Electron bridge, editor,
   compiler worker, preview, and controlled typography;

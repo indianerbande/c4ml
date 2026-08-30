@@ -89,7 +89,7 @@ the rendering adapter for that contract.
 - Syntax-theme changes apply immediately without changing the workbench family,
   source content, diagnostics, or diagram output.
 - Reset restores the complete version-one default record.
-- Unsupported versions, malformed values, and unavailable browser storage fall
+- Unsupported versions, malformed values, and unavailable renderer storage fall
   back safely without blocking the editor.
 - The settings dialog is available from the toolbar and the native
   `Cmd/Ctrl+,` application menu shortcut.

@@ -19,7 +19,7 @@ separately; passing a Phase 0 spike alone is not permanent acceptance.
   integration are specialized language-engineering capabilities.
 - **License:** MIT.
 - **Impact:** JavaScript runtime plus Chevrotain and LSP-oriented transitive
-  packages. It supports Node.js, browsers, and browser workers.
+  packages. It supports Node.js and local Web Workers.
 - **Offline behavior:** parsing and language services run locally after package
   installation; no runtime network access is required.
 - **Boundary:** the parser produces a syntax representation that is translated
@@ -36,7 +36,7 @@ separately; passing a Phase 0 spike alone is not permanent acceptance.
   translate generated AST nodes into compiler-owned domain types, produce
   deterministic SVG through the shared compiler pipeline, return grammar- and
   scope-derived completion candidates with exact text edits, and bundle the
-  language package for a browser without Node.js polyfills.
+  language package for a Web Worker without Node.js polyfills.
 
 The completion spike activates Langium's LSP completion services inside the
 existing compiler worker. This adds no new direct dependency, but it increases
@@ -69,7 +69,7 @@ the disposable probe artifacts.
   beyond the adapter.
 - **Protecting evidence:** finite geometry, normalized output, deterministic
   repeated results, compound-node handling, and explicit failure for invalid
-  adapter input. The Angular production build and browser session additionally
+  adapter input. The Angular production build and renderer harness additionally
   verify the API-only entry, a real nested Web Worker, local offline loading,
   and unchanged worker/license packaging.
 
@@ -122,17 +122,17 @@ validated as C4ML's controlled typography family.**
   `242c4cccd37e87985a5337815c99b960ef13c65c`, with SHA-256 values recorded in
   `packages/font-ibm-plex/README.md`.
 - **Impact:** eleven selected files occupy 1,078,892 bytes in the source tree.
-  The browser artifact contains only eight WOFF2 files totaling 469,600 bytes.
+  The renderer artifact contains only eight WOFF2 files totaling 469,600 bytes.
   Each standalone SVG embeds the three Sans faces it may use; Node PNG
   rendering loads three Sans TTF files. No IBM npm telemetry package or font
   CDN is included.
 - **Offline behavior:** every font is local after checkout/install. SVG uses
   embedded WOFF2 data URLs; resvg receives TTF paths explicitly and keeps
   system-font discovery disabled.
-- **Boundary:** `@c4ml/font-ibm-plex` owns binary assets and Node/browser asset
+- **Boundary:** `@c4ml/font-ibm-plex` owns binary assets and Node/renderer asset
   loading. The renderer accepts validated generic embedded-font descriptors and
   PNG font paths. Fonts do not enter semantic model types or source grammar.
-- **Protecting evidence:** asset headers, local browser URLs, hashes, packaged
+- **Protecting evidence:** asset headers, local renderer URLs, hashes, packaged
   byte identity, unchanged OFL license, embedded SVG faces, rejection of
   external font URLs, disabled PNG system fonts, production build, and visual
   checks at multiple editor zoom levels.
@@ -156,9 +156,9 @@ Source: [IBM Plex v6.4.2](https://github.com/IBM/plex/tree/v6.4.2) and its
 - **Provenance:** one unmodified regular face from each official release is
   pinned by release tag, Git commit, and SHA-256 in
   `packages/font-editor-mono/README.md`.
-- **Impact:** six browser font files total 591,832 bytes. They add no JavaScript,
+- **Impact:** six renderer WOFF2 files total 591,832 bytes. They add no JavaScript,
   native code, install hook, telemetry, or runtime service. Only a selected
-  family is requested by the browser. Bold and italic faces are not bundled in
+  family is requested by the renderer. Bold and italic faces are not bundled in
   this initial set.
 - **Ligature behavior:** Monaco enables the standard programming features when
   requested. C4ML additionally selects Intel One Mono's documented `ss01` and
@@ -172,7 +172,7 @@ Source: [IBM Plex v6.4.2](https://github.com/IBM/plex/tree/v6.4.2) and its
   scene, SVG, PNG, and diagram typography remain unchanged.
 - **Protecting evidence:** package tests verify file headers, exact hashes, and
   complete licenses. Production checks compare every packaged byte and notice
-  with its reviewed source package. Browser verification selects every family,
+  with its reviewed source package. Renderer-harness verification selects every family,
   confirms its loaded face and Monaco remeasurement, and checks that canonical
   diagram SVG is unchanged.
 
@@ -222,14 +222,14 @@ and `@angular/compiler-cli` 22.1.4 plus `@angular/build` and `@angular/cli`
 22.1.6. The patch difference avoids a resolved transitive peer mismatch while
 remaining inside Angular Build's declared Angular 22 peer range.
 
-- **Capability:** structured browser application composition, dependency
+- **Capability:** structured sandboxed desktop-renderer composition, dependency
   injection, reactive UI state, routing, and testable editor-shell components.
-- **Why external:** a production browser application framework is mature
+- **Why external:** a production web-platform UI framework is mature
   infrastructure outside C4ML's architecture-modeling and diagram-compilation
   core.
 - **License:** Angular packages are MIT. RxJS 7.8.2 is Apache-2.0 and tslib
   2.8.1 is 0BSD.
-- **Impact:** browser runtime and build-tool dependencies confined to the editor
+- **Impact:** renderer runtime and build-tool dependencies confined to the editor
   application; no Angular package enters the portable compiler core. Before
   Monaco was installed, the full workspace tree was approximately
   298 MB on the reference macOS arm64 checkout. The Angular shell, completion,
@@ -246,8 +246,8 @@ remaining inside Angular Build's declared Angular 22 peer range.
   parsing and compilation in a module Web Worker, rejects stale responses,
   retains the last valid preview, reports source-located diagnostics, supplies
   scoped completions, generates wizard source, switches among views by stable
-  identifier, and was interactively verified in a desktop browser without a
-  compiler service.
+  identifier, and was interactively verified in the internal renderer harness
+  without a compiler service.
 
 The editor uses Angular's zoneless mode, so Zone.js is not installed.
 Optional native build scripts for `@parcel/watcher`, `lmdb`, and
@@ -268,7 +268,7 @@ validated for the desktop editor.**
   diagnostics, navigation, keyboard commands, and undo around the existing
   C4ML worker contracts.
 - **Why external:** text-editor rendering, input-method handling, selection,
-  accessibility, and undo are mature browser UI infrastructure outside C4ML's
+  accessibility, and undo are mature source-editor UI infrastructure outside C4ML's
   architecture compiler.
 - **License:** Monaco is MIT and carries `LICENSE` and
   `ThirdPartyNotices.txt`. Its installed runtime dependencies are Marked 14.0.0
@@ -281,8 +281,7 @@ validated for the desktop editor.**
   214.91 KB initial total and emits Monaco as a 3.06 MB lazy runtime with a
   304.37 KB generic editor worker. Its official 350,112-byte stylesheet is loaded
   lazily from a local build asset. Sizes are before transfer compression.
-  Monaco's official README says mobile browsers are unsupported; C4ML's
-  first-release editor is explicitly desktop-only.
+  Monaco is used only in C4ML's explicitly desktop-only renderer.
 - **Adapter risk:** Monaco 0.56.0's public tree-shakeable `suggest` feature
   entry registers inline completion support but not the popup controller used
   by the editor. The pinned adapter therefore imports that version's exported
@@ -301,7 +300,7 @@ validated for the desktop editor.**
 - **Protecting evidence:** the source-editor translation suite checks exact
   completion edits and diagnostic ranges; editor-session tests check stale and
   failed asynchronous completion settlement. The production Angular build
-  measures the separate chunks. Interactive browser checks cover the labelled
+  measures the separate chunks. Interactive renderer-harness checks cover the labelled
   textbox, listbox popup, context-only candidates, exact application, inline
   markers, diagnostic navigation, keyboard undo/redo, wizard synchronization,
   last-valid preview, and local runtime. Angular's build emits its dependency
@@ -323,7 +322,7 @@ and [CodeMirror license](https://github.com/codemirror/dev/blob/main/LICENSE).
 ## Accepted desktop application and packaging libraries
 
 Electron is accepted as the desktop container for the Angular/Monaco editor.
-It is an application adapter only: the portable compiler and browser worker do
+It is an application adapter only: the portable compiler and compiler worker do
 not depend on Electron.
 
 ### Electron 44.0.0
@@ -339,7 +338,7 @@ not depend on Electron.
 - **Impact:** installation downloads a platform-specific Electron runtime and
   desktop artifacts contain that runtime, so packages are substantially larger
   than the Angular web assets alone. End users do not need a separate Node.js,
-  browser, Python, or compiler service. On the validated macOS arm64 checkout,
+  web runtime, Python, or compiler service. On the validated macOS arm64 checkout,
   the installed workspace occupies approximately 839 MB, the unpacked app
   approximately 294 MB, the DMG 128 MB, and the ZIP 129 MB.
 - **Offline behavior:** dependency installation needs registry/download access;
@@ -439,7 +438,7 @@ remains a Node frontend responsibility and does not enter the compiler core.
 | TypeScript | 6.0.3 | Apache-2.0 | strict type checking and ESM build; compatible with the Angular 22 editor baseline |
 | Vitest | 4.1.11 | MIT | unit and adapter-contract tests |
 | `@types/node` | 24.13.3 | MIT | Node.js 24 LTS type surface |
-| esbuild | 0.28.2 | MIT | in-memory browser bundle compatibility check |
+| esbuild | 0.28.2 | MIT | in-memory renderer Web Worker bundle compatibility check |
 
 Development tools do not define C4ML runtime semantics. Their versions are
 pinned by the root manifest and lockfile and may be upgraded only with a clean
@@ -466,7 +465,7 @@ the following evidence:
   type-specific view scopes, Dynamic ordering, Deployment placement and
   runtime relationships, Relationship references, formatting stability, and
   deterministic SVG through the shared compiler pipeline.
-- The current browser check bundled the compiler core and experimental language
+- The current worker-bundle check bundled the compiler core and experimental language
   package at 139,434 and 1,563,719 unminified bytes respectively, without
   Node.js polyfills. The increase reflects activated LSP completion services;
   this is feasibility evidence, not a production size budget.
@@ -476,11 +475,11 @@ the following evidence:
   SVG. Controlled repeated input was byte-stable, scaling preserved dimensions,
   and external image resources were rejected.
 - The compiler core, Langium services, and ELK adapter bundled successfully as
-  browser-targeted ECMAScript modules without Node.js polyfills. Unminified
+  Web Worker-targeted ECMAScript modules without Node.js polyfills. Unminified
   in-memory probe bundle sizes were approximately 2.5 KB, 920 KB, and 3.3 MB
   respectively; production size and worker-loading strategy remain open.
 - The complete current suite, including desktop contract and shell tests,
-  passes through the build, type, browser, dependency, and test gates.
+  passes through the build, type, worker-bundle, dependency, and test gates.
 - The installed development tree occupied approximately 113 MB on macOS arm64;
   individual package-store entries were approximately 7.7 MB for ELK.js, 5.4 MB
   for Langium, 3.4 MB for the resvg native binary, and 10 MB for esbuild.
@@ -495,7 +494,7 @@ CommonJS-constructor cast and `skipLibCheck` are confined to the production ELK
 adapter package as a reviewed declaration boundary. This workaround MUST NOT
 spread into the compiler core.
 
-The complete build, browser-bundle check, source and test type checking, test
+The complete build, worker-bundle check, source and test type checking, test
 suite, and reference export were repeated successfully with TypeScript 6.0.3
 before it became the pinned workspace compiler. The compiler and configuration
 do not rely on TypeScript 7-only language or configuration features.
@@ -510,7 +509,7 @@ Superseded evaluation note (2026-08-28): Direct use of ELK.js's bundled
 CommonJS entry inside the Angular compiler worker failed while constructing the
 bundle's internal worker (`_Worker is not a constructor`). The accepted
 integration instead uses ELK's API-only entry with the published minified ELK
-worker as a real nested browser Worker. The local linear adapter is no longer
+worker as a real nested Web Worker. The local linear adapter is no longer
 the production preview path.
 
 The Phase 1 reference exporter now invokes the accepted ELK.js and resvg-js
@@ -529,6 +528,7 @@ script and packaging runtime.
 ## Asset status
 
 C4ML includes the documented IBM Plex and optional editor font binaries plus
-five pinned Google Material Symbols SVGs as third-party visual assets. It
+five pinned Google Material Symbols SVGs as third-party visual assets. The
+Source Control activity uses one original C4ML-owned, hash-checked SVG. C4ML
 contains no third-party themes or sample architectures. All probe data and test
 fixtures remain original C4ML material.

@@ -11,10 +11,11 @@ The intended user experience has two entry points:
 - an installable desktop workbench with C4ML source on the left and a hot
   graphical preview on the right.
 
-The Electron desktop shell, Angular/Monaco editor, and experimental CLI use the
-same browser-compatible TypeScript compiler core. The CLI will not launch a
-browser, and neither frontend requires a Python service, cloud account, or
-network connection for the normal installed workflow.
+The Electron desktop shell, its sandboxed Angular/Monaco renderer, and the
+experimental CLI use the same runtime-portable TypeScript compiler core. C4ML
+does not ship or host a standalone browser application. Neither entry point
+requires a Python service, cloud account, or network connection for the normal
+installed workflow.
 
 ## Project status
 
@@ -59,7 +60,7 @@ Implemented and automatically validated:
   canonical SVG behind a replaceable compiler-owned contract;
 - original semantic `c4ml-blue` and `c4ml-garden` color presets with deep,
   role-specific overrides;
-- experimental browser-compatible `draft-1` language slices that parse and
+- experimental Web Worker-compatible `draft-1` language slices that parse and
   lower the original `hello-context.c4ml`, `hello-container.c4ml`, and
   `hello-static-zoom.c4ml` examples into the shared compiler, including the
   complete static ownership hierarchy and four static C4 views;
@@ -79,7 +80,8 @@ Implemented and automatically validated:
 - shared built-in architecture-quality findings with explicit evidence,
   deterministic source locations, CLI reporting, and workbench navigation;
 - an Angular 22 desktop workbench with simultaneous source/preview tabs,
-  C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
+  C4ML-specific Files, Source Control, Diagrams, Output, and Help activity
+  areas, a Problems/Route
   panel, status bar, command palette, local compiler Web Worker, live
   diagnostics, stale-result rejection, and retention of the last valid SVG;
 - a full-size preview workspace plus a detachable, projection-only Electron
@@ -92,6 +94,8 @@ Implemented and automatically validated:
 - an Electron 44 desktop shell with a narrow typed preload bridge, native
   Open/Save/Save All/Save As, normal desktop menus and shortcuts, document
   titles and dirty-state close protection;
+- explicit local Git status, staging, commit, and push controls behind that
+  bridge, without exposing repository paths or Node.js to the renderer;
 - an extensible local settings area with live English/German interface copy,
   synchronized C4ML-owned native controls, System/Light/Dark workbench schemes,
   eight quiet color families for sixteen light/dark combinations, and persisted
@@ -139,7 +143,7 @@ Implemented and automatically validated:
   System Context, Container, Component, and Code views, with candidate
   source/SVG review and one-step apply/undo;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
-  browser-worker entry points behind the shared layout contract;
+  renderer Web Worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
   fonts, and controlled system-font-free PNG rendering;
 - selectable views, plus zoom, fit, scroll-pan, local SVG export, and native
@@ -150,7 +154,8 @@ Implemented and automatically validated:
 - a local English/German handbook with searchable task-oriented chapters,
   a dedicated Help activity, and language-worker-owned help at the cursor;
 - an original, executable Signal Garden Container View reference export; and
-- browser-compatible compiler-core contracts.
+- runtime-portable compiler-core contracts shared by the CLI and desktop
+  renderer.
 
 Not implemented yet:
 
@@ -237,7 +242,7 @@ pnpm run demo:render
 pnpm run desktop:start
 ```
 
-The check builds all current packages, verifies browser bundles in memory,
+The check builds all current packages, verifies renderer Web Worker bundles in memory,
 type-checks source and tests, and runs the semantic, view-resolution, and
 adapter suites. `demo:render` creates a real SVG and PNG under
 `apps/reference-export/build/reference/` from an in-code original model. It is
@@ -245,8 +250,9 @@ a contributor reference path, not the future `.c4ml` command-line interface.
 `desktop:start` builds and opens the real Electron desktop workbench for all
 seven bounded executable view types. Angular, Monaco, and Electron are accepted
 production libraries; the language and several MVP editor capabilities remain
-under development. The browser-only Angular development server remains
-available as `pnpm run editor:start`.
+under development. Contributors can start the isolated renderer harness with
+`pnpm run renderer:start`; it is a development tool, not a supported browser
+application.
 
 Create local distributable artifacts with:
 
@@ -291,8 +297,8 @@ pnpm run c4ml -- render examples/projects/garden-pulse-multifile \
 
 The desktop application can open the same directory with **File → Open
 Project…** (`Cmd/Ctrl+Alt+O`). Its Files area and source tabs retain each
-document separately while the browser worker compiles and completes against the
-whole project.
+document separately while the local renderer worker compiles and completes
+against the whole project.
 
 Its command names and current static-language scope remain provisional.
 
