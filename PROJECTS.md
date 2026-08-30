@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented source, policy, observation, glossary, narrative, publication, theme, and shape foundation
+Status: Implemented complete version-one typed project-resource foundation
 
 Date: 2026-08-31
 
@@ -64,6 +64,7 @@ The version-one manifest lists every architecture source explicitly:
   "publication": "publication/review.c4ml-publication.json",
   "theme": "presentation/garden.c4ml-theme.json",
   "shapes": "presentation/garden.c4ml-shapes.json",
+  "assets": "assets/garden.c4ml-assets.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -220,16 +221,20 @@ restricted normalized vector primitives and explicit element assignments. It
 uses the same safe shape validator as the renderer and cannot contain SVG,
 scripts, CSS, images, fonts, filters, or network references.
 
-## Planned project resources
+The optional `assets` field selects one `.c4ml-assets.json` manifest for passive
+UTF-8 text, Markdown, and JSON files. Each entry records purpose, media type,
+SHA-256, SPDX license, and optional attribution. Local and Git loaders verify
+path containment, integrity, and JSON syntax before content enters the bounded
+project transport. Active and binary formats are excluded from version one.
+
+## Project-resource boundary
 
 The project format is intentionally ready for separately typed resources.
 Architecture source documents plus local architecture-policy,
-architecture-observation, glossary, narrative, publication, theme, and shape
-resources are executable today. Further planned resources include:
+architecture-observation, glossary, narrative, publication, theme, shape, and
+licensed passive-asset resources have version-one contracts today. Architecture
+baselines and external scanner adapters remain separate future concerns.
 
-- licensed local assets; and
-- architecture baselines and external scanner adapters.
-
-These resources will receive independent contracts. A publication profile must
+Any later resource requires an independent contract. A publication profile must
 not change architecture semantics, and local workbench preferences remain
 outside the project.

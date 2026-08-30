@@ -1,4 +1,5 @@
 import { readdir, readFile, realpath, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import {
   basename,
   dirname,
@@ -20,6 +21,8 @@ import {
   parseArchitecturePublication,
   parseArchitectureThemeResource,
   parseArchitectureShapeResource,
+  assertArchitectureAssetHash,
+  parseArchitectureAssetManifest,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -415,6 +418,55 @@ export async function loadArchitectureProject(
     shapes = { uri, source };
   }
 
+  let assets: { readonly uri: string; readonly source: string; readonly files: readonly { readonly uri: string; readonly content: string }[] } | undefined;
+  if (parsedManifest.manifest.assets !== undefined) {
+    const uri = parsedManifest.manifest.assets;
+    const assetManifestPath = resolve(projectRoot, ...uri.split("/"));
+    let assetManifestRealPath: string;
+    try { assetManifestRealPath = await realpath(assetManifestPath); } catch (error: unknown) {
+      return environmentFailure("C4ML-PROJECT-NODE-020", `Cannot read project assets ${assetManifestPath}: ${errorMessage(error)}`);
+    }
+    const manifestRelative = relative(rootRealPath, assetManifestRealPath);
+    if (manifestRelative === ".." || manifestRelative.split(sep)[0] === ".." || isAbsolute(manifestRelative)) {
+      return sourceFailure("C4ML-PROJECT-NODE-021", `Project assets "${uri}" resolve outside the project directory.`);
+    }
+    let source: string;
+    try {
+      source = await readFile(assetManifestRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-020",
+        `Cannot read project assets ${assetManifestPath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedAssets = parseArchitectureAssetManifest(source);
+    if (!parsedAssets.valid) return sourceFailure(parsedAssets.error.code, parsedAssets.error.message);
+    const files: Array<{ readonly uri: string; readonly content: string }> = [];
+    for (const asset of parsedAssets.manifest.assets) {
+      const assetPath = resolve(projectRoot, ...asset.uri.split("/"));
+      let assetRealPath: string;
+      try { assetRealPath = await realpath(assetPath); } catch (error: unknown) {
+        return environmentFailure("C4ML-PROJECT-NODE-020", `Cannot read project asset ${assetPath}: ${errorMessage(error)}`);
+      }
+      const assetRelative = relative(rootRealPath, assetRealPath);
+      if (assetRelative === ".." || assetRelative.split(sep)[0] === ".." || isAbsolute(assetRelative)) {
+        return sourceFailure("C4ML-PROJECT-NODE-021", `Project asset "${asset.uri}" resolves outside the project directory.`);
+      }
+      let content: string;
+      try { content = await readFile(assetRealPath, "utf8"); } catch (error: unknown) {
+        return environmentFailure("C4ML-PROJECT-NODE-020", `Cannot read project asset ${assetPath}: ${errorMessage(error)}`);
+      }
+      try {
+        assertArchitectureAssetHash(asset, createHash("sha256").update(content, "utf8").digest("hex"));
+        if (asset.mediaType === "application/json") JSON.parse(content);
+      } catch (error: unknown) {
+        return sourceFailure(error instanceof Error && "code" in error ? String(error.code) : "C4ML-ASSET-001", errorMessage(error));
+      }
+      files.push({ uri: asset.uri, content });
+    }
+    assets = { uri, source, files };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -435,6 +487,7 @@ export async function loadArchitectureProject(
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
       ...(shapes === undefined ? {} : { shapes }),
+      ...(assets === undefined ? {} : { assets }),
     }),
     documentPaths,
   };

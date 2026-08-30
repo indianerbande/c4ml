@@ -267,6 +267,18 @@ describe("portable multi-document source change sets", () => {
     expect(createProjectRevision(value)).not.toEqual(createProjectRevision(project));
   });
 
+  it("includes licensed asset manifest and content in the project revision", () => {
+    const value = createArchitectureProjectInput({
+      ...project,
+      assets: {
+        uri: "assets/project.c4ml-assets.json",
+        source: "manifest",
+        files: [{ uri: "assets/note.txt", content: "note" }],
+      },
+    });
+    expect(createProjectRevision(value)).not.toEqual(createProjectRevision(project));
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

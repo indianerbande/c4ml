@@ -56,6 +56,8 @@ A validated project `.c4ml-theme.json` selection drives normal CLI rendering
 through the same semantic theme resolver as the compiler worker.
 Validated project shape definitions and assignments likewise enter the shared
 diagram-preparation contract before normal CLI rendering.
+Licensed passive project assets are containment- and SHA-256-verified by the
+shared Node loader before any CLI command proceeds.
 
 The CLI currently accepts the bounded experimental language slices for all
 seven view types, including Deployment. Its command names and output contract

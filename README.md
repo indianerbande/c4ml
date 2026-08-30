@@ -59,6 +59,8 @@ Implemented and automatically validated:
   worker rendering through the existing deep-token resolver;
 - one safe project shape catalogue with restricted normalized primitives and
   explicit assignments applied through shared diagram preparation;
+- one licensed passive-asset manifest with local containment, SPDX metadata,
+  SHA-256 integrity, and exact project-revision participation;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,

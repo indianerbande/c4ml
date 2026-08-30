@@ -219,8 +219,9 @@ no architecture semantics. One typed publication resource now validates ordered
 View captions and render profiles against compiled Views. A typed project theme
 resource applies the existing semantic resolver identically in CLI and desktop
 worker rendering. A typed safe project shape catalogue is also applied through
-shared diagram preparation. The licensed-asset project resource remains
-unimplemented.
+shared diagram preparation. The version-one project-resource foundation is now
+complete with a licensed passive-asset manifest whose local UTF-8 contents are
+containment- and SHA-256-verified in working files and Git revisions.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views

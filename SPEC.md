@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.44
+Status: Draft 0.45
 
 Date: 2026-08-31
 
@@ -525,8 +525,11 @@ manifest contains:
   narrative chapters; and
 - an optional `publication` path naming one local version-one publication
   resource; and
-- an optional `theme` path naming one local version-one semantic diagram theme.
-- an optional `shapes` path naming one local version-one safe shape catalogue.
+- an optional `theme` path naming one local version-one semantic diagram theme;
+- an optional `shapes` path naming one local version-one safe shape catalogue;
+  and
+- an optional `assets` path naming one local version-one licensed passive-asset
+  manifest.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -541,6 +544,8 @@ A publication path follows the same rules and MUST end in
 `.c4ml-publication.json`.
 A theme path follows the same rules and MUST end in `.c4ml-theme.json`.
 A shape path follows the same rules and MUST end in `.c4ml-shapes.json`.
+An asset-manifest path follows the same rules and MUST end in
+`.c4ml-assets.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -563,9 +568,9 @@ document.
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
 documents, and the optional raw local policy, observation, glossary, and
-narrative, publication, theme, and shape resources. It MUST NOT open files itself. CLI,
-Electron, and renderer adapters load documents and enforce their environment's
-path and access rules.
+narrative, publication, theme, shape, and asset resources. It MUST NOT open
+files itself. CLI, Electron, and renderer adapters load documents and enforce
+their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
 The desktop editor opens an explicit project directory through its native
@@ -597,21 +602,18 @@ input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, exact document revisions, and optional policy,
-observation, glossary, narrative, publication, theme, and shape resource identities and
-content. A project source
-change set addresses every edit by document URI, validates all document ranges
-against one project revision, and applies all edits atomically or none. One
-authoring action spanning several documents MUST remain one preview and one undo
-transaction at the editor boundary.
+observation, glossary, narrative, publication, theme, shape, and asset resource
+identities and content. A project source change set addresses every edit by
+document URI, validates all document ranges against one project revision, and
+applies all edits atomically or none. One authoring action spanning several
+documents MUST remain one preview and one undo transaction at the editor
+boundary.
 
-Further project resources are reserved as separate typed concerns:
-
-- controlled presentation resources such as licensed local assets.
-
-These further resources MUST NOT be treated as architecture source until their
-individual contracts are specified and implemented. Publication settings MUST
-not mutate semantic architecture, and installation-local workbench settings
-MUST remain outside the project.
+No further version-one project resource is reserved by this section. Any future
+resource requires its own typed contract before it may enter the project, and
+MUST NOT be treated as architecture source by default. Publication settings
+MUST not mutate semantic architecture, and installation-local workbench
+settings MUST remain outside the project.
 
 The implemented version-one glossary resource is a portable, non-semantic
 project concern. It declares a stable resource identity and one or more stable
@@ -669,6 +671,18 @@ preparation rejects unknown assignments. CLI and compiler worker pass the same
 options into shared preparation. The resource cannot contain SVG, scripts, CSS,
 fonts, filters, embedded images, network references, or new C4 kinds. It changes
 presentation and Port geometry only and participates in project revisions.
+
+The implemented version-one asset manifest covers passive UTF-8 project
+material only: `text/plain`, `text/markdown`, and `application/json`. Every
+entry declares stable identity, normalized local path, narrative/publication/
+reference purpose, media type, lowercase SHA-256, one SPDX license identifier,
+and optional attribution. Entry identities and paths are unique. Filesystem and
+read-only Git adapters verify containment, exact content integrity, and JSON
+syntax before constructing the portable project input. Manifest and exact file
+contents participate in deterministic project revisions and bounded desktop
+transport. Binary, image, font, executable, active, and remote assets are not
+accepted by version one and require separately reviewed media-specific safety,
+licensing, decoding, rendering, and packaging contracts.
 
 ## 8. Layout model
 

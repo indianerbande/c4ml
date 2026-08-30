@@ -47,6 +47,11 @@ export interface WorkbenchProjectSnapshot {
   };
   readonly theme?: { readonly uri: string; readonly source: string };
   readonly shapes?: { readonly uri: string; readonly source: string };
+  readonly assets?: {
+    readonly uri: string;
+    readonly source: string;
+    readonly files: readonly { readonly uri: string; readonly content: string }[];
+  };
 }
 
 export interface WorkbenchDocumentState {
@@ -85,6 +90,7 @@ export class WorkbenchDocumentFacade {
   readonly projectPublication = signal<WorkbenchProjectSnapshot["publication"]>(undefined);
   readonly projectTheme = signal<WorkbenchProjectSnapshot["theme"]>(undefined);
   readonly projectShapes = signal<WorkbenchProjectSnapshot["shapes"]>(undefined);
+  readonly projectAssets = signal<WorkbenchProjectSnapshot["assets"]>(undefined);
   readonly projectMode = signal(false);
   readonly activeDocument = computed(
     () =>
@@ -138,6 +144,7 @@ export class WorkbenchDocumentFacade {
     const publication = this.projectPublication();
     const theme = this.projectTheme();
     const shapes = this.projectShapes();
+    const assets = this.projectAssets();
     return {
       version: 1,
       id: this.projectId(),
@@ -150,6 +157,7 @@ export class WorkbenchDocumentFacade {
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
       ...(shapes === undefined ? {} : { shapes }),
+      ...(assets === undefined ? {} : { assets }),
       documents: this.projectDocuments().map(({ uri, source }) => ({
         uri,
         source,
@@ -177,6 +185,7 @@ export class WorkbenchDocumentFacade {
     this.projectPublication.set(state.project.publication);
     this.projectTheme.set(state.project.theme);
     this.projectShapes.set(state.project.shapes);
+    this.projectAssets.set(state.project.assets);
     this.projectMode.set(state.projectMode);
     this.projectDocuments.set(state.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(state.activeUri);
@@ -284,6 +293,7 @@ export class WorkbenchDocumentFacade {
             : { publication: result.project.publication }),
           ...(result.project.theme === undefined ? {} : { theme: result.project.theme }),
           ...(result.project.shapes === undefined ? {} : { shapes: result.project.shapes }),
+          ...(result.project.assets === undefined ? {} : { assets: result.project.assets }),
           documents: result.project.documents.map((document) => ({
             ...document,
             dirty: false,
@@ -444,6 +454,7 @@ export class WorkbenchDocumentFacade {
     readonly publication?: WorkbenchProjectSnapshot["publication"];
     readonly theme?: WorkbenchProjectSnapshot["theme"];
     readonly shapes?: WorkbenchProjectSnapshot["shapes"];
+    readonly assets?: WorkbenchProjectSnapshot["assets"];
     readonly projectMode: boolean;
     readonly documents: readonly WorkbenchProjectDocument[];
   }): void {
@@ -461,6 +472,7 @@ export class WorkbenchDocumentFacade {
     this.projectPublication.set(input.publication);
     this.projectTheme.set(input.theme);
     this.projectShapes.set(input.shapes);
+    this.projectAssets.set(input.assets);
     this.projectMode.set(input.projectMode);
     this.projectDocuments.set(input.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(first.uri);
