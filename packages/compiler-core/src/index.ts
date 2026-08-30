@@ -1,4 +1,5 @@
 export * from "./analysis.js";
+export * from "./architecture-diff.js";
 export * from "./architecture-graph.js";
 export * from "./architecture-snapshot.js";
 export * from "./diagnostics.js";

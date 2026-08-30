@@ -1,4 +1,5 @@
 import {
+  compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
   createArchitectureProjectInput,
@@ -42,6 +43,11 @@ import {
   type AnalysisWorkerRequest,
   type AnalysisWorkerResponse,
 } from "./compiler-worker.analysis.protocol.js";
+import type {
+  ComparisonWorkerInput,
+  ComparisonWorkerRequest,
+  ComparisonWorkerResponse,
+} from "./compiler-worker.comparison.protocol.js";
 
 import {
   type CompilerWorkerDiagnostic,
@@ -81,6 +87,75 @@ import type {
 } from "./compiler-worker.protocol.js";
 
 let browserLayoutAdapter: LayoutAdapter | undefined;
+
+export async function compareWorkerRequest(
+  request: ComparisonWorkerRequest,
+): Promise<ComparisonWorkerResponse> {
+  try {
+    const before = await parseComparisonInput(request.before);
+    const after = await parseComparisonInput(request.after);
+    if (
+      !before.valid ||
+      before.model === undefined ||
+      before.views === undefined ||
+      !after.valid ||
+      after.model === undefined ||
+      after.views === undefined
+    ) {
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "comparison-result",
+        requestId: request.requestId,
+        status: "invalid",
+        diagnostics: {
+          before: before.diagnostics.map(toWorkerDiagnostic),
+          after: after.diagnostics.map(toWorkerDiagnostic),
+        },
+        difference: undefined,
+      };
+    }
+    const beforeSnapshot = resolveArchitectureSnapshot(
+      before.model,
+      before.views,
+    ).snapshot!;
+    const afterSnapshot = resolveArchitectureSnapshot(
+      after.model,
+      after.views,
+    ).snapshot!;
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "comparison-result",
+      requestId: request.requestId,
+      status: "valid",
+      diagnostics: {
+        before: before.diagnostics.map(toWorkerDiagnostic),
+        after: after.diagnostics.map(toWorkerDiagnostic),
+      },
+      difference: compareArchitectureSnapshots(beforeSnapshot, afterSnapshot),
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "comparison-result",
+      requestId: request.requestId,
+      status: "failed",
+      diagnostics: {
+        before: [],
+        after: [
+          {
+            code: "C4ML-EDITOR-DIFF-001",
+            severity: "error",
+            message: `Architecture comparison failed: ${message}`,
+            source: undefined,
+            correction: "Inspect both sources and restart the editor worker.",
+          },
+        ],
+      },
+      difference: undefined,
+    };
+  }
+}
 
 export async function analyzeWorkerRequest(
   request: AnalysisWorkerRequest,
@@ -733,6 +808,8 @@ export function executeWorkerRequest(
       return analyzeWorkerRequest(request);
     case "compile":
       return compileWorkerRequest(request);
+    case "compare":
+      return compareWorkerRequest(request);
     case "complete":
       return completeWorkerRequest(request);
     case "highlight":
@@ -752,6 +829,12 @@ export function executeWorkerRequest(
     case "generate-system-context":
       return generateWorkerRequest(request);
   }
+}
+
+function parseComparisonInput(input: ComparisonWorkerInput) {
+  return input.project === undefined
+    ? parseC4mlDraft(input.source, { file: input.file })
+    : parseC4mlProjectDraft(toArchitectureProject(input.project));
 }
 
 function toArchitectureProject(project: {

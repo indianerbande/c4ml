@@ -124,8 +124,13 @@ review, and one-step apply/undo. The first semantic graphical authoring slice
 creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
 source review, and one-step apply/undo. Dynamic-interaction and deployment-
-topology authoring remain dedicated later gestures; semantic diffing and
-executable policy rules remain later slices.
+topology authoring remain dedicated later gestures. The portable version-one
+semantic differ is implemented and automatically validated: it matches
+kind-qualified stable identities, separates model, Relationship, deployment,
+View, presentation, and layout changes, recognizes renames, ignores source and
+formatting noise, and is exposed through the browser worker and experimental
+CLI `diff` command. Impact visualization, Git-backed inputs, migration stories,
+and executable policy rules remain later slices.
 The Pillar 1 persistence acceptance has also passed in the packaged macOS app:
 a semantic edit was saved, the application was fully restarted, the saved file
 was reopened without diagnostics, and the standalone CLI validated the same

@@ -82,6 +82,71 @@ describe("experimental C4ML CLI", () => {
     expect(stderr).toEqual([]);
   });
 
+  it("compares two sources by stable architecture identity", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-diff-"));
+    const beforePath = join(directory, "before.c4ml");
+    const afterPath = join(directory, "after.c4ml");
+    const before = await readFile(contextUrl, "utf8");
+    const after = before.replace(
+      'name = "Garden Pulse"',
+      'name = "Garden Coordination"',
+    );
+    await writeFile(beforePath, before, "utf8");
+    await writeFile(afterPath, after, "utf8");
+
+    const exitCode = await runCli(
+      ["diff", beforePath, afterPath, "--diagnostics", "json"],
+      io(directory),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly command: string;
+      readonly difference: {
+        readonly changes: readonly {
+          readonly category: string;
+          readonly kind: string;
+          readonly subjectKey: string;
+        }[];
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.command).toBe("diff");
+    expect(result.difference.changes).toEqual([
+      expect.objectContaining({
+        category: "model",
+        kind: "renamed",
+        subjectKey: "element:garden-pulse",
+      }),
+    ]);
+    expect(stderr).toEqual([]);
+  });
+
+  it("ignores formatting and comments in a CLI semantic comparison", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-diff-format-"));
+    const beforePath = join(directory, "before.c4ml");
+    const afterPath = join(directory, "after.c4ml");
+    const before = await readFile(contextUrl, "utf8");
+    const after = `${before}\n// Comparison-only note.\n`;
+    await writeFile(beforePath, before, "utf8");
+    await writeFile(afterPath, after, "utf8");
+
+    const exitCode = await runCli(
+      ["diff", beforePath, afterPath, "--diagnostics", "json"],
+      io(directory),
+    );
+    const result = JSON.parse(stdout.join("")) as {
+      readonly difference: {
+        readonly changes: readonly unknown[];
+        readonly summary: { readonly total: number };
+      };
+    };
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(result.difference.changes).toEqual([]);
+    expect(result.difference.summary.total).toBe(0);
+    expect(stderr).toEqual([]);
+  });
+
   it("checks a valid source file without rendering", async () => {
     const cwd = fileURLToPath(new URL("../../..", import.meta.url));
     const exitCode = await runCli(

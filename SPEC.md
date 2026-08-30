@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.31
+Status: Draft 0.32
 
 Date: 2026-08-30
 
@@ -1533,6 +1533,19 @@ index uses kind-qualified keys so identities in different namespaces cannot
 collide. It exposes deterministic containment, relationship, deployment-instance,
 view-membership, upstream, and downstream traversal.
 
+The implemented version-one semantic differ compares two canonical snapshots
+by their kind-qualified stable identities. It classifies additions, removals,
+renames, and other property changes independently for model elements,
+Relationships, deployment, Views, presentation, and layout. One changed name
+therefore remains a rename of the same object rather than a removal plus an
+addition. View snapshots retain their typed stable scope reference separately
+from the human-readable resolved scope, so renaming a scoped element does not
+invent a second View change. Comments, formatting, declaration order, source
+files, and source ranges never enter the comparison. The result has a
+deterministic versioned JSON form and category summary. The browser worker and
+the experimental CLI `diff` command call this portable comparison directly;
+neither frontend owns comparison semantics.
+
 The implemented analysis contract represents findings and query results with
 stable rule/query identity, qualified affected items, ordered evidence, sorted
 source locations, and optional proposed source corrections. Observed evidence
@@ -1717,7 +1730,8 @@ A thin Node.js CLI is implemented for the currently executable `draft-1`
 language slices. It delegates parsing, semantic validation, view
 resolution, layout, scene construction, SVG serialization, and PNG
 rasterization to the same packages used elsewhere. It supports validation,
-one-view or all-view rendering, SVG and PNG selection, PNG scale, output
+semantic comparison of two valid files or projects, one-view or all-view
+rendering, SVG and PNG selection, PNG scale, output
 directory selection, human or JSON diagnostics, version reporting, and the
 documented exit classes `0`, `2`, `3`, `4`, and `5`.
 

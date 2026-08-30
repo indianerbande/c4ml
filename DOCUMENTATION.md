@@ -210,6 +210,10 @@ compiler packages as the editor worker:
 # Validate without rendering.
 pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
 
+# Compare two valid architecture states by stable identity.
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --diagnostics json
+
 # Render one view as canonical SVG and derived PNG.
 pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --view arrangement-engine-code \
@@ -228,6 +232,12 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
 experimental frontend and language versions. Exit classes distinguish success,
 usage, source/view selection, layout/render compilation, and filesystem or
 environment failures.
+
+`diff` accepts two files, manifests, or project directories. It reports model,
+Relationship, deployment, View, presentation, and layout changes separately.
+Stable identifiers make an element name change a rename; comments, formatting,
+declaration order, and source locations do not create changes. The current CLI
+returns the portable version-one difference directly and does not inspect Git.
 
 The CLI is contributor evidence, not a frozen public command contract. It
 accepts the current placement and route-control slices, including relative

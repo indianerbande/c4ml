@@ -198,11 +198,16 @@ state.
 
 ### Slice 2.1 — semantic differ
 
-- [ ] compare two canonical snapshots by stable identity;
-- [ ] classify additions, removals, renames, property changes, relationship
+- [x] compare two canonical snapshots by stable identity;
+- [x] classify additions, removals, renames, property changes, relationship
       changes, deployment changes, view changes, and layout-only changes; and
-- [ ] ignore comments, formatting, declaration order, and source-location
+- [x] ignore comments, formatting, declaration order, and source-location
       movement.
+
+The implemented portable version-one result is exposed unchanged through the
+browser worker and the experimental CLI `diff` command. It also keeps the
+stable View scope reference separate from its resolved display text so an
+element rename does not appear as unrelated View churn.
 
 ### Slice 2.2 — impact and stable visual comparison
 

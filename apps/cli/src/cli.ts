@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
   resolveArchitectureSnapshot,
@@ -54,6 +55,13 @@ interface AnalyzeCommand {
   readonly diagnostics: DiagnosticFormat;
 }
 
+interface DiffCommand {
+  readonly kind: "diff";
+  readonly beforeFile: string;
+  readonly afterFile: string;
+  readonly diagnostics: DiagnosticFormat;
+}
+
 interface RenderCommand {
   readonly kind: "render";
   readonly file: string;
@@ -65,13 +73,18 @@ interface RenderCommand {
 }
 
 type CliCommand =
-  AnalyzeCommand | CheckCommand | RenderCommand | { readonly kind: "version" };
+  | AnalyzeCommand
+  | CheckCommand
+  | DiffCommand
+  | RenderCommand
+  | { readonly kind: "version" };
 
 const usage = `C4ML experimental CLI
 
 Usage:
   c4ml analyze <file-or-project> [--diagnostics human|json]
   c4ml check <file-or-project> [--diagnostics human|json]
+  c4ml diff <before-file-or-project> <after-file-or-project> [--diagnostics human|json]
   c4ml render <file-or-project> (--view <id> | --all) [--format svg|png|svg,png]
               [--output <directory>] [--scale <number>]
               [--diagnostics human|json]
@@ -92,6 +105,9 @@ export async function runCli(
       `C4ML CLI ${cliVersion} (language ${c4mlDraftLanguageVersion})\n`,
     );
     return cliExitCode.success;
+  }
+  if (parsedCommand.kind === "diff") {
+    return runDiffCommand(parsedCommand, io);
   }
 
   const sourcePath = resolve(io.cwd, parsedCommand.file);
@@ -278,8 +294,16 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   if (command === "version" && rest.length === 0) {
     return { kind: "version" };
   }
-  if (command !== "analyze" && command !== "check" && command !== "render") {
-    return "Expected analyze, check, render, or version.";
+  if (
+    command !== "analyze" &&
+    command !== "check" &&
+    command !== "diff" &&
+    command !== "render"
+  ) {
+    return "Expected analyze, check, diff, render, or version.";
+  }
+  if (command === "diff") {
+    return parseDiffCommand(rest);
   }
   const file = rest[0];
   if (file === undefined || file.startsWith("--")) {
@@ -356,6 +380,96 @@ function parseCommand(args: readonly string[]): CliCommand | string {
     scale,
     view: hasAll ? "all" : view!,
   };
+}
+
+function parseDiffCommand(rest: readonly string[]): DiffCommand | string {
+  const beforeFile = rest[0];
+  const afterFile = rest[1];
+  if (beforeFile === undefined || beforeFile.startsWith("--")) {
+    return "The diff command requires a before source or project.";
+  }
+  if (afterFile === undefined || afterFile.startsWith("--")) {
+    return "The diff command requires an after source or project.";
+  }
+  const options = new Map<string, string>();
+  for (let index = 2; index < rest.length; index += 1) {
+    const option = rest[index]!;
+    if (option !== "--diagnostics") return `Unknown option ${option} for diff.`;
+    if (options.has(option)) return `${option} may be declared only once.`;
+    const value = rest[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      return `${option} requires a value.`;
+    }
+    options.set(option, value);
+    index += 1;
+  }
+  const diagnostics = diagnosticFormat(options.get("--diagnostics"));
+  return typeof diagnostics === "string"
+    ? diagnostics
+    : {
+        kind: "diff",
+        beforeFile,
+        afterFile,
+        diagnostics: diagnostics.value,
+      };
+}
+
+async function runDiffCommand(
+  command: DiffCommand,
+  io: CliIo,
+): Promise<number> {
+  const beforePath = resolve(io.cwd, command.beforeFile);
+  const afterPath = resolve(io.cwd, command.afterFile);
+  const beforeLoaded = await loadArchitectureProject(beforePath);
+  if (!beforeLoaded.valid) {
+    reportCliFailure(
+      cliProjectFailureCode(beforeLoaded.code),
+      beforeLoaded.message,
+      command.diagnostics,
+      io,
+    );
+    return beforeLoaded.classification === "source"
+      ? cliExitCode.source
+      : cliExitCode.environment;
+  }
+  const afterLoaded = await loadArchitectureProject(afterPath);
+  if (!afterLoaded.valid) {
+    reportCliFailure(
+      cliProjectFailureCode(afterLoaded.code),
+      afterLoaded.message,
+      command.diagnostics,
+      io,
+    );
+    return afterLoaded.classification === "source"
+      ? cliExitCode.source
+      : cliExitCode.environment;
+  }
+  const before = await parseC4mlProjectDraft(beforeLoaded.project);
+  if (!before.valid || before.model === undefined || before.views === undefined) {
+    reportDiagnostics(before.diagnostics, command.diagnostics, io);
+    return cliExitCode.source;
+  }
+  const after = await parseC4mlProjectDraft(afterLoaded.project);
+  if (!after.valid || after.model === undefined || after.views === undefined) {
+    reportDiagnostics(after.diagnostics, command.diagnostics, io);
+    return cliExitCode.source;
+  }
+  const difference = compareArchitectureSnapshots(
+    resolveArchitectureSnapshot(before.model, before.views).snapshot!,
+    resolveArchitectureSnapshot(after.model, after.views).snapshot!,
+  );
+  reportSuccess(
+    {
+      command: "diff",
+      beforeFile: beforePath,
+      afterFile: afterPath,
+      valid: true,
+      difference,
+    },
+    command.diagnostics,
+    io,
+  );
+  return cliExitCode.success;
 }
 
 function diagnosticFormat(
@@ -445,6 +559,21 @@ function reportSuccess(
         `${report.snapshot.relationships.length} relationship(s), ` +
         `${report.snapshot.views.length} view(s), ` +
         `${report.findings.length} finding(s)\n`,
+    );
+  } else if (value.command === "diff") {
+    const difference = value.difference as {
+      readonly summary: {
+        readonly total: number;
+        readonly architecture: number;
+        readonly presentation: number;
+        readonly layout: number;
+      };
+    };
+    io.stdout(
+      `Compared C4ML: ${difference.summary.total} change(s), ` +
+        `${difference.summary.architecture} architecture, ` +
+        `${difference.summary.presentation} presentation, ` +
+        `${difference.summary.layout} layout\n`,
     );
   } else {
     const artifacts = value.artifacts as readonly string[];

@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.32
+Status: Draft 0.33
 
 Date: 2026-08-30
 
@@ -107,7 +107,13 @@ rewriting comments, unrelated formatting, identifiers, or declarations;
 non-mutating project preview through the normal compiler worker; stale preview
 rejection; and application as one Monaco undo unit. Worker/direct-portable
 snapshot parity and worker/CLI exposure of the same versioned analysis report are
-also covered. Semantic diffing and executable policy rules remain unimplemented.
+also covered. The semantic differ now adds original before/after evidence for
+stable-identity renames, additions, removals, property and Relationship changes,
+separate deployment, View, presentation, and layout categories, layout-only
+changes without architecture noise, deterministic serialization, and empty
+results for equivalent snapshots. Browser-worker/direct-core parity and CLI
+tests cover the same rename result; a separate CLI pair proves that comments do
+not create a semantic change. Executable policy rules remain unimplemented.
 
 The first project-source foundation adds contract evidence for canonical
 project-relative document URIs, deterministic document ordering, explicit
@@ -332,8 +338,9 @@ signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
 testing. Native file-dialog interaction and the Windows installer remain
 manual/platform-specific evidence.
 
-The experimental CLI suite exercises successful validation, source-located JSON
-diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
+The experimental CLI suite exercises successful validation, semantic comparison
+of two valid sources, empty comparison after a comment-only change,
+source-located JSON diagnostics, one-view SVG output, all-view SVG and PNG output, PNG scaling,
 stable view selection, paths containing spaces and non-ASCII characters,
 invocation with a working directory outside the repository, and distinct usage,
 source, and environment exit classes. The suite also renders selected Dynamic

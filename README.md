@@ -34,6 +34,9 @@ Implemented and automatically validated:
 - portable version-one contracts for revision-protected source change sets,
   canonical architecture snapshots, kind-qualified graph traversal, and
   source-located analysis findings and query evidence;
+- a deterministic semantic architecture differ that matches stable identities,
+  recognizes renames, separates architecture, presentation, and layout change,
+  and ignores formatting or source-location noise;
 - implicit one-file and explicit multifile project contracts with deterministic
   project revisions, atomic document-addressed edits, cross-file references,
   and project-aware CLI validation and rendering;
@@ -64,8 +67,9 @@ Implemented and automatically validated:
 - an executable Deployment View slice in the original `hello-deployment.c4ml`,
   including environments, nested Deployment Nodes, Infrastructure Nodes,
   static instances, and runtime relationships;
-- an experimental thin Node.js CLI for local validation, one/all-view SVG and
-  PNG rendering, scaling, human or JSON diagnostics, and classified exits;
+- an experimental thin Node.js CLI for local validation, semantic comparison,
+  one/all-view SVG and PNG rendering, scaling, human or JSON diagnostics, and
+  classified exits;
 - an Angular 22 desktop workbench with simultaneous source/preview tabs,
   C4ML-specific Files, Diagrams, and Output activity areas, a Problems/Route
   panel, status bar, command palette, local compiler Web Worker, live
@@ -260,6 +264,8 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --output build/diagrams
 
 pnpm run c4ml -- check examples/projects/garden-pulse-multifile
+pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
+  --diagnostics json
 pnpm run c4ml -- render examples/projects/garden-pulse-multifile \
   --view garden-pulse-context \
   --format svg,png \

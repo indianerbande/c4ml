@@ -142,6 +142,7 @@ export interface SnapshotView {
   readonly title: string;
   readonly purpose: string;
   readonly scope: string;
+  readonly scopeIdentity?: CanonicalObject;
   readonly audience: readonly string[];
   readonly recommendation: string;
   readonly legend: CanonicalObject;
@@ -192,7 +193,7 @@ export function resolveArchitectureSnapshot(
     ? {
         valid: true,
         diagnostics: resolution.diagnostics,
-        snapshot: createArchitectureSnapshot(model, resolution),
+        snapshot: createArchitectureSnapshot(model, resolution, views),
       }
     : { valid: false, diagnostics: resolution.diagnostics };
 }
@@ -200,6 +201,7 @@ export function resolveArchitectureSnapshot(
 export function createArchitectureSnapshot(
   model: ArchitectureModel,
   resolution: ViewResolutionResult,
+  sourceViews?: readonly ArchitectureView[],
 ): ArchitectureSnapshot {
   const validation = validateArchitectureModel(model);
   if (!validation.valid || !resolution.valid) {
@@ -229,7 +231,12 @@ export function createArchitectureSnapshot(
     ...(model.deployment === undefined
       ? {}
       : { deployment: snapshotDeployment(model.deployment) }),
-    views: stableById(resolution.views).map(snapshotView),
+    views: stableById(resolution.views).map((view) =>
+      snapshotView(
+        view,
+        sourceViews?.find(({ id }) => id === view.id),
+      ),
+    ),
   };
 }
 
@@ -336,13 +343,19 @@ function staticElementId(
     : instance.softwareSystemId;
 }
 
-function snapshotView(view: ResolvedView): SnapshotView {
+function snapshotView(
+  view: ResolvedView,
+  sourceView?: ArchitectureView,
+): SnapshotView {
   return {
     id: view.id,
     kind: view.kind,
     title: view.title,
     purpose: view.purpose,
     scope: view.scope,
+    ...(sourceView === undefined
+      ? {}
+      : { scopeIdentity: snapshotViewScopeIdentity(sourceView) }),
     audience: [...view.audience],
     recommendation: view.recommendation,
     legend: canonicalObject(view.legend),
@@ -394,6 +407,27 @@ function snapshotView(view: ResolvedView): SnapshotView {
       : { presentation: canonicalObject(view.presentation) }),
     ...(view.layout === undefined ? {} : { layout: canonicalObject(view.layout) }),
   };
+}
+
+function snapshotViewScopeIdentity(view: ArchitectureView): CanonicalObject {
+  switch (view.kind) {
+    case "code":
+      return { componentId: view.componentId };
+    case "component":
+      return { containerId: view.containerId };
+    case "container":
+    case "system-context":
+      return { softwareSystemId: view.softwareSystemId };
+    case "deployment":
+      return {
+        environmentId: view.environmentId,
+        softwareSystemIds: stableUnique(view.softwareSystemIds),
+      };
+    case "dynamic":
+      return { scenario: view.scenario };
+    case "system-landscape":
+      return { scope: view.scope };
+  }
 }
 
 function snapshotGroupMember(member: ResolvedVisualGroupMember): SnapshotGroupMember {

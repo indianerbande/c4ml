@@ -7,6 +7,7 @@ import {
   parseC4mlProjectDraft,
 } from "@c4ml/language-c4ml";
 import {
+  compareArchitectureSnapshots,
   createArchitectureAnalysisReport,
   createArchitectureProjectInput,
   createProposedProjectSourceChangeSet,
@@ -17,8 +18,10 @@ import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
 import {
   compilerWorkerProtocolVersion,
   isAnalysisWorkerResponse,
+  isComparisonWorkerResponse,
   isCompilerWorkerResponse,
   type AnalysisWorkerRequest,
+  type ComparisonWorkerRequest,
   type CompilerWorkerRequest,
   type CompletionWorkerRequest,
   type HighlightWorkerRequest,
@@ -37,6 +40,7 @@ import {
 } from "../src/app/compiler-worker.protocol.js";
 import {
   analyzeWorkerRequest,
+  compareWorkerRequest,
   compileWorkerRequest,
   completeWorkerRequest,
   generateWorkerRequest,
@@ -185,6 +189,49 @@ describe("compiler worker runtime", () => {
     expect(isAnalysisWorkerResponse(result)).toBe(true);
     expect(JSON.stringify(result.report)).toBe(JSON.stringify(expected));
     expect(result.report?.findings).toEqual([]);
+  });
+
+  it("returns the same semantic difference as the portable comparison path", async () => {
+    const renamedSource = initialC4mlSource.replace(
+      'name = "Garden Pulse"',
+      'name = "Garden Coordination"',
+    );
+    const before = await parseC4mlProjectDraft(
+      createArchitectureProjectInput({
+        id: "garden-before",
+        documents: [{ uri: "architecture.c4ml", text: initialC4mlSource }],
+      }),
+    );
+    const after = await parseC4mlProjectDraft(
+      createArchitectureProjectInput({
+        id: "garden-after",
+        documents: [{ uri: "architecture.c4ml", text: renamedSource }],
+      }),
+    );
+    const expected = compareArchitectureSnapshots(
+      resolveArchitectureSnapshot(before.model!, before.views!).snapshot!,
+      resolveArchitectureSnapshot(after.model!, after.views!).snapshot!,
+    );
+    const request: ComparisonWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "compare",
+      requestId: 47,
+      before: { file: "architecture.c4ml", source: initialC4mlSource },
+      after: { file: "architecture.c4ml", source: renamedSource },
+    };
+
+    const result = await compareWorkerRequest(request);
+
+    expect(result.status).toBe("valid");
+    expect(isComparisonWorkerResponse(result)).toBe(true);
+    expect(result.difference).toEqual(expected);
+    expect(result.difference?.changes).toEqual([
+      expect.objectContaining({
+        category: "model",
+        kind: "renamed",
+        subjectKey: "element:garden-pulse",
+      }),
+    ]);
   });
 
   it("keeps the initial editor source aligned with the documented example", async () => {
