@@ -17,8 +17,10 @@ import {
 } from "./compiler-worker.language.protocol.js";
 import {
   isPreviewPlacementChangeWorkerResponse,
+  isPreviewRouteChangeWorkerResponse,
   isWizardWorkerResponse,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
 import {
@@ -28,15 +30,18 @@ import {
   EditorHelpSession,
   EditorPlacementPreviewSession,
   EditorRequestSequence,
+  EditorRoutePreviewSession,
   EditorWizardGenerationSession,
   type EditorCompilationState,
   type EditorCompletionState,
   type EditorHelpState,
   type EditorPlacementPreviewState,
+  type EditorRoutePreviewState,
   type EditorWizardGenerationState,
 } from "./editor-session.js";
 import type {
   C4mlPlacementEditRequest,
+  C4mlRouteEditRequest,
   C4mlSystemContextWizardAnswers,
 } from "@c4ml/language-c4ml";
 
@@ -49,6 +54,7 @@ export class CompilerWorkerClient {
   readonly #helpSession = new EditorHelpSession(this.#sequence);
   readonly #wizardSession = new EditorWizardGenerationSession(this.#sequence);
   readonly #placementSession = new EditorPlacementPreviewSession(this.#sequence);
+  readonly #routeSession = new EditorRoutePreviewSession(this.#sequence);
   readonly #worker = new Worker(new URL("./compiler.worker", import.meta.url), {
     name: "c4ml-compiler",
     type: "module",
@@ -64,6 +70,7 @@ export class CompilerWorkerClient {
   readonly placement = signal<EditorPlacementPreviewState>(
     this.#placementSession.state,
   );
+  readonly route = signal<EditorRoutePreviewState>(this.#routeSession.state);
   #activeFile = "editor.c4ml";
   #activeProject: CompilerWorkerProject | undefined;
 
@@ -158,6 +165,23 @@ export class CompilerWorkerClient {
     return result;
   }
 
+  previewRouteChange(
+    project: CompilerWorkerProject,
+    file: string,
+    route: C4mlRouteEditRequest,
+    requestedViewId?: string,
+  ): Promise<PreviewRouteChangeWorkerResponse | undefined> {
+    const { request, result } = this.#routeSession.beginAsync(
+      project,
+      file,
+      route,
+      requestedViewId,
+    );
+    this.route.set(this.#routeSession.state);
+    this.#worker.postMessage(request);
+    return result;
+  }
+
   readonly #onMessage = (event: MessageEvent<unknown>): void => {
     if (isCompilerWorkerResponse(event.data)) {
       this.#acceptCompilation(event.data);
@@ -171,6 +195,8 @@ export class CompilerWorkerClient {
       this.#acceptWizard(event.data);
     } else if (isPreviewPlacementChangeWorkerResponse(event.data)) {
       this.#acceptPlacement(event.data);
+    } else if (isPreviewRouteChangeWorkerResponse(event.data)) {
+      this.#acceptRoute(event.data);
     }
   };
 
@@ -185,11 +211,13 @@ export class CompilerWorkerClient {
     this.#placementSession.failActive(
       "The placement preview worker stopped unexpectedly.",
     );
+    this.#routeSession.failActive("The route preview worker stopped unexpectedly.");
     this.state.set(this.#session.state);
     this.completion.set(this.#completionSession.state);
     this.wizard.set(this.#wizardSession.state);
     this.help.set(this.#helpSession.state);
     this.placement.set(this.#placementSession.state);
+    this.route.set(this.#routeSession.state);
   };
 
   #acceptCompilation(response: CompilerWorkerResponse): void {
@@ -223,6 +251,12 @@ export class CompilerWorkerClient {
   #acceptPlacement(response: PreviewPlacementChangeWorkerResponse): void {
     if (this.#placementSession.accept(response)) {
       this.placement.set(this.#placementSession.state);
+    }
+  }
+
+  #acceptRoute(response: PreviewRouteChangeWorkerResponse): void {
+    if (this.#routeSession.accept(response)) {
+      this.route.set(this.#routeSession.state);
     }
   }
 }

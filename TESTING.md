@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.30
+Status: Draft 0.31
 
 Date: 2026-08-30
 
@@ -745,6 +745,23 @@ shared Node.js pipeline. Editor adapter tests prove project-to-document
 narrowing and one Monaco undo unit. A local browser interaction additionally
 verified selected-element synchronization, candidate SVG and source review,
 zero diagnostics after apply, restoration of the preceding pin in one undo, and
+restoration of the original clean dirty-state marker.
+
+The first graphical Route slice is automatically validated with original
+Signal Garden fixtures. Language tests cover cardinal and automatic Port
+selection; addition, symbolic-shift movement, and removal of waypoint guidance;
+locked-segment preservation; automatic-reset cleanup; obsolete block removal;
+and source-comment preservation. They also require explicit repair codes when
+fixed points, an old waypoint list, a corridor lane, or a guided policy becomes
+incompatible with the requested operation. Worker tests prove non-mutating
+candidate compilation, project-addressed changes, and route-navigation parity;
+session tests reject stale Route previews; CLI tests compile the applied source
+through the shared Node.js path. Template and architecture tests keep Route
+syntax generation outside Angular and ensure that safe repairs, blocking
+diagnostics, source preview, apply, and undo remain explicit UI states. A local
+browser interaction additionally verified relationship selection, dark and
+light dialog layouts, candidate SVG and source review, corridor-release repair
+copy, a valid Port change, zero diagnostics after apply, one-step undo, and
 restoration of the original clean dirty-state marker.
 
 ### 2.13 Semantic architecture evolution

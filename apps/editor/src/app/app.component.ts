@@ -14,6 +14,7 @@ import type {
   CompilerWorkerDiagnostic,
   CompilerWorkerNavigationTarget,
   PreviewPlacementChangeWorkerResponse,
+  PreviewRouteChangeWorkerResponse,
   CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
 import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
@@ -36,6 +37,7 @@ import { SystemContextWizardComponent } from "./system-context-wizard.component.
 import {
   PlacementEditorComponent,
 } from "./placement-editor.component.js";
+import { RouteEditorComponent } from "./route-editor.component.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
 import { HelpArticleComponent } from "./help-article.component.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
@@ -52,6 +54,7 @@ import { WorkbenchSessionService } from "./workbench-session.service.js";
 import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
 import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
 import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
+import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
 
 @Component({
   selector: "c4ml-root",
@@ -62,6 +65,7 @@ import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
     C4mlMonacoSourceEditorComponent,
     HelpArticleComponent,
     PlacementEditorComponent,
+    RouteEditorComponent,
     SettingsPanelComponent,
     SystemContextWizardComponent,
   ],
@@ -82,6 +86,7 @@ export class AppComponent {
   readonly help = inject(WorkbenchHelpFacade);
   readonly commands = inject(WorkbenchCommandFacade);
   readonly placement = inject(WorkbenchPlacementFacade);
+  readonly routeEditor = inject(WorkbenchRouteFacade);
   readonly source = this.documents.source;
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
@@ -242,6 +247,7 @@ export class AppComponent {
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
     this.placement.sourceChanged();
+    this.routeEditor.sourceChanged();
     this.#refreshHelpContext(source);
     this.#scheduleCompile();
   }
@@ -382,6 +388,22 @@ export class AppComponent {
 
   undoPlacement(): void {
     this.placement.undo(this.sourceEditor());
+  }
+
+  openRouteEditor(): void {
+    this.routeEditor.show();
+  }
+
+  closeRouteEditor(): void {
+    this.routeEditor.close();
+  }
+
+  applyRoute(response: PreviewRouteChangeWorkerResponse): void {
+    this.routeEditor.apply(response, this.sourceEditor());
+  }
+
+  undoRoute(): void {
+    this.routeEditor.undo(this.sourceEditor());
   }
 
   exportSvg(): void {
@@ -633,5 +655,6 @@ export class AppComponent {
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
     this.placement.reset();
+    this.routeEditor.reset();
   }
 }

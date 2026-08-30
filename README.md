@@ -119,6 +119,9 @@ Implemented and automatically validated:
 - a source-backed graphical placement editor for relative placement, nudge,
   alignment, ordered distribution, and explicit exact pinning, with candidate
   source/SVG review and one-step apply/undo;
+- a source-backed graphical Route editor for cardinal Port choice and
+  add/move/remove guidance operations, with candidate source/SVG review,
+  explicit safe-repair and hard-conflict reporting, and one-step apply/undo;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   browser-worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
@@ -144,8 +147,7 @@ Not implemented yet:
 - a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
 - the remaining production editor capabilities: independently selectable
-  Arrowheads, accessibility validation, graphical Route editing, and semantic
-  model creation;
+  Arrowheads, accessibility validation, and semantic model creation;
 - release identity and distribution work: a final product version and icon,
   Apple Developer ID signing/notarization, Windows code signing, and a Windows
   build-and-install validation run; and

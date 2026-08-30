@@ -9,12 +9,16 @@ import {
   isPreviewProjectChangeWorkerResponse,
   isPreviewPlacementChangeWorkerRequest,
   isPreviewPlacementChangeWorkerResponse,
+  isPreviewRouteChangeWorkerRequest,
+  isPreviewRouteChangeWorkerResponse,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type PreviewProjectChangeWorkerRequest,
   type PreviewProjectChangeWorkerResponse,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerRequest,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
@@ -38,13 +42,11 @@ import {
   type HighlightWorkerRequest,
   type HighlightWorkerResponse,
 } from "./compiler-worker.language.protocol.js";
-
 export * from "./compiler-worker.authoring.protocol.js";
 export * from "./compiler-worker.analysis.protocol.js";
 export * from "./compiler-worker.compile.protocol.js";
 export * from "./compiler-worker.language.protocol.js";
 export * from "./compiler-worker.shared.js";
-
 export type CompilerWorkerInbound =
   | AnalysisWorkerRequest
   | CompilerWorkerRequest
@@ -53,8 +55,8 @@ export type CompilerWorkerInbound =
   | HighlightWorkerRequest
   | PreviewPlacementChangeWorkerRequest
   | PreviewProjectChangeWorkerRequest
+  | PreviewRouteChangeWorkerRequest
   | WizardWorkerRequest;
-
 export type CompilerWorkerOutbound =
   | AnalysisWorkerResponse
   | CompilerWorkerResponse
@@ -63,11 +65,9 @@ export type CompilerWorkerOutbound =
   | HighlightWorkerResponse
   | PreviewPlacementChangeWorkerResponse
   | PreviewProjectChangeWorkerResponse
+  | PreviewRouteChangeWorkerResponse
   | WizardWorkerResponse;
-
-export function isCompilerWorkerInbound(
-  value: unknown,
-): value is CompilerWorkerInbound {
+export function isCompilerWorkerInbound(value: unknown): value is CompilerWorkerInbound {
   return (
     isAnalysisWorkerRequest(value) ||
     isCompilerWorkerRequest(value) ||
@@ -76,13 +76,11 @@ export function isCompilerWorkerInbound(
     isHighlightWorkerRequest(value) ||
     isPreviewPlacementChangeWorkerRequest(value) ||
     isPreviewProjectChangeWorkerRequest(value) ||
+    isPreviewRouteChangeWorkerRequest(value) ||
     isWizardWorkerRequest(value)
   );
 }
-
-export function isCompilerWorkerOutbound(
-  value: unknown,
-): value is CompilerWorkerOutbound {
+export function isCompilerWorkerOutbound(value: unknown): value is CompilerWorkerOutbound {
   return (
     isAnalysisWorkerResponse(value) ||
     isCompilerWorkerResponse(value) ||
@@ -91,6 +89,7 @@ export function isCompilerWorkerOutbound(
     isHighlightWorkerResponse(value) ||
     isPreviewPlacementChangeWorkerResponse(value) ||
     isPreviewProjectChangeWorkerResponse(value) ||
+    isPreviewRouteChangeWorkerResponse(value) ||
     isWizardWorkerResponse(value)
   );
 }

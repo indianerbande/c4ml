@@ -4,5 +4,6 @@ export * from "./highlighting.js";
 export * from "./help-context.js";
 export * from "./language.js";
 export * from "./placement-authoring-edits.js";
+export * from "./route-authoring-edits.js";
 export * from "./services.js";
 export * from "./system-context-wizard.js";

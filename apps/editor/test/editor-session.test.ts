@@ -13,6 +13,7 @@ import {
   isHelpWorkerRequest,
   isHelpWorkerResponse,
   isPreviewPlacementChangeWorkerRequest,
+  isPreviewRouteChangeWorkerRequest,
   isWizardWorkerRequest,
   isWizardWorkerResponse,
   type CompilerWorkerResponse,
@@ -20,6 +21,7 @@ import {
   type HighlightWorkerResponse,
   type HelpWorkerResponse,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerResponse,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -29,6 +31,7 @@ import {
   EditorHelpSession,
   EditorPlacementPreviewSession,
   EditorRequestSequence,
+  EditorRoutePreviewSession,
   EditorWizardGenerationSession,
   WizardSourceSession,
 } from "../src/app/editor-session.js";
@@ -184,6 +187,24 @@ function placementFailure(
     authoringIssues: [],
     changeIssues: [],
     message: "Preview failed.",
+  };
+}
+
+function routeFailure(requestId: number): PreviewRouteChangeWorkerResponse {
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "preview-route-change-result",
+    requestId,
+    status: "failed",
+    changeSet: undefined,
+    documentUri: undefined,
+    proposedText: undefined,
+    candidateProject: undefined,
+    compilation: undefined,
+    repairs: [],
+    authoringIssues: [],
+    changeIssues: [],
+    message: "Route preview failed.",
   };
 }
 
@@ -535,6 +556,38 @@ describe("editor placement preview session", () => {
     await expect(first.result).resolves.toBeUndefined();
     expect(session.accept(placementFailure(first.request.requestId))).toBe(false);
     const current = placementFailure(second.request.requestId);
+    expect(session.accept(current)).toBe(true);
+    await expect(second.result).resolves.toBe(current);
+    expect(session.state).toMatchObject({ phase: "failed", response: current });
+  });
+});
+
+describe("editor route preview session", () => {
+  it("settles a superseded preview and accepts only the active route result", async () => {
+    const session = new EditorRoutePreviewSession();
+    const project = {
+      version: 1 as const,
+      id: "garden",
+      documents: [{ uri: "architecture.c4ml", source: "c4ml draft-1" }],
+    };
+    const route = {
+      id: "route-ports",
+      viewId: "context",
+      intent: { id: "route:ports", kind: "route" as const, summary: "Choose Ports." },
+      operation: {
+        kind: "ports" as const,
+        relationshipId: "garden-route",
+        sourcePort: "east" as const,
+        targetPort: "west" as const,
+      },
+    };
+    const first = session.beginAsync(project, "architecture.c4ml", route, "context");
+    const second = session.beginAsync(project, "architecture.c4ml", route, "context");
+
+    expect(isPreviewRouteChangeWorkerRequest(second.request)).toBe(true);
+    await expect(first.result).resolves.toBeUndefined();
+    expect(session.accept(routeFailure(first.request.requestId))).toBe(false);
+    const current = routeFailure(second.request.requestId);
     expect(session.accept(current)).toBe(true);
     await expect(second.result).resolves.toBe(current);
     expect(session.state).toMatchObject({ phase: "failed", response: current });

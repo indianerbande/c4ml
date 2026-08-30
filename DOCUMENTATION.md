@@ -2,7 +2,7 @@
 
 Status: Draft syntax preview with executable language and desktop workbench
 
-Date: 2026-08-29
+Date: 2026-08-30
 
 This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
@@ -996,6 +996,24 @@ arrangement** restores it in one step.
 top-left position in diagram units with `pin`; use it only when the relative
 controls below cannot express the required result. The editor never stores a
 private drag offset or geometry that is absent from the source.
+
+To refine a connection graphically, select its line in the preview, open
+**Route details**, and choose **Edit route…**. The Route editor can choose the
+source and target Ports or add, move, and remove guidance points. It starts a
+new point at the midpoint of a selected effective segment; moving an existing
+relative anchor changes its relative shift instead of converting it into a
+fragile canvas coordinate.
+
+**Preview route change** always compiles the complete candidate project first.
+The dialog shows the proposed C4ML block, the resulting diagram, any safe
+cleanup proposed by C4ML, and hard compiler conflicts separately. For example,
+adding ordered waypoint guidance may safely release an incompatible corridor
+lane. **Apply to source** remains disabled for an invalid candidate and applies
+a valid change as one ordinary Monaco edit. **Undo route edit** restores the
+preceding source and dirty state in one step. Returning a path to automatic
+routing removes obsolete guidance while preserving still-relevant explicit
+Ports and label placement; if no route controls remain, the empty `route`
+block is removed too.
 
 ### 9.1 Flow direction
 

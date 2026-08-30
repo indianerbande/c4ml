@@ -25,8 +25,10 @@ import {
   type HelpWorkerRequest,
   isPreviewProjectChangeWorkerResponse,
   isPreviewPlacementChangeWorkerResponse,
+  isPreviewRouteChangeWorkerResponse,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewProjectChangeWorkerRequest,
+  type PreviewRouteChangeWorkerRequest,
   type WizardWorkerRequest,
 } from "../src/app/compiler-worker.protocol.js";
 import {
@@ -38,6 +40,7 @@ import {
   helpWorkerRequest,
   previewProjectChangeWorkerRequest,
   previewPlacementChangeWorkerRequest,
+  previewRouteChangeWorkerRequest,
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
@@ -417,6 +420,64 @@ describe("compiler worker runtime", () => {
       "gap = small",
     );
     expect(project.documents[0]?.source).toBe(initialC4mlSource);
+  });
+
+  it("generates and compiles a Port edit without mutating active route source", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-route-preview",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: PreviewRouteChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change",
+      requestId: 47,
+      file: "architecture.c4ml",
+      project,
+      requestedViewId: "garden-pulse-context",
+      route: {
+        id: "route:caretaker-reviews-plan:ports",
+        viewId: "garden-pulse-context",
+        intent: {
+          id: "route:ports",
+          kind: "route",
+          summary: "Keep the caretaker route attached east to west.",
+        },
+        operation: {
+          kind: "ports",
+          relationshipId: "caretaker-reviews-plan",
+          sourcePort: "east",
+          targetPort: "west",
+        },
+      },
+    };
+
+    const result = await previewRouteChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewRouteChangeWorkerResponse(result)).toBe(true);
+    expect(result.compilation?.diagnostics).toEqual([]);
+    expect(result).toMatchObject({
+      status: "valid",
+      documentUri: "architecture.c4ml",
+      proposedText: expect.stringContaining("route caretaker-reviews-plan"),
+      changeSet: { intent: { kind: "route" } },
+      compilation: { status: "valid" },
+    });
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      "source-port = east",
+    );
+    expect(project.documents[0]?.source).toBe(initialC4mlSource);
+    const route = result.compilation?.navigation?.targets.find(
+      (target) => target.kind === "route" && target.referenceId === "caretaker-reviews-plan",
+    );
+    expect(route).toMatchObject({
+      sourcePortSelection: "east",
+      targetPortSelection: "west",
+    });
   });
 
   it("rejects stale project previews before compilation", async () => {

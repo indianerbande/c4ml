@@ -420,12 +420,17 @@ code priority-rule inside scheduler {
         "Relative guide anchors follow Ports or element sides after automatic layout. Hard avoidance must be satisfied; soft avoidance may be relaxed only with a compiler warning.",
         "Relative guide-Anker folgen Ports oder Elementseiten nach dem automatischen Layout. Harte Meidezonen müssen eingehalten werden; weiche dürfen nur mit Compilerwarnung aufgeweicht werden.",
       ),
+      text(
+        "Select a relationship line, open Route details, and choose Edit route to change Ports or add, move, and remove guidance. Preview compiles the candidate source and separates safe cleanup from hard conflicts before apply.",
+        "Wähle eine Verbindungslinie, öffne Routendetails und dann Route bearbeiten, um Ports zu ändern oder Führungspunkte hinzuzufügen, zu verschieben und zu entfernen. Die Vorschau kompiliert den Quelltextkandidaten und trennt sichere Bereinigungen von harten Konflikten, bevor du ihn übernimmst.",
+      ),
     ],
     points: [
       text("guided may use absolute via points, one corridor, or an ordered relative guide.", "guided kann absolute via-Punkte, einen Korridor oder einen geordneten relativen guide verwenden."),
       text("guide supports waypoints and locked segments; avoid selects view-local regions.", "guide unterstützt Wegpunkte und gesperrte Segmente; avoid wählt ansichtslokale Meidezonen."),
       text("fixed requires the complete points list.", "fixed benötigt die vollständige points-Liste."),
       text("Hard impossible routes fail visibly.", "Nicht erfüllbare feste Routen schlagen sichtbar fehl."),
+      text("A valid graphical Route change is one source edit and one undo step.", "Eine gültige grafische Routenänderung ist eine Quelltextänderung und ein Rücknahmeschritt."),
     ],
     exampleTitle: text("Guided orthogonal route", "Geführte orthogonale Route"),
     example: `avoidance sensor-clearance {

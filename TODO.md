@@ -167,11 +167,11 @@ geometry, or exported SVG/PNG.
 
 ### Slice 1.4 — graphical route edits
 
-- [ ] select source and target Ports graphically;
-- [ ] add, move, or remove route guidance through source change sets;
-- [ ] remove obsolete route controls when an operation no longer needs them;
+- [x] select source and target Ports graphically;
+- [x] add, move, or remove route guidance through source change sets;
+- [x] remove obsolete route controls when an operation no longer needs them;
       and
-- [ ] show hard conflicts and safe compiler-proposed repairs before apply.
+- [x] show hard conflicts and safe compiler-proposed repairs before apply.
 
 ### Slice 1.5 — semantic graphical authoring
 

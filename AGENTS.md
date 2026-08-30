@@ -117,8 +117,11 @@ worker preview, one-unit Monaco application adapter, canonical worker parity,
 and versioned worker/CLI analysis-report exposure are implemented. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
-pin changes through those boundaries. Broader semantic and Route gestures,
-semantic diffing, and executable policy rules remain later slices.
+pin changes through those boundaries. The first graphical Route editor uses the
+same boundaries for cardinal Port choice and add/move/remove/reset guidance,
+with explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
+review, and one-step apply/undo. Broader semantic gestures, semantic diffing,
+and executable policy rules remain later slices.
 
 The first portable project-source foundation is also implemented. A direct
 `.c4ml` source or a directory containing exactly one root source remains an

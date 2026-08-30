@@ -33,6 +33,7 @@ import {
   parseC4mlDraft,
   parseC4mlProjectDraft,
   proposeC4mlPlacementEdit,
+  proposeC4mlRouteEdit,
 } from "@c4ml/language-c4ml";
 
 import {
@@ -60,6 +61,8 @@ import {
   type PreviewProjectChangeWorkerResponse,
   type PreviewPlacementChangeWorkerRequest,
   type PreviewPlacementChangeWorkerResponse,
+  type PreviewRouteChangeWorkerRequest,
+  type PreviewRouteChangeWorkerResponse,
   type WizardWorkerRequest,
   type WizardWorkerResponse,
 } from "./compiler-worker.authoring.protocol.js";
@@ -524,6 +527,81 @@ export async function previewPlacementChangeWorkerRequest(
   }
 }
 
+export async function previewRouteChangeWorkerRequest(
+  request: PreviewRouteChangeWorkerRequest,
+  layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
+  embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
+): Promise<PreviewRouteChangeWorkerResponse> {
+  try {
+    const project = toArchitectureProject(request.project);
+    const proposal = await proposeC4mlRouteEdit(project, request.route);
+    if (!proposal.valid) {
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-route-change-result",
+        requestId: request.requestId,
+        status: "invalid",
+        changeSet: undefined,
+        documentUri: undefined,
+        proposedText: undefined,
+        candidateProject: undefined,
+        compilation: undefined,
+        repairs: [],
+        authoringIssues: proposal.issues,
+        changeIssues: [],
+        message: undefined,
+      };
+    }
+    const preview = await previewProjectChangeWorkerRequest(
+      {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "preview-project-change",
+        requestId: request.requestId,
+        file: request.file,
+        project: request.project,
+        changeSet: proposal.changeSet,
+        ...(request.requestedViewId === undefined
+          ? {}
+          : { requestedViewId: request.requestedViewId }),
+      },
+      layoutAdapter,
+      embeddedFontFaces,
+    );
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change-result",
+      requestId: request.requestId,
+      status: preview.status,
+      changeSet: proposal.changeSet,
+      documentUri: proposal.documentUri,
+      proposedText: proposal.proposedText,
+      candidateProject: preview.candidateProject,
+      compilation: preview.compilation,
+      repairs: proposal.repairs,
+      authoringIssues: [],
+      changeIssues: preview.issues,
+      message: preview.message,
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change-result",
+      requestId: request.requestId,
+      status: "failed",
+      changeSet: undefined,
+      documentUri: undefined,
+      proposedText: undefined,
+      candidateProject: undefined,
+      compilation: undefined,
+      repairs: [],
+      authoringIssues: [],
+      changeIssues: [],
+      message: `Route preview failed: ${message}`,
+    };
+  }
+}
+
 export function executeWorkerRequest(
   request: CompilerWorkerInbound,
 ): Promise<CompilerWorkerOutbound> {
@@ -542,6 +620,8 @@ export function executeWorkerRequest(
       return previewProjectChangeWorkerRequest(request);
     case "preview-placement-change":
       return previewPlacementChangeWorkerRequest(request);
+    case "preview-route-change":
+      return previewRouteChangeWorkerRequest(request);
     case "generate-system-context":
       return generateWorkerRequest(request);
   }
@@ -669,9 +749,10 @@ function toWorkerNavigation(
         ) {
           return [];
         }
-        const controlSource = routing?.controls?.find(
+        const control = routing?.controls?.find(
           ({ relationshipId }) => relationshipId === route.relationshipId,
-        )?.source;
+        );
+        const controlSource = control?.source;
         const relationshipSource = toWorkerSource(source);
         const detailSource = toWorkerSource(controlSource ?? source);
         const sourceForRoutingDetail = (
@@ -691,6 +772,8 @@ function toWorkerNavigation(
             controlSource === undefined ? [] : [toWorkerSource(controlSource)],
           policy: route.policy,
           style: route.style,
+          sourcePortSelection: control?.sourcePort ?? "automatic",
+          targetPortSelection: control?.targetPort ?? "automatic",
           points: route.points,
           sourcePort: toWorkerPort(sourcePort),
           targetPort: toWorkerPort(targetPort),
