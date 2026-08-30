@@ -7,6 +7,7 @@ import {
   architectureNarrativeResourceSuffix,
   architecturePublicationResourceSuffix,
   architectureThemeResourceSuffix,
+  architectureShapeResourceSuffix,
   architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
@@ -71,6 +72,7 @@ describe("portable architecture project contract", () => {
       narratives: ["docs/overview.c4ml-narrative.md"],
       publication: "publication/review.c4ml-publication.json",
       theme: "presentation/garden.c4ml-theme.json",
+      shapes: "presentation/garden.c4ml-shapes.json",
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -86,6 +88,7 @@ describe("portable architecture project contract", () => {
         narratives: ["docs/overview.c4ml-narrative.md"],
         publication: "publication/review.c4ml-publication.json",
         theme: "presentation/garden.c4ml-theme.json",
+        shapes: "presentation/garden.c4ml-shapes.json",
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
@@ -97,6 +100,7 @@ describe("portable architecture project contract", () => {
     expect(architectureNarrativeResourceSuffix).toBe(".c4ml-narrative.md");
     expect(architecturePublicationResourceSuffix).toBe(".c4ml-publication.json");
     expect(architectureThemeResourceSuffix).toBe(".c4ml-theme.json");
+    expect(architectureShapeResourceSuffix).toBe(".c4ml-shapes.json");
   });
 
   it("retains one non-semantic publication resource", () => {

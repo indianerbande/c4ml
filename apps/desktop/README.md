@@ -29,6 +29,8 @@ The shell currently provides:
   checked by the compiler worker;
 - one validated project `.c4ml-theme.json` selection applied by the worker's
   shared semantic scene resolver;
+- one bounded safe `.c4ml-shapes.json` catalogue applied through shared diagram
+  preparation without filesystem authority;
 - bounded shell-free Git subprocesses in the main/project-node boundary, with
   repository-relative change paths and no checkout, discard, pull, fetch, or
   history-rewrite operation;

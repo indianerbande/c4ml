@@ -218,7 +218,9 @@ project narratives are also implemented with fixed metadata, local links, and
 no architecture semantics. One typed publication resource now validates ordered
 View captions and render profiles against compiled Views. A typed project theme
 resource applies the existing semantic resolver identically in CLI and desktop
-worker rendering. Shape and asset project resources remain unimplemented.
+worker rendering. A typed safe project shape catalogue is also applied through
+shared diagram preparation. The licensed-asset project resource remains
+unimplemented.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views

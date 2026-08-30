@@ -19,6 +19,7 @@ import {
   parseArchitectureNarrative,
   parseArchitecturePublication,
   parseArchitectureThemeResource,
+  parseArchitectureShapeResource,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -393,6 +394,27 @@ export async function loadArchitectureProject(
     theme = { uri, source };
   }
 
+  let shapes: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.shapes !== undefined) {
+    const uri = parsedManifest.manifest.shapes;
+    const shapePath = resolve(projectRoot, ...uri.split("/"));
+    let shapeRealPath: string;
+    try { shapeRealPath = await realpath(shapePath); } catch (error: unknown) {
+      return environmentFailure("C4ML-PROJECT-NODE-018", `Cannot read project shapes ${shapePath}: ${errorMessage(error)}`);
+    }
+    const relativeRealPath = relative(rootRealPath, shapeRealPath);
+    if (relativeRealPath === ".." || relativeRealPath.split(sep)[0] === ".." || isAbsolute(relativeRealPath)) {
+      return sourceFailure("C4ML-PROJECT-NODE-019", `Project shapes "${uri}" resolve outside the project directory.`);
+    }
+    let source: string;
+    try { source = await readFile(shapeRealPath, "utf8"); } catch (error: unknown) {
+      return environmentFailure("C4ML-PROJECT-NODE-018", `Cannot read project shapes ${shapePath}: ${errorMessage(error)}`);
+    }
+    const parsedShapes = parseArchitectureShapeResource(source);
+    if (!parsedShapes.valid) return sourceFailure(parsedShapes.error.code, parsedShapes.error.message);
+    shapes = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -412,6 +434,7 @@ export async function loadArchitectureProject(
       ...(narratives.length === 0 ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
+      ...(shapes === undefined ? {} : { shapes }),
     }),
     documentPaths,
   };

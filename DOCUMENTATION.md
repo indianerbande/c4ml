@@ -485,6 +485,7 @@ sources:
   "narratives": ["docs/overview.c4ml-narrative.md"],
   "publication": "publication/review.c4ml-publication.json",
   "theme": "presentation/garden.c4ml-theme.json",
+  "shapes": "presentation/garden.c4ml-shapes.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -541,6 +542,10 @@ The optional `theme` path selects a built-in semantic diagram preset plus
 optional deep color-token overrides. CLI and desktop worker use the same
 validated theme selection; workbench UI colors and architecture semantics stay
 separate.
+
+The optional `shapes` path selects safe normalized vector definitions and
+explicit element assignments. The shared renderer contract rejects active,
+external, image, font, CSS, and SVG content before layout and rendering.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

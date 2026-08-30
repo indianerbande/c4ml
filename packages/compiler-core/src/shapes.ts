@@ -211,6 +211,16 @@ function validatePrimitive(
   index: number,
 ): void {
   const label = `primitive ${index}`;
+  const candidate = primitive as unknown as { readonly kind?: unknown; readonly paint?: unknown };
+  if (
+    (candidate.kind === "line" && candidate.paint !== "detail") ||
+    (candidate.kind !== "line" &&
+      candidate.paint !== "surface" &&
+      candidate.paint !== "accent" &&
+      candidate.paint !== "detail")
+  ) {
+    throw invalidPrimitive(shapeId, label);
+  }
   switch (primitive.kind) {
     case "rectangle":
       validateBox(shapeId, label, primitive);
@@ -250,6 +260,9 @@ function validatePrimitive(
     case "line":
       validatePoint(shapeId, `${label} start`, primitive.start);
       validatePoint(shapeId, `${label} end`, primitive.end);
+      return;
+    default:
+      throw invalidPrimitive(shapeId, label);
   }
 }
 

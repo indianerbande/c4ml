@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.43
+Status: Draft 0.44
 
 Date: 2026-08-31
 
@@ -526,6 +526,7 @@ manifest contains:
 - an optional `publication` path naming one local version-one publication
   resource; and
 - an optional `theme` path naming one local version-one semantic diagram theme.
+- an optional `shapes` path naming one local version-one safe shape catalogue.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -539,6 +540,7 @@ MUST end in `.c4ml-narrative.md`.
 A publication path follows the same rules and MUST end in
 `.c4ml-publication.json`.
 A theme path follows the same rules and MUST end in `.c4ml-theme.json`.
+A shape path follows the same rules and MUST end in `.c4ml-shapes.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -561,7 +563,7 @@ document.
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
 documents, and the optional raw local policy, observation, glossary, and
-narrative, publication, and theme resources. It MUST NOT open files itself. CLI,
+narrative, publication, theme, and shape resources. It MUST NOT open files itself. CLI,
 Electron, and renderer adapters load documents and enforce their environment's
 path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
@@ -595,7 +597,7 @@ input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, exact document revisions, and optional policy,
-observation, glossary, narrative, publication, and theme resource identities and
+observation, glossary, narrative, publication, theme, and shape resource identities and
 content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
@@ -604,7 +606,7 @@ transaction at the editor boundary.
 
 Further project resources are reserved as separate typed concerns:
 
-- controlled presentation resources such as shapes and licensed local assets.
+- controlled presentation resources such as licensed local assets.
 
 These further resources MUST NOT be treated as architecture source until their
 individual contracts are specified and implemented. Publication settings MUST
@@ -657,6 +659,16 @@ selection into the shared scene builder. The resource participates in project
 revisions and changes diagram presentation only; it MUST NOT change model, View,
 layout intent, source, exports' semantics, or installation-local workbench
 preferences.
+
+The implemented version-one project shape resource wraps the existing safe,
+renderer-neutral shape contract. A `.c4ml-shapes.json` file declares one or more
+validated normalized definitions and optional architecture-identity-to-shape
+assignments. The shared catalogue rejects invalid canvas, content box, Ports,
+primitives, geometry, duplicate IDs, and built-in collisions; diagram
+preparation rejects unknown assignments. CLI and compiler worker pass the same
+options into shared preparation. The resource cannot contain SVG, scripts, CSS,
+fonts, filters, embedded images, network references, or new C4 kinds. It changes
+presentation and Port geometry only and participates in project revisions.
 
 ## 8. Layout model
 

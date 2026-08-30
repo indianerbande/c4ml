@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented source, policy, observation, glossary, narrative, publication, and theme foundation
+Status: Implemented source, policy, observation, glossary, narrative, publication, theme, and shape foundation
 
 Date: 2026-08-31
 
@@ -63,6 +63,7 @@ The version-one manifest lists every architecture source explicitly:
   "narratives": ["docs/overview.c4ml-narrative.md"],
   "publication": "publication/review.c4ml-publication.json",
   "theme": "presentation/garden.c4ml-theme.json",
+  "shapes": "presentation/garden.c4ml-shapes.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -214,14 +215,19 @@ element, boundary, and route colors. The same validated selection drives CLI
 and desktop-worker rendering. It does not affect architecture semantics or the
 workbench's installation-local appearance.
 
+The optional `shapes` field selects one local `.c4ml-shapes.json` catalogue of
+restricted normalized vector primitives and explicit element assignments. It
+uses the same safe shape validator as the renderer and cannot contain SVG,
+scripts, CSS, images, fonts, filters, or network references.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
 Architecture source documents plus local architecture-policy,
-architecture-observation, glossary, narrative, publication, and theme resources
-are executable today. Further planned resources include:
+architecture-observation, glossary, narrative, publication, theme, and shape
+resources are executable today. Further planned resources include:
 
-- safe custom shapes and licensed local assets; and
+- licensed local assets; and
 - architecture baselines and external scanner adapters.
 
 These resources will receive independent contracts. A publication profile must

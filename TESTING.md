@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.44
+Status: Draft 0.45
 
 Date: 2026-08-31
 
@@ -150,6 +150,11 @@ filesystem/Git loading, and identical CLI/worker scene selection. The original
 Garden Pulse PNG was visually inspected with its Garden preset and custom pale
 background; text, types, routes, labels, and geometry remained legible and
 unchanged.
+The project-shape gate additionally proves shared catalogue validation,
+deterministic assignments, revision and filesystem/Git loading, and identical
+CLI/worker preparation. The original Garden Pulse PNG was visually inspected:
+only Sensor Post uses the new octagonal card; its C4 type, text, Route,
+Arrowhead, Port connection, and surrounding geometry remain intact.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -1005,6 +1010,9 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-theme.json` resource validates through the shared semantic
   theme resolver, participates in the project revision, and changes only scene
   presentation;
+- an optional `.c4ml-shapes.json` resource validates only restricted normalized
+  primitives and assignments, participates in the project revision, and cannot
+  add executable or external content;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

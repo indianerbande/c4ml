@@ -259,6 +259,14 @@ describe("portable multi-document source change sets", () => {
     expect(createProjectRevision(value)).not.toEqual(createProjectRevision(project));
   });
 
+  it("includes the shape resource in the project revision", () => {
+    const value = createArchitectureProjectInput({
+      ...project,
+      shapes: { uri: "presentation/garden.c4ml-shapes.json", source: "shapes" },
+    });
+    expect(createProjectRevision(value)).not.toEqual(createProjectRevision(project));
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

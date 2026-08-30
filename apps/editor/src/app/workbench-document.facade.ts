@@ -46,6 +46,7 @@ export interface WorkbenchProjectSnapshot {
     readonly source: string;
   };
   readonly theme?: { readonly uri: string; readonly source: string };
+  readonly shapes?: { readonly uri: string; readonly source: string };
 }
 
 export interface WorkbenchDocumentState {
@@ -83,6 +84,7 @@ export class WorkbenchDocumentFacade {
   readonly projectNarratives = signal<WorkbenchProjectSnapshot["narratives"]>(undefined);
   readonly projectPublication = signal<WorkbenchProjectSnapshot["publication"]>(undefined);
   readonly projectTheme = signal<WorkbenchProjectSnapshot["theme"]>(undefined);
+  readonly projectShapes = signal<WorkbenchProjectSnapshot["shapes"]>(undefined);
   readonly projectMode = signal(false);
   readonly activeDocument = computed(
     () =>
@@ -135,6 +137,7 @@ export class WorkbenchDocumentFacade {
     const narratives = this.projectNarratives();
     const publication = this.projectPublication();
     const theme = this.projectTheme();
+    const shapes = this.projectShapes();
     return {
       version: 1,
       id: this.projectId(),
@@ -146,6 +149,7 @@ export class WorkbenchDocumentFacade {
       ...(narratives === undefined ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
+      ...(shapes === undefined ? {} : { shapes }),
       documents: this.projectDocuments().map(({ uri, source }) => ({
         uri,
         source,
@@ -172,6 +176,7 @@ export class WorkbenchDocumentFacade {
     this.projectNarratives.set(state.project.narratives);
     this.projectPublication.set(state.project.publication);
     this.projectTheme.set(state.project.theme);
+    this.projectShapes.set(state.project.shapes);
     this.projectMode.set(state.projectMode);
     this.projectDocuments.set(state.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(state.activeUri);
@@ -278,6 +283,7 @@ export class WorkbenchDocumentFacade {
             ? {}
             : { publication: result.project.publication }),
           ...(result.project.theme === undefined ? {} : { theme: result.project.theme }),
+          ...(result.project.shapes === undefined ? {} : { shapes: result.project.shapes }),
           documents: result.project.documents.map((document) => ({
             ...document,
             dirty: false,
@@ -437,6 +443,7 @@ export class WorkbenchDocumentFacade {
     readonly narratives?: WorkbenchProjectSnapshot["narratives"];
     readonly publication?: WorkbenchProjectSnapshot["publication"];
     readonly theme?: WorkbenchProjectSnapshot["theme"];
+    readonly shapes?: WorkbenchProjectSnapshot["shapes"];
     readonly projectMode: boolean;
     readonly documents: readonly WorkbenchProjectDocument[];
   }): void {
@@ -453,6 +460,7 @@ export class WorkbenchDocumentFacade {
     this.projectNarratives.set(input.narratives);
     this.projectPublication.set(input.publication);
     this.projectTheme.set(input.theme);
+    this.projectShapes.set(input.shapes);
     this.projectMode.set(input.projectMode);
     this.projectDocuments.set(input.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(first.uri);
