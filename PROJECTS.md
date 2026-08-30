@@ -1,8 +1,8 @@
 # C4ML Projects
 
-Status: Implemented architecture-source foundation
+Status: Implemented architecture-source and local-policy foundation
 
-Date: 2026-08-29
+Date: 2026-08-31
 
 A C4ML project is one architecture compilation assembled from one or more
 source documents. The project is the compilation unit, a source file is an
@@ -34,6 +34,7 @@ Several source files require `c4ml.project.json`:
 ```text
 garden-architecture/
 ├── c4ml.project.json
+├── governance.c4ml-policy.json
 ├── model/
 │   └── systems.c4ml
 ├── relations/
@@ -50,6 +51,7 @@ The version-one manifest lists every architecture source explicitly:
   "id": "garden-architecture",
   "name": "Garden Architecture",
   "description": "Architecture model and review views.",
+  "policy": "governance.c4ml-policy.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -61,6 +63,33 @@ The version-one manifest lists every architecture source explicitly:
 Source paths are relative to the project directory and use `/`. Version one
 does not support globs, parent-directory traversal, absolute paths, URLs, or
 remote includes.
+
+The optional `policy` field selects exactly one local version-one JSON policy
+resource. Its path follows the same containment rules as source paths and must
+end in `.c4ml-policy.json`. It is a separate typed project resource, not a
+`.c4ml` source document:
+
+```json
+{
+  "version": 1,
+  "id": "garden-policies",
+  "policies": [
+    {
+      "id": "garden.owner",
+      "title": "Garden Pulse has an owner",
+      "severity": "error",
+      "kind": "required-metadata",
+      "subjectKeys": ["element:garden-pulse"],
+      "requirements": [{ "kind": "metadata", "key": "owner" }]
+    }
+  ]
+}
+```
+
+Policy identities refer to exact qualified architecture identities. The other
+implemented rule families cover forbidden dependencies, required protocols,
+ownership, allowed direction, and deployment consistency. Malformed, unknown,
+or inapplicable rules fail explicitly rather than being ignored.
 
 ## Source fragments
 
@@ -86,6 +115,7 @@ The CLI accepts the directory or manifest path:
 ```sh
 c4ml check garden-architecture
 c4ml check garden-architecture/c4ml.project.json
+c4ml analyze garden-architecture --fail-on error
 c4ml render garden-architecture --view garden-context --format svg,png
 ```
 
@@ -113,15 +143,20 @@ still triggers the native unsaved-change guard. Each source tab also keeps its
 own Monaco undo history, cursor, and scroll position while the project remains
 open.
 
+The desktop loads the optional policy with the project and shows violations in
+**Output → Architecture findings**. Selecting a finding navigates to the
+affected architecture declaration. The policy resource is read-only to this
+first editor slice: it is not opened as a Monaco tab and Save/Save All do not
+rewrite it.
+
 ## Planned project resources
 
-The project format is intentionally ready for separately typed resources, but
-only architecture source documents are executable today. Planned resources
-include:
+The project format is intentionally ready for separately typed resources.
+Architecture source documents and one local architecture-policy resource are
+executable today. Further planned resources include:
 
 - glossaries for terms and acronyms;
 - Markdown-backed narrative sections;
-- deterministic architecture policies;
 - publication and print profiles;
 - themes, safe custom shapes, and licensed local assets; and
 - architecture baselines and attributed external evidence.

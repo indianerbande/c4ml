@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ArchitectureProjectError,
+  architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
@@ -59,6 +60,7 @@ describe("portable architecture project contract", () => {
       version: 1,
       id: "signal-garden",
       name: "Signal Garden",
+      policy: "governance/signal-garden.c4ml-policy.json",
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -68,11 +70,36 @@ describe("portable architecture project contract", () => {
         version: 1,
         id: "signal-garden",
         name: "Signal Garden",
+        policy: "governance/signal-garden.c4ml-policy.json",
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
     });
     expect(architectureProjectManifestName).toBe("c4ml.project.json");
+    expect(architecturePolicyResourceSuffix).toBe(".c4ml-policy.json");
+  });
+
+  it("retains one project-local policy resource independently of source order", () => {
+    const project = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      policy: {
+        uri: "governance/signal-garden.c4ml-policy.json",
+        source: '{"version":1}',
+      },
+    });
+
+    expect(project.policy).toEqual({
+      uri: "governance/signal-garden.c4ml-policy.json",
+      source: '{"version":1}',
+    });
+    expect(() => createArchitectureProjectInput({
+      id: "invalid-policy",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      policy: { uri: "../policy.json", source: "{}" },
+    })).toThrowError(expect.objectContaining<Partial<ArchitectureProjectError>>({
+      issues: [expect.objectContaining({ code: "C4ML-PROJECT-006" })],
+    }));
   });
 
   it("rejects malformed and path-escaping manifests with stable codes", () => {
@@ -87,6 +114,15 @@ describe("portable architecture project contract", () => {
     }))).toMatchObject({
       valid: false,
       issues: [{ code: "C4ML-PROJECT-003" }],
+    });
+    expect(parseArchitectureProjectManifest(JSON.stringify({
+      version: 1,
+      id: "signal-garden",
+      sources: ["architecture.c4ml"],
+      policy: "policy.json",
+    }))).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-PROJECT-006" }],
     });
   });
 });

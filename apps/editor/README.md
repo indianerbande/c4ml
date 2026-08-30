@@ -19,6 +19,8 @@ Implemented:
 - preservation of the last valid SVG while current source is invalid;
 - source-located diagnostics for the executable System Landscape, System
   Context, Container, Component, Code, Dynamic, and Deployment subsets;
+- project-selected architecture-policy findings evaluated in the same worker
+  analysis report as the CLI and navigable from Output to architecture source;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

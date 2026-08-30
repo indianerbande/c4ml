@@ -203,6 +203,75 @@ describe("compiler worker runtime", () => {
     expect(result.report?.findings).toEqual([]);
   });
 
+  it("evaluates the project-local policy resource through the analysis worker", async () => {
+    const policySource = JSON.stringify({
+      version: 1,
+      id: "garden-policies",
+      policies: [{
+        id: "garden.owner",
+        title: "Garden Pulse requires an owner",
+        severity: "error",
+        kind: "required-metadata",
+        subjectKeys: ["element:garden-pulse"],
+        requirements: [{ kind: "metadata", key: "owner" }],
+      }],
+    });
+    const result = await analyzeWorkerRequest({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 460,
+      file: "architecture.c4ml",
+      source: initialC4mlSource,
+      project: {
+        version: 1,
+        id: "garden-analysis",
+        documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+        policy: {
+          uri: "governance/garden.c4ml-policy.json",
+          source: policySource,
+        },
+      },
+    });
+
+    expect(result.status).toBe("valid");
+    expect(result.report?.findings).toEqual([
+      expect.objectContaining({
+        ruleId: "garden.owner",
+        severity: "error",
+        sourceLocations: [
+          expect.objectContaining({ file: "architecture.c4ml" }),
+        ],
+      }),
+    ]);
+  });
+
+  it("returns a source-located worker diagnostic for an invalid policy resource", async () => {
+    const result = await analyzeWorkerRequest({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 461,
+      file: "architecture.c4ml",
+      source: initialC4mlSource,
+      project: {
+        version: 1,
+        id: "garden-analysis",
+        documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+        policy: {
+          uri: "governance/garden.c4ml-policy.json",
+          source: '{"version":2}',
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "invalid",
+      diagnostics: [{
+        code: "C4ML-POLICY-001",
+        source: { file: "governance/garden.c4ml-policy.json" },
+      }],
+    });
+  });
+
   it("returns the same semantic difference as the portable comparison path", async () => {
     const renamedSource = initialC4mlSource.replace(
       'name = "Garden Pulse"',

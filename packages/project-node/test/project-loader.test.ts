@@ -11,16 +11,33 @@ describe("Node.js architecture project loader", () => {
     const directory = await mkdtemp(join(tmpdir(), "c4ml-project-node-"));
     await mkdir(join(directory, "model"));
     await mkdir(join(directory, "views"));
+    await mkdir(join(directory, "governance"));
     await writeFile(
       join(directory, "c4ml.project.json"),
       JSON.stringify({
         version: 1,
         id: "garden",
+        policy: "governance/garden.c4ml-policy.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
     await writeFile(join(directory, "model", "systems.c4ml"), "c4ml draft-1\n");
     await writeFile(join(directory, "views", "context.c4ml"), "c4ml draft-1\n");
+    await writeFile(
+      join(directory, "governance", "garden.c4ml-policy.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-policies",
+        policies: [{
+          id: "garden.protocol",
+          title: "Require HTTPS",
+          severity: "error",
+          kind: "required-protocol",
+          relationshipKeys: ["relationship:ui-calls-api"],
+          allowedProtocols: ["HTTPS"],
+        }],
+      }),
+    );
 
     const result = await loadArchitectureProject(directory);
 
@@ -34,6 +51,9 @@ describe("Node.js architecture project loader", () => {
         "model/systems.c4ml",
         "views/context.c4ml",
       ]);
+      expect(result.project.policy).toMatchObject({
+        uri: "governance/garden.c4ml-policy.json",
+      });
     }
   });
 
@@ -71,6 +91,27 @@ describe("Node.js architecture project loader", () => {
     expect(await loadArchitectureProject(malformed)).toMatchObject({
       valid: false,
       code: "C4ML-PROJECT-005",
+    });
+  });
+
+  it("rejects malformed project policy resources with a stable policy code", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-project-policy-"));
+    await writeFile(
+      join(directory, "c4ml.project.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden",
+        sources: ["architecture.c4ml"],
+        policy: "garden.c4ml-policy.json",
+      }),
+    );
+    await writeFile(join(directory, "architecture.c4ml"), "c4ml draft-1\n");
+    await writeFile(join(directory, "garden.c4ml-policy.json"), "{");
+
+    expect(await loadArchitectureProject(directory)).toMatchObject({
+      valid: false,
+      classification: "source",
+      code: "C4ML-POLICY-001",
     });
   });
 

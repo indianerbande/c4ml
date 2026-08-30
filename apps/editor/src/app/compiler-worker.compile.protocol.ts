@@ -193,12 +193,18 @@ export interface CompilerWorkerProjectDocument {
   readonly source: string;
 }
 
+export interface CompilerWorkerPolicyResource {
+  readonly uri: string;
+  readonly source: string;
+}
+
 export interface CompilerWorkerProject {
   readonly version: 1;
   readonly id: string;
   readonly name?: string;
   readonly description?: string;
   readonly documents: readonly CompilerWorkerProjectDocument[];
+  readonly policy?: CompilerWorkerPolicyResource;
 }
 
 export interface CompilerWorkerRequest {
@@ -261,6 +267,15 @@ export function isCompilerWorkerProject(
     (candidate.name === undefined || typeof candidate.name === "string") &&
     (candidate.description === undefined ||
       typeof candidate.description === "string") &&
+    (candidate.policy === undefined ||
+      (typeof candidate.policy === "object" &&
+        candidate.policy !== null &&
+        typeof (candidate.policy as Partial<CompilerWorkerPolicyResource>).uri ===
+          "string" &&
+        (candidate.policy as Partial<CompilerWorkerPolicyResource>).uri!.length > 0 &&
+        typeof (candidate.policy as Partial<CompilerWorkerPolicyResource>).source ===
+          "string" &&
+        (candidate.policy as Partial<CompilerWorkerPolicyResource>).source!.length > 0)) &&
     Array.isArray(candidate.documents) &&
     candidate.documents.length > 0 &&
     candidate.documents.every(

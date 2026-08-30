@@ -261,7 +261,8 @@ pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
 `--scale` controls PNG scale, and `pnpm run c4ml -- version` reports the current
 experimental frontend and language versions. Exit classes distinguish success,
 usage, source/view selection, layout/render compilation, and filesystem or
-environment failures.
+environment failures; `analyze --fail-on` adds the distinct finding-threshold
+exit class `6`.
 
 `analyze` runs the compiler-owned built-in architecture checks. Blocking source
 or semantic failures remain normal diagnostics; a valid architecture receives
@@ -271,6 +272,10 @@ shared validation guidance, architecture declarations that occur in no resolved
 View, and Views that resolve to no content. Human CLI output prints each source
 location. The editor presents the same report in **Output → Architecture
 findings**; selecting a finding opens and marks its owning source declaration.
+For an explicit project, the report also evaluates its optional local
+`.c4ml-policy.json` resource. `--fail-on never|error|warning` turns a selected
+finding severity into classified process exit `6` for CI while still printing
+the complete report; the default is `never`.
 
 `query` answers upstream, downstream, path, containment, deployment, and
 resolved-View-coverage questions. Subjects and path targets use qualified
@@ -471,6 +476,7 @@ sources:
   "version": 1,
   "id": "garden-architecture",
   "name": "Garden Architecture",
+  "policy": "governance.c4ml-policy.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -478,6 +484,30 @@ sources:
   ]
 }
 ```
+
+The optional `policy` path selects one local version-one JSON policy set. It is
+not `.c4ml` source and does not extend the draft grammar. For example:
+
+```json
+{
+  "version": 1,
+  "id": "garden-policies",
+  "policies": [
+    {
+      "id": "garden.owner",
+      "title": "Garden Pulse has an owner",
+      "severity": "error",
+      "kind": "required-metadata",
+      "subjectKeys": ["element:garden-pulse"],
+      "requirements": [{ "kind": "metadata", "key": "owner" }]
+    }
+  ]
+}
+```
+
+The desktop loads this resource with the project and lists violations in
+**Output → Architecture findings**. It remains read-only in this first editor
+slice; source navigation goes to the affected architecture declaration.
 
 Each listed source still begins with `c4ml draft-1`, but may contain only the
 top-level blocks that belong in that file. References work across the project.

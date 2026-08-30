@@ -17,6 +17,9 @@ The shell currently provides:
 - full-size, detach, synchronized selection/zoom/Route-overlay, safe window
   bounds, and redock behavior owned by the authoritative workbench;
 - opaque document handles, so renderer code never receives filesystem paths;
+- project loading of one optional bounded local `.c4ml-policy.json` resource,
+  transported through the typed bridge for worker-owned analysis without
+  exposing native paths;
 - bounded shell-free Git subprocesses in the main/project-node boundary, with
   repository-relative change paths and no checkout, discard, pull, fetch, or
   history-rewrite operation;

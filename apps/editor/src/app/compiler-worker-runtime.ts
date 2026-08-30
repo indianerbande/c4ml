@@ -1,10 +1,13 @@
 import {
+  ArchitecturePolicyError,
   compareArchitectureSnapshots,
   compileArchitectureDiagram,
   createArchitectureAnalysisReport,
   deriveArchitectureImpacts,
+  evaluateArchitecturePolicies,
   evaluateBuiltInArchitectureQuality,
   createArchitectureProjectInput,
+  parseArchitecturePolicySet,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
   svgSceneObjectId,
@@ -201,6 +204,36 @@ export async function analyzeWorkerRequest(
         routingByViewId: parsed.routingByViewId,
       },
     ).snapshot!;
+    const findings = evaluateBuiltInArchitectureQuality({
+      model: parsed.model,
+      views: parsed.views,
+      snapshot,
+      diagnostics: parsed.diagnostics,
+    });
+    const policyResource = request.project?.policy;
+    if (policyResource !== undefined) {
+      const parsedPolicy = parseArchitecturePolicySet(policyResource.source);
+      if (!parsedPolicy.valid) {
+        return invalidPolicyAnalysisResponse(
+          request,
+          policyResource,
+          parsedPolicy.error,
+        );
+      }
+      try {
+        findings.push(...evaluateArchitecturePolicies({
+          model: parsed.model,
+          views: parsed.views,
+          snapshot,
+          policySet: parsedPolicy.policySet,
+        }));
+      } catch (error: unknown) {
+        if (error instanceof ArchitecturePolicyError) {
+          return invalidPolicyAnalysisResponse(request, policyResource, error);
+        }
+        throw error;
+      }
+    }
     return {
       protocolVersion: compilerWorkerProtocolVersion,
       type: "analysis-result",
@@ -209,12 +242,7 @@ export async function analyzeWorkerRequest(
       diagnostics: parsed.diagnostics.map(toWorkerDiagnostic),
       report: createArchitectureAnalysisReport(
         snapshot,
-        evaluateBuiltInArchitectureQuality({
-          model: parsed.model,
-          views: parsed.views,
-          snapshot,
-          diagnostics: parsed.diagnostics,
-        }),
+        findings,
       ),
     };
   } catch (error: unknown) {
@@ -236,6 +264,37 @@ export async function analyzeWorkerRequest(
       report: undefined,
     };
   }
+}
+
+function invalidPolicyAnalysisResponse(
+  request: AnalysisWorkerRequest,
+  policy: { readonly uri: string; readonly source: string },
+  error: ArchitecturePolicyError,
+): AnalysisWorkerResponse {
+  const lines = policy.source.split("\n");
+  const lastLine = lines.length - 1;
+  return {
+    protocolVersion: compilerWorkerProtocolVersion,
+    type: "analysis-result",
+    requestId: request.requestId,
+    status: "invalid",
+    diagnostics: [{
+      code: error.code,
+      severity: "error",
+      message: error.message,
+      source: {
+        file: policy.uri,
+        start: { offset: 0, line: 0, column: 0 },
+        end: {
+          offset: policy.source.length,
+          line: lastLine,
+          column: lines[lastLine]?.length ?? 0,
+        },
+      },
+      correction: "Review the project-local architecture policy resource.",
+    }],
+    report: undefined,
+  };
 }
 
 export async function compileWorkerRequest(
@@ -486,6 +545,14 @@ export async function previewProjectChangeWorkerRequest(
         uri,
         text: source,
       })),
+      ...(request.project.policy === undefined
+        ? {}
+        : {
+            policy: {
+              uri: request.project.policy.uri,
+              source: request.project.policy.source,
+            },
+          }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -502,6 +569,14 @@ export async function previewProjectChangeWorkerRequest(
             uri,
             source: text,
           })),
+          ...(candidate.policy === undefined
+            ? {}
+            : {
+                policy: {
+                  uri: candidate.policy.uri,
+                  source: candidate.policy.source,
+                },
+              }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -871,6 +946,10 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   }[];
+  readonly policy?: {
+    readonly uri: string;
+    readonly source: string;
+  };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -882,6 +961,14 @@ function toArchitectureProject(project: {
       uri,
       text: source,
     })),
+    ...(project.policy === undefined
+      ? {}
+      : {
+          policy: {
+            uri: project.policy.uri,
+            source: project.policy.source,
+          },
+        }),
   });
 }
 

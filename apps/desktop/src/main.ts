@@ -538,7 +538,10 @@ function registerDesktopIpc(): void {
       if (
         loaded.project.documents.some(
           ({ text }) => Buffer.byteLength(text, "utf8") > maxDesktopSourceBytes,
-        )
+        ) ||
+        (loaded.project.policy !== undefined &&
+          Buffer.byteLength(loaded.project.policy.source, "utf8") >
+            maxDesktopSourceBytes)
       ) {
         return {
           status: "failed",
@@ -559,6 +562,14 @@ function registerDesktopIpc(): void {
           ...(loaded.project.description === undefined
             ? {}
             : { description: loaded.project.description }),
+          ...(loaded.project.policy === undefined
+            ? {}
+            : {
+                policy: {
+                  uri: loaded.project.policy.uri,
+                  source: loaded.project.policy.source,
+                },
+              }),
           documents: loaded.project.documents.map(({ uri, text }) => {
             const documentPath = pathByUri.get(uri)!;
             return {

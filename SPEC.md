@@ -1,8 +1,8 @@
 # C4ML Specification
 
-Status: Draft 0.37
+Status: Draft 0.38
 
-Date: 2026-08-30
+Date: 2026-08-31
 
 Working title: C4ML
 
@@ -513,13 +513,17 @@ manifest contains:
 
 - `version`, which is exactly `1`;
 - a stable non-empty project `id`;
-- optional non-empty `name` and `description` text; and
-- a non-empty explicit `sources` list.
+- optional non-empty `name` and `description` text;
+- a non-empty explicit `sources` list; and
+- an optional `policy` path naming one local version-one architecture-policy
+  resource.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
 `..` segments, duplicate entries, paths escaping through symbolic links, and
-remote sources MUST be rejected. Version one intentionally has no globs,
+remote sources MUST be rejected. A policy path follows the same containment
+rules, is unique within the project, and MUST end in `.c4ml-policy.json`.
+Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
 offline.
@@ -539,8 +543,9 @@ references obey the same target-type and scope rules as references inside one
 document.
 
 The portable compiler core receives a versioned `ArchitectureProjectInput`
-containing project metadata and a deterministic, URI-sorted set of source
-documents. It MUST NOT open files itself. CLI, Electron, and renderer
+containing project metadata, a deterministic URI-sorted set of source
+documents, and the optional raw local policy resource. It MUST NOT open files
+itself. CLI, Electron, and renderer
 adapters load documents and enforce their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
@@ -557,24 +562,31 @@ preview navigation select the owning document before revealing its range.
 Context completion sees the complete project namespace while highlighting and
 cursor help remain properties of the active source text.
 
+The desktop loads and evaluates the optional policy resource with the complete
+project but does not expose it as an editable Monaco source tab in this first
+slice. Policy violations appear as ordinary architecture findings in Output
+and navigate to the affected architecture declaration. Malformed or
+inapplicable policy input fails visibly; it never changes the architecture
+model or diagram output.
+
 One project revision is derived deterministically from the project identity,
-ordered document identities, and exact document revisions. A project source
+ordered document identities, exact document revisions, and optional policy
+resource identity and content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
 authoring action spanning several documents MUST remain one preview and one undo
 transaction at the editor boundary.
 
-Future project resources are reserved as separate typed concerns:
+Further project resources are reserved as separate typed concerns:
 
 - glossary resources for terms, acronyms, and explanations;
 - narrative resources for longer Markdown-backed architecture context;
-- policy resources for deterministic architecture rules;
 - publication resources for View selection, ordering, captions, render
   profiles, and future print composition; and
 - controlled presentation resources such as themes, shapes, and licensed local
   assets.
 
-These future resources MUST NOT be treated as architecture source until their
+These further resources MUST NOT be treated as architecture source until their
 individual contracts are specified and implemented. Publication settings MUST
 not mutate semantic architecture, and installation-local workbench settings
 MUST remain outside the project.
@@ -1672,11 +1684,26 @@ that cannot apply to their selected architecture kinds fail with stable
 An optional policy correction MUST be a complete versioned proposed source
 change set with policy intent. Both a single-document change set and an atomic
 project change set are accepted; raw edits or direct model mutation are not.
-The contract deliberately does not define a project policy file, public
-`.c4ml` policy syntax, CLI flag, editor loading path, or CI configuration yet.
-Those frontend inputs require the next reviewed slice, which must pass one
-identical policy set through the compiler worker and CLI/CI without duplicating
-evaluation semantics.
+
+An explicit project MAY select exactly one local JSON policy resource through
+the manifest's `policy` field. The resource MUST end in
+`.c4ml-policy.json`, declare `version: 1`, a non-empty stable `id`, optional
+non-empty `name`, and a non-empty `policies` array matching the portable policy
+contract. It uses qualified architecture identities such as
+`element:catalog-api` and `relationship:browser-calls-api`; it does not extend
+or freeze the `.c4ml` grammar. The Node.js project adapter loads and validates
+the bounded local resource without network access, and the compiler worker and
+CLI pass the same normalized policy set to the same portable evaluator.
+
+The CLI `analyze` command evaluates built-in and project-selected policies in
+one deterministic report. `--fail-on never|error|warning` controls only its
+process result: `never` is the default, `error` fails when an error finding is
+present, and `warning` fails for warning or error findings. A reached threshold
+returns classified exit code `6` after still emitting the full report. This is
+the first CI boundary; no hosted-provider workflow or separate CI configuration
+format is accepted. The desktop opens the same project policy through its typed
+bridge and shows its findings in Output, but policy-resource editing and saving
+remain later work.
 
 ## 10. Scene graph and rendering
 

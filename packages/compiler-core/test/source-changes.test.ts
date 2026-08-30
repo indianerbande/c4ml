@@ -158,6 +158,30 @@ describe("portable multi-document source change sets", () => {
     ).not.toEqual(createProjectRevision(project));
   });
 
+  it("includes the optional architecture policy resource in the project revision", () => {
+    const projectWithPolicy = createArchitectureProjectInput({
+      ...project,
+      policy: {
+        uri: "governance/team.c4ml-policy.json",
+        source: '{"version":1,"id":"team","policies":[]}',
+      },
+    });
+    const changedPolicy = createArchitectureProjectInput({
+      ...project,
+      policy: {
+        uri: "governance/team.c4ml-policy.json",
+        source: '{"version":1,"id":"team","name":"Team","policies":[]}',
+      },
+    });
+
+    expect(createProjectRevision(projectWithPolicy)).not.toEqual(
+      createProjectRevision(project),
+    );
+    expect(createProjectRevision(changedPolicy)).not.toEqual(
+      createProjectRevision(projectWithPolicy),
+    );
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",
