@@ -33,6 +33,7 @@ const materialSymbolsRoot = join(
   "assets",
   "material-symbols",
 );
+const c4mlIconsRoot = join(editorRoot, "src", "assets", "c4ml-icons");
 const editorBuildRoot = join(repositoryRoot, "build", "editor");
 
 const editorManifest = await readJson(join(editorRoot, "package.json"));
@@ -72,7 +73,7 @@ assertEqual(
 assertEqual(
   installedElkManifest.version,
   acceptedElkVersion,
-  "the installed ELK.js version must match the reviewed browser version",
+  "the installed ELK.js version must match the reviewed renderer version",
 );
 assertEqual(
   installedElkManifest.license,
@@ -182,6 +183,16 @@ await assertSameFile(
   upstreamLicense,
   packagedLicense,
   "Monaco's license must be copied unchanged into the editor artifact",
+);
+await assertHash(
+  join(c4mlIconsRoot, "source-control.svg"),
+  "f4535419e0b164640420b1f2c99f7bb0dec94dc6be99d6e87bf182a446108938",
+  "Reviewed original C4ML Source Control symbol changed",
+);
+await assertSameFile(
+  join(c4mlIconsRoot, "source-control.svg"),
+  join(editorBuildRoot, "browser", "icons", "c4ml", "source-control.svg"),
+  "Editor packaging changed the original C4ML Source Control symbol",
 );
 await assertSameFile(
   upstreamElkLicense,
@@ -384,7 +395,7 @@ for (const packageName of [
 }
 
 console.log(
-  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts, five Material Symbols).`,
+  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts, five Material Symbols, one original C4ML Source Control symbol).`,
 );
 
 async function readJson(path) {

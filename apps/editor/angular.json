@@ -73,6 +73,11 @@
                 "glob": "{LICENSE,SOURCE.md}",
                 "input": "src/assets/material-symbols",
                 "output": "third-party/material-symbols"
+              },
+              {
+                "glob": "*.svg",
+                "input": "src/assets/c4ml-icons",
+                "output": "icons/c4ml"
               }
             ],
             "loader": {

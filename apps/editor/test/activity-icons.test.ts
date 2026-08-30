@@ -14,6 +14,7 @@ const styles = await readFile(
 describe("workbench activity icons", () => {
   it.each([
     ["files", "folder-open"],
+    ["source-control", "source-control"],
     ["diagrams", "schema"],
     ["export", "download"],
     ["help", "menu-book"],
@@ -44,6 +45,13 @@ describe("workbench activity icons", () => {
   ])("loads %s from the local Material Symbols assets", (symbol, file) => {
     expect(styles).toContain(`.activity-icon[data-symbol="${symbol}"]`);
     expect(styles).toContain(`url("/icons/material-symbols/${file}")`);
+  });
+
+  it("loads the original C4ML Source Control symbol", () => {
+    expect(styles).toContain(
+      `.activity-icon[data-symbol="source-control"]`,
+    );
+    expect(styles).toContain(`url("/icons/c4ml/source-control.svg")`);
   });
 });
 

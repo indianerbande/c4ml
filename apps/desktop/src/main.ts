@@ -26,6 +26,7 @@ import {
   isDesktopPreviewInteraction,
   isDesktopPreviewProjection,
   isDesktopSaveRequest,
+  isDesktopSourceControlRequest,
   isDesktopUiLanguage,
   maxDesktopSourceBytes,
   maxDesktopSvgBytes,
@@ -39,11 +40,22 @@ import {
   type DesktopPreviewProjection,
   type DesktopPreviewWindowBounds,
   type DesktopSaveResult,
+  type DesktopSourceControlRequest,
+  type DesktopSourceControlResult,
   type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
 import { ResvgPngRenderer } from "@c4ml/render-resvg";
-import { loadArchitectureProject } from "@c4ml/project-node";
+import {
+  commitGitWorkingTreeChanges,
+  loadArchitectureProject,
+  pushGitWorkingTreeBranch,
+  readGitWorkingTreeStatus,
+  stageAllGitWorkingTreeChanges,
+  stageGitWorkingTreePaths,
+  unstageAllGitWorkingTreeChanges,
+  unstageGitWorkingTreePaths,
+} from "@c4ml/project-node";
 
 import {
   DesktopDocumentRegistry,
@@ -291,6 +303,7 @@ function registerDesktopIpc(): void {
   ipcMain.removeHandler(desktopIpcChannels.previewWindowState);
   ipcMain.removeHandler(previewIpcChannels.projection);
   ipcMain.removeHandler(desktopIpcChannels.saveDocument);
+  ipcMain.removeHandler(desktopIpcChannels.sourceControl);
   ipcMain.removeAllListeners(desktopIpcChannels.closePreviewWindow);
   ipcMain.removeAllListeners(previewIpcChannels.interaction);
   ipcMain.removeAllListeners(previewIpcChannels.projectionChanged);
@@ -620,6 +633,33 @@ function registerDesktopIpc(): void {
       }
     },
   );
+  ipcMain.handle(
+    desktopIpcChannels.sourceControl,
+    async (event, value: unknown): Promise<DesktopSourceControlResult> => {
+      if (!isTrustedSender(event) || !isDesktopSourceControlRequest(value)) {
+        return invalidIpcResult();
+      }
+      const path = documents.resolve(value.handle);
+      if (path === undefined) {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-GIT-001",
+          message: "The selected document handle is no longer available.",
+        };
+      }
+      const result = await performSourceControl(path, value);
+      return result.valid
+        ? { status: "ok", snapshot: result.value }
+        : {
+            status: "failed",
+            code:
+              result.code === "C4ML-GIT-WORKTREE-001"
+                ? "C4ML-DESKTOP-GIT-001"
+                : "C4ML-DESKTOP-GIT-002",
+            message: result.message,
+          };
+    },
+  );
   ipcMain.on(
     desktopIpcChannels.setDocumentState,
     (event, value: unknown) => {
@@ -648,6 +688,28 @@ function registerDesktopIpc(): void {
       installApplicationMenu();
     }
   });
+}
+
+function performSourceControl(
+  path: string,
+  request: DesktopSourceControlRequest,
+) {
+  switch (request.action) {
+    case "refresh":
+      return readGitWorkingTreeStatus(path);
+    case "stage":
+      return stageGitWorkingTreePaths(path, request.paths!);
+    case "stage-all":
+      return stageAllGitWorkingTreeChanges(path);
+    case "unstage":
+      return unstageGitWorkingTreePaths(path, request.paths!);
+    case "unstage-all":
+      return unstageAllGitWorkingTreeChanges(path);
+    case "commit":
+      return commitGitWorkingTreeChanges(path, request.message!);
+    case "push":
+      return pushGitWorkingTreeBranch(path);
+  }
 }
 
 function isTrustedSender(event: IpcMainEvent | IpcMainInvokeEvent): boolean {
@@ -923,6 +985,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
           typeof window.c4mlDesktop?.openProject === 'function' &&
           typeof window.c4mlDesktop?.openPreviewWindow === 'function' &&
           typeof window.c4mlDesktop?.getPreviewWindowState === 'function' &&
+          typeof window.c4mlDesktop?.sourceControl === 'function' &&
           typeof window.c4mlDesktop?.updatePreviewProjection === 'function' &&
           typeof window.c4mlDesktop?.onPreviewInteraction === 'function' &&
           typeof window.c4mlDesktop?.setUiLanguage === 'function';

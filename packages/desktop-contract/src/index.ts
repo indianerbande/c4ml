@@ -1,4 +1,4 @@
-export const desktopBridgeProtocolVersion = 6 as const;
+export const desktopBridgeProtocolVersion = 7 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
@@ -9,6 +9,7 @@ export const desktopIpcChannels = {
   closePreviewWindow: "c4ml:desktop:close-preview-window",
   previewWindowState: "c4ml:desktop:preview-window-state",
   saveDocument: "c4ml:desktop:save-document",
+  sourceControl: "c4ml:desktop:source-control",
   setDocumentState: "c4ml:desktop:set-document-state",
   setUiLanguage: "c4ml:desktop:set-ui-language",
 } as const;
@@ -66,6 +67,57 @@ export interface DesktopDocumentState {
   readonly displayName: string;
   readonly dirty: boolean;
 }
+
+export type DesktopSourceControlAction =
+  | "commit"
+  | "push"
+  | "refresh"
+  | "stage"
+  | "stage-all"
+  | "unstage"
+  | "unstage-all";
+
+export type DesktopSourceControlFileStatus =
+  | "added"
+  | "conflicted"
+  | "copied"
+  | "deleted"
+  | "modified"
+  | "renamed"
+  | "type-changed"
+  | "untracked";
+
+export interface DesktopSourceControlChange {
+  readonly path: string;
+  readonly originalPath?: string;
+  readonly indexStatus?: DesktopSourceControlFileStatus;
+  readonly workingTreeStatus?: DesktopSourceControlFileStatus;
+}
+
+export interface DesktopSourceControlSnapshot {
+  readonly repositoryName: string;
+  readonly branch: string | undefined;
+  readonly detachedHead: string | undefined;
+  readonly upstream: string | undefined;
+  readonly ahead: number;
+  readonly behind: number;
+  readonly remotes: readonly string[];
+  readonly changes: readonly DesktopSourceControlChange[];
+}
+
+export interface DesktopSourceControlRequest {
+  readonly handle: string;
+  readonly action: DesktopSourceControlAction;
+  readonly paths?: readonly string[];
+  readonly message?: string;
+}
+
+export type DesktopSourceControlResult =
+  | {
+      readonly status: "ok";
+      readonly snapshot: DesktopSourceControlSnapshot;
+    }
+  | DesktopOperationFailure;
 
 export interface DesktopPngExportRequest {
   readonly scale: number;
@@ -200,6 +252,8 @@ export interface DesktopOperationFailure {
     | "C4ML-DESKTOP-FILE-002"
     | "C4ML-DESKTOP-EXPORT-001"
     | "C4ML-DESKTOP-EXPORT-002"
+    | "C4ML-DESKTOP-GIT-001"
+    | "C4ML-DESKTOP-GIT-002"
     | "C4ML-DESKTOP-IPC-001";
   readonly message: string;
 }
@@ -246,6 +300,9 @@ export interface C4mlDesktopApi {
   closePreviewWindow(): void;
   updatePreviewProjection(projection: DesktopPreviewProjection): void;
   saveDocument(request: DesktopSaveRequest): Promise<DesktopSaveResult>;
+  sourceControl(
+    request: DesktopSourceControlRequest,
+  ): Promise<DesktopSourceControlResult>;
   setDocumentState(state: DesktopDocumentState): void;
   setUiLanguage(language: DesktopUiLanguage): void;
   onCommand(listener: (command: DesktopCommand) => void): () => void;
@@ -400,6 +457,59 @@ export function isDesktopSaveRequest(
   );
 }
 
+export function isDesktopSourceControlRequest(
+  value: unknown,
+): value is DesktopSourceControlRequest {
+  if (
+    !isRecord(value) ||
+    !isNonEmptyString(value.handle) ||
+    !isSourceControlAction(value.action)
+  ) {
+    return false;
+  }
+  const pathsValid =
+    value.paths === undefined ||
+    (Array.isArray(value.paths) &&
+      value.paths.length > 0 &&
+      value.paths.length <= 5_000 &&
+      value.paths.every(isSafeRepositoryRelativePath));
+  const messageValid =
+    value.message === undefined ||
+    (typeof value.message === "string" && value.message.length <= 4096);
+  if (!pathsValid || !messageValid) return false;
+  if (value.action === "stage" || value.action === "unstage") {
+    return value.paths !== undefined && value.message === undefined;
+  }
+  if (value.action === "commit") {
+    return (
+      value.paths === undefined &&
+      typeof value.message === "string" &&
+      value.message.trim().length > 0
+    );
+  }
+  return value.paths === undefined && value.message === undefined;
+}
+
+export function isDesktopSourceControlSnapshot(
+  value: unknown,
+): value is DesktopSourceControlSnapshot {
+  return (
+    isRecord(value) &&
+    isBoundedText(value.repositoryName) &&
+    (value.branch === undefined || isBoundedText(value.branch)) &&
+    (value.detachedHead === undefined || isBoundedText(value.detachedHead)) &&
+    (value.upstream === undefined || isBoundedText(value.upstream)) &&
+    isNonNegativeInteger(value.ahead) &&
+    isNonNegativeInteger(value.behind) &&
+    Array.isArray(value.remotes) &&
+    value.remotes.length <= 100 &&
+    value.remotes.every(isBoundedText) &&
+    Array.isArray(value.changes) &&
+    value.changes.length <= 5_000 &&
+    value.changes.every(isDesktopSourceControlChange)
+  );
+}
+
 export function isDesktopDocumentState(
   value: unknown,
 ): value is DesktopDocumentState {
@@ -428,6 +538,7 @@ export function isC4mlDesktopApi(value: unknown): value is C4mlDesktopApi {
     typeof value.closePreviewWindow === "function" &&
     typeof value.updatePreviewProjection === "function" &&
     typeof value.saveDocument === "function" &&
+    typeof value.sourceControl === "function" &&
     typeof value.setDocumentState === "function" &&
     typeof value.setUiLanguage === "function" &&
     typeof value.onCommand === "function" &&
@@ -449,6 +560,7 @@ export function isC4mlPreviewApi(value: unknown): value is C4mlPreviewApi {
     value.openPreviewWindow === undefined &&
     value.openProject === undefined &&
     value.saveDocument === undefined &&
+    value.sourceControl === undefined &&
     value.exportPng === undefined &&
     value.setDocumentState === undefined &&
     value.setUiLanguage === undefined &&
@@ -470,6 +582,59 @@ function isBoundedText(value: unknown): value is string {
 
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isSourceControlAction(value: unknown): value is DesktopSourceControlAction {
+  return (
+    value === "commit" ||
+    value === "push" ||
+    value === "refresh" ||
+    value === "stage" ||
+    value === "stage-all" ||
+    value === "unstage" ||
+    value === "unstage-all"
+  );
+}
+
+function isSafeRepositoryRelativePath(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 4096 &&
+    !value.includes("\0") &&
+    !value.startsWith("/") &&
+    !value.split("/").includes("..")
+  );
+}
+
+function isDesktopSourceControlChange(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isSafeRepositoryRelativePath(value.path) &&
+    (value.originalPath === undefined ||
+      isSafeRepositoryRelativePath(value.originalPath)) &&
+    (value.indexStatus === undefined || isSourceControlFileStatus(value.indexStatus)) &&
+    (value.workingTreeStatus === undefined ||
+      isSourceControlFileStatus(value.workingTreeStatus)) &&
+    (value.indexStatus !== undefined || value.workingTreeStatus !== undefined)
+  );
+}
+
+function isSourceControlFileStatus(value: unknown): boolean {
+  return (
+    value === "added" ||
+    value === "conflicted" ||
+    value === "copied" ||
+    value === "deleted" ||
+    value === "modified" ||
+    value === "renamed" ||
+    value === "type-changed" ||
+    value === "untracked"
+  );
 }
 
 function isFiniteNumber(value: unknown): value is number {

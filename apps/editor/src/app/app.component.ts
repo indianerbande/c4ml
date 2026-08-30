@@ -59,6 +59,7 @@ import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
 import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
 import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
 import { WorkbenchSemanticFacade } from "./workbench-semantic.facade.js";
+import { WorkbenchSourceControlFacade } from "./workbench-source-control.facade.js";
 
 @Component({
   selector: "c4ml-root",
@@ -93,6 +94,7 @@ export class AppComponent {
   readonly placement = inject(WorkbenchPlacementFacade);
   readonly routeEditor = inject(WorkbenchRouteFacade);
   readonly semanticEditor = inject(WorkbenchSemanticFacade);
+  readonly sourceControl = inject(WorkbenchSourceControlFacade);
   readonly source = this.documents.source;
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
@@ -268,6 +270,9 @@ export class AppComponent {
       this.#afterDocumentSetChanged();
       this.#compileCurrentProject(undefined);
       this.#refreshHelpContext(opened.source);
+      if (this.activeActivity() === "source-control") {
+        void this.sourceControl.refresh();
+      }
     }
   }
 
@@ -276,6 +281,9 @@ export class AppComponent {
       this.#afterDocumentSetChanged();
       this.#compileCurrentProject(undefined);
       this.#refreshHelpContext(this.source());
+      if (this.activeActivity() === "source-control") {
+        void this.sourceControl.refresh();
+      }
     }
   }
 
@@ -290,10 +298,16 @@ export class AppComponent {
 
   async saveDocument(mode: "save" | "save-as"): Promise<void> {
     await this.documents.saveDocument(mode);
+    if (this.activeActivity() === "source-control") {
+      await this.sourceControl.refresh();
+    }
   }
 
   async saveAllDocuments(): Promise<void> {
     await this.documents.saveAllDocuments();
+    if (this.activeActivity() === "source-control") {
+      await this.sourceControl.refresh();
+    }
   }
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
@@ -492,6 +506,8 @@ export class AppComponent {
     this.session.setActivity(activity);
     if (activity === "help") {
       this.help.pane.set("help");
+    } else if (activity === "source-control") {
+      void this.sourceControl.refresh();
     }
   }
 
@@ -515,11 +531,11 @@ export class AppComponent {
   }
 
   showBottomPanel(panel: WorkbenchPanel): void {
-    this.session.showPanel(panel);
+    this.session.togglePanel(panel);
   }
 
-  toggleBottomPanel(): void {
-    this.session.togglePanel();
+  toggleBottomPanel(panel: WorkbenchPanel): void {
+    this.session.togglePanel(panel);
   }
 
   openCommandPalette(): void {
@@ -586,7 +602,7 @@ export class AppComponent {
         this.toggleRoutingDebug();
         break;
       case "panel.problems":
-        this.toggleBottomPanel();
+        this.toggleBottomPanel("problems");
         break;
       case "help.open":
         this.session.setActivity("help");

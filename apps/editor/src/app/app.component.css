@@ -205,7 +205,7 @@ kbd {
 
 .activity-bar {
   display: grid;
-  grid-template-rows: repeat(4, 48px) 1fr 48px;
+  grid-template-rows: repeat(4, 48px) 1fr repeat(2, 48px);
   min-height: 0;
   border-right: 1px solid var(--line-strong);
   background: var(--navigation-bg);
@@ -249,6 +249,11 @@ kbd {
 .activity-icon[data-symbol="folder-open"] {
   mask-image: url("/icons/material-symbols/folder_open.svg");
   -webkit-mask-image: url("/icons/material-symbols/folder_open.svg");
+}
+
+.activity-icon[data-symbol="source-control"] {
+  mask-image: url("/icons/c4ml/source-control.svg");
+  -webkit-mask-image: url("/icons/c4ml/source-control.svg");
 }
 
 .activity-icon[data-symbol="schema"] {
@@ -420,6 +425,199 @@ button.tree-row {
   background: var(--control-hover);
   color: var(--accent);
   outline: 0;
+}
+
+.source-control-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.source-control-header > div {
+  min-width: 0;
+}
+
+.source-control-refresh,
+.source-control-group button {
+  min-width: 28px;
+  min-height: 28px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.source-control-refresh:hover,
+.source-control-refresh:focus-visible,
+.source-control-group button:hover,
+.source-control-group button:focus-visible {
+  background: var(--control-hover);
+  color: var(--accent);
+  outline: 0;
+}
+
+.source-control-repository {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-subtle);
+}
+
+.source-control-repository strong,
+.source-control-repository span,
+.source-control-repository small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-control-repository strong {
+  color: var(--ink);
+  font-size: 1.02rem;
+}
+
+.source-control-repository span {
+  color: var(--control-ink);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.source-control-repository small {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.source-control-commit {
+  display: grid;
+  gap: 6px;
+  padding: 10px 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.source-control-commit > label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.source-control-commit textarea {
+  width: 100%;
+  min-height: 62px;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  font: inherit;
+  line-height: 1.35;
+}
+
+.source-control-commit textarea:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+  outline: 0;
+}
+
+.source-control-commit > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.source-control-commit button {
+  min-height: 31px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.source-control-commit button.source-control-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.source-control-commit button:disabled,
+.source-control-refresh:disabled,
+.source-control-group button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.source-control-note,
+.source-control-feedback {
+  margin: 0;
+  color: var(--warning);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.source-control-feedback {
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.source-control-group {
+  border-bottom: 1px solid var(--line);
+}
+
+.source-control-group > header {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 7px 2px 14px;
+}
+
+.source-control-group h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.source-control-change {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  min-height: 31px;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 10px;
+  color: var(--control-ink);
+  font-size: 0.88rem;
+}
+
+.source-control-change:hover {
+  background: var(--control-hover);
+}
+
+.source-control-change > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-control-status {
+  color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .diagram-list {
@@ -1135,7 +1333,7 @@ button.editor-tab {
 
 .panel-tabs {
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  grid-template-columns: auto auto 1fr;
   min-height: 31px;
   align-items: stretch;
   border-bottom: 1px solid var(--line);
@@ -1164,11 +1362,6 @@ button.editor-tab {
   padding: 1px 5px;
   border-radius: 999px;
   background: var(--control-hover);
-}
-
-.panel-tabs .panel-close {
-  font-size: 1.5rem;
-  font-weight: 400;
 }
 
 .diagnostics {
@@ -1394,7 +1587,8 @@ button.editor-tab {
 }
 
 .status-bar button:hover,
-.status-bar button:focus-visible {
+.status-bar button:focus-visible,
+.status-bar button.is-active {
   background: rgba(255, 255, 255, 0.14);
   outline: 0;
 }

@@ -12,6 +12,8 @@ import {
   isDesktopPreviewProjection,
   isDesktopPreviewWindowState,
   isDesktopSaveRequest,
+  isDesktopSourceControlRequest,
+  isDesktopSourceControlSnapshot,
   isDesktopUiLanguage,
 } from "../src/index.js";
 
@@ -28,6 +30,19 @@ describe("desktop bridge contract", () => {
       closePreviewWindow: () => undefined,
       updatePreviewProjection: () => undefined,
       saveDocument: async () => ({ status: "canceled" as const }),
+      sourceControl: async () => ({
+        status: "ok" as const,
+        snapshot: {
+          repositoryName: "garden",
+          branch: "main",
+          detachedHead: undefined,
+          upstream: "origin/main",
+          ahead: 0,
+          behind: 0,
+          remotes: ["origin"],
+          changes: [],
+        },
+      }),
       setDocumentState: () => undefined,
       setUiLanguage: () => undefined,
       onCommand: () => () => undefined,
@@ -86,6 +101,58 @@ describe("desktop bridge contract", () => {
     expect(
       isDesktopDocumentState({ displayName: "", dirty: true }),
     ).toBe(false);
+  });
+
+  it("accepts only bounded source-control actions and repository snapshots", () => {
+    expect(
+      isDesktopSourceControlRequest({ handle: "opaque", action: "refresh" }),
+    ).toBe(true);
+    expect(
+      isDesktopSourceControlRequest({
+        handle: "opaque",
+        action: "stage",
+        paths: ["architecture/model.c4ml"],
+      }),
+    ).toBe(true);
+    expect(
+      isDesktopSourceControlRequest({
+        handle: "opaque",
+        action: "commit",
+        message: "Describe architecture",
+      }),
+    ).toBe(true);
+    expect(
+      isDesktopSourceControlRequest({
+        handle: "opaque",
+        action: "stage",
+        paths: ["../outside"],
+      }),
+    ).toBe(false);
+    expect(
+      isDesktopSourceControlRequest({
+        handle: "opaque",
+        action: "commit",
+        message: "   ",
+      }),
+    ).toBe(false);
+    expect(
+      isDesktopSourceControlSnapshot({
+        repositoryName: "garden",
+        branch: "main",
+        detachedHead: undefined,
+        upstream: "origin/main",
+        ahead: 2,
+        behind: 1,
+        remotes: ["origin"],
+        changes: [
+          {
+            path: "architecture.c4ml",
+            indexStatus: "modified",
+            workingTreeStatus: "modified",
+          },
+        ],
+      }),
+    ).toBe(true);
   });
 
   it("accepts only bounded SVG export payloads and reviewed scales", () => {

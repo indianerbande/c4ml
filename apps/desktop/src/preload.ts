@@ -19,6 +19,8 @@ import {
   type DesktopPreviewWindowState,
   type DesktopSaveRequest,
   type DesktopSaveResult,
+  type DesktopSourceControlRequest,
+  type DesktopSourceControlResult,
   type DesktopUiLanguage,
 } from "@c4ml/desktop-contract";
 
@@ -54,6 +56,11 @@ const api: C4mlDesktopApi = Object.freeze({
       desktopIpcChannels.saveDocument,
       request,
     ) as Promise<DesktopSaveResult>,
+  sourceControl: (request: DesktopSourceControlRequest) =>
+    ipcRenderer.invoke(
+      desktopIpcChannels.sourceControl,
+      request,
+    ) as Promise<DesktopSourceControlResult>,
   setDocumentState: (state: DesktopDocumentState) => {
     ipcRenderer.send(desktopIpcChannels.setDocumentState, state);
   },

@@ -86,6 +86,21 @@
       </button>
       <button
         type="button"
+        [class.is-active]="activeActivity() === 'source-control'"
+        [attr.aria-current]="activeActivity() === 'source-control' ? 'page' : null"
+        data-activity="source-control"
+        [attr.aria-label]="i18n.t('area.sourceControl')"
+        [title]="i18n.t('area.sourceControl')"
+        (click)="selectActivity('source-control')"
+      >
+        <span
+          class="activity-icon"
+          data-symbol="source-control"
+          aria-hidden="true"
+        ></span>
+      </button>
+      <button
+        type="button"
         [class.is-active]="activeActivity() === 'diagrams'"
         [attr.aria-current]="activeActivity() === 'diagrams' ? 'page' : null"
         data-activity="diagrams"
@@ -114,6 +129,7 @@
           aria-hidden="true"
         ></span>
       </button>
+      <span class="activity-spacer"></span>
       <button
         type="button"
         [class.is-active]="activeActivity() === 'help'"
@@ -129,7 +145,6 @@
           aria-hidden="true"
         ></span>
       </button>
-      <span class="activity-spacer"></span>
       <button
         #settingsButton
         type="button"
@@ -224,6 +239,173 @@
                 {{ i18n.t("files.saveAs") }}
               </button>
             </section>
+          }
+        }
+
+        @case ("source-control") {
+          <header class="source-control-header">
+            <div>
+              <p>{{ i18n.t("git.eyebrow") }}</p>
+              <h2>{{ i18n.t("git.title") }}</h2>
+            </div>
+            <button
+              type="button"
+              class="source-control-refresh"
+              [disabled]="sourceControl.busy()"
+              [attr.aria-label]="i18n.t('git.refresh')"
+              [title]="i18n.t('git.refresh')"
+              (click)="sourceControl.refresh()"
+            >
+              ↻
+            </button>
+          </header>
+
+          @if (sourceControl.snapshot(); as repository) {
+            <section class="source-control-repository">
+              <strong>{{ repository.repositoryName }}</strong>
+              <span>
+                {{ i18n.t("git.branch") }} ·
+                {{ sourceControl.branchLabel() }}
+              </span>
+              <small>
+                @if (repository.upstream) {
+                  {{ i18n.t("git.upstream", { upstream: repository.upstream }) }}
+                } @else {
+                  {{ i18n.t("git.noUpstream") }}
+                }
+              </small>
+              <small>
+                {{
+                  i18n.t("git.divergence", {
+                    ahead: repository.ahead,
+                    behind: repository.behind,
+                  })
+                }}
+              </small>
+            </section>
+
+            <section class="source-control-commit">
+              <label for="git-commit-message">{{ i18n.t("git.commitMessage") }}</label>
+              <textarea
+                id="git-commit-message"
+                maxlength="4096"
+                rows="3"
+                [value]="sourceControl.commitMessage()"
+                [placeholder]="i18n.t('git.commitPlaceholder')"
+                (input)="sourceControl.updateCommitMessage($event)"
+              ></textarea>
+              @if (projectDirty()) {
+                <p class="source-control-note">{{ i18n.t("git.saveFirst") }}</p>
+              }
+              <div>
+                <button
+                  type="button"
+                  class="source-control-primary"
+                  [disabled]="
+                    sourceControl.busy() ||
+                    projectDirty() ||
+                    sourceControl.stagedChanges().length === 0 ||
+                    sourceControl.commitMessage().trim().length === 0
+                  "
+                  (click)="sourceControl.commit()"
+                >
+                  {{ i18n.t("git.commit") }}
+                </button>
+                <button
+                  type="button"
+                  [disabled]="sourceControl.busy() || repository.branch === undefined"
+                  (click)="sourceControl.push()"
+                >
+                  {{ i18n.t("git.push") }}
+                  @if (repository.ahead > 0) {
+                    <span>{{ repository.ahead }}</span>
+                  }
+                </button>
+              </div>
+            </section>
+
+            @if (sourceControl.stagedChanges().length > 0) {
+              <section class="source-control-group">
+                <header>
+                  <h3>{{ i18n.t("git.staged") }}</h3>
+                  <button
+                    type="button"
+                    [disabled]="sourceControl.busy()"
+                    [attr.aria-label]="i18n.t('git.unstageAll')"
+                    [title]="i18n.t('git.unstageAll')"
+                    (click)="sourceControl.unstageAll()"
+                  >
+                    −
+                  </button>
+                </header>
+                @for (change of sourceControl.stagedChanges(); track change.path) {
+                  <div class="source-control-change">
+                    <span
+                      class="source-control-status"
+                      [title]="sourceControl.statusLabel(change.indexStatus)"
+                    >{{ sourceControl.statusCode(change.indexStatus) }}</span>
+                    <span [title]="change.path">{{ change.path }}</span>
+                    <button
+                      type="button"
+                      [disabled]="sourceControl.busy()"
+                      [attr.aria-label]="i18n.t('git.unstage', { path: change.path })"
+                      [title]="i18n.t('git.unstage', { path: change.path })"
+                      (click)="sourceControl.unstage(change)"
+                    >
+                      −
+                    </button>
+                  </div>
+                }
+              </section>
+            }
+
+            @if (sourceControl.workingTreeChanges().length > 0) {
+              <section class="source-control-group">
+                <header>
+                  <h3>{{ i18n.t("git.changes") }}</h3>
+                  <button
+                    type="button"
+                    [disabled]="sourceControl.busy()"
+                    [attr.aria-label]="i18n.t('git.stageAll')"
+                    [title]="i18n.t('git.stageAll')"
+                    (click)="sourceControl.stageAll()"
+                  >
+                    ＋
+                  </button>
+                </header>
+                @for (change of sourceControl.workingTreeChanges(); track change.path) {
+                  <div class="source-control-change">
+                    <span
+                      class="source-control-status"
+                      [title]="sourceControl.statusLabel(change.workingTreeStatus)"
+                    >{{ sourceControl.statusCode(change.workingTreeStatus) }}</span>
+                    <span [title]="change.path">{{ change.path }}</span>
+                    <button
+                      type="button"
+                      [disabled]="sourceControl.busy()"
+                      [attr.aria-label]="i18n.t('git.stage', { path: change.path })"
+                      [title]="i18n.t('git.stage', { path: change.path })"
+                      (click)="sourceControl.stage(change)"
+                    >
+                      ＋
+                    </button>
+                  </div>
+                }
+              </section>
+            }
+
+            @if (repository.changes.length === 0) {
+              <p class="side-empty">{{ i18n.t("git.clean") }}</p>
+            }
+          } @else {
+            <p class="side-empty">
+              {{ sourceControl.feedback() ?? i18n.t("git.openFirst") }}
+            </p>
+          }
+          @if (sourceControl.snapshot() && sourceControl.feedback()) {
+            <p class="source-control-feedback" aria-live="polite">
+              {{ sourceControl.feedback() }}
+            </p>
           }
         }
 
@@ -690,14 +872,6 @@
               </button>
             }
             <span></span>
-            <button
-              type="button"
-              class="panel-close"
-              (click)="toggleBottomPanel()"
-              [attr.aria-label]="i18n.t('panel.hide')"
-            >
-              ×
-            </button>
           </header>
 
           @if (bottomPanel() === "route") {
@@ -949,7 +1123,12 @@
       }
     </span>
     <span class="status-spacer"></span>
-    <button type="button" (click)="showBottomPanel('problems')">
+    <button
+      type="button"
+      [class.is-active]="bottomPanelOpen() && bottomPanel() === 'problems'"
+      [attr.aria-pressed]="bottomPanelOpen() && bottomPanel() === 'problems'"
+      (click)="showBottomPanel('problems')"
+    >
       {{
         i18n.t("status.problemCount", {
           count: compiler.state().diagnostics.length,
@@ -957,7 +1136,7 @@
       }}
     </button>
     <button type="button" (click)="selectActivity('diagrams')">
-      {{ activeViewTitle() }}
+      {{ i18n.t("status.diagrams") }}
     </button>
     <span>{{ zoomLabel() }}</span>
   </footer>
