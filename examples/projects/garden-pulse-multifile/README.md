@@ -9,6 +9,10 @@ original offline fixture. It deliberately contains one confirmed name mismatch
 and one unreviewed presence observation so `analyze` can demonstrate the
 difference between drift and uncertainty without changing authored source.
 
+The optional `knowledge/garden.c4ml-glossary.json` resource defines one domain
+term and one acronym with deterministic aliases. It is project knowledge, not
+architecture source, and therefore does not change the compiled diagram.
+
 From the repository root:
 
 ```sh

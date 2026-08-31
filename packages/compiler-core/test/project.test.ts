@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ArchitectureProjectError,
   architectureObservationResourceSuffix,
+  architectureGlossaryResourceSuffix,
   architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
@@ -63,6 +64,7 @@ describe("portable architecture project contract", () => {
       name: "Signal Garden",
       policy: "governance/signal-garden.c4ml-policy.json",
       observations: "evidence/signal-garden.c4ml-observations.json",
+      glossary: "knowledge/signal-garden.c4ml-glossary.json",
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -74,6 +76,7 @@ describe("portable architecture project contract", () => {
         name: "Signal Garden",
         policy: "governance/signal-garden.c4ml-policy.json",
         observations: "evidence/signal-garden.c4ml-observations.json",
+        glossary: "knowledge/signal-garden.c4ml-glossary.json",
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
@@ -81,6 +84,30 @@ describe("portable architecture project contract", () => {
     expect(architectureProjectManifestName).toBe("c4ml.project.json");
     expect(architecturePolicyResourceSuffix).toBe(".c4ml-policy.json");
     expect(architectureObservationResourceSuffix).toBe(".c4ml-observations.json");
+    expect(architectureGlossaryResourceSuffix).toBe(".c4ml-glossary.json");
+  });
+
+  it("retains one typed project-local glossary independently of authored source", () => {
+    const project = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      glossary: {
+        uri: "knowledge/signal-garden.c4ml-glossary.json",
+        source: '{"version":1}',
+      },
+    });
+
+    expect(project.glossary).toEqual({
+      uri: "knowledge/signal-garden.c4ml-glossary.json",
+      source: '{"version":1}',
+    });
+    expect(() => createArchitectureProjectInput({
+      id: "invalid-glossary",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      glossary: { uri: "../glossary.json", source: "{}" },
+    })).toThrowError(expect.objectContaining<Partial<ArchitectureProjectError>>({
+      issues: [expect.objectContaining({ code: "C4ML-PROJECT-008" })],
+    }));
   });
 
   it("retains one project-local observation resource independently of authored source", () => {

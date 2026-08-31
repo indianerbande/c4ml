@@ -19,6 +19,7 @@ describe("Node.js architecture project loader", () => {
         id: "garden",
         policy: "governance/garden.c4ml-policy.json",
         observations: "governance/garden.c4ml-observations.json",
+        glossary: "governance/garden.c4ml-glossary.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -54,6 +55,20 @@ describe("Node.js architecture project loader", () => {
         }],
       }),
     );
+    await writeFile(
+      join(directory, "governance", "garden.c4ml-glossary.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-terms",
+        entries: [{
+          id: "api",
+          term: "API",
+          kind: "acronym",
+          expansion: "Application Programming Interface",
+          definition: "A software boundary.",
+        }],
+      }),
+    );
 
     const result = await loadArchitectureProject(directory);
 
@@ -73,7 +88,31 @@ describe("Node.js architecture project loader", () => {
       expect(result.project.observations).toMatchObject({
         uri: "governance/garden.c4ml-observations.json",
       });
+      expect(result.project.glossary).toMatchObject({
+        uri: "governance/garden.c4ml-glossary.json",
+      });
     }
+  });
+
+  it("rejects malformed project glossaries with a stable glossary code", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-project-glossary-"));
+    await writeFile(
+      join(directory, "c4ml.project.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden",
+        sources: ["architecture.c4ml"],
+        glossary: "garden.c4ml-glossary.json",
+      }),
+    );
+    await writeFile(join(directory, "architecture.c4ml"), "c4ml draft-1\n");
+    await writeFile(join(directory, "garden.c4ml-glossary.json"), "{");
+
+    expect(await loadArchitectureProject(directory)).toMatchObject({
+      valid: false,
+      classification: "source",
+      code: "C4ML-GLOSSARY-001",
+    });
   });
 
   it("rejects malformed project observation resources with a stable observation code", async () => {

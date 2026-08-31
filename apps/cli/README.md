@@ -45,9 +45,10 @@ An explicit `c4ml.project.json` may select one local
 portable compiler-core evaluators used by the desktop worker. Confirmed
 observation mismatches are warning-level drift; unreviewed or disputed input is
 information-level uncertainty and never changes authored source. The default
-`--fail-on never` keeps findings informational to the
-process; `error` fails on error findings, while `warning` fails on warnings or
-errors.
+`--fail-on never` keeps findings informational to the process; `error` fails on
+error findings, while `warning` fails on warnings or errors. A project-selected
+`.c4ml-glossary.json` is validated and retained as non-source project knowledge
+without changing compilation.
 
 The CLI currently accepts the bounded experimental language slices for all
 seven view types, including Deployment. Its command names and output contract

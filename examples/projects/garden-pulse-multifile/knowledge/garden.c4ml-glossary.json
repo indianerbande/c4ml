@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "id": "garden-pulse-terms",
+  "name": "Garden Pulse glossary",
+  "entries": [
+    {
+      "id": "sensor-post",
+      "term": "Sensor Post",
+      "kind": "term",
+      "definition": "A garden device that measures local conditions.",
+      "aliases": ["Field Sensor"]
+    },
+    {
+      "id": "ui",
+      "term": "UI",
+      "kind": "acronym",
+      "expansion": "User Interface",
+      "definition": "The interface through which a grower reads garden status.",
+      "aliases": []
+    }
+  ]
+}

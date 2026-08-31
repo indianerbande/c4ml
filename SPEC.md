@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.39
+Status: Draft 0.40
 
 Date: 2026-08-31
 
@@ -518,7 +518,9 @@ manifest contains:
 - an optional `policy` path naming one local version-one architecture-policy
   resource; and
 - an optional `observations` path naming one local version-one architecture-
-  observation resource.
+  observation resource; and
+- an optional `glossary` path naming one local version-one architecture
+  glossary.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -526,7 +528,8 @@ directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
 remote sources MUST be rejected. A policy path follows the same containment
 rules, is unique within the project, and MUST end in `.c4ml-policy.json`. An
 observation path follows the same containment and uniqueness rules and MUST end
-in `.c4ml-observations.json`.
+in `.c4ml-observations.json`. A glossary path follows those rules and MUST end
+in `.c4ml-glossary.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -548,9 +551,9 @@ document.
 
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
-documents, and the optional raw local policy and observation resources. It MUST
-NOT open files itself. CLI, Electron, and renderer adapters load documents and
-enforce their environment's path and access rules.
+documents, and the optional raw local policy, observation, and glossary
+resources. It MUST NOT open files itself. CLI, Electron, and renderer adapters
+load documents and enforce their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
 The desktop editor opens an explicit project directory through its native
@@ -581,8 +584,8 @@ architecture declaration when one exists. Malformed or inapplicable observation
 input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
-ordered document identities, exact document revisions, and optional policy and
-observation resource identities and content. A project source
+ordered document identities, exact document revisions, and optional policy,
+observation, and glossary resource identities and content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
 authoring action spanning several documents MUST remain one preview and one undo
@@ -590,7 +593,6 @@ transaction at the editor boundary.
 
 Further project resources are reserved as separate typed concerns:
 
-- glossary resources for terms, acronyms, and explanations;
 - narrative resources for longer Markdown-backed architecture context;
 - publication resources for View selection, ordering, captions, render
   profiles, and future print composition; and
@@ -601,6 +603,19 @@ These further resources MUST NOT be treated as architecture source until their
 individual contracts are specified and implemented. Publication settings MUST
 not mutate semantic architecture, and installation-local workbench settings
 MUST remain outside the project.
+
+The implemented version-one glossary resource is a portable, non-semantic
+project concern. It declares a stable resource identity and one or more stable
+entries. Every entry has a term, `term` or `acronym` kind, explanation, optional
+aliases, and an expansion exactly when it is an acronym. Entries are ordered by
+identity; term and alias lookup is case-insensitive; entry identities and all
+lookup labels MUST be unique. Invalid structure uses stable `C4ML-GLOSSARY-*`
+errors. The resource participates in the deterministic project revision and is
+loaded identically from working files and read-only Git revisions. It is not a
+`.c4ml` source document, does not create or rename architecture identities, and
+does not infer missing glossary entries from authored prose. The desktop and
+worker may transport its bounded raw content, but editing and a visible glossary
+browser remain later UI work.
 
 ## 8. Layout model
 

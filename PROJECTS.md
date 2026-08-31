@@ -1,6 +1,6 @@
 # C4ML Projects
 
-Status: Implemented architecture-source, local-policy, and local-observation foundation
+Status: Implemented architecture-source, policy, observation, and glossary foundation
 
 Date: 2026-08-31
 
@@ -37,6 +37,8 @@ garden-architecture/
 ├── governance.c4ml-policy.json
 ├── evidence/
 │   └── inventory.c4ml-observations.json
+├── knowledge/
+│   └── garden.c4ml-glossary.json
 ├── model/
 │   └── systems.c4ml
 ├── relations/
@@ -55,6 +57,7 @@ The version-one manifest lists every architecture source explicitly:
   "description": "Architecture model and review views.",
   "policy": "governance.c4ml-policy.json",
   "observations": "evidence/inventory.c4ml-observations.json",
+  "glossary": "knowledge/garden.c4ml-glossary.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -180,14 +183,20 @@ The optional observation set follows the same read-only desktop boundary.
 Confirmed drift and uncertainty appear in **Output → Architecture findings**;
 the source, model, diagrams, and project files are not reconciled automatically.
 
+The optional `glossary` field selects one local version-one JSON resource whose
+path ends in `.c4ml-glossary.json`. It defines deterministic term and acronym
+entries with explanations, acronym expansions, and optional aliases. Terms and
+aliases are unique without case distinctions and can be resolved through the
+portable contract. The glossary participates in project revisions but is not
+architecture source and does not change compilation or diagrams.
+
 ## Planned project resources
 
 The project format is intentionally ready for separately typed resources.
-Architecture source documents plus one local architecture-policy and one local
-architecture-observation resource are executable today. Further planned
-resources include:
+Architecture source documents plus local architecture-policy,
+architecture-observation, and glossary resources are executable today. Further
+planned resources include:
 
-- glossaries for terms and acronyms;
 - Markdown-backed narrative sections;
 - publication and print profiles;
 - themes, safe custom shapes, and licensed local assets; and

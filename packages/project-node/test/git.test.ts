@@ -70,6 +70,7 @@ describe("Git project revision adapter", () => {
         sources: ["model.c4ml", "views.c4ml"],
         policy: "garden.c4ml-policy.json",
         observations: "garden.c4ml-observations.json",
+        glossary: "garden.c4ml-glossary.json",
       }),
       "utf8",
     );
@@ -106,6 +107,21 @@ describe("Git project revision adapter", () => {
       }),
       "utf8",
     );
+    await writeFile(
+      join(projectDirectory, "garden.c4ml-glossary.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-terms",
+        entries: [{
+          id: "api",
+          term: "API",
+          kind: "acronym",
+          expansion: "Application Programming Interface",
+          definition: "A software boundary.",
+        }],
+      }),
+      "utf8",
+    );
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -124,6 +140,9 @@ describe("Git project revision adapter", () => {
     });
     expect(result.project.observations).toMatchObject({
       uri: "garden.c4ml-observations.json",
+    });
+    expect(result.project.glossary).toMatchObject({
+      uri: "garden.c4ml-glossary.json",
     });
   });
 

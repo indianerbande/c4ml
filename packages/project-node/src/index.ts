@@ -15,6 +15,7 @@ import {
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
+  parseArchitectureGlossary,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -245,6 +246,46 @@ export async function loadArchitectureProject(
     observations = { uri, source };
   }
 
+  let glossary: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.glossary !== undefined) {
+    const uri = parsedManifest.manifest.glossary;
+    const glossaryPath = resolve(projectRoot, ...uri.split("/"));
+    let glossaryRealPath: string;
+    try {
+      glossaryRealPath = await realpath(glossaryPath);
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-010",
+        `Cannot read project glossary ${glossaryPath}: ${errorMessage(error)}`,
+      );
+    }
+    const relativeRealPath = relative(rootRealPath, glossaryRealPath);
+    if (
+      relativeRealPath === ".." ||
+      relativeRealPath.split(sep)[0] === ".." ||
+      isAbsolute(relativeRealPath)
+    ) {
+      return sourceFailure(
+        "C4ML-PROJECT-NODE-011",
+        `Project glossary "${uri}" resolves outside the project directory.`,
+      );
+    }
+    let source: string;
+    try {
+      source = await readFile(glossaryRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-010",
+        `Cannot read project glossary ${glossaryPath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedGlossary = parseArchitectureGlossary(source);
+    if (!parsedGlossary.valid) {
+      return sourceFailure(parsedGlossary.error.code, parsedGlossary.error.message);
+    }
+    glossary = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -260,6 +301,7 @@ export async function loadArchitectureProject(
       documents,
       ...(policy === undefined ? {} : { policy }),
       ...(observations === undefined ? {} : { observations }),
+      ...(glossary === undefined ? {} : { glossary }),
     }),
     documentPaths,
   };

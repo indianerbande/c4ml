@@ -21,6 +21,8 @@ The shell currently provides:
   and one optional bounded local `.c4ml-observations.json` resource,
   transported through the typed bridge for worker-owned analysis without
   exposing native paths;
+- project loading and typed transport of one validated local
+  `.c4ml-glossary.json` resource as non-source content;
 - bounded shell-free Git subprocesses in the main/project-node boundary, with
   repository-relative change paths and no checkout, discard, pull, fetch, or
   history-rewrite operation;

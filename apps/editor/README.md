@@ -23,6 +23,8 @@ Implemented:
   analysis report as the CLI and navigable from Output to architecture source;
 - project-selected architecture observations reported as confirmed drift or
   unreviewed/disputed uncertainty without reconciling authored source;
+- one project-selected glossary retained as validated non-source knowledge
+  without changing compilation or becoming an editable Monaco document;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

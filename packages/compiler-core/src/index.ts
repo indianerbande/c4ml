@@ -1,6 +1,7 @@
 export * from "./analysis.js";
 export * from "./architecture-diff.js";
 export * from "./architecture-graph.js";
+export * from "./architecture-glossary.js";
 export * from "./architecture-impact.js";
 export * from "./architecture-migration.js";
 export * from "./architecture-observation.js";
