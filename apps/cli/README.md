@@ -48,7 +48,8 @@ information-level uncertainty and never changes authored source. The default
 `--fail-on never` keeps findings informational to the process; `error` fails on
 error findings, while `warning` fails on warnings or errors. A project-selected
 `.c4ml-glossary.json` is validated and retained as non-source project knowledge
-without changing compilation.
+without changing compilation. Listed `.c4ml-narrative.md` chapters are likewise
+validated as passive local Markdown and never enter architecture compilation.
 
 The CLI currently accepts the bounded experimental language slices for all
 seven view types, including Deployment. Its command names and output contract

@@ -547,7 +547,14 @@ function registerDesktopIpc(): void {
             maxDesktopSourceBytes) ||
         (loaded.project.glossary !== undefined &&
           Buffer.byteLength(loaded.project.glossary.source, "utf8") >
-            maxDesktopSourceBytes)
+            maxDesktopSourceBytes) ||
+        (loaded.project.narratives ?? []).some((resource) =>
+          Buffer.byteLength(resource.source, "utf8") > maxDesktopSourceBytes
+        ) ||
+        (loaded.project.narratives ?? []).reduce(
+          (total, resource) => total + Buffer.byteLength(resource.source, "utf8"),
+          0,
+        ) > maxDesktopSourceBytes
       ) {
         return {
           status: "failed",
@@ -592,6 +599,9 @@ function registerDesktopIpc(): void {
                   source: loaded.project.glossary.source,
                 },
               }),
+          ...(loaded.project.narratives === undefined
+            ? {}
+            : { narratives: loaded.project.narratives.map((resource) => ({ ...resource })) }),
           documents: loaded.project.documents.map(({ uri, text }) => {
             const documentPath = pathByUri.get(uri)!;
             return {

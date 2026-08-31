@@ -4,6 +4,7 @@ import {
   ArchitectureProjectError,
   architectureObservationResourceSuffix,
   architectureGlossaryResourceSuffix,
+  architectureNarrativeResourceSuffix,
   architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
@@ -65,6 +66,7 @@ describe("portable architecture project contract", () => {
       policy: "governance/signal-garden.c4ml-policy.json",
       observations: "evidence/signal-garden.c4ml-observations.json",
       glossary: "knowledge/signal-garden.c4ml-glossary.json",
+      narratives: ["docs/overview.c4ml-narrative.md"],
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -77,6 +79,7 @@ describe("portable architecture project contract", () => {
         policy: "governance/signal-garden.c4ml-policy.json",
         observations: "evidence/signal-garden.c4ml-observations.json",
         glossary: "knowledge/signal-garden.c4ml-glossary.json",
+        narratives: ["docs/overview.c4ml-narrative.md"],
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
@@ -85,6 +88,29 @@ describe("portable architecture project contract", () => {
     expect(architecturePolicyResourceSuffix).toBe(".c4ml-policy.json");
     expect(architectureObservationResourceSuffix).toBe(".c4ml-observations.json");
     expect(architectureGlossaryResourceSuffix).toBe(".c4ml-glossary.json");
+    expect(architectureNarrativeResourceSuffix).toBe(".c4ml-narrative.md");
+  });
+
+  it("orders typed project narratives and rejects duplicate or unsafe paths", () => {
+    const project = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      narratives: [
+        { uri: "docs/z.c4ml-narrative.md", source: "z" },
+        { uri: "docs/a.c4ml-narrative.md", source: "a" },
+      ],
+    });
+    expect(project.narratives?.map(({ uri }) => uri)).toEqual([
+      "docs/a.c4ml-narrative.md",
+      "docs/z.c4ml-narrative.md",
+    ]);
+    expect(() => createArchitectureProjectInput({
+      id: "invalid-narrative",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      narratives: [{ uri: "../overview.md", source: "text" }],
+    })).toThrowError(expect.objectContaining<Partial<ArchitectureProjectError>>({
+      issues: [expect.objectContaining({ code: "C4ML-PROJECT-009" })],
+    }));
   });
 
   it("retains one typed project-local glossary independently of authored source", () => {

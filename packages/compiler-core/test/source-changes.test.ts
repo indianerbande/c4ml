@@ -230,6 +230,19 @@ describe("portable multi-document source change sets", () => {
     );
   });
 
+  it("includes ordered architecture narratives in the project revision", () => {
+    const withNarrative = createArchitectureProjectInput({
+      ...project,
+      narratives: [{ uri: "docs/overview.c4ml-narrative.md", source: "overview" }],
+    });
+    const changedNarrative = createArchitectureProjectInput({
+      ...project,
+      narratives: [{ uri: "docs/overview.c4ml-narrative.md", source: "changed" }],
+    });
+    expect(createProjectRevision(withNarrative)).not.toEqual(createProjectRevision(project));
+    expect(createProjectRevision(changedNarrative)).not.toEqual(createProjectRevision(withNarrative));
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

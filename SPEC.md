@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.40
+Status: Draft 0.41
 
 Date: 2026-08-31
 
@@ -520,7 +520,9 @@ manifest contains:
 - an optional `observations` path naming one local version-one architecture-
   observation resource; and
 - an optional `glossary` path naming one local version-one architecture
-  glossary.
+  glossary; and
+- an optional non-empty `narratives` list naming local version-one architecture
+  narrative chapters.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -529,7 +531,8 @@ remote sources MUST be rejected. A policy path follows the same containment
 rules, is unique within the project, and MUST end in `.c4ml-policy.json`. An
 observation path follows the same containment and uniqueness rules and MUST end
 in `.c4ml-observations.json`. A glossary path follows those rules and MUST end
-in `.c4ml-glossary.json`.
+in `.c4ml-glossary.json`. Narrative paths follow those rules, are unique, and
+MUST end in `.c4ml-narrative.md`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -551,9 +554,9 @@ document.
 
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
-documents, and the optional raw local policy, observation, and glossary
-resources. It MUST NOT open files itself. CLI, Electron, and renderer adapters
-load documents and enforce their environment's path and access rules.
+documents, and the optional raw local policy, observation, glossary, and
+narrative resources. It MUST NOT open files itself. CLI, Electron, and renderer
+adapters load documents and enforce their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
 The desktop editor opens an explicit project directory through its native
@@ -585,7 +588,7 @@ input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, exact document revisions, and optional policy,
-observation, and glossary resource identities and content. A project source
+observation, glossary, and narrative resource identities and content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
 authoring action spanning several documents MUST remain one preview and one undo
@@ -593,7 +596,6 @@ transaction at the editor boundary.
 
 Further project resources are reserved as separate typed concerns:
 
-- narrative resources for longer Markdown-backed architecture context;
 - publication resources for View selection, ordering, captions, render
   profiles, and future print composition; and
 - controlled presentation resources such as themes, shapes, and licensed local
@@ -616,6 +618,19 @@ loaded identically from working files and read-only Git revisions. It is not a
 does not infer missing glossary entries from authored prose. The desktop and
 worker may transport its bounded raw content, but editing and a visible glossary
 browser remain later UI work.
+
+The implemented version-one narrative resource is passive Markdown-backed
+project context. Every `.c4ml-narrative.md` file begins with a fixed metadata
+header containing `c4ml-narrative: 1`, a lowercase kebab-case `id`, and a
+non-empty `title`, followed by a non-empty Markdown body. Narrative identities
+are unique across the project. Links may target only normalized local project
+paths or anchors. Raw HTML, embedded images, URI schemes, absolute paths, and
+parent traversal fail with stable `C4ML-NARRATIVE-*` errors before presentation.
+Narratives are deterministically URI-sorted, participate in project revisions,
+and load identically from working files and read-only Git revisions. They are
+not architecture source, are never compiled into semantic identities, and are
+not rendered into diagrams. A visible narrative reader/editor and Markdown
+rendering remain later UI work.
 
 ## 8. Layout model
 

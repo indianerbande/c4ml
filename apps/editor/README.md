@@ -25,6 +25,8 @@ Implemented:
   unreviewed/disputed uncertainty without reconciling authored source;
 - one project-selected glossary retained as validated non-source knowledge
   without changing compilation or becoming an editable Monaco document;
+- validated project narratives preserved as passive non-source Markdown without
+  entering compilation or editable source tabs;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

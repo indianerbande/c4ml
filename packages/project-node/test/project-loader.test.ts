@@ -20,6 +20,7 @@ describe("Node.js architecture project loader", () => {
         policy: "governance/garden.c4ml-policy.json",
         observations: "governance/garden.c4ml-observations.json",
         glossary: "governance/garden.c4ml-glossary.json",
+        narratives: ["governance/overview.c4ml-narrative.md"],
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -69,6 +70,10 @@ describe("Node.js architecture project loader", () => {
         }],
       }),
     );
+    await writeFile(
+      join(directory, "governance", "overview.c4ml-narrative.md"),
+      "---\nc4ml-narrative: 1\nid: garden-overview\ntitle: Garden overview\n---\nGarden context.\n",
+    );
 
     const result = await loadArchitectureProject(directory);
 
@@ -91,7 +96,30 @@ describe("Node.js architecture project loader", () => {
       expect(result.project.glossary).toMatchObject({
         uri: "governance/garden.c4ml-glossary.json",
       });
+      expect(result.project.narratives).toMatchObject([
+        { uri: "governance/overview.c4ml-narrative.md" },
+      ]);
     }
+  });
+
+  it("rejects unsafe project narratives with a stable narrative code", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-project-narrative-"));
+    await writeFile(join(directory, "c4ml.project.json"), JSON.stringify({
+      version: 1,
+      id: "garden",
+      sources: ["architecture.c4ml"],
+      narratives: ["overview.c4ml-narrative.md"],
+    }));
+    await writeFile(join(directory, "architecture.c4ml"), "c4ml draft-1\n");
+    await writeFile(
+      join(directory, "overview.c4ml-narrative.md"),
+      "---\nc4ml-narrative: 1\nid: overview\ntitle: Overview\n---\n[remote](https://example.com)\n",
+    );
+    expect(await loadArchitectureProject(directory)).toMatchObject({
+      valid: false,
+      classification: "source",
+      code: "C4ML-NARRATIVE-002",
+    });
   });
 
   it("rejects malformed project glossaries with a stable glossary code", async () => {

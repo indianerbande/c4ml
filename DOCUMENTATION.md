@@ -482,6 +482,7 @@ sources:
   "policy": "governance.c4ml-policy.json",
   "observations": "evidence/local-inventory.c4ml-observations.json",
   "glossary": "knowledge/garden.c4ml-glossary.json",
+  "narratives": ["docs/overview.c4ml-narrative.md"],
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -522,6 +523,12 @@ Entries distinguish terms from acronyms, require explanations, give acronyms an
 expansion, and may include aliases. Lookup is case-insensitive, while duplicate
 identities, terms, or aliases fail explicitly. The resource is project content,
 not `.c4ml` architecture source, and does not change diagrams.
+
+The optional `narratives` list selects local `.c4ml-narrative.md` chapters.
+Their fixed header records version, stable identity, and title. Bodies are
+passive Markdown: local links are allowed, while raw HTML, embedded images,
+remote links, and traversal fail validation. Narratives do not change the
+architecture or its diagrams.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

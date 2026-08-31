@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.41
+Status: Draft 0.42
 
 Date: 2026-08-31
 
@@ -136,8 +136,11 @@ state. The glossary-resource slice additionally proves versioned parsing,
 deterministic ordering and lookup, acronym expansion, alias handling,
 case-insensitive collision rejection, project-revision participation, local and
 read-only Git loading, and non-source desktop/worker transport. Narrative and
-publication resources, reusable project libraries, and remote imports remain
-unimplemented.
+The narrative-resource slice adds metadata/version parsing, deterministic URI
+ordering, unique identities, local-link extraction, rejection of raw HTML,
+images, remote links, and traversal, revision participation, filesystem/Git
+loading, and non-source desktop/worker transport. Publication resources,
+reusable project libraries, and remote imports remain unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -984,6 +987,9 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-glossary.json` manifest resource follows the same
   containment rules, validates its typed entries before use, participates in
   the project revision, and never becomes an architecture source document;
+- optional `.c4ml-narrative.md` resources validate safe passive Markdown,
+  unique stable identities, containment, and deterministic ordering, participate
+  in the project revision, and never become architecture source documents;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;
