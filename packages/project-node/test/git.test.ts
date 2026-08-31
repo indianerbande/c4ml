@@ -74,6 +74,7 @@ describe("Git project revision adapter", () => {
         narratives: ["overview.c4ml-narrative.md"],
         publication: "review.c4ml-publication.json",
         theme: "garden.c4ml-theme.json",
+        shapes: "garden.c4ml-shapes.json",
       }),
       "utf8",
     );
@@ -139,6 +140,14 @@ describe("Git project revision adapter", () => {
     await writeFile(join(projectDirectory, "garden.c4ml-theme.json"), JSON.stringify({
       version: 1, id: "garden", preset: "c4ml-garden",
     }), "utf8");
+    await writeFile(join(projectDirectory, "garden.c4ml-shapes.json"), JSON.stringify({
+      version: 1, id: "shapes", definitions: [{
+        id: "card", canvas: { width: 100, height: 100 },
+        contentBox: { x: 10, y: 10, width: 80, height: 80 },
+        ports: { north: { x: 50, y: 0 }, east: { x: 100, y: 50 }, south: { x: 50, y: 100 }, west: { x: 0, y: 50 } },
+        primitives: [{ kind: "rectangle", paint: "surface", x: 0, y: 0, width: 100, height: 100 }],
+      }],
+    }), "utf8");
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -166,6 +175,7 @@ describe("Git project revision adapter", () => {
     ]);
     expect(result.project.publication).toMatchObject({ uri: "review.c4ml-publication.json" });
     expect(result.project.theme).toMatchObject({ uri: "garden.c4ml-theme.json" });
+    expect(result.project.shapes).toMatchObject({ uri: "garden.c4ml-shapes.json" });
   });
 
   it("classifies unknown revisions without changing repository state", async () => {

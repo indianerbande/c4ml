@@ -20,6 +20,7 @@ import {
   parseArchitectureNarrative,
   parseArchitecturePublication,
   parseArchitectureThemeResource,
+  parseArchitectureShapeResource,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -347,6 +348,15 @@ async function loadManifestProject(
     if (!parsedTheme.valid) return failure("source", parsedTheme.error.code, parsedTheme.error.message);
     theme = { uri, source: source.text };
   }
+  let shapes: { readonly uri: string; readonly source: string } | undefined;
+  if (parsed.manifest.shapes !== undefined) {
+    const uri = parsed.manifest.shapes;
+    const source = await readBlob(repositoryRoot, revision.commit, joinGitPath(projectPath, uri));
+    if (!source.valid) return source;
+    const parsedShapes = parseArchitectureShapeResource(source.text);
+    if (!parsedShapes.valid) return failure("source", parsedShapes.error.code, parsedShapes.error.message);
+    shapes = { uri, source: source.text };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -362,6 +372,7 @@ async function loadManifestProject(
       ...(narratives.length === 0 ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
+      ...(shapes === undefined ? {} : { shapes }),
     }),
     revision,
     projectPath,

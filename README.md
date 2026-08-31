@@ -57,6 +57,8 @@ Implemented and automatically validated:
   SVG/PNG render profiles validated against compiled Views;
 - one project semantic-theme resource applied identically by CLI and desktop
   worker rendering through the existing deep-token resolver;
+- one safe project shape catalogue with restricted normalized primitives and
+  explicit assignments applied through shared diagram preparation;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,

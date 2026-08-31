@@ -20,6 +20,7 @@ import {
   parseArchitectureObservationSet,
   parseArchitecturePublication,
   parseArchitectureThemeResource,
+  parseArchitectureShapeResource,
   parseArchitecturePolicySet,
   renderDiagramSvg,
   resolveArchitectureSnapshot,
@@ -35,6 +36,7 @@ import {
   type PreparedDiagram,
   type SceneComparisonMode,
   type SceneThemeSelection,
+  type DiagramShapeOptions,
   type SvgEmbeddedFontFace,
 } from "@c4ml/compiler-core";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
@@ -225,6 +227,15 @@ export async function runCli(
       return cliExitCode.source;
     }
     projectTheme = theme.theme.selection;
+  }
+  let projectShapes: DiagramShapeOptions | undefined;
+  if (loaded.project.shapes !== undefined) {
+    const shapes = parseArchitectureShapeResource(loaded.project.shapes.source);
+    if (!shapes.valid) {
+      reportCliFailure(shapes.error.code, shapes.error.message, parsedCommand.diagnostics, io);
+      return cliExitCode.source;
+    }
+    projectShapes = shapes.shapes.options;
   }
   if (parsedCommand.kind === "check") {
     reportSuccess(
@@ -421,6 +432,7 @@ export async function runCli(
         model: parsed.model,
         view,
         layoutAdapter,
+        ...(projectShapes === undefined ? {} : { shapes: projectShapes }),
         ...(parsed.placementByViewId?.[view.id] === undefined
           ? {}
           : { placement: parsed.placementByViewId[view.id] }),

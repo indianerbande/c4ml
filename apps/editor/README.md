@@ -31,6 +31,8 @@ Implemented:
   compiled project without mutating its Views;
 - project theme presets and deep token overrides applied through the shared
   scene resolver without affecting workbench appearance;
+- safe project shape definitions and assignments applied through the shared
+  normalized primitive contract;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

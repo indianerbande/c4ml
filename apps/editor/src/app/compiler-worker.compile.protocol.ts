@@ -222,6 +222,7 @@ export interface CompilerWorkerThemeResource {
   readonly uri: string;
   readonly source: string;
 }
+export interface CompilerWorkerShapeResource { readonly uri: string; readonly source: string }
 
 export interface CompilerWorkerProject {
   readonly version: 1;
@@ -235,6 +236,7 @@ export interface CompilerWorkerProject {
   readonly narratives?: readonly CompilerWorkerNarrativeResource[];
   readonly publication?: CompilerWorkerPublicationResource;
   readonly theme?: CompilerWorkerThemeResource;
+  readonly shapes?: CompilerWorkerShapeResource;
 }
 
 export interface CompilerWorkerRequest {
@@ -343,6 +345,12 @@ export function isCompilerWorkerProject(
         (candidate.theme as Partial<CompilerWorkerThemeResource>).uri!.length > 0 &&
         typeof (candidate.theme as Partial<CompilerWorkerThemeResource>).source === "string" &&
         (candidate.theme as Partial<CompilerWorkerThemeResource>).source!.length > 0)) &&
+    (candidate.shapes === undefined ||
+      (typeof candidate.shapes === "object" && candidate.shapes !== null &&
+        typeof (candidate.shapes as Partial<CompilerWorkerShapeResource>).uri === "string" &&
+        (candidate.shapes as Partial<CompilerWorkerShapeResource>).uri!.length > 0 &&
+        typeof (candidate.shapes as Partial<CompilerWorkerShapeResource>).source === "string" &&
+        (candidate.shapes as Partial<CompilerWorkerShapeResource>).source!.length > 0)) &&
     Array.isArray(candidate.documents) &&
     candidate.documents.length > 0 &&
     candidate.documents.every(

@@ -558,7 +558,9 @@ function registerDesktopIpc(): void {
         (loaded.project.publication !== undefined &&
           Buffer.byteLength(loaded.project.publication.source, "utf8") > maxDesktopSourceBytes) ||
         (loaded.project.theme !== undefined &&
-          Buffer.byteLength(loaded.project.theme.source, "utf8") > maxDesktopSourceBytes)
+          Buffer.byteLength(loaded.project.theme.source, "utf8") > maxDesktopSourceBytes) ||
+        (loaded.project.shapes !== undefined &&
+          Buffer.byteLength(loaded.project.shapes.source, "utf8") > maxDesktopSourceBytes)
       ) {
         return {
           status: "failed",
@@ -610,6 +612,7 @@ function registerDesktopIpc(): void {
             ? {}
             : { publication: { ...loaded.project.publication } }),
           ...(loaded.project.theme === undefined ? {} : { theme: { ...loaded.project.theme } }),
+          ...(loaded.project.shapes === undefined ? {} : { shapes: { ...loaded.project.shapes } }),
           documents: loaded.project.documents.map(({ uri, text }) => {
             const documentPath = pathByUri.get(uri)!;
             return {

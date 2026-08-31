@@ -23,6 +23,7 @@ describe("Node.js architecture project loader", () => {
         narratives: ["governance/overview.c4ml-narrative.md"],
         publication: "governance/review.c4ml-publication.json",
         theme: "governance/garden.c4ml-theme.json",
+        shapes: "governance/garden.c4ml-shapes.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -85,6 +86,14 @@ describe("Node.js architecture project loader", () => {
     await writeFile(join(directory, "governance", "garden.c4ml-theme.json"), JSON.stringify({
       version: 1, id: "garden", preset: "c4ml-garden",
     }));
+    await writeFile(join(directory, "governance", "garden.c4ml-shapes.json"), JSON.stringify({
+      version: 1, id: "shapes", definitions: [{
+        id: "card", canvas: { width: 100, height: 100 },
+        contentBox: { x: 10, y: 10, width: 80, height: 80 },
+        ports: { north: { x: 50, y: 0 }, east: { x: 100, y: 50 }, south: { x: 50, y: 100 }, west: { x: 0, y: 50 } },
+        primitives: [{ kind: "rectangle", paint: "surface", x: 0, y: 0, width: 100, height: 100 }],
+      }],
+    }));
 
     const result = await loadArchitectureProject(directory);
 
@@ -114,6 +123,7 @@ describe("Node.js architecture project loader", () => {
         uri: "governance/review.c4ml-publication.json",
       });
       expect(result.project.theme).toMatchObject({ uri: "governance/garden.c4ml-theme.json" });
+      expect(result.project.shapes).toMatchObject({ uri: "governance/garden.c4ml-shapes.json" });
     }
   });
 

@@ -13,6 +13,7 @@ import {
   parseArchitectureObservationSet,
   parseArchitecturePublication,
   parseArchitectureThemeResource,
+  parseArchitectureShapeResource,
   parseArchitecturePolicySet,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
@@ -442,6 +443,20 @@ export async function compileWorkerRequest(
         parsed.views[0].id,
       );
     }
+    const shapeResource = request.project?.shapes;
+    const parsedShapes = shapeResource === undefined
+      ? undefined
+      : parseArchitectureShapeResource(shapeResource.source);
+    if (parsedShapes !== undefined && !parsedShapes.valid) {
+      return response(request, "invalid", [{
+        code: parsedShapes.error.code,
+        severity: "error",
+        message: parsedShapes.error.message,
+        source: resourceSource(shapeResource!.uri, shapeResource!.source),
+        related: [],
+        correction: "Review the project-local shape resource and assignments.",
+      }], undefined, undefined, parsed.views.map(toWorkerView), parsed.views[0].id);
+    }
 
     const views = parsed.views.map(toWorkerView);
     const view =
@@ -454,6 +469,7 @@ export async function compileWorkerRequest(
       model: parsed.model,
       view,
       layoutAdapter,
+      ...(parsedShapes === undefined ? {} : { shapes: parsedShapes.shapes.options }),
       ...(parsed.placementByViewId?.[view.id] === undefined
         ? {}
         : { placement: parsed.placementByViewId[view.id] }),
@@ -731,6 +747,7 @@ export async function previewProjectChangeWorkerRequest(
         ? {}
         : { publication: { ...request.project.publication } }),
       ...(request.project.theme === undefined ? {} : { theme: { ...request.project.theme } }),
+      ...(request.project.shapes === undefined ? {} : { shapes: { ...request.project.shapes } }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -778,6 +795,7 @@ export async function previewProjectChangeWorkerRequest(
             ? {}
             : { publication: { ...candidate.publication } }),
           ...(candidate.theme === undefined ? {} : { theme: { ...candidate.theme } }),
+          ...(candidate.shapes === undefined ? {} : { shapes: { ...candidate.shapes } }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -1168,6 +1186,7 @@ function toArchitectureProject(project: {
     readonly source: string;
   };
   readonly theme?: { readonly uri: string; readonly source: string };
+  readonly shapes?: { readonly uri: string; readonly source: string };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1210,6 +1229,7 @@ function toArchitectureProject(project: {
       ? {}
       : { publication: { ...project.publication } }),
     ...(project.theme === undefined ? {} : { theme: { ...project.theme } }),
+    ...(project.shapes === undefined ? {} : { shapes: { ...project.shapes } }),
   });
 }
 

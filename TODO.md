@@ -118,7 +118,7 @@ implementation.
 - [x] add a separately reviewed typed narrative resource;
 - [x] add a separately reviewed typed publication resource;
 - [x] add a separately reviewed typed theme resource;
-- [ ] add a separately reviewed typed shape resource; and
+- [x] add a separately reviewed typed shape resource; and
 - [ ] add a separately reviewed typed licensed-asset resource.
 
 The version-one glossary slice adds one optional local
@@ -150,6 +150,12 @@ overrides, participates in project revisions, and drives identical CLI and
 desktop-worker scene rendering. Invalid presets, colors, paths, and unknown
 top-level fields fail before rendering. It never changes architecture semantics
 or installation-local workbench colors.
+
+The version-one shape slice adds one local `.c4ml-shapes.json` resource over the
+existing restricted 100×100 renderer-neutral primitive contract. Definitions
+and element assignments are validated by the shared shape catalogue and applied
+identically in CLI and desktop-worker rendering. No SVG, script, CSS, font,
+filter, image, network reference, or new C4 element kind enters the resource.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own
