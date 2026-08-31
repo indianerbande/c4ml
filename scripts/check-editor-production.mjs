@@ -131,6 +131,19 @@ await requireFile(
     "vs",
     "editor",
     "contrib",
+    "suggest",
+    "browser",
+    "suggestWidget.js",
+  ),
+  "the pinned adapter-local Monaco Suggest widget localization boundary",
+);
+await requireFile(
+  join(
+    installedMonacoRoot,
+    "esm",
+    "vs",
+    "editor",
+    "contrib",
     "semanticTokens",
     "browser",
     "documentSemanticTokens.js",

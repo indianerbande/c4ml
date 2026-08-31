@@ -20,9 +20,53 @@ describe("portable project shape resource", () => {
     }))).toMatchObject({ valid: true, shapes: { options: { assignments: { sensor: "sensor" } } } });
   });
 
+  it("accepts bounded presentation for the built-in box bar without custom definitions", () => {
+    expect(parseArchitectureShapeResource(JSON.stringify({
+      version: 1,
+      id: "quiet-boxes",
+      box: { bar: "on", color: "#3D7FA8", transparency: 20 },
+    }))).toMatchObject({
+      valid: true,
+      shapes: {
+        options: {
+          box: { bar: "on", color: "#3D7FA8", transparency: 20 },
+        },
+      },
+    });
+  });
+
+  it("rejects malformed built-in box bar presentation", () => {
+    for (const box of [
+      { bar: "sometimes" },
+      { color: "blue" },
+      { transparency: 101 },
+      { thickness: 4 },
+    ]) {
+      expect(parseArchitectureShapeResource(JSON.stringify({
+        version: 1,
+        id: "bad-box",
+        box,
+      }))).toMatchObject({
+        valid: false,
+        error: { code: "C4ML-SHAPE-RESOURCE-001" },
+      });
+    }
+  });
+
   it("rejects unsafe or malformed geometry through the shared shape contract", () => {
     expect(parseArchitectureShapeResource(JSON.stringify({
       version: 1, id: "bad", definitions: [{ ...validShape, primitives: [{ kind: "image", href: "https://example.com" }] }],
     }))).toMatchObject({ valid: false, error: { code: "C4ML-SHAPE-RESOURCE-001" } });
+    expect(parseArchitectureShapeResource(JSON.stringify({
+      version: 1,
+      id: "fixed-custom-color",
+      definitions: [{
+        ...validShape,
+        primitives: [{ ...validShape.primitives[0], color: "#3D7FA8" }],
+      }],
+    }))).toMatchObject({
+      valid: false,
+      error: { code: "C4ML-SHAPE-RESOURCE-001" },
+    });
   });
 });

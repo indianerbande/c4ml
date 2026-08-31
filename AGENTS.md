@@ -1,8 +1,9 @@
-# C4ML Agent Instructions
+# C4thedral Agent Instructions
 
 ## Project status
 
-C4ML has completed its initial Phase 0 feasibility implementation and entered
+C4thedral, powered by the C4ML language and compiler, has completed its initial
+Phase 0 feasibility implementation and entered
 Phase 1 semantic-core work. The local Git repository and GitHub remote exist.
 An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium and ELK.js
 technical spikes are authorized. The accepted resvg-js adapter has moved from
@@ -24,7 +25,8 @@ replaceable packaging adapter. `apps/desktop` owns native lifecycle, menus,
 file dialogs, local source persistence, and distribution artifacts; it MUST NOT
 own compiler semantics. The sandboxed Angular renderer receives only a
 versioned C4ML preload bridge with opaque document handles. Native Open, Save,
-Save As, dirty-title state, and close protection are implemented. Local macOS
+Save As, empty startup, context-sensitive File/Project closing, dirty-title
+state, and close protection are implemented. Local macOS
 `.app`, DMG, and ZIP artifacts are automatically and visually validated; the
 configured Windows Squirrel installer and Linux portable ZIP still require
 native runs.
@@ -58,7 +60,7 @@ workbench color families,
 five C4ML-owned source syntax profiles, source-editor font family, and
 source-editor font size apply reactively and are stored locally. The syntax
 profiles define semantic role colors independently of Monaco; the workbench
-family supplies their declaration accent. Language selection also synchronizes C4ML-owned native menus
+family supplies their declaration accent. Language selection also synchronizes C4thedral-owned native menus
 and dialogs through the validated desktop bridge, but never translates
 authored or compiler-owned content. These preferences MUST remain outside
 `.c4ml`, compiler worker, diagram theme, layout, and exported SVG/PNG.
@@ -155,7 +157,10 @@ with explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
 review, and one-step apply/undo. The first semantic graphical authoring slice
 creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
-source review, and one-step apply/undo. Dynamic-interaction and deployment-
+source review, and one-step apply/undo. Creation and connection are separate
+top-level actions; connection authoring additionally supports a temporary,
+worker-validated Source-to-Target diagram picker without hidden model state.
+Dynamic-interaction and deployment-
 topology authoring remain dedicated later gestures. The portable version-one
 semantic differ is implemented and automatically validated: it matches
 kind-qualified stable identities, separates model, Relationship, deployment,
@@ -297,7 +302,10 @@ consistent compass vocabulary `north`, `east`, `south`, and `west`. A
 renderer-neutral custom-shape contract is implemented with a normalized 100 x
 100 canvas, content box, cardinal Port anchors, semantic paint roles, and a
 restricted primitive set. The original built-in Person and box shapes use that
-contract. Custom shapes remain presentation-only and cannot create new C4
+contract. The built-in box bar is enabled by default with deliberate end
+clearance; the project shape resource can hide it or override its validated
+hexadecimal color and percentage transparency. Custom shapes remain
+presentation-only and cannot create new C4
 element kinds. Their future author-facing grammar is still draft.
 
 `DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
@@ -341,7 +349,7 @@ MPL-2.0 notice are required production resources.
 
 Before making project changes:
 
-1. confirm that the working directory is the intended C4ML checkout;
+1. confirm that the working directory is the intended C4thedral/C4ML checkout;
 2. read this file completely;
 3. read `SPEC.md` completely;
 4. read `TESTING.md` completely;
@@ -378,7 +386,7 @@ change:
 
 ## Originality rules
 
-C4ML must be an original system, not a clone or source-compatible dialect of an
+C4thedral and C4ML must be an original system, not a clone or source-compatible dialect of an
 existing tool.
 
 Do not copy, translate, adapt, or closely paraphrase third-party:
@@ -529,7 +537,8 @@ repository:
 - `pnpm run renderer:build` creates the ignored production-mode Angular renderer
   build under `build/editor/`;
 - `pnpm run renderer:start` starts the internal Angular renderer harness;
-- `pnpm run desktop:start` builds and starts the Electron desktop application;
+- `pnpm run desktop:start` builds and starts the unpackaged Electron desktop
+  application without invoking the Node.js-24-only packaging path;
 - `pnpm run desktop:smoke` builds and smoke-tests the Electron bridge, editor,
   compiler worker, preview, and controlled typography;
 - `pnpm run desktop:package` creates the ignored unpacked current-platform

@@ -1,10 +1,10 @@
-# C4ML Workbench Settings
+# C4thedral Workbench Settings
 
 Status: Implemented, automatically and visually validated foundation
 
 Date: 2026-08-29
 
-This document defines settings for the local C4ML workbench. It deliberately
+This document defines settings for the local C4thedral workbench. It deliberately
 separates application preferences from architecture content and diagram
 presentation. A workbench preference MUST NOT modify `.c4ml` source, make a
 document dirty, or change deterministic SVG/PNG output.
@@ -31,14 +31,14 @@ features or accepted settings.
 
 | Stable field | Values | Default | Scope |
 | --- | --- | --- | --- |
-| `uiLanguage` | `en`, `de` | `en` | C4ML-owned workbench and native application copy |
+| `uiLanguage` | `en`, `de` | `en` | C4thedral workbench and native application copy |
 | `colorScheme` | `system`, `light`, `dark` | `system` | Angular workbench and Monaco theme |
 | `colorPalette` | `blue`, `gray`, `yellow`, `green`, `violet`, `red`, `orange`, `turquoise` | `blue` | Angular workbench and Monaco theme |
-| `interfaceFontSize` | 9–16 px in 0.5 px steps | 10 px | C4ML-owned workbench interface text |
+| `interfaceFontSize` | 9–16 px in 0.5 px steps | 13 px | C4thedral workbench interface text |
 | `syntaxTheme` | `balanced`, `minimal`, `vivid`, `high-contrast`, `color-safe` | `balanced` | Monaco source syntax only |
 | `editorFontFamily` | packaged IBM Plex Mono, Fira Code, Hack, Source Code Pro, Intel One Mono, Inconsolata, Cascadia Code; or `system-monospace` | `ibm-plex-mono` | Monaco source text only |
 | `editorFontLigatures` | `true`, `false` | `true` | Monaco and the source-font sample only |
-| `editorFontSize` | 11–24 px in 0.5 px steps | 12.5 px | Monaco source text only |
+| `editorFontSize` | 11–24 px in 0.5 px steps | 15 px | Monaco source text only |
 
 IBM Plex Sans remains the controlled interface and diagram family. The seven
 packaged monospace families and the optional system monospace stack are confined
@@ -55,7 +55,7 @@ glyph composition; stored source characters, cursor positions, diagnostics,
 compiler input, and exported diagrams remain unchanged.
 
 The interface language changes the workbench, accessibility labels, command
-catalogue, and C4ML-owned native menu and dialog copy. It does not translate
+catalogue, and C4thedral-owned native menu and dialog copy. It does not translate
 names or descriptions written by an author, `.c4ml` source, compiler diagnostics,
 diagram labels, SVG, or PNG. English is the initial and fallback language;
 German can be selected without restarting the application.
@@ -82,7 +82,7 @@ the rendering adapter for that contract.
 - Language changes also update the document `lang` attribute and the native
   application controls through the validated desktop bridge.
 - Interface font-size changes apply through one root typography token. They
-  scale C4ML-owned workbench text but not Monaco source text or diagram output.
+  scale C4thedral-owned workbench text but not Monaco source text or diagram output.
 - `system` follows operating-system color changes while the application runs.
 - Color-family changes apply to the workbench and Monaco together without
   changing the active light/dark choice.
@@ -100,9 +100,11 @@ the rendering adapter for that contract.
 ## Persistence and evolution
 
 The current record is JSON stored under `c4ml.workbench.preferences.v1`. It is
-validated at the application boundary and contains `version: 1`. Unknown fields
-are discarded. A future incompatible schema MUST use an explicit migration or a
-new versioned storage key; components must not parse storage directly.
+validated at the application boundary and contains `version: 2`. Version-one
+records are migrated once: former untouched 10/12.5 px font defaults become
+13/15 px, while other explicitly selected sizes are retained. Unknown fields
+are discarded. A future incompatible schema MUST use an explicit migration or
+a new versioned storage key; components must not parse storage directly.
 
 Settings that need workspace, project, document, or view scope require a
 separate design before implementation. They must not be smuggled into this

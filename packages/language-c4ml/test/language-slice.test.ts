@@ -823,6 +823,86 @@ view garden-context {
 });
 
 describe("C4ML draft-1 completion contract", () => {
+  it("recovers the model suggestion at document level after an invalid header", async () => {
+    const source = "c4ml testdatei\n\n";
+    const result = await completeC4mlDraft(source, {
+      file: "untitled.c4ml",
+      offset: source.length,
+    });
+
+    expect(result.candidates).toContainEqual({
+      id: "draft-1:document:keyword:model",
+      label: "model",
+      kind: "keyword",
+      detail: "C4ML keyword",
+      documentation: "Opens the shared semantic architecture model.",
+      edit: {
+        text: "model",
+        range: {
+          start: { offset: source.length, line: 2, column: 0 },
+          end: { offset: source.length, line: 2, column: 0 },
+        },
+      },
+    });
+  });
+
+  it("recovers person and system suggestions inside a model after an invalid header", async () => {
+    const source = `c4ml testdatei
+
+model {
+
+}`;
+    const offset = source.indexOf("\n}");
+    const result = await completeC4mlDraft(source, {
+      file: "untitled.c4ml",
+      offset,
+    });
+
+    expect(result.candidates.map(({ label }) => label)).toEqual([
+      "person",
+      "system",
+    ]);
+    expect(result.candidates.map(({ edit }) => edit.range)).toEqual([
+      {
+        start: { offset, line: 3, column: 0 },
+        end: { offset, line: 3, column: 0 },
+      },
+      {
+        start: { offset, line: 3, column: 0 },
+        end: { offset, line: 3, column: 0 },
+      },
+    ]);
+  });
+
+  it("recovers view properties inside an incomplete view after an invalid header", async () => {
+    const source = `c4ml testdatei
+
+model {
+}
+
+view {
+
+}`;
+    const offset = source.lastIndexOf("\n}");
+    const result = await completeC4mlDraft(source, {
+      file: "untitled.c4ml",
+      offset,
+    });
+
+    expect(result.candidates.map(({ kind, label }) => ({ kind, label }))).toEqual([
+      { kind: "property", label: "allow-mixed-levels" },
+      { kind: "property", label: "audience" },
+      { kind: "property", label: "display" },
+      { kind: "property", label: "environment" },
+      { kind: "property", label: "legend" },
+      { kind: "property", label: "purpose" },
+      { kind: "property", label: "scope" },
+      { kind: "property", label: "systems" },
+      { kind: "property", label: "title" },
+      { kind: "property", label: "type" },
+    ]);
+  });
+
   it("offers references declared in another project document", async () => {
     const relationSource = `c4ml draft-1
 
@@ -1806,12 +1886,12 @@ describe("C4ML draft-1 System Context wizard source", () => {
     expect(parsed.valid).toBe(true);
     expect(parsed.diagnostics).toEqual([]);
     expect(parsed.model?.elements.map(({ id }) => id)).toEqual([
-      "observer",
-      "field-notes",
+      "customer",
+      "online-shop",
     ]);
     expect(parsed.views?.[0]).toMatchObject({
-      id: "field-notes-context",
-      softwareSystemId: "field-notes",
+      id: "online-shop-context",
+      softwareSystemId: "online-shop",
       layout: { direction: "right" },
     });
   });
@@ -1833,9 +1913,9 @@ describe("C4ML draft-1 System Context wizard source", () => {
     const generated = generateSystemContextDraft({
       ...defaultSystemContextWizardAnswers,
       viewKind: "container",
-      viewId: "field-notes-containers",
-      viewTitle: "Container View — Field Notes",
-      viewPurpose: "Show what runs inside Field Notes and how the parts communicate.",
+      viewId: "online-shop-containers",
+      viewTitle: "Container View — Online Shop",
+      viewPurpose: "Show what runs inside the Online Shop and how the parts communicate.",
     });
     const parsed = await parseC4mlDraft(generated.source!, {
       file: "wizard.c4ml",
@@ -1846,23 +1926,41 @@ describe("C4ML draft-1 System Context wizard source", () => {
     expect(
       parsed.model?.elements.filter(({ kind }) => kind === "container").map(({ id }) => id),
     ).toEqual([
-      "field-notes-ui",
-      "field-notes-service",
-      "field-notes-store",
+      "shop-web-interface",
+      "admin-interface",
+      "shop-service",
+      "order-events",
+      "shop-database",
+      "product-media",
     ]);
     expect(parsed.model?.relationships).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          sourceId: "field-notes-ui",
-          targetId: "field-notes-service",
+          sourceId: "shop-web-interface",
+          targetId: "shop-service",
           protocol: "HTTPS/JSON",
+        }),
+        expect.objectContaining({
+          sourceId: "shop-service",
+          targetId: "order-events",
+          protocol: "Kafka protocol",
+        }),
+        expect.objectContaining({
+          sourceId: "shop-service",
+          targetId: "shop-database",
+          protocol: "PostgreSQL protocol",
+        }),
+        expect.objectContaining({
+          sourceId: "shop-service",
+          targetId: "product-media",
+          protocol: "S3 API",
         }),
       ]),
     );
     expect(parsed.views?.[0]).toMatchObject({
-      id: "field-notes-containers",
+      id: "online-shop-containers",
       kind: "container",
-      softwareSystemId: "field-notes",
+      softwareSystemId: "online-shop",
     });
   });
 

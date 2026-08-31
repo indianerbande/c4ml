@@ -80,6 +80,8 @@ import {
 } from "./preview-window.js";
 
 const applicationId = "org.c4ml.desktop";
+const productName = "C4thedral";
+const legacyUserDataDirectoryName = "C4ML";
 const smokeArgument = "--c4ml-smoke";
 const currentDirectory = __dirname;
 const preloadPath = join(currentDirectory, "preload.cjs");
@@ -115,7 +117,13 @@ if (electronSquirrelStartup) {
 }
 
 async function startDesktopApplication(): Promise<void> {
-  app.setName("C4ML");
+  // Keep the established application-data directory so the product rename
+  // does not strand local workbench settings or safe presentation state.
+  app.setPath(
+    "userData",
+    join(app.getPath("appData"), legacyUserDataDirectoryName),
+  );
+  app.setName(productName);
   if (process.platform === "win32") {
     app.setAppUserModelId(applicationId);
   }
@@ -147,13 +155,15 @@ async function createMainWindow(): Promise<void> {
     minHeight: 640,
     show: false,
     backgroundColor: "#eef3f8",
-    title: "architecture.c4ml — C4ML",
+    title: productName,
     webPreferences: createDesktopWebPreferences(preloadPath),
   });
   mainWindow = window;
   documentStates.set(window, {
-    displayName: "architecture.c4ml",
+    displayName: productName,
     dirty: false,
+    hasOpenDocument: false,
+    projectMode: false,
   });
 
   protectWindowNavigation(window, trustedEditorUrl);
@@ -172,7 +182,7 @@ async function createMainWindow(): Promise<void> {
       await runDesktopSmoke(window);
     }
   } catch (error) {
-    console.error("C4ML desktop failed to load its bundled editor.", error);
+    console.error("C4thedral desktop failed to load its bundled editor.", error);
     if (process.argv.includes(smokeArgument)) {
       app.exit(1);
     }
@@ -194,7 +204,7 @@ async function createPreviewWindow(
     minHeight: 480,
     show: false,
     backgroundColor: "#eef3f8",
-    title: "C4ML Preview",
+    title: "C4thedral Preview",
     webPreferences: createDesktopWebPreferences(previewPreloadPath),
   });
   previewWindow = window;
@@ -728,8 +738,19 @@ function registerDesktopIpc(): void {
       if (window === null) {
         return;
       }
+      const previousState = documentStates.get(window);
       documentStates.set(window, value);
-      window.setTitle(`${value.displayName}${value.dirty ? " •" : ""} — C4ML`);
+      window.setTitle(
+        value.displayName === productName
+          ? productName
+          : `${value.displayName}${value.dirty ? " •" : ""} — ${productName}`,
+      );
+      if (
+        previousState?.projectMode !== value.projectMode ||
+        previousState?.hasOpenDocument !== value.hasOpenDocument
+      ) {
+        installApplicationMenu();
+      }
       if (process.platform === "darwin") {
         window.setDocumentEdited(value.dirty);
         const path = documents.resolve(value.handle);
@@ -808,7 +829,7 @@ function installApplicationMenu(): void {
       ...(process.platform === "darwin"
         ? [
             {
-              label: "C4ML",
+              label: productName,
               submenu: [
                 {
                   label: desktopMessage(uiLanguage, "menu.about"),
@@ -874,6 +895,18 @@ function installApplicationMenu(): void {
             label: desktopMessage(uiLanguage, "menu.saveAs"),
             accelerator: "CmdOrCtrl+Shift+S",
             click: () => send("save-as-document"),
+          },
+          {
+            label: desktopMessage(
+              uiLanguage,
+              documentStates.get(mainWindow!)?.projectMode === true
+                ? "menu.closeProject"
+                : "menu.closeDocument",
+            ),
+            enabled:
+              documentStates.get(mainWindow!)?.hasOpenDocument === true,
+            accelerator: "CmdOrCtrl+W",
+            click: () => send("close-workspace"),
           },
           { type: "separator" },
           {
@@ -1110,7 +1143,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
       const svg = [
         '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32">',
         '<rect width="64" height="32" fill="#ffffff"/>',
-        '<text x="4" y="21" font-family="IBM Plex Sans" font-size="12">C4ML</text>',
+        '<text x="4" y="21" font-family="IBM Plex Sans" font-size="12">C4thedral</text>',
         "</svg>",
       ].join("");
       const png = await pngRenderer.render(svg, {
@@ -1131,7 +1164,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
         png.bytes[2] === 0x4e &&
         png.bytes[3] === 0x47;
     } catch (error) {
-      console.error("C4ML desktop PNG smoke render failed.", error);
+      console.error("C4thedral desktop PNG smoke render failed.", error);
       pngReady = false;
     }
   }

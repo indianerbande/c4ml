@@ -1,4 +1,4 @@
-# C4ML Implementation Roadmap
+# C4thedral Implementation Roadmap
 
 Status: Active roadmap
 
@@ -11,7 +11,8 @@ document.
 
 ## Strategic direction
 
-C4ML is being developed as an explainable, versionable architecture compiler.
+C4thedral is being developed as an explainable, versionable architecture
+workbench powered by the C4ML compiler.
 The next product direction consists of three connected pillars:
 
 1. **Intent-based authoring:** graphical work produces explicit, reviewable,

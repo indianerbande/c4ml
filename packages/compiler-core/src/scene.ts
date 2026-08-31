@@ -92,7 +92,9 @@ export interface SceneRoute {
   readonly style: RouteStyle;
   readonly points: readonly Point[];
   readonly label: string;
+  readonly labelLines: readonly string[];
   readonly technology?: string;
+  readonly technologyLines: readonly string[];
   readonly labelPoint: Point;
   readonly labelBounds: SceneBounds;
   readonly labelSegment: number;
@@ -257,6 +259,9 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
     x: route.labelPoint.x + offset.x,
     y: route.labelPoint.y + offset.y,
   };
+  const labelLines = wrapText(route.label, 24, 3);
+  const technologyLines =
+    route.technology === undefined ? [] : wrapText(route.technology, 28, 2);
   return {
     id: `scene-route:${route.edgeId}`,
     relationshipId: route.relationshipId,
@@ -271,9 +276,11 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
       y: point.y + offset.y,
     })),
     label: route.label,
+    labelLines,
     ...(route.technology === undefined ? {} : { technology: route.technology }),
+    technologyLines,
     labelPoint,
-    labelBounds: routeLabelBounds(route.label, route.technology, labelPoint),
+    labelBounds: routeLabelBounds(labelLines, technologyLines, labelPoint),
     labelSegment: route.labelSegment,
     ...(route.corridor === undefined
       ? {}
@@ -303,17 +310,23 @@ function offsetPoint(point: Point, offset: Point): Point {
 }
 
 function routeLabelBounds(
-  label: string,
-  technology: string | undefined,
+  labelLines: readonly string[],
+  technologyLines: readonly string[],
   point: Point,
 ): SceneBounds {
+  const widestLabel = Math.max(0, ...labelLines.map((line) => line.length));
+  const widestTechnology = Math.max(
+    0,
+    ...technologyLines.map((line) => line.length),
+  );
   const textWidth = Math.max(
     48,
-    label.length * 6.4,
-    technology === undefined ? 0 : technology.length * 5.8,
+    widestLabel * 6.4,
+    widestTechnology * 5.8,
   );
   const width = textWidth + 12;
-  const height = technology === undefined ? 20 : 36;
+  const height =
+    Math.max(1, labelLines.length) * 13 + technologyLines.length * 12 + 8;
   return {
     x: point.x - width / 2,
     y: point.y - height / 2,

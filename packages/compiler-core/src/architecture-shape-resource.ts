@@ -1,5 +1,7 @@
 import {
   createShapeCatalog,
+  validateBoxShapePresentation,
+  type BoxShapePresentation,
   type DiagramShapeOptions,
   type ShapeDefinition,
 } from "./shapes.js";
@@ -37,10 +39,19 @@ export function parseArchitectureShapeResource(source: string): ArchitectureShap
     const id = value["id"];
     if (typeof id !== "string" || id.trim().length === 0) malformed("A shape resource requires an identity.");
     const definitions = value["definitions"];
-    if (!Array.isArray(definitions) || definitions.length === 0) {
-      malformed("A shape resource requires at least one safe shape definition.");
+    if (definitions !== undefined && !Array.isArray(definitions)) {
+      malformed("Shape definitions must be an array of safe shape definitions.");
     }
-    createShapeCatalog(definitions as ShapeDefinition[]);
+    const box = value["box"];
+    if (box !== undefined && (!isRecord(box) ||
+        Object.keys(box).some((key) => !["bar", "color", "transparency"].includes(key)))) {
+      malformed("Built-in box presentation accepts only bar, color, and transparency.");
+    }
+    if ((definitions === undefined || definitions.length === 0) && box === undefined) {
+      malformed("A shape resource requires a safe shape definition or built-in box presentation.");
+    }
+    if (box !== undefined) validateBoxShapePresentation(box as BoxShapePresentation);
+    createShapeCatalog((definitions ?? []) as ShapeDefinition[], box as BoxShapePresentation | undefined);
     const assignments = value["assignments"];
     if (assignments !== undefined && (!isRecord(assignments) ||
         Object.entries(assignments).some(([key, shapeId]) =>
@@ -54,7 +65,10 @@ export function parseArchitectureShapeResource(source: string): ArchitectureShap
         version: architectureShapeResourceVersion,
         id: id.trim(),
         options: {
-          definitions: definitions as ShapeDefinition[],
+          ...(definitions === undefined
+            ? {}
+            : { definitions: definitions as ShapeDefinition[] }),
+          ...(box === undefined ? {} : { box: box as BoxShapePresentation }),
           ...(assignments === undefined
             ? {}
             : { assignments: Object.fromEntries(Object.entries(assignments).sort()) as Record<string, string> }),

@@ -1,4 +1,4 @@
-export const desktopBridgeProtocolVersion = 15 as const;
+export const desktopBridgeProtocolVersion = 16 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
@@ -27,6 +27,7 @@ export const maxDesktopPreviewTargets = 100_000;
 export type DesktopPlatform = "darwin" | "linux" | "win32";
 export type DesktopUiLanguage = "en" | "de";
 export type DesktopCommand =
+  | "close-workspace"
   | "export-png"
   | "open-document"
   | "open-project"
@@ -111,6 +112,8 @@ export interface DesktopDocumentState {
   readonly handle?: string;
   readonly displayName: string;
   readonly dirty: boolean;
+  readonly hasOpenDocument: boolean;
+  readonly projectMode: boolean;
 }
 
 export type DesktopSourceControlAction =
@@ -370,6 +373,7 @@ export interface C4mlPreviewApi {
 
 export function isDesktopCommand(value: unknown): value is DesktopCommand {
   return (
+    value === "close-workspace" ||
     value === "export-png" ||
     value === "open-document" ||
     value === "open-project" ||
@@ -564,7 +568,9 @@ export function isDesktopDocumentState(
   return (
     (value.handle === undefined || isNonEmptyString(value.handle)) &&
     isNonEmptyString(value.displayName) &&
-    typeof value.dirty === "boolean"
+    typeof value.dirty === "boolean" &&
+    typeof value.hasOpenDocument === "boolean" &&
+    typeof value.projectMode === "boolean"
   );
 }
 

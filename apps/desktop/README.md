@@ -1,4 +1,4 @@
-# C4ML desktop shell
+# C4thedral desktop shell
 
 This private Electron application packages the Angular/Monaco editor as a
 local desktop workbench. It is an application adapter, not a second compiler:
@@ -38,7 +38,8 @@ The shell currently provides:
   history-rewrite operation;
 - local-only editor assets served through the owned `c4ml://app` protocol;
 - native menus, shortcuts, dialogs, title updates, and unsaved-close
-  protection, with C4ML-owned copy synchronized to the workbench language;
+  protection, with an empty startup workspace, context-sensitive File/Project
+  closing, and C4thedral-owned copy synchronized to the workbench language;
 - local 1x/2x/3x rasterization of canonical SVG through the packaged resvg-js
   native adapter, controlled IBM Plex Sans TTF files, and no system fonts;
 - packaged application resources in ASAR with integrity-oriented Electron
@@ -55,14 +56,18 @@ pnpm run desktop:package
 pnpm run desktop:make
 ```
 
-Packaging requires Node.js 24.15 or newer within the 24.x line and reports a
-clear error before Forge starts when another major version is active. This is
-only a contributor build requirement; the packaged Electron application brings
-its own runtime. Portable side-by-side setup is documented in
+`desktop:start` uses the pinned local Electron runtime without running the
+packaging guard. On macOS it prepares and reuses an ad-hoc-signed `C4thedral.app`
+development wrapper so the menu bar and operating system identify the running
+application as C4thedral instead of Electron. Packaging and packaged smoke testing
+require Node.js 24.15 or newer within the 24.x line and report a clear error
+before packaging starts when another major version is active. This is only a
+contributor build requirement; the packaged Electron application brings its own
+runtime. Portable side-by-side setup is documented in
 [`PLATFORMS.md`](../../PLATFORMS.md).
 
 Generated files are ignored under `build/desktop/`. A local macOS make produces
-`C4ML.app`, `C4ML.dmg`, and a ZIP archive. The current build uses the default
+`C4thedral.app`, `C4thedral.dmg`, and a ZIP archive. The current build uses the default
 Electron icon and version `0.0.0`; macOS artifacts are ad-hoc signed for local
 testing, not Developer ID signed or notarized. Windows code signing and native
 Windows installer and Linux portable-app runs remain release work. Build each

@@ -1,4 +1,4 @@
-# C4ML desktop platform builds
+# C4thedral desktop platform builds
 
 Status: Accepted build contract; current source gate and packaged macOS smoke
 validated, fresh installers plus Windows and Linux native validation pending
@@ -7,12 +7,12 @@ Date: 2026-08-31
 
 This document separates the contributor toolchain from the runtime delivered
 to users and records the host-specific build and verification paths for the
-C4ML desktop application.
+C4thedral desktop application.
 
 ## Shared build contract
 
 - Build on the target operating system. Electron Forge packaging is
-  host-native; C4ML does not claim cross-compilation between macOS, Windows,
+  host-native; C4thedral does not claim cross-compilation between macOS, Windows,
   and Linux.
 - Use pnpm 11.24.0 and Node.js 24.15.0 or a newer 24.x release. Node.js 24.15.0
   is the cross-platform reference because it is both the Angular 22 minimum in
@@ -21,13 +21,19 @@ C4ML desktop application.
   currently pass under Node.js 26, but Electron Forge 7.11.2 packaging is
   deliberately guarded to Node.js 24.x after native packaging under Node.js 26
   proved unreliable.
+- `pnpm run desktop:start` is a development launch and does not create a
+  distributable package, so it may use the currently tested Node.js 26 line.
+  On macOS it prepares a cached, ad-hoc-signed `C4thedral.app` development wrapper
+  around the pinned local Electron runtime so the operating system consistently
+  presents the application as C4thedral. The Node.js 24.x guard applies to
+  `desktop:package`, `desktop:smoke`, and `desktop:make`.
 - Run `pnpm install` from the repository root. Dependency and Electron binary
   acquisition may require an organization-local registry, mirror, or populated
   cache. Electron archive validation uses the checksum catalogue shipped in the
   pinned Electron package and therefore does not require a second checksum
   request to GitHub. Packaging does not run a second production dependency
   installation because the desktop has no copied runtime dependencies and
-  excludes `node_modules`. The installed C4ML application itself requires no
+  excludes `node_modules`. The installed C4thedral application itself requires no
   Node.js installation and no runtime network service.
 - Run `pnpm run check`, `pnpm run desktop:smoke`, and
   `pnpm run desktop:make` on every native release host.
@@ -61,15 +67,15 @@ required.
 | Host | Packaged application | `desktop:make` output | Host-specific requirements |
 | --- | --- | --- | --- |
 | macOS | `.app` | DMG and ZIP | Electron 44 requires macOS 13 or newer. DMG creation may require Xcode Command Line Tools for its optional native helpers. Development artifacts are ad-hoc signed; releases require Developer ID signing and notarization. |
-| Windows | application directory with `C4ML.exe` | Squirrel Setup EXE | Build from native PowerShell or Command Prompt, not WSL. Releases require Windows code signing. C4ML's first native validation target is Windows x64. |
-| Linux | application directory with `C4ML` | portable ZIP | The current resvg adapter targets GNU/glibc Linux on x64 or arm64. The machine needs the ordinary system libraries required by Electron/Chromium. A distro-specific DEB, RPM, Flatpak, or Snap is not yet part of the accepted distribution contract. |
+| Windows | application directory with `C4thedral.exe` | Squirrel Setup EXE | Build from native PowerShell or Command Prompt, not WSL. Releases require Windows code signing. C4thedral's first native validation target is Windows x64. |
+| Linux | application directory with `C4thedral` | portable ZIP | The current resvg adapter targets GNU/glibc Linux on x64 or arm64. The machine needs the ordinary system libraries required by Electron/Chromium. A distro-specific DEB, RPM, Flatpak, or Snap is not yet part of the accepted distribution contract. |
 
 The portable Linux ZIP is deliberate: the existing Forge ZIP maker has no
 additional platform build dependency, while DEB, RPM, Flatpak, and Snap makers
 would add format-specific packages and host tools. A distro-native installer
 can be accepted later without changing the Electron application or compiler.
 
-## Runtime differences owned by C4ML
+## Runtime differences owned by C4thedral
 
 - Closing all windows quits the application on Windows and Linux. On macOS the
   application remains active and recreates a window when activated.
@@ -100,7 +106,7 @@ pnpm run desktop:make
 Then inspect the generated distributable on a machine without a system Node.js
 installation:
 
-1. install or unpack C4ML;
+1. install or unpack C4thedral;
 2. launch the application;
 3. open, edit, save, close, and reopen a `.c4ml` file;
 4. export SVG and PNG;

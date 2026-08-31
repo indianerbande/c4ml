@@ -941,7 +941,8 @@ describe("compiler worker runtime", () => {
     expect(dynamic.activeViewId).toBe("finalize-release");
     expect(dynamic.svg).toContain("Dynamic View — Finalize a Release Decision");
     expect(dynamic.svg).toContain("2. Queues release notice");
-    expect(dynamic.svg).toContain("2. Stores release decision");
+    expect(dynamic.svg).toContain(">2. Stores release</tspan>");
+    expect(dynamic.svg).toContain(">decision</tspan>");
   });
 
   it("compiles a Deployment View with nested runtime boundaries", async () => {
@@ -1096,7 +1097,7 @@ model {
     });
     const compiled = await compile(request(generated.source!, 2));
     expect(compiled.status).toBe("valid");
-    expect(compiled.svg).toContain("System Context — Field Notes");
+    expect(compiled.svg).toContain("System Context — Online Shop");
   });
 
   it("generates a guided Container starter through the same worker path", async () => {
@@ -1104,17 +1105,20 @@ model {
       wizardRequest(1, {
         ...defaultSystemContextWizardAnswers,
         viewKind: "container",
-        viewId: "field-notes-containers",
-        viewTitle: "Container View — Field Notes",
-        viewPurpose: "Show what runs inside Field Notes.",
+        viewId: "online-shop-containers",
+        viewTitle: "Container View — Online Shop",
+        viewPurpose: "Show what runs inside the Online Shop.",
       }),
     );
     const compiled = await compile(request(generated.source!, 2));
 
     expect(generated.status).toBe("valid");
     expect(compiled.status).toBe("valid");
-    expect(compiled.svg).toContain("Container View — Field Notes");
-    expect(compiled.svg).toContain("Field Notes Service");
+    expect(compiled.svg).toContain("Container View — Online Shop");
+    expect(compiled.svg).toContain("Shop Service");
+    expect(compiled.svg).toContain("Apache Kafka");
+    expect(compiled.svg).toContain("PostgreSQL");
+    expect(compiled.svg).toContain("S3-compatible object storage");
     expect(compiled.svg).toContain("HTTPS/JSON");
   });
 });

@@ -32,6 +32,11 @@ describe("preview workspace boundaries", () => {
     expect(mainTemplate).toContain('data-preview-action="focus"');
     expect(mainTemplate).toContain('data-preview-action="detach"');
     expect(mainTemplate).toContain('data-preview-action="redock"');
+    expect(mainTemplate).toContain("detached-preview-redock");
+    expect(mainTemplate).toContain("↙");
+    expect(mainTemplate).not.toMatch(
+      /class="title-action"\s+data-preview-action="redock"/u,
+    );
   });
 
   it("bootstraps the detached preview without the workbench root", () => {
@@ -40,6 +45,12 @@ describe("preview workspace boundaries", () => {
     expect(previewTemplate).toContain("preview-stage");
     expect(previewTemplate).not.toContain("source-editor");
     expect(previewTemplate).not.toContain("workbench");
+  });
+
+  it("uses C4thedral for visible workbench and preview branding", () => {
+    expect(mainTemplate).toContain("<strong>C4thedral</strong>");
+    expect(previewTemplate).toContain("C4thedral Preview");
+    expect(bootstrap).toContain("C4thedral desktop renderer bootstrap failed");
   });
 
   it("uses the canonical blue-theme canvas in main and detached previews", () => {

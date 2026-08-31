@@ -58,7 +58,7 @@ export const maximumInterfaceFontSize = 16;
 export const interfaceFontSizeStep = 0.5;
 
 export interface WorkbenchPreferences {
-  readonly version: 1;
+  readonly version: 2;
   readonly uiLanguage: WorkbenchUiLanguage;
   readonly colorScheme: WorkbenchColorScheme;
   readonly colorPalette: WorkbenchColorPalette;
@@ -75,15 +75,15 @@ export interface WorkbenchPreferencesStorage {
 }
 
 export const defaultWorkbenchPreferences: WorkbenchPreferences = {
-  version: 1,
+  version: 2,
   uiLanguage: "en",
   colorScheme: "system",
   colorPalette: "blue",
   syntaxTheme: "balanced",
-  interfaceFontSize: 10,
+  interfaceFontSize: 13,
   editorFontFamily: "ibm-plex-mono",
   editorFontLigatures: true,
-  editorFontSize: 12.5,
+  editorFontSize: 15,
 };
 
 export function parseWorkbenchPreferences(
@@ -94,11 +94,15 @@ export function parseWorkbenchPreferences(
   }
   try {
     const value = JSON.parse(serialized) as unknown;
-    if (!isRecord(value) || value["version"] !== 1) {
+    if (
+      !isRecord(value) ||
+      (value["version"] !== 1 && value["version"] !== 2)
+    ) {
       return defaultWorkbenchPreferences;
     }
+    const legacyDefaults = value["version"] === 1;
     return {
-      version: 1,
+      version: 2,
       uiLanguage: isUiLanguage(value["uiLanguage"])
         ? value["uiLanguage"]
         : defaultWorkbenchPreferences.uiLanguage,
@@ -111,7 +115,10 @@ export function parseWorkbenchPreferences(
       syntaxTheme: isSyntaxTheme(value["syntaxTheme"])
         ? value["syntaxTheme"]
         : defaultWorkbenchPreferences.syntaxTheme,
-      interfaceFontSize: normalizeInterfaceFontSize(value["interfaceFontSize"]),
+      interfaceFontSize:
+        legacyDefaults && value["interfaceFontSize"] === 10
+          ? defaultWorkbenchPreferences.interfaceFontSize
+          : normalizeInterfaceFontSize(value["interfaceFontSize"]),
       editorFontFamily: isEditorFontFamily(value["editorFontFamily"])
         ? value["editorFontFamily"]
         : defaultWorkbenchPreferences.editorFontFamily,
@@ -119,7 +126,10 @@ export function parseWorkbenchPreferences(
         typeof value["editorFontLigatures"] === "boolean"
           ? value["editorFontLigatures"]
           : defaultWorkbenchPreferences.editorFontLigatures,
-      editorFontSize: normalizeEditorFontSize(value["editorFontSize"]),
+      editorFontSize:
+        legacyDefaults && value["editorFontSize"] === 12.5
+          ? defaultWorkbenchPreferences.editorFontSize
+          : normalizeEditorFontSize(value["editorFontSize"]),
     };
   } catch {
     return defaultWorkbenchPreferences;

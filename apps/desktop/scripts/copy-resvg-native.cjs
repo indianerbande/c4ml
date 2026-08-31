@@ -22,7 +22,7 @@ const targetByPlatform = {
 const target = targetByPlatform[`${process.platform}-${process.arch}`];
 if (target === undefined) {
   throw new Error(
-    `C4ML desktop PNG export does not have a reviewed resvg target for ${process.platform}-${process.arch}.`,
+    `C4thedral desktop PNG export does not have a reviewed resvg target for ${process.platform}-${process.arch}.`,
   );
 }
 

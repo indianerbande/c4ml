@@ -100,7 +100,8 @@ export class AppComponent {
   readonly documentHandle = this.documents.documentHandle;
   readonly documentDirty = this.documents.documentDirty;
   readonly projectDirty = this.documents.projectDirty;
-  readonly projectDocuments = this.documents.projectDocuments;
+  readonly projectDocuments = this.documents.visibleProjectDocuments;
+  readonly hasOpenDocument = this.documents.hasOpenDocument;
   readonly activeDocumentUri = this.documents.activeDocumentUri;
   readonly documentSetRevision = this.documents.documentSetRevision;
   readonly workspaceName = this.documents.workspaceName;
@@ -137,13 +138,36 @@ export class AppComponent {
   readonly provideHighlights: SourceEditorHighlightProvider = (source) =>
     this.compiler.highlight(source);
   readonly wizardOpen = signal(false);
+  readonly wizardUndoConfirmationOpen = signal(false);
   readonly settingsOpen = signal(false);
   readonly sourceCursorOffset = signal(0);
   readonly canUndoWizard = signal(false);
+  readonly canEditArchitecture = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return (
+      state.phase === "valid" &&
+      activeView !== undefined &&
+      activeView.kind !== "dynamic" &&
+      activeView.kind !== "deployment"
+    );
+  });
+  readonly canConnectArchitecture = computed(
+    () => this.canEditArchitecture() && !this.semanticEditor.picking(),
+  );
+  readonly canStartWizard = computed(
+    () => this.compiler.state().phase !== "compiling" && !this.wizardOpen(),
+  );
   readonly settingsButton =
     viewChild<ElementRef<HTMLButtonElement>>("settingsButton");
   readonly commandInput =
     viewChild<ElementRef<HTMLInputElement>>("commandInput");
+  readonly wizardUndoNoticeButton =
+    viewChild<ElementRef<HTMLButtonElement>>("wizardUndoNoticeButton");
+  readonly wizardUndoCancelButton =
+    viewChild<ElementRef<HTMLButtonElement>>("wizardUndoCancelButton");
+  readonly wizardUndoConfirmButton =
+    viewChild<ElementRef<HTMLButtonElement>>("wizardUndoConfirmButton");
   readonly preferences = inject(WorkbenchPreferencesService);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly session = inject(WorkbenchSessionService);
@@ -187,6 +211,9 @@ export class AppComponent {
     const unsubscribeDesktopCommands = this.documents.onDesktopCommand(
       (command) => {
         switch (command) {
+          case "close-workspace":
+            this.closeWorkspace();
+            break;
           case "export-png":
             void this.exportPng();
             break;
@@ -237,6 +264,12 @@ export class AppComponent {
     if (modifier && event.shiftKey && event.key.toLocaleLowerCase() === "p") {
       event.preventDefault();
       this.openCommandPalette();
+    } else if (event.key === "Escape" && this.wizardUndoConfirmationOpen()) {
+      event.preventDefault();
+      this.cancelUndoWizard();
+    } else if (event.key === "Escape" && this.semanticEditor.picking()) {
+      event.preventDefault();
+      this.semanticEditor.cancelConnectionPicking();
     } else if (event.key === "Escape" && this.commandPaletteOpen()) {
       event.preventDefault();
       this.closeCommandPalette();
@@ -257,6 +290,7 @@ export class AppComponent {
     this.#wizardSourceSession.invalidateUndo();
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
+    this.wizardUndoConfirmationOpen.set(false);
     this.placement.sourceChanged();
     this.routeEditor.sourceChanged();
     this.semanticEditor.sourceChanged();
@@ -287,10 +321,23 @@ export class AppComponent {
     }
   }
 
+  closeWorkspace(): void {
+    if (!this.documents.closeWorkspace()) {
+      return;
+    }
+    this.#afterDocumentSetChanged();
+    this.compiler.reset();
+    this.#refreshHelpContext("");
+    if (this.activeActivity() === "source-control") {
+      void this.sourceControl.refresh();
+    }
+  }
+
   selectDocument(uri: string): void {
     if (!this.documents.selectDocument(uri)) {
       return;
     }
+    this.semanticEditor.cancelConnectionPicking();
     this.preview.clearSelection();
     this.#compileCurrentProject(this.compiler.state().activeViewId);
     this.#refreshHelpContext(this.source());
@@ -371,6 +418,10 @@ export class AppComponent {
       point === undefined
         ? undefined
         : navigationTargetAtPoint(navigation.targets, point);
+    if (this.semanticEditor.picking()) {
+      this.#pickConnectionTarget(target);
+      return;
+    }
     this.#selectTarget(target, true);
   }
 
@@ -445,7 +496,36 @@ export class AppComponent {
   }
 
   openSemanticEditor(): void {
-    this.semanticEditor.show(this.compiler.state().activeViewId);
+    if (!this.canEditArchitecture()) return;
+    this.semanticEditor.showElement(this.compiler.state().activeViewId);
+  }
+
+  openConnectionEditor(): void {
+    if (!this.canConnectArchitecture()) return;
+    const selected = this.selectedNode();
+    const sourceId = selected?.nodeRole === "element" ? selected.referenceId : undefined;
+    this.semanticEditor.showRelationship(
+      this.compiler.state().activeViewId,
+      sourceId,
+    );
+  }
+
+  async startConnectionPicking(request: { readonly sourceId?: string }): Promise<void> {
+    if (!this.canEditArchitecture()) return;
+    this.preview.redock();
+    this.help.showDiagram();
+    await this.semanticEditor.beginConnectionPicking(
+      this.compiler.state().activeViewId,
+      request.sourceId,
+    );
+  }
+
+  cancelConnectionPicking(): void {
+    this.semanticEditor.cancelConnectionPicking();
+  }
+
+  useConnectionLists(): void {
+    this.semanticEditor.useConnectionLists();
   }
 
   closeSemanticEditor(): void {
@@ -493,11 +573,13 @@ export class AppComponent {
     if (!(target instanceof HTMLSelectElement) || target.value.length === 0) {
       return;
     }
+    this.semanticEditor.cancelConnectionPicking();
     this.preview.clearSelection();
     this.#compileCurrentProject(target.value);
   }
 
   selectView(viewId: string): void {
+    this.semanticEditor.cancelConnectionPicking();
     this.preview.clearSelection();
     this.#compileCurrentProject(viewId);
   }
@@ -621,6 +703,7 @@ export class AppComponent {
   }
 
   startWizard(): void {
+    if (!this.canStartWizard()) return;
     this.#wizardSourceSession.start(this.source());
     this.#wizardDocumentBefore = this.documents.captureState();
     this.wizardOpen.set(true);
@@ -646,9 +729,46 @@ export class AppComponent {
     this.documents.resetAsGeneratedDocument(next);
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
+    this.wizardUndoConfirmationOpen.set(false);
     this.wizardOpen.set(false);
     this.#compileCurrentProject(undefined);
     this.#refreshHelpContext(next);
+  }
+
+  requestUndoWizard(): void {
+    if (!this.canUndoWizard()) return;
+    this.wizardUndoConfirmationOpen.set(true);
+    setTimeout(() =>
+      this.wizardUndoCancelButton()?.nativeElement.focus(),
+      0,
+    );
+  }
+
+  cancelUndoWizard(): void {
+    this.wizardUndoConfirmationOpen.set(false);
+    queueMicrotask(() =>
+      this.wizardUndoNoticeButton()?.nativeElement.focus(),
+    );
+  }
+
+  confirmUndoWizard(): void {
+    this.wizardUndoConfirmationOpen.set(false);
+    this.undoWizard();
+    setTimeout(() => this.sourceEditor()?.focus(), 0);
+  }
+
+  onWizardUndoConfirmationKeydown(event: KeyboardEvent): void {
+    if (event.key !== "Tab") return;
+    const cancel = this.wizardUndoCancelButton()?.nativeElement;
+    const confirm = this.wizardUndoConfirmButton()?.nativeElement;
+    if (cancel === undefined || confirm === undefined) return;
+    if (event.shiftKey && document.activeElement === cancel) {
+      event.preventDefault();
+      confirm.focus();
+    } else if (!event.shiftKey && document.activeElement === confirm) {
+      event.preventDefault();
+      cancel.focus();
+    }
   }
 
   undoWizard(): void {
@@ -662,6 +782,7 @@ export class AppComponent {
     this.#wizardDocumentBefore = undefined;
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
+    this.wizardUndoConfirmationOpen.set(false);
     this.#compileCurrentProject(undefined);
     this.#refreshHelpContext(this.source());
   }
@@ -695,9 +816,30 @@ export class AppComponent {
     }
   }
 
+  #pickConnectionTarget(
+    target: CompilerWorkerNavigationTarget | undefined,
+  ): void {
+    if (target?.kind !== "node" || target.nodeRole !== "element") {
+      this.semanticEditor.pickerIssue.set(
+        this.semanticEditor.pickerSourceId() === undefined
+          ? "invalid-source"
+          : "invalid-target",
+      );
+      return;
+    }
+    const result = this.semanticEditor.pickConnectionElement(target.referenceId);
+    if (result.status !== "ignored") {
+      this.preview.select(target, false);
+    }
+  }
+
   #compileCurrentProject(
     requestedViewId = this.compiler.state().activeViewId,
   ): void {
+    if (!this.hasOpenDocument()) {
+      this.compiler.reset();
+      return;
+    }
     this.compiler.compileProject(
       this.documents.projectSnapshot(),
       this.activeDocumentUri(),
@@ -710,6 +852,7 @@ export class AppComponent {
     this.#wizardSourceSession.invalidateUndo();
     this.#wizardDocumentBefore = undefined;
     this.canUndoWizard.set(false);
+    this.wizardUndoConfirmationOpen.set(false);
     this.placement.reset();
     this.routeEditor.reset();
     this.semanticEditor.reset();

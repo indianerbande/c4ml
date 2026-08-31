@@ -441,22 +441,273 @@ async function completeProjectDocuments(
     textDocument: { uri: document.uri.toString() },
     position: document.textDocument.positionAt(offset),
   });
-  const owner = completionOwner(
-    document.parseResult.value as C4mlDocument,
-    offset,
-  );
+  const root = document.parseResult.value as C4mlDocument;
+  const owner = completionOwner(root, offset);
   const candidates = (completion?.items ?? [])
     .map((item) => toCandidate(item, document, owner, offset))
     .filter((candidate): candidate is C4mlCompletionCandidate =>
       candidate !== undefined && !isAlreadyDeclared(candidate, owner, offset),
     );
+  const source = sources.find(({ uri }) => uri === file)?.source ?? "";
+  const recoveredCandidates = recoverTopLevelModelCompletion(
+    source,
+    document,
+    root,
+    owner,
+    offset,
+    candidates,
+  );
+  const recoveredModelCandidates = recoverModelElementCompletion(
+    source,
+    document,
+    offset,
+    candidates,
+  );
+  const recoveredViewCandidates = recoverViewPropertyCompletion(
+    source,
+    document,
+    offset,
+    candidates,
+  );
 
   return {
     languageVersion: c4mlDraftLanguageVersion,
     file,
     offset,
-    candidates: deduplicateAndSort(candidates),
+    candidates: deduplicateAndSort([
+      ...candidates,
+      ...recoveredCandidates,
+      ...recoveredModelCandidates,
+      ...recoveredViewCandidates,
+    ]),
   };
+}
+
+function recoverViewPropertyCompletion(
+  source: string,
+  document: LangiumDocument,
+  offset: number,
+  candidates: readonly C4mlCompletionCandidate[],
+): readonly C4mlCompletionCandidate[] {
+  const stack = structuralBlockStackAt(source, offset);
+  if (
+    candidates.length > 0 ||
+    stack.length !== 1 ||
+    stack[0] !== "view"
+  ) {
+    return [];
+  }
+
+  const lineStart = source.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
+  const linePrefix = source.slice(lineStart, offset);
+  if (!/^\s*[A-Za-z-]*$/.test(linePrefix)) {
+    return [];
+  }
+  const tokenStart = lineStart + (linePrefix.match(/^\s*/u)?.[0].length ?? 0);
+  const start = document.textDocument.positionAt(tokenStart);
+  const end = document.textDocument.positionAt(offset);
+  const labels = [
+    "allow-mixed-levels",
+    "audience",
+    "display",
+    "environment",
+    "legend",
+    "purpose",
+    "scope",
+    "systems",
+    "title",
+    "type",
+  ] as const;
+  return labels.flatMap((label) =>
+    candidates.some((candidate) => candidate.label === label)
+      ? []
+      : [
+          {
+            id: `${c4mlDraftLanguageVersion}:ViewDeclaration:property:${label}`,
+            label,
+            kind: "property" as const,
+            detail: completionDetail("property"),
+            documentation: documentationByLabel[label],
+            edit: {
+              text: label,
+              range: {
+                start: {
+                  offset: tokenStart,
+                  line: start.line,
+                  column: start.character,
+                },
+                end: {
+                  offset,
+                  line: end.line,
+                  column: end.character,
+                },
+              },
+            },
+          },
+        ],
+  );
+}
+
+function recoverModelElementCompletion(
+  source: string,
+  document: LangiumDocument,
+  offset: number,
+  candidates: readonly C4mlCompletionCandidate[],
+): readonly C4mlCompletionCandidate[] {
+  if (!isAtModelDeclarationLevel(source, offset)) {
+    return [];
+  }
+
+  const lineStart = source.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
+  const linePrefix = source.slice(lineStart, offset);
+  if (!/^\s*[A-Za-z-]*$/.test(linePrefix)) {
+    return [];
+  }
+  const tokenStart = lineStart + (linePrefix.match(/^\s*/u)?.[0].length ?? 0);
+  const start = document.textDocument.positionAt(tokenStart);
+  const end = document.textDocument.positionAt(offset);
+  return ["person", "system"].flatMap((label) =>
+    candidates.some((candidate) => candidate.label === label)
+      ? []
+      : [
+          {
+            id: `${c4mlDraftLanguageVersion}:document:keyword:${label}`,
+            label,
+            kind: "keyword" as const,
+            detail: completionDetail("keyword"),
+            documentation: documentationByLabel[label],
+            edit: {
+              text: label,
+              range: {
+                start: {
+                  offset: tokenStart,
+                  line: start.line,
+                  column: start.character,
+                },
+                end: {
+                  offset,
+                  line: end.line,
+                  column: end.character,
+                },
+              },
+            },
+          },
+        ],
+  );
+}
+
+function isAtModelDeclarationLevel(source: string, offset: number): boolean {
+  const stack = structuralBlockStackAt(source, offset);
+  return stack.length === 1 && stack[0] === "model";
+}
+
+function structuralBlockStackAt(source: string, offset: number): string[] {
+  const stack: string[] = [];
+  let index = 0;
+  while (index < offset) {
+    const character = source[index];
+    const next = source[index + 1];
+    if (character === '"') {
+      index += 1;
+      while (index < offset) {
+        if (source[index] === "\\") {
+          index += 2;
+          continue;
+        }
+        if (source[index] === '"') {
+          index += 1;
+          break;
+        }
+        index += 1;
+      }
+      continue;
+    }
+    if (character === "/" && next === "/") {
+      const lineEnd = source.indexOf("\n", index + 2);
+      index = lineEnd < 0 || lineEnd >= offset ? offset : lineEnd + 1;
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      const commentEnd = source.indexOf("*/", index + 2);
+      index = commentEnd < 0 || commentEnd + 2 >= offset
+        ? offset
+        : commentEnd + 2;
+      continue;
+    }
+    if (character === "{") {
+      stack.push(blockKindBeforeOpeningBrace(source, index));
+    } else if (character === "}") {
+      stack.pop();
+    }
+    index += 1;
+  }
+  return stack;
+}
+
+function blockKindBeforeOpeningBrace(
+  source: string,
+  braceOffset: number,
+): "model" | "other" | "view" {
+  const lineStart = source.lastIndexOf("\n", Math.max(0, braceOffset - 1)) + 1;
+  const prefix = source.slice(lineStart, braceOffset).trim();
+  if (prefix === "model") {
+    return "model";
+  }
+  if (/^view(?:\s+[A-Za-z][A-Za-z0-9-]*)?$/u.test(prefix)) {
+    return "view";
+  }
+  return "other";
+}
+
+function recoverTopLevelModelCompletion(
+  source: string,
+  document: LangiumDocument,
+  root: C4mlDocument,
+  owner: CompletionOwner,
+  offset: number,
+  candidates: readonly C4mlCompletionCandidate[],
+): readonly C4mlCompletionCandidate[] {
+  if (
+    owner !== undefined ||
+    root.model !== undefined ||
+    structuralBlockStackAt(source, offset).length > 0 ||
+    candidates.some(({ label }) => label === "model")
+  ) {
+    return [];
+  }
+
+  const lineStart = source.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
+  const linePrefix = source.slice(lineStart, offset);
+  if (!/^[A-Za-z-]*$/.test(linePrefix)) {
+    return [];
+  }
+
+  const start = document.textDocument.positionAt(lineStart);
+  const end = document.textDocument.positionAt(offset);
+  return [
+    {
+      id: `${c4mlDraftLanguageVersion}:document:keyword:model`,
+      label: "model",
+      kind: "keyword",
+      detail: completionDetail("keyword"),
+      documentation: documentationByLabel.model,
+      edit: {
+        text: "model",
+        range: {
+          start: {
+            offset: lineStart,
+            line: start.line,
+            column: start.character,
+          },
+          end: {
+            offset,
+            line: end.line,
+            column: end.character,
+          },
+        },
+      },
+    },
+  ];
 }
 
 type CompletionOwner =

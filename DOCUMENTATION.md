@@ -1,8 +1,11 @@
-# C4ML User Guide
+# C4thedral User Guide
 
 Status: Draft syntax preview with executable language and desktop workbench
 
 Date: 2026-08-30
+
+**C4thedral** is the desktop architecture workbench. **C4ML** is its language,
+source format, compiler, and command-line interface.
 
 This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
@@ -121,7 +124,7 @@ renderer harness keeps SVG download but has no native PNG dialog.
 Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
 choose English or German interface copy, System, Light, or Dark workbench
 colors, and the source editor's monospace family and size. Changes apply
-immediately and are stored locally. The language choice also updates C4ML-owned
+immediately and are stored locally. The language choice also updates C4thedral-owned
 native menu commands and dialogs; names, descriptions, source, compiler
 diagnostics, and diagrams are never translated automatically. Preferences do
 not edit the open `.c4ml` document or alter exported diagram colors, fonts, or
@@ -369,11 +372,18 @@ the question the diagram should answer, not with a test of C4 vocabulary:
 
 The C4 terms appear beside these choices as optional translations. In
 particular, “Container” is explained as a runtime/deployment unit and does not
-imply Docker. Stable technical IDs are available under **Advanced details**;
-they are not required vocabulary for the normal path. Before applying anything,
-the final step shows the complete generated `draft-1` source. Cancel leaves the
-active document unchanged; apply replaces it explicitly, and **Undo wizard**
-restores the prior document once.
+imply Docker. Every input has an adjacent **?** that expands a short explanation
+in the selected interface language. Generated IDs are available under the
+advanced sections and are identified as source tokens: relationships and views
+refer to them, so they can remain unchanged when a visible name is renamed.
+They are not required vocabulary for the normal path. German workbench language
+also supplies German initial example answers rather than translating labels
+alone. English and German use the same original online-shop story throughout:
+customer and administrative web applications, an application service, Kafka,
+PostgreSQL, and S3-compatible object storage. Before applying anything, the
+final step shows the complete generated
+`draft-1` source. Cancel leaves the active document unchanged; apply replaces it
+explicitly, and **Undo wizard** restores the prior document once.
 
 The result is not a separate visual-only document. The wizard generates normal
 C4ML source in the language worker and hands it to the same parser, validator,
@@ -387,10 +397,19 @@ existing documents are not implemented or accepted yet.
 
 ### Context-sensitive architecture changes
 
-**Change architecture…** extends an existing static view without requiring the
+**Architecture** extends an existing static view without requiring the
 author to recall the available C4 declaration vocabulary. It is intentionally
 separate from **Arrange element…** and **Edit route…** because it changes the
 architecture model rather than only the diagram layout.
+
+**Connect** has its own action and dialog because a directed relationship is a
+different task from creating an element. Choose Source and Target from the
+lists, or select them in that order directly in the diagram. If an element was
+already selected when **Connect** opened, it is proposed as the Source and the
+diagram gesture asks only for the Target. **Swap direction** is available only
+when the reverse pair is valid in the active view. Diagram picking is temporary:
+the relationship is still shown as proposed C4ML source and a compiled
+candidate before it can be applied.
 
 The active view determines the available choices:
 
@@ -401,14 +420,14 @@ The active view determines the available choices:
 - a Component view can add a part inside its scoped Container;
 - a Code view can add an important code structure inside its scoped Component;
   and
-- **Connect existing elements** lists only directed endpoint pairs valid for
+- **Connect** lists only directed endpoint pairs valid for
   the active view scope.
 
 The dialog asks for readable names, responsibilities, technologies, and the
 direction of a connection in plain language. Stable technical identifiers stay
 visible because they are the durable source identity. In a System Context, a
-new unconnected neighbor enters the shared model first; use **Connect existing
-elements** next so that the relationship brings it into that projection.
+new unconnected neighbor enters the shared model first; use **Connect** next so
+that the relationship brings it into that projection.
 **Preview architecture
 change** first creates an ordinary project-addressed text edit and compiles the
 complete candidate project without changing the active documents. The proposed
@@ -544,9 +563,29 @@ optional deep color-token overrides. CLI and desktop worker use the same
 validated theme selection; workbench UI colors and architecture semantics stay
 separate.
 
-The optional `shapes` path selects safe normalized vector definitions and
-explicit element assignments. The shared renderer contract rejects active,
-external, image, font, CSS, and SVG content before layout and rendering.
+The optional `shapes` path selects safe normalized vector definitions,
+explicit element assignments, and bounded presentation of the built-in box
+bar. The shared renderer contract rejects active, external, image, font, CSS,
+and SVG content before layout and rendering. For example:
+
+```json
+{
+  "version": 1,
+  "id": "quiet-boxes",
+  "box": {
+    "bar": "on",
+    "color": "#3D7FA8",
+    "transparency": 20
+  }
+}
+```
+
+`bar` accepts `"on"` or `"off"`; omitting it keeps the bar on. `color` is an
+optional six-digit hexadecimal override. Without it, the active semantic theme
+supplies the accent color. `transparency` is an optional percentage from `0`
+through `100` and defaults to `0`. These values affect only the standard box
+shape and never change architecture meaning. They are accepted in the typed
+project resource; no corresponding public `.c4ml` grammar is frozen yet.
 
 The optional `assets` path selects passive local UTF-8 files with explicit
 purpose, media type, SHA-256, SPDX license, and optional attribution. C4ML

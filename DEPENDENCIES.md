@@ -1,4 +1,4 @@
-# C4ML Dependency Record
+# C4thedral Dependency Record
 
 Status: Accepted desktop application, editor, automatic-layout, and PNG stack with remaining candidates
 

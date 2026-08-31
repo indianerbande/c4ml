@@ -22,6 +22,8 @@ export interface ShapeRectangle extends ShapeBox {
   readonly kind: "rectangle";
   readonly paint: ShapePaintRole;
   readonly cornerRadius?: number;
+  readonly color?: string;
+  readonly opacity?: number;
 }
 
 export interface ShapeEllipse {
@@ -71,39 +73,67 @@ export interface ShapeDefinition {
 export interface DiagramShapeOptions {
   readonly definitions?: readonly ShapeDefinition[];
   readonly assignments?: Readonly<Record<string, string>>;
+  readonly box?: BoxShapePresentation;
 }
 
-const boxShape: ShapeDefinition = {
-  id: "c4ml-box",
-  canvas: { width: 100, height: 100 },
-  contentBox: { x: 6.4, y: 8, width: 87.2, height: 84 },
-  ports: {
-    north: { x: 50, y: 0 },
-    east: { x: 100, y: 50 },
-    south: { x: 50, y: 100 },
-    west: { x: 0, y: 50 },
-  },
-  primitives: [
-    {
-      kind: "rectangle",
-      paint: "surface",
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 100,
-      cornerRadius: 8,
-    },
-    {
-      kind: "rectangle",
-      paint: "accent",
-      x: 2.4,
-      y: 4,
-      width: 2.4,
-      height: 92,
-      cornerRadius: 1.2,
-    },
-  ],
+export interface BoxShapePresentation {
+  readonly bar?: "off" | "on";
+  readonly color?: string;
+  readonly transparency?: number;
+}
+
+const defaultBoxShapePresentation: Required<Pick<BoxShapePresentation, "bar" | "transparency">> = {
+  bar: "on",
+  transparency: 0,
 };
+
+function createBoxShape(presentation: BoxShapePresentation = {}): ShapeDefinition {
+  validateBoxShapePresentation(presentation);
+  const bar = presentation.bar ?? defaultBoxShapePresentation.bar;
+  const transparency =
+    presentation.transparency ?? defaultBoxShapePresentation.transparency;
+  return {
+    id: "c4ml-box",
+    canvas: { width: 100, height: 100 },
+    contentBox: { x: 8, y: 8, width: 84, height: 84 },
+    ports: {
+      north: { x: 50, y: 0 },
+      east: { x: 100, y: 50 },
+      south: { x: 50, y: 100 },
+      west: { x: 0, y: 50 },
+    },
+    primitives: [
+      {
+        kind: "rectangle",
+        paint: "surface",
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+        cornerRadius: 8,
+      },
+      ...(bar === "off"
+        ? []
+        : [{
+            kind: "rectangle" as const,
+            paint: "accent" as const,
+            x: 2.4,
+            y: 6,
+            width: 2.4,
+            height: 88,
+            cornerRadius: 1.2,
+            ...(presentation.color === undefined
+              ? {}
+              : { color: presentation.color.toUpperCase() }),
+            ...(transparency === 0
+              ? {}
+              : { opacity: 1 - transparency / 100 }),
+          }]),
+    ],
+  };
+}
+
+const boxShape = createBoxShape();
 
 // Original C4ML person card: a compact head-and-shoulders glyph establishes
 // the semantic role without making the information surface itself figurative.
@@ -151,9 +181,10 @@ export const builtInShapes = [boxShape, personShape] as const;
 
 export function createShapeCatalog(
   definitions: readonly ShapeDefinition[] = [],
+  boxPresentation: BoxShapePresentation = {},
 ): ReadonlyMap<string, ShapeDefinition> {
   const catalog = new Map<string, ShapeDefinition>();
-  for (const definition of [...builtInShapes, ...definitions]) {
+  for (const definition of [createBoxShape(boxPresentation), personShape, ...definitions]) {
     validateShapeDefinition(definition);
     if (catalog.has(definition.id)) {
       throw new ContractError(
@@ -232,6 +263,7 @@ function validatePrimitive(
       ) {
         throw invalidPrimitive(shapeId, label);
       }
+      validatePrimitivePresentation(shapeId, label, primitive);
       return;
     case "ellipse":
       if (
@@ -323,4 +355,57 @@ function invalidPrimitive(shapeId: string, label: string): ContractError {
     "C4ML-SHAPE-008",
     `Shape ${shapeId} ${label} has invalid geometry.`,
   );
+}
+
+export function validateBoxShapePresentation(
+  presentation: BoxShapePresentation,
+): void {
+  if (
+    presentation.bar !== undefined &&
+    presentation.bar !== "on" &&
+    presentation.bar !== "off"
+  ) {
+    throw new ContractError(
+      "C4ML-SHAPE-011",
+      'The built-in box bar must be either "on" or "off".',
+    );
+  }
+  if (
+    presentation.color !== undefined &&
+    !/^#[0-9a-f]{6}$/iu.test(presentation.color)
+  ) {
+    throw new ContractError(
+      "C4ML-SHAPE-012",
+      "The built-in box bar color must be a six-digit hexadecimal color.",
+    );
+  }
+  if (
+    presentation.transparency !== undefined &&
+    (!Number.isFinite(presentation.transparency) ||
+      presentation.transparency < 0 ||
+      presentation.transparency > 100)
+  ) {
+    throw new ContractError(
+      "C4ML-SHAPE-013",
+      "The built-in box bar transparency must be a percentage from 0 through 100.",
+    );
+  }
+}
+
+function validatePrimitivePresentation(
+  shapeId: string,
+  label: string,
+  primitive: ShapeRectangle,
+): void {
+  if (
+    ((primitive.color !== undefined || primitive.opacity !== undefined) &&
+      shapeId !== "c4ml-box") ||
+    (primitive.color !== undefined && !/^#[0-9a-f]{6}$/iu.test(primitive.color)) ||
+    (primitive.opacity !== undefined &&
+      (!Number.isFinite(primitive.opacity) ||
+        primitive.opacity < 0 ||
+        primitive.opacity > 1))
+  ) {
+    throw invalidPrimitive(shapeId, label);
+  }
 }

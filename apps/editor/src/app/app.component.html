@@ -7,7 +7,7 @@
     <div class="brand">
       <span class="brand-mark" aria-hidden="true">C4</span>
       <span>
-        <strong>C4ML</strong>
+        <strong>C4thedral</strong>
         <small>{{ i18n.t("app.subtitle") }}</small>
       </span>
     </div>
@@ -24,21 +24,6 @@
     </button>
 
     <div class="title-actions">
-      @if (previewDetached()) {
-        <button
-          type="button"
-          class="title-action"
-          data-preview-action="redock"
-          (click)="redockPreview()"
-        >
-          {{ i18n.t("preview.redock") }}
-        </button>
-      }
-      @if (canUndoWizard()) {
-        <button type="button" class="title-action" (click)="undoWizard()">
-          {{ i18n.t("wizard.undo") }}
-        </button>
-      }
       @if (placement.canUndo()) {
         <button type="button" class="title-action" (click)="undoPlacement()">
           {{ i18n.t("placement.undo") }}
@@ -54,10 +39,28 @@
           {{ i18n.t("semanticEditor.undo") }}
         </button>
       }
-      <button type="button" class="title-action architecture-action" (click)="openSemanticEditor()">
+      <button
+        type="button"
+        class="title-action architecture-action"
+        [disabled]="!canEditArchitecture()"
+        (click)="openSemanticEditor()"
+      >
         {{ i18n.t("semanticEditor.open") }}
       </button>
-      <button type="button" class="primary-action" (click)="startWizard()">
+      <button
+        type="button"
+        class="title-action connection-action"
+        [disabled]="!canConnectArchitecture()"
+        (click)="openConnectionEditor()"
+      >
+        {{ i18n.t("connectionEditor.open") }}
+      </button>
+      <button
+        type="button"
+        class="primary-action"
+        [disabled]="!canStartWizard()"
+        (click)="startWizard()"
+      >
         {{ i18n.t("wizard.open") }}
       </button>
       <div class="worker-state" [attr.data-phase]="compiler.state().phase">
@@ -624,7 +627,21 @@
               </button>
             }
             <span class="tab-fill"></span>
-            <span class="language-badge">draft-1</span>
+            @if (hasOpenDocument()) {
+              <span class="language-badge">draft-1</span>
+            }
+            @if (previewDetachmentAvailable && previewDetached()) {
+              <button
+                type="button"
+                class="workspace-button detached-preview-redock"
+                data-preview-action="redock"
+                (click)="redockPreview()"
+                [attr.aria-label]="i18n.t('preview.redock')"
+                [title]="i18n.t('preview.redock')"
+              >
+                ↙
+              </button>
+            }
           </div>
 
           <c4ml-monaco-source-editor
@@ -636,6 +653,7 @@
             [diagnostics]="activeDiagnostics()"
             [completionProvider]="provideCompletions"
             [highlightProvider]="provideHighlights"
+            [noSuggestionsLabel]="i18n.t('editor.noSuggestions')"
             [colorScheme]="preferences.effectiveColorScheme()"
             [colorPalette]="preferences.preferences().colorPalette"
             [syntaxTheme]="preferences.preferences().syntaxTheme"
@@ -811,6 +829,7 @@
                 <img
                   class="diagram"
                   [class.is-navigable]="compiler.state().phase === 'valid'"
+                  [class.is-connection-picking]="semanticEditor.picking()"
                   [src]="url"
                   [style.width]="previewSize()"
                   [style.height]="previewSize()"
@@ -818,12 +837,44 @@
                   [alt]="i18n.t('preview.alt')"
                   [title]="i18n.t('preview.reveal')"
                 />
+              } @else if (!hasOpenDocument()) {
+                <div class="empty-preview">
+                  <span class="empty-glyph" aria-hidden="true"></span>
+                  <strong>{{ i18n.t("preview.noDocument") }}</strong>
+                  <span>{{ i18n.t("preview.openDocument") }}</span>
+                </div>
               } @else {
                 <div class="empty-preview">
                   <span class="empty-glyph" aria-hidden="true"></span>
                   <strong>{{ i18n.t("preview.building") }}</strong>
                   <span>{{ i18n.t("preview.worker") }}</span>
                 </div>
+              }
+
+              @if (semanticEditor.picking()) {
+                <aside class="connection-picker" role="status" aria-live="polite">
+                  <strong>
+                    @if (semanticEditor.pickerSourceLabel(); as sourceLabel) {
+                      {{ i18n.t("connectionPicker.target", { source: sourceLabel }) }}
+                    } @else {
+                      {{ i18n.t("connectionPicker.source") }}
+                    }
+                  </strong>
+                  <span>{{ i18n.t("connectionPicker.hint") }}</span>
+                  @if (semanticEditor.pickerIssue(); as issue) {
+                    <span class="connection-picker-issue">
+                      {{ i18n.t(issue === "invalid-source" ? "connectionPicker.invalidSource" : "connectionPicker.invalidTarget") }}
+                    </span>
+                  }
+                  <div>
+                    <button type="button" (click)="useConnectionLists()">
+                      {{ i18n.t("connectionPicker.useLists") }}
+                    </button>
+                    <button type="button" (click)="cancelConnectionPicking()">
+                      {{ i18n.t("connectionPicker.cancel") }}
+                    </button>
+                  </div>
+                </aside>
               }
 
               @if (
@@ -1118,14 +1169,35 @@
     </main>
   </div>
 
+  @if (canUndoWizard()) {
+    <aside
+      class="wizard-undo-notice"
+      role="status"
+      aria-live="polite"
+    >
+      <span>{{ i18n.t("wizard.undoNotice") }}</span>
+      <button
+        #wizardUndoNoticeButton
+        type="button"
+        (click)="requestUndoWizard()"
+      >
+        {{ i18n.t("wizard.undoAction") }}
+      </button>
+    </aside>
+  }
+
   <footer class="status-bar">
-    <button type="button" (click)="openCommandPalette()">C4ML · draft-1</button>
-    <span
-      >{{ documentName() }}
-      @if (projectDirty()) {
-        · {{ i18n.t("status.modified") }}
-      }
-    </span>
+    <button type="button" (click)="openCommandPalette()">
+      C4ML@if (hasOpenDocument()) { · draft-1 }
+    </button>
+    @if (hasOpenDocument()) {
+      <span
+        >{{ documentName() }}
+        @if (projectDirty()) {
+          · {{ i18n.t("status.modified") }}
+        }
+      </span>
+    }
     <span class="status-spacer"></span>
     <button
       type="button"
@@ -1138,9 +1210,6 @@
           count: compiler.state().diagnostics.length,
         })
       }}
-    </button>
-    <button type="button" (click)="selectActivity('diagrams')">
-      {{ i18n.t("status.diagrams") }}
     </button>
     <span>{{ zoomLabel() }}</span>
   </footer>
@@ -1185,6 +1254,44 @@
         } @empty {
           <p>{{ i18n.t("command.none") }}</p>
         }
+      </div>
+    </section>
+  </div>
+}
+
+@if (wizardUndoConfirmationOpen()) {
+  <div class="confirmation-backdrop" (click)="cancelUndoWizard()">
+    <section
+      class="confirmation-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="wizard-undo-confirm-title"
+      aria-describedby="wizard-undo-confirm-description"
+      (click)="$event.stopPropagation()"
+      (keydown)="onWizardUndoConfirmationKeydown($event)"
+    >
+      <h2 id="wizard-undo-confirm-title">
+        {{ i18n.t("wizard.undoConfirmTitle") }}
+      </h2>
+      <p id="wizard-undo-confirm-description">
+        {{ i18n.t("wizard.undoConfirmDescription") }}
+      </p>
+      <div class="confirmation-actions">
+        <button
+          #wizardUndoCancelButton
+          type="button"
+          (click)="cancelUndoWizard()"
+        >
+          {{ i18n.t("wizard.undoCancel") }}
+        </button>
+        <button
+          #wizardUndoConfirmButton
+          type="button"
+          class="confirmation-primary"
+          (click)="confirmUndoWizard()"
+        >
+          {{ i18n.t("wizard.undoConfirm") }}
+        </button>
       </div>
     </section>
   </div>
@@ -1238,8 +1345,12 @@
       [project]="semanticEditor.project()"
       [activeFile]="activeDocumentUri()"
       [viewId]="activeViewId"
+      [mode]="semanticEditor.mode()"
+      [initialSourceId]="semanticEditor.initialSourceId()"
+      [initialTargetId]="semanticEditor.initialTargetId()"
       (applied)="applySemantic($event)"
       (cancelled)="closeSemanticEditor()"
+      (selectionRequested)="startConnectionPicking($event)"
     />
   }
 }

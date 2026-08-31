@@ -187,13 +187,9 @@ describe("diagram compiler pipeline", () => {
     expect(svg).toContain("id=\"diagram-route-arrows\"");
     expect(svg).toContain("id=\"diagram-ports\"");
     expect(svg).toContain("class=\"route-arrow");
-    expect(svg).toContain("class=\"route-label-background\"");
-    expect(svg.indexOf("id=\"diagram-routes\"")).toBeLessThan(
-      svg.indexOf("id=\"diagram-route-label-backgrounds\""),
-    );
-    expect(svg.indexOf("id=\"diagram-route-label-backgrounds\"")).toBeLessThan(
-      svg.indexOf("id=\"diagram-elements\""),
-    );
+    expect(svg).not.toContain("route-label-background");
+    expect(svg).not.toContain("diagram-route-label-backgrounds");
+    expect(svg).toMatch(/class="route[^"]*"[^>]+d="M [^"]+ M [^"]+"/u);
     expect(svg).toContain("data-c4ml-port-side=\"south\"");
     expect(svg).toContain("data-c4ml-shape=\"c4ml-person\"");
     expect(svg).toContain(
@@ -246,6 +242,10 @@ describe("diagram compiler pipeline", () => {
         ({ labelBounds }) => labelBounds.width > 0 && labelBounds.height > 0,
       ),
     ).toBe(true);
+    expect(
+      first.scene?.routes.some(({ labelLines }) => labelLines.length > 1),
+    ).toBe(true);
+    expect(svg).toContain('<text class="route-label"><tspan');
     expect(first.scene?.arrowheads[0]?.points).toHaveLength(3);
     const firstSceneRoute = first.scene!.routes[0]!;
     const firstTargetPort = first.scene!.ports.find(
@@ -341,6 +341,50 @@ describe("diagram compiler pipeline", () => {
       { kind: "ellipse", paint: "accent" },
       { kind: "rectangle", paint: "accent" },
     ]);
+  });
+
+  it("keeps the built-in box text clear of its accent rail", () => {
+    const boxShape = builtInShapes.find(({ id }) => id === "c4ml-box")!;
+    const accent = boxShape.primitives.find(
+      (primitive) => primitive.kind === "rectangle" && primitive.paint === "accent",
+    );
+
+    expect(accent).toMatchObject({ x: 2.4, y: 6, width: 2.4, height: 88 });
+    expect(boxShape.contentBox).toMatchObject({ x: 8, width: 84 });
+    if (accent?.kind !== "rectangle") {
+      throw new Error("Expected the built-in box accent rail to be a rectangle.");
+    }
+    expect(boxShape.contentBox.x - (accent.x + accent.width)).toBeGreaterThanOrEqual(
+      2.4,
+    );
+  });
+
+  it("can hide or restyle the built-in box bar as presentation", async () => {
+    const withoutBar = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: containerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      shapes: { box: { bar: "off" } },
+    });
+    const styledBar = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: containerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      shapes: {
+        box: { bar: "on", color: "#3D7FA8", transparency: 20 },
+      },
+    });
+
+    expect(withoutBar.valid).toBe(true);
+    expect(
+      withoutBar.scene?.shapes
+        .find(({ id }) => id === "c4ml-box")
+        ?.primitives.some(({ paint }) => paint === "accent"),
+    ).toBe(false);
+    expect(styledBar.valid).toBe(true);
+    expect(styledBar.svg).toContain(
+      '<rect class="element-accent" style="fill:#3D7FA8;opacity:0.8"',
+    );
   });
 
   it("reports an impossible fixed orthogonal route as a compiler diagnostic", async () => {

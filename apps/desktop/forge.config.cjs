@@ -10,14 +10,14 @@ module.exports = {
   packagerConfig: {
     appBundleId: "org.c4ml.desktop",
     appCategoryType: "public.app-category.developer-tools",
-    appCopyright: "Copyright C4ML contributors",
+    appCopyright: "Copyright C4thedral contributors",
     download: {
       checksums: electronChecksums,
     },
     asar: {
       unpack: "dist/*.node",
     },
-    executableName: "C4ML",
+    executableName: "C4thedral",
     extraResource: [
       path.resolve(__dirname, "../../build/editor/browser"),
       path.resolve(__dirname, "../../build/editor/3rdpartylicenses.txt"),
@@ -41,16 +41,16 @@ module.exports = {
       name: "@electron-forge/maker-squirrel",
       platforms: ["win32"],
       config: {
-        name: "C4ML",
-        authors: "C4ML contributors",
-        description: "Local desktop workbench for C4ML architecture models",
+        name: "C4thedral",
+        authors: "C4thedral contributors",
+        description: "C4thedral local architecture workbench, powered by C4ML",
       },
     },
     {
       name: "@electron-forge/maker-dmg",
       platforms: ["darwin"],
       config: {
-        name: "C4ML",
+        name: "C4thedral",
         format: "ULFO",
       },
     },
@@ -67,7 +67,7 @@ module.exports = {
       for (const outputPath of packageResult.outputPaths) {
         const appPath = outputPath.endsWith(".app")
           ? outputPath
-          : path.join(outputPath, "C4ML.app");
+          : path.join(outputPath, "C4thedral.app");
         const result = spawnSync(
           "/usr/bin/codesign",
           ["--sign", "-", "--force", "--deep", appPath],

@@ -63,17 +63,34 @@ nav {
 }
 
 .close-button {
-  display: grid;
+  position: relative;
   width: 32px;
   height: 32px;
   flex: 0 0 auto;
-  place-items: center;
+  padding: 0;
   border: 0;
   border-radius: 8px;
   background: var(--control-hover);
   color: var(--muted);
   cursor: pointer;
-  font-size: 2rem;
+  font-size: 0;
+}
+
+.close-button::before,
+.close-button::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 nav {
@@ -287,6 +304,50 @@ nav span.complete i {
   grid-column: 1 / -1;
 }
 
+.field-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-help-button {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--control-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.field-help-button:hover,
+.field-help-button:focus-visible,
+.field-help-button[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  outline: 2px solid var(--focus-ring);
+}
+
+.field-help {
+  padding: 7px 9px;
+  border-left: 3px solid var(--accent);
+  border-radius: 3px 6px 6px 3px;
+  background: var(--accent-soft);
+  color: var(--control-ink);
+  font-size: 0.87rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 input,
 textarea,
 select {
@@ -432,10 +493,19 @@ select:focus {
   background: var(--panel);
 }
 
+.card-advanced label {
+  display: grid;
+  gap: 5px;
+  padding: 0 10px 9px;
+  color: var(--control-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 .card-advanced input,
 .card-advanced .issue {
-  width: calc(100% - 20px);
-  margin: 0 10px 9px;
+  width: 100%;
+  margin: 0;
 }
 
 .entry-connection {

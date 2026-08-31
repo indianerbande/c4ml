@@ -28,6 +28,21 @@ const packagingRuntimeGuard = readRequired(
 );
 assert.equal(desktopManifest.main, "dist/main.cjs");
 assert.equal(
+  desktopManifest.productName,
+  "C4thedral",
+  "the visible desktop product name must be C4thedral",
+);
+assert.equal(
+  rootManifest.scripts?.["desktop:start"],
+  "pnpm run desktop:build && pnpm --filter @c4ml/desktop run start",
+  "desktop:start must launch the development shell without packaging first",
+);
+assert.equal(
+  desktopManifest.scripts?.start,
+  "node scripts/launch-development.cjs",
+  "desktop development start must use the C4thedral-owned cross-platform launcher",
+);
+assert.equal(
   desktopManifest.scripts?.premake,
   undefined,
   "cross-platform makes must not rebuild macOS-native helpers on every host",
@@ -172,9 +187,32 @@ assert.equal(
   false,
   "the bundled desktop must not run a redundant production install while packaging",
 );
+assert.equal(
+  forgeConfiguration.packagerConfig?.executableName,
+  "C4thedral",
+  "packaged executables must use the visible product name",
+);
 const desktopNotices = readRequired("apps/desktop/THIRD_PARTY_NOTICES.txt");
+const desktopMainSource = readRequired("apps/desktop/src/main.ts");
 const packagedLauncher = readRequired(
   "apps/desktop/scripts/launch-packaged.cjs",
+);
+const developmentLauncher = readRequired(
+  "apps/desktop/scripts/launch-development.cjs",
+);
+assert.match(
+  editorIndex,
+  /<title>C4thedral<\/title>/,
+  "the packaged editor must identify the visible product as C4thedral",
+);
+assert.ok(
+  mainBundle.includes("C4thedral"),
+  "the desktop main bundle must contain the visible product name",
+);
+assert.match(
+  desktopMainSource,
+  /app\.setPath\([\s\S]*?"userData"[\s\S]*?legacyUserDataDirectoryName/,
+  "the product rename must preserve the established C4ML application-data directory",
 );
 for (const requiredSetting of [
   "contextIsolation",
@@ -272,8 +310,23 @@ assert.match(desktopNotices, /Apache License, Version 2\.0/);
 assert.match(desktopNotices, /resvg-js 2\.6\.2/);
 assert.match(desktopNotices, /Mozilla Public License 2\.0/);
 assert.match(forgeConfig, /font-ibm-plex\/fonts\/sans/);
-assert.match(packagedLauncher, /C4ML-\$\{process\.platform\}-\$\{process\.arch\}/);
+assert.match(packagedLauncher, /C4thedral-\$\{process\.platform\}-\$\{process\.arch\}/);
 assert.match(packagedLauncher, /--c4ml-smoke/);
+assert.match(
+  developmentLauncher,
+  /CFBundleDisplayName["'], ["']C4thedral/,
+  "the macOS development bundle must identify itself as C4thedral",
+);
+assert.match(
+  developmentLauncher,
+  /org\.c4ml\.desktop\.development/,
+  "the macOS development bundle must use a C4ML-owned bundle identifier",
+);
+assert.match(
+  developmentLauncher,
+  /require\(["']electron["']\)/,
+  "the development launcher must use the pinned local Electron runtime",
+);
 
 for (const relativePath of [
   "build/editor/browser/main.js",

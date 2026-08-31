@@ -149,10 +149,22 @@ kbd {
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 55%, var(--danger));
 }
 
+.connection-action {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--line-strong));
+  background: color-mix(in srgb, var(--accent) 7%, var(--control-bg));
+}
+
 .primary-action {
   border: 1px solid var(--accent-strong);
   background: var(--accent);
   color: white;
+}
+
+.title-action:disabled,
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+  box-shadow: none;
 }
 
 .title-action:hover,
@@ -1007,6 +1019,11 @@ button.editor-tab {
   text-transform: uppercase;
 }
 
+.detached-preview-redock {
+  align-self: center;
+  margin-right: 6px;
+}
+
 .diagram-tab-mark {
   width: 13px;
   height: 13px;
@@ -1271,6 +1288,57 @@ button.editor-tab {
   cursor: crosshair;
 }
 
+.diagram.is-connection-picking {
+  cursor: cell;
+}
+
+.connection-picker {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  left: 50%;
+  display: grid;
+  width: min(520px, calc(100% - 24px));
+  box-sizing: border-box;
+  gap: 5px;
+  margin: 0 auto -96px;
+  padding: 11px 13px;
+  transform: translateX(0);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--line));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--control-ink);
+  backdrop-filter: blur(8px);
+}
+
+.connection-picker > span {
+  color: var(--muted);
+}
+
+.connection-picker .connection-picker-issue {
+  color: var(--danger);
+  font-weight: 650;
+}
+
+.connection-picker > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.connection-picker button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
 .empty-preview {
   display: grid;
   max-width: 300px;
@@ -1365,12 +1433,14 @@ button.editor-tab {
 }
 
 .diagnostics {
+  box-sizing: border-box;
   height: 125px;
   overflow: auto;
+  padding: 8px;
 }
 
 .diagnostics-empty {
-  margin: 18px;
+  margin: 10px;
   color: var(--muted);
   font-size: 1rem;
 }
@@ -1380,7 +1450,7 @@ button.editor-tab {
   grid-template-columns: 1fr;
   gap: 6px;
   margin: 0;
-  padding: 8px;
+  padding: 0;
   list-style: none;
 }
 
@@ -1572,8 +1642,47 @@ button.editor-tab {
   border-top: 1px solid var(--accent-strong);
   background: var(--accent);
   color: white;
-  font-size: 0.85rem;
+  font-size: 1rem;
   letter-spacing: 0.02em;
+}
+
+.wizard-undo-notice {
+  position: fixed;
+  z-index: 20;
+  right: 14px;
+  bottom: 34px;
+  display: flex;
+  max-width: min(460px, calc(100vw - 28px));
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px 9px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--dialog-shadow);
+}
+
+.wizard-undo-notice span {
+  min-width: 0;
+}
+
+.wizard-undo-notice button {
+  min-height: 30px;
+  flex: 0 0 auto;
+  padding: 0 9px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.wizard-undo-notice button:hover,
+.wizard-undo-notice button:focus-visible {
+  background: var(--control-hover);
+  outline: 2px solid var(--focus-ring);
 }
 
 .status-bar button {
@@ -1606,6 +1715,72 @@ button.editor-tab {
   justify-items: center;
   padding-top: 72px;
   background: var(--backdrop);
+}
+
+.confirmation-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--backdrop);
+  backdrop-filter: blur(4px);
+}
+
+.confirmation-dialog {
+  display: grid;
+  width: min(460px, 100%);
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--dialog-shadow);
+}
+
+.confirmation-dialog h2,
+.confirmation-dialog p {
+  margin: 0;
+}
+
+.confirmation-dialog h2 {
+  font-size: 1.35rem;
+}
+
+.confirmation-dialog p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.confirmation-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.confirmation-actions button:hover,
+.confirmation-actions button:focus-visible {
+  background: var(--control-hover);
+  outline: 2px solid var(--focus-ring);
+}
+
+.confirmation-actions .confirmation-primary {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .command-palette {

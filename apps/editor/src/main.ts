@@ -16,5 +16,5 @@ void (previewWindow
     }),
   )
   .catch((error: unknown) => {
-    console.error("C4ML desktop renderer bootstrap failed.", error);
+    console.error("C4thedral desktop renderer bootstrap failed.", error);
   });

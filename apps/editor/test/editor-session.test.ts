@@ -65,6 +65,19 @@ describe("editor analysis session", () => {
     expect(session.accept(response(second.requestId))).toBe(true);
     expect(session.state.phase).toBe("invalid");
   });
+
+  it("clears derived analysis when the workspace closes", () => {
+    const session = new EditorAnalysisSession();
+    session.begin("c4ml draft-1", "editor.c4ml");
+    session.reset();
+
+    expect(session.state).toEqual({
+      phase: "idle",
+      activeRequestId: 0,
+      diagnostics: [],
+      report: undefined,
+    });
+  });
 });
 
 function response(
@@ -273,6 +286,22 @@ function semanticPreviewFailure(
 }
 
 describe("editor compilation session", () => {
+  it("returns to an empty derived state when the workspace closes", () => {
+    const session = new EditorCompilationSession();
+    session.begin("c4ml draft-1", "editor.c4ml");
+    session.reset();
+
+    expect(session.state).toEqual({
+      phase: "idle",
+      activeRequestId: 0,
+      diagnostics: [],
+      lastValidSvg: undefined,
+      lastValidNavigation: undefined,
+      views: [],
+      activeViewId: undefined,
+    });
+  });
+
   it("rejects invalid protocol identities and result payloads", () => {
     expect(
       isCompilerWorkerRequest({

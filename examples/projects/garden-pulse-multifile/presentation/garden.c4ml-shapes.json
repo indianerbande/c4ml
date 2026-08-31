@@ -1,6 +1,10 @@
 {
   "version": 1,
   "id": "garden-pulse-shapes",
+  "box": {
+    "bar": "on",
+    "transparency": 0
+  },
   "definitions": [
     {
       "id": "garden-sensor-card",

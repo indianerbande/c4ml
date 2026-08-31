@@ -3,7 +3,6 @@ import { Injectable, computed, effect, inject, signal } from "@angular/core";
 import type { DesktopCommand } from "@c4ml/desktop-contract";
 
 import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
-import { initialC4mlSource } from "./initial-source.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { saveAllProjectDocuments } from "./workbench-document-save-all.js";
@@ -14,6 +13,7 @@ export interface WorkbenchProjectDocument {
   readonly source: string;
   readonly handle?: string;
   readonly dirty: boolean;
+  readonly placeholder?: true;
 }
 
 export interface WorkbenchProjectSnapshot {
@@ -66,19 +66,20 @@ export interface OpenedWorkbenchDocument {
   readonly displayName: string;
 }
 
-const initialDocument: WorkbenchProjectDocument = {
-  uri: "architecture.c4ml",
-  displayName: "architecture.c4ml",
-  source: initialC4mlSource,
+const emptyDocument: WorkbenchProjectDocument = {
+  uri: "untitled.c4ml",
+  displayName: "untitled.c4ml",
+  source: "",
   dirty: false,
+  placeholder: true,
 };
 
 @Injectable({ providedIn: "root" })
 export class WorkbenchDocumentFacade {
   readonly projectDocuments = signal<readonly WorkbenchProjectDocument[]>([
-    initialDocument,
+    emptyDocument,
   ]);
-  readonly activeDocumentUri = signal(initialDocument.uri);
+  readonly activeDocumentUri = signal(emptyDocument.uri);
   readonly documentSetRevision = signal(0);
   readonly projectId = signal("implicit-project");
   readonly projectName = signal<string | undefined>(undefined);
@@ -97,6 +98,12 @@ export class WorkbenchDocumentFacade {
       this.projectDocuments().find(
         ({ uri }) => uri === this.activeDocumentUri(),
       ) ?? this.projectDocuments()[0]!,
+  );
+  readonly hasOpenDocument = computed(
+    () => this.activeDocument().placeholder !== true,
+  );
+  readonly visibleProjectDocuments = computed(() =>
+    this.projectDocuments().filter(({ placeholder }) => placeholder !== true),
   );
   readonly source = computed(() => this.activeDocument().source);
   readonly documentName = computed(() => this.activeDocument().displayName);
@@ -120,8 +127,10 @@ export class WorkbenchDocumentFacade {
     effect(() => {
       const handle = this.documentHandle();
       this.#desktop?.setDocumentState({
-        displayName: this.documentName(),
+        displayName: this.hasOpenDocument() ? this.documentName() : "C4thedral",
         dirty: this.projectDirty(),
+        hasOpenDocument: this.hasOpenDocument(),
+        projectMode: this.projectMode(),
         ...(handle === undefined ? {} : { handle }),
       });
     });
@@ -158,10 +167,9 @@ export class WorkbenchDocumentFacade {
       ...(theme === undefined ? {} : { theme }),
       ...(shapes === undefined ? {} : { shapes }),
       ...(assets === undefined ? {} : { assets }),
-      documents: this.projectDocuments().map(({ uri, source }) => ({
-        uri,
-        source,
-      })),
+      documents: this.projectDocuments()
+        .filter(({ placeholder }) => placeholder !== true)
+        .map(({ uri, source }) => ({ uri, source })),
     };
   }
 
@@ -201,7 +209,32 @@ export class WorkbenchDocumentFacade {
   }
 
   replaceSource(source: string, dirty: boolean): void {
-    this.#updateActiveDocument((document) => ({ ...document, source, dirty }));
+    this.#updateActiveDocument((document) => {
+      if (document.placeholder === true && source.length === 0) {
+        return document;
+      }
+      if (document.placeholder === true && source.length > 0) {
+        const { placeholder: _placeholder, ...openedDocument } = document;
+        return { ...openedDocument, source, dirty };
+      }
+      return { ...document, source, dirty };
+    });
+  }
+
+  closeWorkspace(): boolean {
+    if (!this.hasOpenDocument()) {
+      return false;
+    }
+    if (!this.#confirmDiscard()) {
+      return false;
+    }
+    this.#replaceProject({
+      id: "implicit-project",
+      projectMode: false,
+      documents: [{ ...emptyDocument }],
+    });
+    this.fileOperationLabel.set(undefined);
+    return true;
   }
 
   resetAsGeneratedDocument(source: string): void {
@@ -316,7 +349,7 @@ export class WorkbenchDocumentFacade {
 
   async saveDocument(mode: "save" | "save-as"): Promise<void> {
     const desktop = this.#desktop;
-    if (desktop === undefined) {
+    if (desktop === undefined || !this.hasOpenDocument()) {
       return;
     }
     this.fileOperationLabel.set(
