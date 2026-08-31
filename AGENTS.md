@@ -26,10 +26,14 @@ own compiler semantics. The sandboxed Angular renderer receives only a
 versioned C4ML preload bridge with opaque document handles. Native Open, Save,
 Save As, dirty-title state, and close protection are implemented. Local macOS
 `.app`, DMG, and ZIP artifacts are automatically and visually validated; the
-configured Windows Squirrel installer still requires a native Windows run.
+configured Windows Squirrel installer and Linux portable ZIP still require
+native runs.
 Current macOS artifacts are ad-hoc signed development builds, not notarized
-releases. The exact pnpm-managed Node.js 24.19.0 runtime is used for repository
-scripts and packaging.
+releases. Node.js 24.15.0 or a newer 24.x release is the reference packaging
+runtime. pnpm warns instead of forcing a public runtime download; source checks
+may run on a newer supported line, but Electron Forge packaging fails clearly
+outside Node.js 24.x. `PLATFORMS.md` owns the native build and verification
+matrix.
 
 The desktop workbench also has an implemented original IDE-like shell with
 C4ML-specific Files, Source Control, Diagrams, Output, and Help activity areas, simultaneous

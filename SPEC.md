@@ -869,10 +869,12 @@ semantic, layout, routing, or scene-generation implementations.
 
 The accepted toolchain baseline is:
 
-- Node.js 24.15.0 or a newer supported line as the minimum workspace build and
-  CLI baseline;
-- pnpm-managed Node.js 24.19.0 as the exact runtime used for repository scripts
-  and desktop packaging;
+- Node.js 24.15.0 or a newer 24.x release as the reference native desktop
+  packaging runtime and minimum workspace and CLI baseline;
+- a warning rather than a forced public download when a contributor uses a
+  different installed runtime; source validation may accept a newer supported
+  line, while the replaceable Forge 7 packaging adapter fails clearly outside
+  the accepted Node.js 24.x build line;
 - a pnpm workspace with the package-manager version pinned in the repository;
 - strict TypeScript using ECMAScript modules; and
 - Vitest for the initial unit and adapter-contract tests.
@@ -1440,12 +1442,19 @@ ASAR integrity and ASAR-only application loading, and enable cookie encryption.
 
 Electron Forge is the replaceable packaging adapter. macOS `.app`, DMG, and ZIP
 artifacts are configured and locally validated. The Windows Squirrel maker is
-configured for a Setup EXE, but a native Windows build and install test remain
-required. Current macOS artifacts are ad-hoc signed for local execution only.
+configured for a Setup EXE, and Linux uses a portable ZIP without an additional
+distribution-specific maker. Windows and Linux still require native build,
+launch, and install or unpack validation. Current macOS artifacts are ad-hoc
+signed for local execution only.
 A release MUST add a final product version and icon, Apple Developer ID signing
 and notarization, Windows code signing, and native validation on each supported
 platform. The installed application MUST run offline; dependency and Electron
 binary downloads are build/install-time concerns only.
+
+Builds MUST run on their target operating system. Platform-specific packaging
+helpers MUST remain optional or transitive to their maker and MUST NOT execute
+on unrelated hosts. The exact host matrix, prerequisites, outputs, runtime
+differences, and native verification procedure are recorded in `PLATFORMS.md`.
 
 ### 9.8 Local workbench preferences
 
