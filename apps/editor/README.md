@@ -27,6 +27,8 @@ Implemented:
   without changing compilation or becoming an editable Monaco document;
 - validated project narratives preserved as passive non-source Markdown without
   entering compilation or editable source tabs;
+- publication View references and render profiles validated against the complete
+  compiled project without mutating its Views;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

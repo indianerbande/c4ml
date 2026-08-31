@@ -1,5 +1,6 @@
 import {
   ArchitectureObservationError,
+  ArchitecturePublicationError,
   ArchitecturePolicyError,
   compareArchitectureSnapshots,
   compileArchitectureDiagram,
@@ -10,9 +11,11 @@ import {
   evaluateBuiltInArchitectureQuality,
   createArchitectureProjectInput,
   parseArchitectureObservationSet,
+  parseArchitecturePublication,
   parseArchitecturePolicySet,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
+  validateArchitecturePublicationViews,
   svgSceneObjectId,
   type ArchitectureModel,
   type ArchitectureView,
@@ -403,6 +406,19 @@ export async function compileWorkerRequest(
       );
     }
 
+    const publicationDiagnostic = validateWorkerPublication(request, parsed.views);
+    if (publicationDiagnostic !== undefined) {
+      return response(
+        request,
+        "invalid",
+        [publicationDiagnostic],
+        undefined,
+        undefined,
+        parsed.views.map(toWorkerView),
+        parsed.views[0].id,
+      );
+    }
+
     const views = parsed.views.map(toWorkerView);
     const view =
       parsed.views.find(({ id }) => id === request.requestedViewId) ??
@@ -474,6 +490,39 @@ export async function compileWorkerRequest(
       ],
     };
   }
+}
+
+function validateWorkerPublication(
+  request: CompilerWorkerRequest,
+  views: readonly ArchitectureView[],
+): Diagnostic | undefined {
+  const resource = request.project?.publication;
+  if (resource === undefined) return undefined;
+  const parsed = parseArchitecturePublication(resource.source);
+  if (!parsed.valid) return publicationDiagnostic(resource, parsed.error);
+  try {
+    validateArchitecturePublicationViews(parsed.publication, views);
+    return undefined;
+  } catch (error: unknown) {
+    if (error instanceof ArchitecturePublicationError) {
+      return publicationDiagnostic(resource, error);
+    }
+    throw error;
+  }
+}
+
+function publicationDiagnostic(
+  resource: { readonly uri: string; readonly source: string },
+  error: ArchitecturePublicationError,
+): Diagnostic {
+  return {
+    code: error.code,
+    severity: "error",
+    message: error.message,
+    source: resourceSource(resource.uri, resource.source),
+    related: [],
+    correction: "Review the project-local publication resource and its View identities.",
+  };
 }
 
 function getBrowserSvgFontFaces(): Promise<readonly SvgEmbeddedFontFace[]> {
@@ -651,6 +700,9 @@ export async function previewProjectChangeWorkerRequest(
       ...(request.project.narratives === undefined
         ? {}
         : { narratives: request.project.narratives.map((resource) => ({ ...resource })) }),
+      ...(request.project.publication === undefined
+        ? {}
+        : { publication: { ...request.project.publication } }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -694,6 +746,9 @@ export async function previewProjectChangeWorkerRequest(
           ...(candidate.narratives === undefined
             ? {}
             : { narratives: candidate.narratives.map((resource) => ({ ...resource })) }),
+          ...(candidate.publication === undefined
+            ? {}
+            : { publication: { ...candidate.publication } }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -1079,6 +1134,10 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   }[];
+  readonly publication?: {
+    readonly uri: string;
+    readonly source: string;
+  };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1117,6 +1176,9 @@ function toArchitectureProject(project: {
     ...(project.narratives === undefined
       ? {}
       : { narratives: project.narratives.map((resource) => ({ ...resource })) }),
+    ...(project.publication === undefined
+      ? {}
+      : { publication: { ...project.publication } }),
   });
 }
 

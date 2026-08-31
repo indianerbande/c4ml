@@ -215,8 +215,9 @@ cursor, and scroll state for every open project document.
 The first typed project glossary resource is implemented with deterministic
 term, acronym, definition, expansion, and alias lookup. Safe Markdown-backed
 project narratives are also implemented with fixed metadata, local links, and
-no architecture semantics. Publication, theme, shape, and asset project
-resources remain unimplemented.
+no architecture semantics. One typed publication resource now validates ordered
+View captions and render profiles against compiled Views. Theme, shape, and
+asset project resources remain unimplemented.
 
 The minimum completeness baseline is also accepted: all four static C4 views
 (System Context, Container, Component, Code), all three supporting C4 views

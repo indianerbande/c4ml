@@ -17,6 +17,7 @@ import {
   parseArchitectureProjectManifest,
   parseArchitectureGlossary,
   parseArchitectureNarrative,
+  parseArchitecturePublication,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -330,6 +331,42 @@ export async function loadArchitectureProject(
     narratives.push({ uri, source });
   }
 
+  let publication: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.publication !== undefined) {
+    const uri = parsedManifest.manifest.publication;
+    const publicationPath = resolve(projectRoot, ...uri.split("/"));
+    let publicationRealPath: string;
+    try {
+      publicationRealPath = await realpath(publicationPath);
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-014",
+        `Cannot read project publication ${publicationPath}: ${errorMessage(error)}`,
+      );
+    }
+    const relativeRealPath = relative(rootRealPath, publicationRealPath);
+    if (relativeRealPath === ".." || relativeRealPath.split(sep)[0] === ".." || isAbsolute(relativeRealPath)) {
+      return sourceFailure(
+        "C4ML-PROJECT-NODE-015",
+        `Project publication "${uri}" resolves outside the project directory.`,
+      );
+    }
+    let source: string;
+    try {
+      source = await readFile(publicationRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-014",
+        `Cannot read project publication ${publicationPath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedPublication = parseArchitecturePublication(source);
+    if (!parsedPublication.valid) {
+      return sourceFailure(parsedPublication.error.code, parsedPublication.error.message);
+    }
+    publication = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -347,6 +384,7 @@ export async function loadArchitectureProject(
       ...(observations === undefined ? {} : { observations }),
       ...(glossary === undefined ? {} : { glossary }),
       ...(narratives.length === 0 ? {} : { narratives }),
+      ...(publication === undefined ? {} : { publication }),
     }),
     documentPaths,
   };

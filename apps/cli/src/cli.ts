@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import {
   ArchitectureObservationError,
+  ArchitecturePublicationError,
   ArchitecturePolicyError,
   ArchitectureQueryError,
   compareArchitectureSnapshots,
@@ -17,9 +18,11 @@ import {
   evaluateBuiltInArchitectureQuality,
   executeArchitectureQuery,
   parseArchitectureObservationSet,
+  parseArchitecturePublication,
   parseArchitecturePolicySet,
   renderDiagramSvg,
   resolveArchitectureSnapshot,
+  validateArchitecturePublicationViews,
   routeDiagram,
   stabilizeLayoutAgainstBaseline,
   type ArchitectureView,
@@ -195,6 +198,22 @@ export async function runCli(
   ) {
     reportDiagnostics(parsed.diagnostics, parsedCommand.diagnostics, io);
     return cliExitCode.source;
+  }
+  if (loaded.project.publication !== undefined) {
+    const publication = parseArchitecturePublication(loaded.project.publication.source);
+    if (!publication.valid) {
+      reportCliFailure(publication.error.code, publication.error.message, parsedCommand.diagnostics, io);
+      return cliExitCode.source;
+    }
+    try {
+      validateArchitecturePublicationViews(publication.publication, parsed.views);
+    } catch (error: unknown) {
+      if (error instanceof ArchitecturePublicationError) {
+        reportCliFailure(error.code, error.message, parsedCommand.diagnostics, io);
+        return cliExitCode.source;
+      }
+      throw error;
+    }
   }
   if (parsedCommand.kind === "check") {
     reportSuccess(

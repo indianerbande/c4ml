@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.41
+Status: Draft 0.42
 
 Date: 2026-08-31
 
@@ -522,7 +522,9 @@ manifest contains:
 - an optional `glossary` path naming one local version-one architecture
   glossary; and
 - an optional non-empty `narratives` list naming local version-one architecture
-  narrative chapters.
+  narrative chapters; and
+- an optional `publication` path naming one local version-one publication
+  resource.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -533,6 +535,8 @@ observation path follows the same containment and uniqueness rules and MUST end
 in `.c4ml-observations.json`. A glossary path follows those rules and MUST end
 in `.c4ml-glossary.json`. Narrative paths follow those rules, are unique, and
 MUST end in `.c4ml-narrative.md`.
+A publication path follows the same rules and MUST end in
+`.c4ml-publication.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -555,8 +559,9 @@ document.
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
 documents, and the optional raw local policy, observation, glossary, and
-narrative resources. It MUST NOT open files itself. CLI, Electron, and renderer
-adapters load documents and enforce their environment's path and access rules.
+narrative, and publication resources. It MUST NOT open files itself. CLI,
+Electron, and renderer adapters load documents and enforce their environment's
+path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
 The desktop editor opens an explicit project directory through its native
@@ -588,7 +593,8 @@ input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, exact document revisions, and optional policy,
-observation, glossary, and narrative resource identities and content. A project source
+observation, glossary, narrative, and publication resource identities and
+content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
 authoring action spanning several documents MUST remain one preview and one undo
@@ -596,8 +602,6 @@ transaction at the editor boundary.
 
 Further project resources are reserved as separate typed concerns:
 
-- publication resources for View selection, ordering, captions, render
-  profiles, and future print composition; and
 - controlled presentation resources such as themes, shapes, and licensed local
   assets.
 
@@ -631,6 +635,17 @@ and load identically from working files and read-only Git revisions. They are
 not architecture source, are never compiled into semantic identities, and are
 not rendered into diagrams. A visible narrative reader/editor and Markdown
 rendering remain later UI work.
+
+The implemented version-one publication resource selects an ordered non-empty
+set of declared View identities with optional captions and one or more named
+render profiles. A profile selects SVG and/or PNG, scale `1`, `2`, or `3`, and
+theme or transparent background. View order is preserved; profiles are
+deterministically identity-sorted. Duplicate or unknown View identities and
+malformed profiles fail with stable `C4ML-PUBLICATION-*` errors. The CLI and
+compiler worker validate publication View references against the compiled
+project. Publication content participates in project revisions but MUST NOT
+mutate architecture semantics, source, View definitions, layout, or styling.
+Print composition and a visible publication editor remain later work.
 
 ## 8. Layout model
 

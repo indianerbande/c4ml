@@ -18,6 +18,7 @@ import {
   parseArchitectureProjectManifest,
   parseArchitectureGlossary,
   parseArchitectureNarrative,
+  parseArchitecturePublication,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -321,6 +322,21 @@ async function loadManifestProject(
     narrativeIds.add(parsedNarrative.narrative.id);
     narratives.push({ uri, source: source.text });
   }
+  let publication: { readonly uri: string; readonly source: string } | undefined;
+  if (parsed.manifest.publication !== undefined) {
+    const uri = parsed.manifest.publication;
+    const source = await readBlob(
+      repositoryRoot,
+      revision.commit,
+      joinGitPath(projectPath, uri),
+    );
+    if (!source.valid) return source;
+    const parsedPublication = parseArchitecturePublication(source.text);
+    if (!parsedPublication.valid) {
+      return failure("source", parsedPublication.error.code, parsedPublication.error.message);
+    }
+    publication = { uri, source: source.text };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -334,6 +350,7 @@ async function loadManifestProject(
       ...(observations === undefined ? {} : { observations }),
       ...(glossary === undefined ? {} : { glossary }),
       ...(narratives.length === 0 ? {} : { narratives }),
+      ...(publication === undefined ? {} : { publication }),
     }),
     revision,
     projectPath,

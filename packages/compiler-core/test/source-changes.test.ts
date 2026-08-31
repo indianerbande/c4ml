@@ -243,6 +243,14 @@ describe("portable multi-document source change sets", () => {
     expect(createProjectRevision(changedNarrative)).not.toEqual(createProjectRevision(withNarrative));
   });
 
+  it("includes the publication resource in the project revision", () => {
+    const value = createArchitectureProjectInput({
+      ...project,
+      publication: { uri: "publication/review.c4ml-publication.json", source: "review" },
+    });
+    expect(createProjectRevision(value)).not.toEqual(createProjectRevision(project));
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

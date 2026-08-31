@@ -21,6 +21,7 @@ describe("Node.js architecture project loader", () => {
         observations: "governance/garden.c4ml-observations.json",
         glossary: "governance/garden.c4ml-glossary.json",
         narratives: ["governance/overview.c4ml-narrative.md"],
+        publication: "governance/review.c4ml-publication.json",
         sources: ["views/context.c4ml", "model/systems.c4ml"],
       }),
     );
@@ -74,6 +75,12 @@ describe("Node.js architecture project loader", () => {
       join(directory, "governance", "overview.c4ml-narrative.md"),
       "---\nc4ml-narrative: 1\nid: garden-overview\ntitle: Garden overview\n---\nGarden context.\n",
     );
+    await writeFile(join(directory, "governance", "review.c4ml-publication.json"), JSON.stringify({
+      version: 1,
+      id: "review",
+      views: [{ viewId: "context" }],
+      profiles: [{ id: "svg", formats: ["svg"], scale: 1, background: "theme" }],
+    }));
 
     const result = await loadArchitectureProject(directory);
 
@@ -99,6 +106,9 @@ describe("Node.js architecture project loader", () => {
       expect(result.project.narratives).toMatchObject([
         { uri: "governance/overview.c4ml-narrative.md" },
       ]);
+      expect(result.project.publication).toMatchObject({
+        uri: "governance/review.c4ml-publication.json",
+      });
     }
   });
 

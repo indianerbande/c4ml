@@ -5,6 +5,7 @@ import {
   architectureObservationResourceSuffix,
   architectureGlossaryResourceSuffix,
   architectureNarrativeResourceSuffix,
+  architecturePublicationResourceSuffix,
   architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
@@ -67,6 +68,7 @@ describe("portable architecture project contract", () => {
       observations: "evidence/signal-garden.c4ml-observations.json",
       glossary: "knowledge/signal-garden.c4ml-glossary.json",
       narratives: ["docs/overview.c4ml-narrative.md"],
+      publication: "publication/review.c4ml-publication.json",
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -80,6 +82,7 @@ describe("portable architecture project contract", () => {
         observations: "evidence/signal-garden.c4ml-observations.json",
         glossary: "knowledge/signal-garden.c4ml-glossary.json",
         narratives: ["docs/overview.c4ml-narrative.md"],
+        publication: "publication/review.c4ml-publication.json",
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
@@ -89,6 +92,16 @@ describe("portable architecture project contract", () => {
     expect(architectureObservationResourceSuffix).toBe(".c4ml-observations.json");
     expect(architectureGlossaryResourceSuffix).toBe(".c4ml-glossary.json");
     expect(architectureNarrativeResourceSuffix).toBe(".c4ml-narrative.md");
+    expect(architecturePublicationResourceSuffix).toBe(".c4ml-publication.json");
+  });
+
+  it("retains one non-semantic publication resource", () => {
+    const project = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      publication: { uri: "publication/review.c4ml-publication.json", source: "{}" },
+    });
+    expect(project.publication?.uri).toBe("publication/review.c4ml-publication.json");
   });
 
   it("orders typed project narratives and rejects duplicate or unsafe paths", () => {
