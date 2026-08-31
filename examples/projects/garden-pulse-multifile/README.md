@@ -28,6 +28,10 @@ worker rendering.
 The optional `presentation/garden.c4ml-shapes.json` resource assigns an original
 safe octagonal card to Sensor Post through the shared normalized shape contract.
 
+The optional `assets/garden.c4ml-assets.json` manifest licenses and hashes the
+original passive offline review note. Loaders verify its exact SHA-256 before
+the project is accepted.
+
 From the repository root:
 
 ```sh

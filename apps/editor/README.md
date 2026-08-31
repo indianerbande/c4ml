@@ -33,6 +33,8 @@ Implemented:
   scene resolver without affecting workbench appearance;
 - safe project shape definitions and assignments applied through the shared
   normalized primitive contract;
+- licensed passive project assets retained with verified manifest metadata and
+  exact bounded UTF-8 content outside architecture source;
 - the accepted lazy Monaco 0.56.0 runtime behind a C4ML-owned adapter;
 - an in-place context-valid completion popup with exact worker-owned source
   replacement ranges;

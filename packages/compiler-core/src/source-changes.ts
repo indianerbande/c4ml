@@ -217,6 +217,13 @@ export function createProjectRevision(
     `${project.shapes?.source.length ?? -1}:${
       project.shapes === undefined ? "" : createSourceRevision(project.shapes.source).hash
     }`,
+    `${project.assets?.uri.length ?? -1}:${project.assets?.uri ?? ""}`,
+    `${project.assets?.source.length ?? -1}:${
+      project.assets === undefined ? "" : createSourceRevision(project.assets.source).hash
+    }`,
+    ...(project.assets?.files ?? []).map((file) =>
+      `asset:${file.uri.length}:${file.uri}:${file.content.length}:${createSourceRevision(file.content).hash}`
+    ),
     ...documents.map(
       ({ uri, revision }) =>
         `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
@@ -393,6 +400,7 @@ export function applyProjectSourceChangeSet(
     ...(project.publication === undefined ? {} : { publication: project.publication }),
     ...(project.theme === undefined ? {} : { theme: project.theme }),
     ...(project.shapes === undefined ? {} : { shapes: project.shapes }),
+    ...(project.assets === undefined ? {} : { assets: project.assets }),
   });
   return {
     valid: true,

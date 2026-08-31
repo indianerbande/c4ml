@@ -119,7 +119,7 @@ implementation.
 - [x] add a separately reviewed typed publication resource;
 - [x] add a separately reviewed typed theme resource;
 - [x] add a separately reviewed typed shape resource; and
-- [ ] add a separately reviewed typed licensed-asset resource.
+- [x] add a separately reviewed typed licensed-asset resource.
 
 The version-one glossary slice adds one optional local
 `.c4ml-glossary.json` resource with deterministic term, acronym, expansion,
@@ -156,6 +156,19 @@ existing restricted 100×100 renderer-neutral primitive contract. Definitions
 and element assignments are validated by the shared shape catalogue and applied
 identically in CLI and desktop-worker rendering. No SVG, script, CSS, font,
 filter, image, network reference, or new C4 element kind enters the resource.
+
+The version-one asset slice adds one local `.c4ml-assets.json` manifest for
+passive UTF-8 `text/plain`, `text/markdown`, and `application/json` files. Every
+entry declares stable identity, normalized local path, purpose, media type,
+SHA-256, one SPDX license identifier, and optional attribution. Filesystem and
+read-only Git loaders verify containment, content, JSON validity, and integrity;
+manifest plus exact contents participate in project revisions and bounded typed
+desktop transport. Binary, active, image, font, executable, and remote assets
+remain excluded from version one.
+
+Gate 1.5 is now complete. Every project resource is independently typed,
+offline, deterministic, revisioned, and kept separate from architecture source
+and installation-local workbench preferences.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own

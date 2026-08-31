@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { realpath, stat } from "node:fs/promises";
 import {
   basename,
@@ -21,6 +22,8 @@ import {
   parseArchitecturePublication,
   parseArchitectureThemeResource,
   parseArchitectureShapeResource,
+  assertArchitectureAssetHash,
+  parseArchitectureAssetManifest,
   parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
@@ -357,6 +360,31 @@ async function loadManifestProject(
     if (!parsedShapes.valid) return failure("source", parsedShapes.error.code, parsedShapes.error.message);
     shapes = { uri, source: source.text };
   }
+  let assets: { readonly uri: string; readonly source: string; readonly files: readonly { readonly uri: string; readonly content: string }[] } | undefined;
+  if (parsed.manifest.assets !== undefined) {
+    const uri = parsed.manifest.assets;
+    const source = await readBlob(repositoryRoot, revision.commit, joinGitPath(projectPath, uri));
+    if (!source.valid) return source;
+    const parsedAssets = parseArchitectureAssetManifest(source.text);
+    if (!parsedAssets.valid) return failure("source", parsedAssets.error.code, parsedAssets.error.message);
+    const files: Array<{ readonly uri: string; readonly content: string }> = [];
+    for (const asset of parsedAssets.manifest.assets) {
+      const content = await readBlob(repositoryRoot, revision.commit, joinGitPath(projectPath, asset.uri));
+      if (!content.valid) return content;
+      try {
+        assertArchitectureAssetHash(asset, createHash("sha256").update(content.text, "utf8").digest("hex"));
+        if (asset.mediaType === "application/json") JSON.parse(content.text);
+      } catch (error: unknown) {
+        return failure(
+          "source",
+          error instanceof Error && "code" in error ? String(error.code) : "C4ML-ASSET-001",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+      files.push({ uri: asset.uri, content: content.text });
+    }
+    assets = { uri, source: source.text, files };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -373,6 +401,7 @@ async function loadManifestProject(
       ...(publication === undefined ? {} : { publication }),
       ...(theme === undefined ? {} : { theme }),
       ...(shapes === undefined ? {} : { shapes }),
+      ...(assets === undefined ? {} : { assets }),
     }),
     revision,
     projectPath,

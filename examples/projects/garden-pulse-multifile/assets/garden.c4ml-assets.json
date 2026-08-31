@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "garden-pulse-assets",
+  "assets": [
+    {
+      "id": "review-note",
+      "uri": "assets/review-note.txt",
+      "mediaType": "text/plain",
+      "purpose": "reference",
+      "sha256": "2baa51fcb9ca7fe3472d709f5970d01d6c584b160e2ba93c3a6990a2638d131f",
+      "license": "Apache-2.0",
+      "attribution": "Original C4ML project material"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.45
+Status: Draft 0.46
 
 Date: 2026-08-31
 
@@ -155,6 +155,11 @@ deterministic assignments, revision and filesystem/Git loading, and identical
 CLI/worker preparation. The original Garden Pulse PNG was visually inspected:
 only Sensor Post uses the new octagonal card; its C4 type, text, Route,
 Arrowhead, Port connection, and surrounding geometry remain intact.
+The licensed-asset gate proves passive media allowlisting, identity/path
+uniqueness, SPDX and SHA-256 syntax, hash mismatch rejection, JSON syntax,
+filesystem and read-only Git containment/loading, exact project-revision
+participation, and bounded non-source desktop/worker transport. The original
+Garden Pulse review note is verified against its recorded SHA-256.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -1013,6 +1018,10 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-shapes.json` resource validates only restricted normalized
   primitives and assignments, participates in the project revision, and cannot
   add executable or external content;
+- an optional `.c4ml-assets.json` manifest permits only licensed passive UTF-8
+  files, verifies containment and SHA-256 in filesystem and Git loaders,
+  participates with exact contents in the project revision, and never becomes
+  architecture source;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

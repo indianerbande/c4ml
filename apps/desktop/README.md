@@ -31,6 +31,8 @@ The shell currently provides:
   shared semantic scene resolver;
 - one bounded safe `.c4ml-shapes.json` catalogue applied through shared diagram
   preparation without filesystem authority;
+- one bounded `.c4ml-assets.json` manifest whose passive local contents were
+  license- and SHA-256-verified by the native loader;
 - bounded shell-free Git subprocesses in the main/project-node boundary, with
   repository-relative change paths and no checkout, discard, pull, fetch, or
   history-rewrite operation;

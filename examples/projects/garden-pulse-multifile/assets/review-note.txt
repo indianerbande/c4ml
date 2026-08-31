@@ -1,0 +1,5 @@
+Garden Pulse review note
+
+This original C4ML project asset records that the architecture review is
+designed for offline use. It does not contain executable content and is not an
+architecture source document.

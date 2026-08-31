@@ -75,6 +75,7 @@ describe("Git project revision adapter", () => {
         publication: "review.c4ml-publication.json",
         theme: "garden.c4ml-theme.json",
         shapes: "garden.c4ml-shapes.json",
+        assets: "garden.c4ml-assets.json",
       }),
       "utf8",
     );
@@ -148,6 +149,14 @@ describe("Git project revision adapter", () => {
         primitives: [{ kind: "rectangle", paint: "surface", x: 0, y: 0, width: 100, height: 100 }],
       }],
     }), "utf8");
+    await writeFile(join(projectDirectory, "note.txt"), "note\n", "utf8");
+    await writeFile(join(projectDirectory, "garden.c4ml-assets.json"), JSON.stringify({
+      version: 1, id: "assets", assets: [{
+        id: "note", uri: "note.txt", mediaType: "text/plain",
+        purpose: "reference", sha256: "389ed6887e49a315f706f6c2b931b1dcf0d797c91437124f32eb98555c669758",
+        license: "Apache-2.0",
+      }],
+    }), "utf8");
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -176,6 +185,10 @@ describe("Git project revision adapter", () => {
     expect(result.project.publication).toMatchObject({ uri: "review.c4ml-publication.json" });
     expect(result.project.theme).toMatchObject({ uri: "garden.c4ml-theme.json" });
     expect(result.project.shapes).toMatchObject({ uri: "garden.c4ml-shapes.json" });
+    expect(result.project.assets).toMatchObject({
+      uri: "garden.c4ml-assets.json",
+      files: [{ uri: "note.txt", content: "note\n" }],
+    });
   });
 
   it("classifies unknown revisions without changing repository state", async () => {

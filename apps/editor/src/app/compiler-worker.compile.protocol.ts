@@ -223,6 +223,11 @@ export interface CompilerWorkerThemeResource {
   readonly source: string;
 }
 export interface CompilerWorkerShapeResource { readonly uri: string; readonly source: string }
+export interface CompilerWorkerAssetResource {
+  readonly uri: string;
+  readonly source: string;
+  readonly files: readonly { readonly uri: string; readonly content: string }[];
+}
 
 export interface CompilerWorkerProject {
   readonly version: 1;
@@ -237,6 +242,7 @@ export interface CompilerWorkerProject {
   readonly publication?: CompilerWorkerPublicationResource;
   readonly theme?: CompilerWorkerThemeResource;
   readonly shapes?: CompilerWorkerShapeResource;
+  readonly assets?: CompilerWorkerAssetResource;
 }
 
 export interface CompilerWorkerRequest {
@@ -351,6 +357,15 @@ export function isCompilerWorkerProject(
         (candidate.shapes as Partial<CompilerWorkerShapeResource>).uri!.length > 0 &&
         typeof (candidate.shapes as Partial<CompilerWorkerShapeResource>).source === "string" &&
         (candidate.shapes as Partial<CompilerWorkerShapeResource>).source!.length > 0)) &&
+    (candidate.assets === undefined ||
+      (typeof candidate.assets === "object" && candidate.assets !== null &&
+        typeof (candidate.assets as Partial<CompilerWorkerAssetResource>).uri === "string" &&
+        typeof (candidate.assets as Partial<CompilerWorkerAssetResource>).source === "string" &&
+        Array.isArray((candidate.assets as Partial<CompilerWorkerAssetResource>).files) &&
+        (candidate.assets as Partial<CompilerWorkerAssetResource>).files!.every((file) =>
+          typeof file.uri === "string" && file.uri.length > 0 &&
+          typeof file.content === "string" && file.content.length > 0
+        ))) &&
     Array.isArray(candidate.documents) &&
     candidate.documents.length > 0 &&
     candidate.documents.every(

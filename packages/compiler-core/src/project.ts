@@ -9,6 +9,7 @@ export const architectureNarrativeResourceSuffix = ".c4ml-narrative.md" as const
 export const architecturePublicationResourceSuffix = ".c4ml-publication.json" as const;
 export const architectureThemeResourceSuffix = ".c4ml-theme.json" as const;
 export const architectureShapeResourceSuffix = ".c4ml-shapes.json" as const;
+export const architectureAssetResourceSuffix = ".c4ml-assets.json" as const;
 
 export interface ArchitectureProjectDocument {
   readonly uri: string;
@@ -50,6 +51,17 @@ export interface ArchitectureProjectShapeResource {
   readonly source: string;
 }
 
+export interface ArchitectureProjectAssetFile {
+  readonly uri: string;
+  readonly content: string;
+}
+
+export interface ArchitectureProjectAssetResource {
+  readonly uri: string;
+  readonly source: string;
+  readonly files: readonly ArchitectureProjectAssetFile[];
+}
+
 export interface ArchitectureProjectInput {
   readonly version: typeof architectureProjectVersion;
   readonly id: string;
@@ -63,6 +75,7 @@ export interface ArchitectureProjectInput {
   readonly publication?: ArchitectureProjectPublicationResource;
   readonly theme?: ArchitectureProjectThemeResource;
   readonly shapes?: ArchitectureProjectShapeResource;
+  readonly assets?: ArchitectureProjectAssetResource;
 }
 
 export interface ArchitectureProjectManifest {
@@ -78,6 +91,7 @@ export interface ArchitectureProjectManifest {
   readonly publication?: string;
   readonly theme?: string;
   readonly shapes?: string;
+  readonly assets?: string;
 }
 
 export type ArchitectureProjectIssueCode =
@@ -92,7 +106,8 @@ export type ArchitectureProjectIssueCode =
   | "C4ML-PROJECT-009"
   | "C4ML-PROJECT-010"
   | "C4ML-PROJECT-011"
-  | "C4ML-PROJECT-012";
+  | "C4ML-PROJECT-012"
+  | "C4ML-PROJECT-013";
 
 export interface ArchitectureProjectIssue {
   readonly code: ArchitectureProjectIssueCode;
@@ -130,6 +145,7 @@ export function createArchitectureProjectInput(input: {
   readonly publication?: ArchitectureProjectPublicationResource;
   readonly theme?: ArchitectureProjectThemeResource;
   readonly shapes?: ArchitectureProjectShapeResource;
+  readonly assets?: ArchitectureProjectAssetResource;
 }): ArchitectureProjectInput {
   const project: ArchitectureProjectInput = {
     version: architectureProjectVersion,
@@ -165,6 +181,15 @@ export function createArchitectureProjectInput(input: {
     ...(input.shapes === undefined
       ? {}
       : { shapes: { uri: input.shapes.uri, source: input.shapes.source } }),
+    ...(input.assets === undefined
+      ? {}
+      : {
+          assets: {
+            uri: input.assets.uri,
+            source: input.assets.source,
+            files: [...input.assets.files].map((file) => ({ ...file })).sort((left, right) => compareText(left.uri, right.uri)),
+          },
+        }),
   };
   const issues = validateArchitectureProjectInput(project);
   if (issues.length > 0) {
@@ -357,6 +382,37 @@ export function validateArchitectureProjectInput(
       });
     }
   }
+  if (project.assets !== undefined) {
+    const caseFolded = project.assets.uri.toLocaleLowerCase("en-US");
+    const assetUris = project.assets.files.map((file) => file.uri.toLocaleLowerCase("en-US"));
+    const reservedUris = new Set([
+      ...supplementalUris,
+      ...(project.publication === undefined ? [] : [project.publication.uri.toLocaleLowerCase("en-US")]),
+      ...(project.theme === undefined ? [] : [project.theme.uri.toLocaleLowerCase("en-US")]),
+      ...(project.shapes === undefined ? [] : [project.shapes.uri.toLocaleLowerCase("en-US")]),
+      caseFolded,
+    ]);
+    if (
+      !isPortableProjectUri(project.assets.uri) ||
+      !project.assets.uri.endsWith(architectureAssetResourceSuffix) ||
+      project.assets.source.trim().length === 0 ||
+      supplementalUris.has(caseFolded) ||
+      project.publication?.uri.toLocaleLowerCase("en-US") === caseFolded ||
+      project.theme?.uri.toLocaleLowerCase("en-US") === caseFolded ||
+      project.shapes?.uri.toLocaleLowerCase("en-US") === caseFolded ||
+      project.assets.files.some((file) =>
+        !isPortableProjectUri(file.uri) || file.content.length === 0 ||
+        reservedUris.has(file.uri.toLocaleLowerCase("en-US"))
+      ) ||
+      new Set(assetUris).size !== assetUris.length
+    ) {
+      issues.push({
+        code: "C4ML-PROJECT-013",
+        message: `Project asset manifest "${project.assets.uri}" and its passive files must use unique normalized local paths and non-empty content.`,
+        uri: project.assets.uri,
+      });
+    }
+  }
   return issues;
 }
 
@@ -379,7 +435,7 @@ export function parseArchitectureProjectManifest(
     return invalidManifest("The project manifest must contain one JSON object.");
   }
 
-  const { version, id, name, description, sources, policy, observations, glossary, narratives, publication, theme, shapes } = candidate;
+  const { version, id, name, description, sources, policy, observations, glossary, narratives, publication, theme, shapes, assets } = candidate;
   if (
     version !== architectureProjectVersion ||
     typeof id !== "string" ||
@@ -402,7 +458,8 @@ export function parseArchitectureProjectManifest(
     (publication !== undefined &&
       (typeof publication !== "string" || publication.trim().length === 0)) ||
     (theme !== undefined && (typeof theme !== "string" || theme.trim().length === 0)) ||
-    (shapes !== undefined && (typeof shapes !== "string" || shapes.trim().length === 0))
+    (shapes !== undefined && (typeof shapes !== "string" || shapes.trim().length === 0)) ||
+    (assets !== undefined && (typeof assets !== "string" || assets.trim().length === 0))
   ) {
     return invalidManifest(
       "The project manifest requires version 1, a stable id, a non-empty sources array, " +
@@ -434,6 +491,7 @@ export function parseArchitectureProjectManifest(
       : {}),
     ...(typeof theme === "string" ? { theme: { uri: theme, source: "{}" } } : {}),
     ...(typeof shapes === "string" ? { shapes: { uri: shapes, source: "{}" } } : {}),
+    ...(typeof assets === "string" ? { assets: { uri: assets, source: "{}", files: [] } } : {}),
   });
   if (projectIssues.length > 0) {
     return { valid: false, issues: projectIssues };
@@ -455,6 +513,7 @@ export function parseArchitectureProjectManifest(
       ...(typeof publication === "string" ? { publication } : {}),
       ...(typeof theme === "string" ? { theme } : {}),
       ...(typeof shapes === "string" ? { shapes } : {}),
+      ...(typeof assets === "string" ? { assets } : {}),
     },
     issues: [],
   };

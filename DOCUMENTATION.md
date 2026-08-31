@@ -486,6 +486,7 @@ sources:
   "publication": "publication/review.c4ml-publication.json",
   "theme": "presentation/garden.c4ml-theme.json",
   "shapes": "presentation/garden.c4ml-shapes.json",
+  "assets": "assets/garden.c4ml-assets.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -547,9 +548,16 @@ The optional `shapes` path selects safe normalized vector definitions and
 explicit element assignments. The shared renderer contract rejects active,
 external, image, font, CSS, and SVG content before layout and rendering.
 
-The desktop loads this resource with the project and lists violations in
-**Output → Architecture findings**. It remains read-only in this first editor
-slice; source navigation goes to the affected architecture declaration.
+The optional `assets` path selects passive local UTF-8 files with explicit
+purpose, media type, SHA-256, SPDX license, and optional attribution. C4ML
+verifies exact content and containment in working files and Git revisions.
+Binary, active, image, font, executable, and remote formats are not accepted in
+version one.
+
+The desktop loads these resources with the project and keeps them read-only in
+this first editor slice. Malformed supplemental resources fail project loading;
+policy and observation findings appear in **Output → Architecture findings**
+and navigate to the affected architecture declaration when one exists.
 
 Each listed source still begins with `c4ml draft-1`, but may contain only the
 top-level blocks that belong in that file. References work across the project.

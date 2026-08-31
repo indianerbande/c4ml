@@ -748,6 +748,7 @@ export async function previewProjectChangeWorkerRequest(
         : { publication: { ...request.project.publication } }),
       ...(request.project.theme === undefined ? {} : { theme: { ...request.project.theme } }),
       ...(request.project.shapes === undefined ? {} : { shapes: { ...request.project.shapes } }),
+      ...(request.project.assets === undefined ? {} : { assets: { ...request.project.assets, files: request.project.assets.files.map((file) => ({ ...file })) } }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -796,6 +797,7 @@ export async function previewProjectChangeWorkerRequest(
             : { publication: { ...candidate.publication } }),
           ...(candidate.theme === undefined ? {} : { theme: { ...candidate.theme } }),
           ...(candidate.shapes === undefined ? {} : { shapes: { ...candidate.shapes } }),
+          ...(candidate.assets === undefined ? {} : { assets: { ...candidate.assets, files: candidate.assets.files.map((file) => ({ ...file })) } }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -1187,6 +1189,7 @@ function toArchitectureProject(project: {
   };
   readonly theme?: { readonly uri: string; readonly source: string };
   readonly shapes?: { readonly uri: string; readonly source: string };
+  readonly assets?: { readonly uri: string; readonly source: string; readonly files: readonly { readonly uri: string; readonly content: string }[] };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1230,6 +1233,7 @@ function toArchitectureProject(project: {
       : { publication: { ...project.publication } }),
     ...(project.theme === undefined ? {} : { theme: { ...project.theme } }),
     ...(project.shapes === undefined ? {} : { shapes: { ...project.shapes } }),
+    ...(project.assets === undefined ? {} : { assets: { ...project.assets, files: project.assets.files.map((file) => ({ ...file })) } }),
   });
 }
 
