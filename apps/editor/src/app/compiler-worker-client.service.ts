@@ -115,6 +115,15 @@ export class CompilerWorkerClient {
     });
   }
 
+  reset(): void {
+    this.#activeFile = "editor.c4ml";
+    this.#activeProject = undefined;
+    this.#session.reset();
+    this.#analysisSession.reset();
+    this.state.set(this.#session.state);
+    this.analysis.set(this.#analysisSession.state);
+  }
+
   compile(
     source: string,
     requestedViewId?: string,

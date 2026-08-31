@@ -280,6 +280,10 @@ export class EditorCompilationSession {
     return this.#state;
   }
 
+  reset(): void {
+    this.#state = initialState;
+  }
+
   begin(
     source: string,
     file = "editor.c4ml",

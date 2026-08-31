@@ -1,5 +1,22 @@
 .semantic-editor { width: min(1160px, 100%); }
+.semantic-editor .placement-form,
+.semantic-editor .placement-result,
+.semantic-editor .placement-form label,
+.semantic-editor .field-row,
+.semantic-editor .field-row > * { min-width: 0; }
+.semantic-editor .placement-form { overflow-x: hidden; overflow-y: auto; }
+.semantic-editor .field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.semantic-editor .placement-form input,
+.semantic-editor .placement-form select,
+.semantic-editor .placement-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.semantic-editor .placement-form textarea { resize: vertical; }
 .semantic-editor > header { border-top: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); }
+.semantic-editor.is-connection-editor > header { border-top-color: var(--accent); }
 .semantic-authority { display: grid; gap: 4px; padding: 11px 12px; border-left: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); color: var(--control-ink); }
 .semantic-authority span,
 .semantic-loading,
@@ -8,6 +25,28 @@
 .semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
 .semantic-preview-button,
 .semantic-apply-button { background: color-mix(in srgb, var(--accent) 72%, var(--danger)); }
+.semantic-editor.is-connection-editor .semantic-preview-button,
+.semantic-editor.is-connection-editor .semantic-apply-button { background: var(--accent); }
+.semantic-pick-button,
+.swap-direction-button {
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--accent) 64%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--control-bg));
+  color: var(--control-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.semantic-pick-button { width: 100%; }
+.connection-endpoints { align-items: end; }
+.connection-endpoints .swap-direction-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 30px;
+  padding: 0 10px;
+}
+.swap-direction-button:disabled { cursor: default; opacity: 0.48; }
 .semantic-conflicts { display: grid; gap: 7px; padding: 11px; border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line)); border-radius: 9px; background: color-mix(in srgb, var(--danger) 6%, var(--panel)); }
 .semantic-conflicts ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
 .semantic-conflicts li { display: grid; gap: 2px; }

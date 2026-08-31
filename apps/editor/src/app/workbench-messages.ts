@@ -27,9 +27,16 @@ const englishMessages = {
   "command.help.context": "Help for syntax at cursor",
   "command.wizard.new": "Create architecture with guide…",
   "command.settings.open": "Open settings…",
-  "wizard.undo": "Undo guide",
-  "wizard.open": "Create with guide",
-  "semanticEditor.open": "Change architecture…",
+  "wizard.undoNotice": "Architecture created with the assistant.",
+  "wizard.undoAction": "Undo",
+  "wizard.undoConfirmTitle": "Undo assistant creation?",
+  "wizard.undoConfirmDescription":
+    "The state from before the assistant will be restored. The generated architecture model will be discarded.",
+  "wizard.undoCancel": "Cancel",
+  "wizard.undoConfirm": "Undo creation",
+  "wizard.open": "Assistant",
+  "semanticEditor.open": "Architecture",
+  "connectionEditor.open": "Connect",
   "semanticEditor.undo": "Undo architecture change",
   "status.compiling": "Compiling",
   "status.failed": "Worker failed",
@@ -47,7 +54,7 @@ const englishMessages = {
   "files.workspace": "Workspace",
   "files.openEditors": "Open editors",
   "files.architecture": "Architecture",
-  "files.workspaceName": "C4ML workspace",
+  "files.workspaceName": "C4thedral workspace",
   "files.actions": "File actions",
   "files.open": "Open file…",
   "files.openProject": "Open project…",
@@ -129,6 +136,7 @@ const englishMessages = {
     "macOS commonly reserves Control+Space for input sources. Use Command+I.",
   "editor.checkingContext": "Checking context…",
   "editor.suggestionCount": "{count} suggestions",
+  "editor.noSuggestions": "No suggestions",
   "preview.selectView": "Select diagram view",
   "preview.controls": "Diagram controls",
   "preview.zoomOut": "Zoom out",
@@ -145,6 +153,8 @@ const englishMessages = {
   "preview.reveal": "Select a diagram object to reveal its source declaration",
   "preview.building": "Building the first preview",
   "preview.worker": "The compiler is running locally in a Web Worker.",
+  "preview.noDocument": "No file or project is open",
+  "preview.openDocument": "Open a C4ML file or project to create a diagram.",
   "preview.stale": "Showing the last valid diagram.",
   "preview.selected": "Selected {kind}: {label}",
   "selection.corridor": "corridor lane",
@@ -188,7 +198,7 @@ const englishMessages = {
   "placement.eyebrow": "Source-backed diagram editing",
   "placement.title": "Arrange diagram elements",
   "placement.description":
-    "Describe the intended relationship. C4ML previews the resulting source and diagram before applying it.",
+    "Describe the intended relationship. C4thedral previews the resulting source and diagram before applying it.",
   "placement.cancel": "Cancel",
   "placement.operation": "Arrangement",
   "placement.operationHint":
@@ -243,7 +253,7 @@ const englishMessages = {
   "routeEditor.eyebrow": "Source-backed route editing",
   "routeEditor.title": "Guide relationship route",
   "routeEditor.description":
-    "Choose Ports or route intent. C4ML previews the source, safe repairs, conflicts, and resulting diagram before apply.",
+    "Choose Ports or route intent. C4thedral previews the source, safe repairs, conflicts, and resulting diagram before apply.",
   "routeEditor.cancel": "Cancel",
   "routeEditor.relationship": "Selected relationship",
   "routeEditor.operation": "Route operation",
@@ -312,7 +322,7 @@ const englishMessages = {
   "operation.renderingPng": "Rendering PNG…",
   "operation.exportedPng": "Exported {name} ({width} × {height})",
   "operation.pngFailed": "The desktop PNG export failed unexpectedly.",
-  "settings.eyebrow": "C4ML workbench",
+  "settings.eyebrow": "C4thedral",
   "settings.title": "Settings",
   "settings.description":
     "Local preferences for this installation. Diagram exports stay unchanged.",
@@ -379,7 +389,7 @@ const englishMessages = {
   "semanticEditor.eyebrow": "Semantic architecture change",
   "semanticEditor.title": "Change the architecture model",
   "semanticEditor.description":
-    "Add a C4 element or directed relationship that is valid in the active view context.",
+    "Add a C4 element that is valid in the active view context.",
   "semanticEditor.cancel": "Cancel architecture change",
   "semanticEditor.architectureWarning": "This changes architecture meaning",
   "semanticEditor.architectureWarningText":
@@ -401,7 +411,7 @@ const englishMessages = {
   "semanticEditor.kind.code-element": "Important code structure (Code Element)",
   "semanticEditor.owner": "Created inside {owner}; the active C4 scope supplies this owner.",
   "semanticEditor.contextVisibilityHint":
-    "A new context neighbor is added to the model first. Use Connect existing elements next to make it visible in this System Context.",
+    "A new context neighbor is added to the model first. Use Connect next to make it visible in this System Context.",
   "semanticEditor.name": "Name people will read",
   "semanticEditor.namePlaceholder": "A short, recognizable name",
   "semanticEditor.responsibility": "What is its one main responsibility?",
@@ -434,6 +444,38 @@ const englishMessages = {
   "semanticEditor.authority":
     "Applying changes the architecture source in one undoable edit; no semantic state is hidden in the editor.",
   "semanticEditor.apply": "Apply architecture change",
+  "connectionEditor.eyebrow": "Directed architecture connection",
+  "connectionEditor.title": "Connect elements",
+  "connectionEditor.description":
+    "Choose a source and target, then describe what happens in that direction.",
+  "connectionEditor.cancel": "Cancel connection",
+  "connectionEditor.architectureWarning": "This adds meaning to the architecture",
+  "connectionEditor.architectureWarningText":
+    "The connection becomes a directed relationship in the C4 model. Its visual route remains a separate layout concern.",
+  "connectionEditor.pickBoth": "Select source and target in diagram",
+  "connectionEditor.pickTarget": "Select target in diagram",
+  "connectionEditor.swap": "Swap direction",
+  "connectionEditor.preview": "Preview connection",
+  "connectionEditor.previewing": "Compiling connection candidate…",
+  "connectionEditor.result": "Connection preview",
+  "connectionEditor.previewAlt": "Candidate diagram with the proposed connection",
+  "connectionEditor.noPreview": "No connection preview yet",
+  "connectionEditor.noPreviewHint":
+    "Choose a valid source and target, describe the connection, then compile the non-destructive preview.",
+  "connectionEditor.sourceChange": "Proposed C4ML relationship source",
+  "connectionEditor.authority":
+    "Applying writes one directed relationship to the architecture source in an undoable edit.",
+  "connectionEditor.apply": "Apply connection",
+  "connectionPicker.source": "Select the source element",
+  "connectionPicker.target": "Select the target for {source}",
+  "connectionPicker.hint":
+    "The order matters: C4ML creates a directed relationship from source to target.",
+  "connectionPicker.invalidSource":
+    "This object cannot be a source in the active view. Select an architecture element.",
+  "connectionPicker.invalidTarget":
+    "This object is not a valid target for the selected source.",
+  "connectionPicker.useLists": "Choose from lists",
+  "connectionPicker.cancel": "Cancel",
   "wizard.eyebrow": "Guided architecture starter",
   "wizard.title": "Create a useful first diagram",
   "wizard.description":
@@ -472,10 +514,8 @@ const englishMessages = {
   "wizard.application.job": "What is its main job?",
   "wizard.application.jobPlaceholder":
     "One concise responsibility, not a feature list.",
-  "wizard.technicalNames": "Technical names generated by C4ML",
-  "wizard.application.id": "Stable application identifier",
-  "wizard.application.idHint":
-    "This stays stable if the display name changes later.",
+  "wizard.technicalNames": "Identifiers generated by C4ML",
+  "wizard.application.id": "Unique application ID",
   "wizard.people.eyebrow": "A real role, team, or group",
   "wizard.people.title": "Who uses or operates it?",
   "wizard.people.description":
@@ -488,8 +528,8 @@ const englishMessages = {
   "wizard.personTranslation": "C4 translation: Person",
   "wizard.personTranslationText":
     "A C4 Person may represent one person, a role, a team, or another group that interacts with software.",
-  "wizard.technicalName": "Technical name generated by C4ML",
-  "wizard.people.id": "Stable role identifier",
+  "wizard.technicalName": "Identifier generated by C4ML",
+  "wizard.people.id": "Unique role ID",
   "wizard.parts.eyebrow": "Runnable and data-holding parts",
   "wizard.parts.title":
     "What can be started, deployed, or operated separately?",
@@ -500,7 +540,7 @@ const englishMessages = {
   "wizard.parts.name": "Name",
   "wizard.parts.technology": "Technology or runtime",
   "wizard.parts.responsibility": "What is this part responsible for?",
-  "wizard.parts.id": "Stable identifier",
+  "wizard.parts.id": "Unique part ID",
   "wizard.containerTranslation": "C4 translation: Container",
   "wizard.containerTranslationText":
     "C4 uses this word for a separately running application or data store. Docker is only one possible technology.",
@@ -533,6 +573,51 @@ const englishMessages = {
   "wizard.result.review": "Review generated C4ML source",
   "wizard.result.generating":
     "Generating and checking source in the language worker…",
+  "wizard.help.open": "Explain {field}",
+  "wizard.help.application.name":
+    "The familiar display name shown in the diagram. It may contain spaces and can be changed later.",
+  "wizard.help.application.owner":
+    "Choose whether your organization owns and operates the application or whether it is an external dependency.",
+  "wizard.help.application.job":
+    "Describe the application's primary responsibility in one concise sentence.",
+  "wizard.help.application.id":
+    "A unique source token used by relationships and views. It starts with a letter, contains no spaces, and can remain unchanged after a rename.",
+  "wizard.help.people.role":
+    "Use a role, team, or group that interacts with the application, rather than a person's name.",
+  "wizard.help.people.location":
+    "Indicates whether this role belongs to your organization or represents an external user or group.",
+  "wizard.help.people.goal":
+    "Describe the outcome this role wants to achieve with the application.",
+  "wizard.help.people.id":
+    "A unique source token for this role. For example, customer is an ID, not text shown in the diagram.",
+  "wizard.help.parts.name":
+    "The visible name of this separately running or data-holding part.",
+  "wizard.help.parts.technology":
+    "The runtime, platform, framework, database, or other technology that implements this part.",
+  "wizard.help.parts.responsibility":
+    "Describe the one architectural responsibility assigned to this part.",
+  "wizard.help.parts.id":
+    "A unique source token for this part. Connections use it even if the visible name changes later.",
+  "wizard.help.connections.entry":
+    "Select the first running part reached by the role or group.",
+  "wizard.help.connections.personAction":
+    "Describe the directed action from the role to the selected part.",
+  "wizard.help.connections.from":
+    "The part that initiates this directed connection.",
+  "wizard.help.connections.to":
+    "The part that receives this directed connection.",
+  "wizard.help.connections.intent":
+    "Describe what is requested, sent, stored, or otherwise achieved through the connection.",
+  "wizard.help.connections.protocol":
+    "Name the technical protocol or mechanism used by this connection, such as HTTPS/JSON or a database protocol.",
+  "wizard.help.connections.contextIntent":
+    "Describe the directed action between the role and the application.",
+  "wizard.help.result.title":
+    "The title readers see above the generated diagram.",
+  "wizard.help.result.direction":
+    "The preferred overall reading direction used by automatic layout.",
+  "wizard.help.result.purpose":
+    "State the question or insight this diagram should answer for its readers.",
   "wizard.cancel": "Cancel",
   "wizard.ready": "Ready to create source",
   "wizard.invalid": "Check the marked answers",
@@ -572,9 +657,16 @@ const germanMessages: WorkbenchMessages = {
   "command.help.context": "Hilfe zur Syntax am Cursor",
   "command.wizard.new": "Architektur mit Assistent erstellen…",
   "command.settings.open": "Einstellungen öffnen…",
-  "wizard.undo": "Assistent rückgängig machen",
-  "wizard.open": "Mit Assistent erstellen",
-  "semanticEditor.open": "Architektur ändern…",
+  "wizard.undoNotice": "Architektur mit dem Assistenten erstellt.",
+  "wizard.undoAction": "Rückgängig",
+  "wizard.undoConfirmTitle": "Erstellung wirklich rückgängig machen?",
+  "wizard.undoConfirmDescription":
+    "Der Stand vor dem Assistenten wird wiederhergestellt. Das erzeugte Architekturmodell wird verworfen.",
+  "wizard.undoCancel": "Abbrechen",
+  "wizard.undoConfirm": "Erstellung rückgängig machen",
+  "wizard.open": "Assistent",
+  "semanticEditor.open": "Architektur",
+  "connectionEditor.open": "Verbinden",
   "semanticEditor.undo": "Architekturänderung rückgängig machen",
   "status.compiling": "Wird kompiliert",
   "status.failed": "Worker fehlgeschlagen",
@@ -592,7 +684,7 @@ const germanMessages: WorkbenchMessages = {
   "files.workspace": "Arbeitsbereich",
   "files.openEditors": "Geöffnete Editoren",
   "files.architecture": "Architektur",
-  "files.workspaceName": "C4ML-Arbeitsbereich",
+  "files.workspaceName": "C4thedral-Arbeitsbereich",
   "files.actions": "Dateiaktionen",
   "files.open": "Datei öffnen…",
   "files.openProject": "Projekt öffnen…",
@@ -675,6 +767,7 @@ const germanMessages: WorkbenchMessages = {
     "macOS reserviert Strg+Leertaste häufig für Eingabequellen. Bitte Befehlstaste+I verwenden.",
   "editor.checkingContext": "Kontext wird geprüft…",
   "editor.suggestionCount": "{count} Vorschläge",
+  "editor.noSuggestions": "Keine Vorschläge",
   "preview.selectView": "Diagrammansicht auswählen",
   "preview.controls": "Diagrammsteuerung",
   "preview.zoomOut": "Verkleinern",
@@ -692,6 +785,9 @@ const germanMessages: WorkbenchMessages = {
     "Diagrammobjekt auswählen, um seine Quelldeklaration anzuzeigen",
   "preview.building": "Erste Vorschau wird erstellt",
   "preview.worker": "Der Compiler läuft lokal in einem Web Worker.",
+  "preview.noDocument": "Keine Datei und kein Projekt geöffnet",
+  "preview.openDocument":
+    "Öffnen Sie eine C4ML-Datei oder ein Projekt, um ein Diagramm zu erstellen.",
   "preview.stale": "Das letzte gültige Diagramm wird angezeigt.",
   "preview.selected": "Ausgewählt – {kind}: {label}",
   "selection.corridor": "Korridorspur",
@@ -735,7 +831,7 @@ const germanMessages: WorkbenchMessages = {
   "placement.eyebrow": "Quelltextbasierte Diagrammbearbeitung",
   "placement.title": "Diagrammelemente anordnen",
   "placement.description":
-    "Beschreibe die gewünschte Beziehung. C4ML zeigt Quelltext und Diagramm vor dem Anwenden als Vorschau.",
+    "Beschreibe die gewünschte Beziehung. C4thedral zeigt Quelltext und Diagramm vor dem Anwenden als Vorschau.",
   "placement.cancel": "Abbrechen",
   "placement.operation": "Anordnung",
   "placement.operationHint":
@@ -791,7 +887,7 @@ const germanMessages: WorkbenchMessages = {
   "routeEditor.eyebrow": "Quelltextbasierte Routenbearbeitung",
   "routeEditor.title": "Verbindungslinie führen",
   "routeEditor.description":
-    "Wähle Ports oder eine Routenvorgabe. C4ML zeigt vor dem Anwenden Quelltext, sichere Reparaturen, Konflikte und das Ergebnisdiagramm.",
+    "Wähle Ports oder eine Routenvorgabe. C4thedral zeigt vor dem Anwenden Quelltext, sichere Reparaturen, Konflikte und das Ergebnisdiagramm.",
   "routeEditor.cancel": "Abbrechen",
   "routeEditor.relationship": "Ausgewählte Beziehung",
   "routeEditor.operation": "Routenbearbeitung",
@@ -863,7 +959,7 @@ const germanMessages: WorkbenchMessages = {
   "operation.exportedPng": "{name} exportiert ({width} × {height})",
   "operation.pngFailed":
     "Der Desktop-PNG-Export ist unerwartet fehlgeschlagen.",
-  "settings.eyebrow": "C4ML-Werkbank",
+  "settings.eyebrow": "C4thedral",
   "settings.title": "Einstellungen",
   "settings.description":
     "Lokale Einstellungen für diese Installation. Diagrammexporte bleiben unverändert.",
@@ -930,7 +1026,7 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.eyebrow": "Semantische Architekturänderung",
   "semanticEditor.title": "Architekturmodell ändern",
   "semanticEditor.description":
-    "Füge ein C4-Element oder eine gerichtete Verbindung hinzu, die im Kontext der aktiven Ansicht gültig ist.",
+    "Füge ein C4-Element hinzu, das im Kontext der aktiven Ansicht gültig ist.",
   "semanticEditor.cancel": "Architekturänderung abbrechen",
   "semanticEditor.architectureWarning": "Dies ändert die Bedeutung der Architektur",
   "semanticEditor.architectureWarningText":
@@ -952,7 +1048,7 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.kind.code-element": "Wichtige Codestruktur (Code Element)",
   "semanticEditor.owner": "Wird in {owner} angelegt; der aktive C4-Bereich gibt diesen Besitzer vor.",
   "semanticEditor.contextVisibilityHint":
-    "Ein neuer Kontextnachbar wird zuerst dem Modell hinzugefügt. Verbinde anschließend bestehende Elemente, damit er in diesem System Context sichtbar wird.",
+    "Ein neuer Kontextnachbar wird zuerst dem Modell hinzugefügt. Nutze anschließend Verbinden, damit er in diesem System Context sichtbar wird.",
   "semanticEditor.name": "Lesbarer Name",
   "semanticEditor.namePlaceholder": "Ein kurzer, wiedererkennbarer Name",
   "semanticEditor.responsibility": "Was ist die eine wichtigste Verantwortung?",
@@ -985,6 +1081,38 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.authority":
     "Übernehmen ändert den Architekturquelltext in einem rücknehmbaren Schritt; der Editor verbirgt keinen semantischen Zustand.",
   "semanticEditor.apply": "Architekturänderung übernehmen",
+  "connectionEditor.eyebrow": "Gerichtete Architekturverbindung",
+  "connectionEditor.title": "Elemente verbinden",
+  "connectionEditor.description":
+    "Wähle Quelle und Ziel und beschreibe anschließend, was in dieser Richtung geschieht.",
+  "connectionEditor.cancel": "Verbindung abbrechen",
+  "connectionEditor.architectureWarning": "Dies ergänzt die Bedeutung der Architektur",
+  "connectionEditor.architectureWarningText":
+    "Die Verbindung wird zu einer gerichteten Beziehung im C4-Modell. Ihr sichtbarer Verlauf bleibt davon getrenntes Layout.",
+  "connectionEditor.pickBoth": "Quelle und Ziel im Diagramm auswählen",
+  "connectionEditor.pickTarget": "Ziel im Diagramm auswählen",
+  "connectionEditor.swap": "Richtung tauschen",
+  "connectionEditor.preview": "Verbindung prüfen",
+  "connectionEditor.previewing": "Verbindungskandidat wird kompiliert…",
+  "connectionEditor.result": "Vorschau der Verbindung",
+  "connectionEditor.previewAlt": "Diagrammkandidat mit der vorgeschlagenen Verbindung",
+  "connectionEditor.noPreview": "Noch keine Verbindungsvorschau",
+  "connectionEditor.noPreviewHint":
+    "Wähle eine gültige Quelle und ein gültiges Ziel, beschreibe die Verbindung und kompiliere dann die unverbindliche Vorschau.",
+  "connectionEditor.sourceChange": "Vorgeschlagener C4ML-Beziehungsquelltext",
+  "connectionEditor.authority":
+    "Übernehmen schreibt eine gerichtete Beziehung in einem rücknehmbaren Schritt in den Architekturquelltext.",
+  "connectionEditor.apply": "Verbindung übernehmen",
+  "connectionPicker.source": "Quelle auswählen",
+  "connectionPicker.target": "Ziel für {source} auswählen",
+  "connectionPicker.hint":
+    "Die Reihenfolge zählt: C4ML erzeugt eine gerichtete Beziehung von der Quelle zum Ziel.",
+  "connectionPicker.invalidSource":
+    "Dieses Objekt kann in der aktiven Ansicht keine Quelle sein. Wähle ein Architekturelement.",
+  "connectionPicker.invalidTarget":
+    "Dieses Objekt ist für die gewählte Quelle kein gültiges Ziel.",
+  "connectionPicker.useLists": "Aus Listen wählen",
+  "connectionPicker.cancel": "Abbrechen",
   "wizard.eyebrow": "Geführter Architekturstart",
   "wizard.title": "Ein sinnvolles erstes Diagramm erstellen",
   "wizard.description":
@@ -1025,10 +1153,8 @@ const germanMessages: WorkbenchMessages = {
   "wizard.application.job": "Was ist ihre wichtigste Aufgabe?",
   "wizard.application.jobPlaceholder":
     "Eine kurze Verantwortung, keine Funktionsliste.",
-  "wizard.technicalNames": "Von C4ML erzeugte technische Namen",
-  "wizard.application.id": "Stabile Anwendungskennung",
-  "wizard.application.idHint":
-    "Diese bleibt stabil, wenn sich der Anzeigename später ändert.",
+  "wizard.technicalNames": "Von C4ML erzeugte IDs",
+  "wizard.application.id": "Eindeutige Anwendungs-ID",
   "wizard.people.eyebrow": "Eine echte Rolle, ein Team oder eine Gruppe",
   "wizard.people.title": "Wer benutzt oder betreibt sie?",
   "wizard.people.description":
@@ -1041,8 +1167,8 @@ const germanMessages: WorkbenchMessages = {
   "wizard.personTranslation": "C4-Übersetzung: Person",
   "wizard.personTranslationText":
     "Eine C4-Person kann eine einzelne Person, eine Rolle, ein Team oder eine andere Gruppe darstellen, die mit Software interagiert.",
-  "wizard.technicalName": "Von C4ML erzeugter technischer Name",
-  "wizard.people.id": "Stabile Rollenkennung",
+  "wizard.technicalName": "Von C4ML erzeugte ID",
+  "wizard.people.id": "Eindeutige Rollen-ID",
   "wizard.parts.eyebrow": "Laufende und datenhaltende Teile",
   "wizard.parts.title":
     "Was kann separat gestartet, bereitgestellt oder betrieben werden?",
@@ -1053,7 +1179,7 @@ const germanMessages: WorkbenchMessages = {
   "wizard.parts.name": "Name",
   "wizard.parts.technology": "Technologie oder Laufzeit",
   "wizard.parts.responsibility": "Wofür ist dieser Teil verantwortlich?",
-  "wizard.parts.id": "Stabile Kennung",
+  "wizard.parts.id": "Eindeutige Teil-ID",
   "wizard.containerTranslation": "C4-Übersetzung: Container",
   "wizard.containerTranslationText":
     "C4 verwendet dieses Wort für eine separat laufende Anwendung oder einen Datenspeicher. Docker ist nur eine mögliche Technologie.",
@@ -1086,6 +1212,51 @@ const germanMessages: WorkbenchMessages = {
   "wizard.result.review": "Erzeugten C4ML-Quelltext prüfen",
   "wizard.result.generating":
     "Quelltext wird im Sprach-Worker erzeugt und geprüft…",
+  "wizard.help.open": "{field} erklären",
+  "wizard.help.application.name":
+    "Der vertraute Anzeigename im Diagramm. Er darf Leerzeichen enthalten und kann später geändert werden.",
+  "wizard.help.application.owner":
+    "Lege fest, ob die Anwendung der eigenen Organisation gehört und von ihr betrieben wird oder eine externe Abhängigkeit ist.",
+  "wizard.help.application.job":
+    "Beschreibe die wichtigste Verantwortung der Anwendung in einem kurzen Satz.",
+  "wizard.help.application.id":
+    "Ein eindeutiges Quelltext-Token für Beziehungen und Ansichten. Es beginnt mit einem Buchstaben, enthält keine Leerzeichen und kann bei einer Umbenennung gleich bleiben.",
+  "wizard.help.people.role":
+    "Nenne eine Rolle, ein Team oder eine Gruppe, die mit der Anwendung arbeitet – nicht den Namen einer einzelnen Person.",
+  "wizard.help.people.location":
+    "Legt fest, ob diese Rolle zur eigenen Organisation gehört oder externe Nutzerinnen, Nutzer oder Gruppen vertritt.",
+  "wizard.help.people.goal":
+    "Beschreibe das Ergebnis, das diese Rolle mit der Anwendung erreichen möchte.",
+  "wizard.help.people.id":
+    "Ein eindeutiges Quelltext-Token für diese Rolle. „customer“ ist beispielsweise eine ID und kein im Diagramm angezeigter Text.",
+  "wizard.help.parts.name":
+    "Der sichtbare Name dieses separat laufenden oder datenhaltenden Teils.",
+  "wizard.help.parts.technology":
+    "Die Laufzeit, Plattform, das Framework, die Datenbank oder eine andere Technik, mit der dieser Teil umgesetzt ist.",
+  "wizard.help.parts.responsibility":
+    "Beschreibe die eine architektonische Verantwortung, die diesem Teil zugeordnet ist.",
+  "wizard.help.parts.id":
+    "Ein eindeutiges Quelltext-Token für diesen Teil. Verbindungen verwenden es auch dann, wenn der sichtbare Name später geändert wird.",
+  "wizard.help.connections.entry":
+    "Wähle den ersten laufenden Teil, den die Rolle oder Gruppe erreicht.",
+  "wizard.help.connections.personAction":
+    "Beschreibe die gerichtete Aktion der Rolle zum ausgewählten Teil.",
+  "wizard.help.connections.from":
+    "Der Teil, von dem diese gerichtete Verbindung ausgeht.",
+  "wizard.help.connections.to":
+    "Der Teil, bei dem diese gerichtete Verbindung ankommt.",
+  "wizard.help.connections.intent":
+    "Beschreibe, was über die Verbindung angefordert, übertragen, gespeichert oder anderweitig erreicht wird.",
+  "wizard.help.connections.protocol":
+    "Nenne das technische Protokoll oder den Mechanismus der Verbindung, zum Beispiel HTTPS/JSON oder ein Datenbankprotokoll.",
+  "wizard.help.connections.contextIntent":
+    "Beschreibe die gerichtete Aktion zwischen der Rolle und der Anwendung.",
+  "wizard.help.result.title":
+    "Der Titel, den Leserinnen und Leser über dem erzeugten Diagramm sehen.",
+  "wizard.help.result.direction":
+    "Die bevorzugte allgemeine Leserichtung für die automatische Anordnung.",
+  "wizard.help.result.purpose":
+    "Formuliere die Frage oder Erkenntnis, die das Diagramm für seine Leserinnen und Leser beantworten soll.",
   "wizard.cancel": "Abbrechen",
   "wizard.ready": "Quelltext kann erstellt werden",
   "wizard.invalid": "Markierte Antworten prüfen",

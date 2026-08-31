@@ -22,11 +22,13 @@ describe("workbench preferences", () => {
     expect(parseWorkbenchPreferences(null)).toEqual(
       defaultWorkbenchPreferences,
     );
+    expect(defaultWorkbenchPreferences.interfaceFontSize).toBe(13);
+    expect(defaultWorkbenchPreferences.editorFontSize).toBe(15);
   });
 
   it("round-trips a supported version without retaining unknown fields", () => {
     const serialized = JSON.stringify({
-      version: 1,
+      version: 2,
       uiLanguage: "de",
       colorScheme: "dark",
       colorPalette: "violet",
@@ -41,7 +43,7 @@ describe("workbench preferences", () => {
     const parsed = parseWorkbenchPreferences(serialized);
 
     expect(parsed).toEqual({
-      version: 1,
+      version: 2,
       uiLanguage: "de",
       colorScheme: "dark",
       colorPalette: "violet",
@@ -85,21 +87,56 @@ describe("workbench preferences", () => {
         }),
       ),
     ).toEqual({
-      version: 1,
+      version: 2,
       uiLanguage: "en",
       colorScheme: "dark",
       colorPalette: "blue",
       syntaxTheme: "balanced",
-      interfaceFontSize: 10,
+      interfaceFontSize: 13,
       editorFontFamily: "system-monospace",
       editorFontLigatures: true,
       editorFontSize: 14,
     });
   });
 
+  it("migrates only the former default font sizes", () => {
+    expect(
+      parseWorkbenchPreferences(
+        JSON.stringify({
+          version: 1,
+          uiLanguage: "de",
+          colorScheme: "light",
+          colorPalette: "green",
+          syntaxTheme: "minimal",
+          interfaceFontSize: 10,
+          editorFontFamily: "hack",
+          editorFontLigatures: false,
+          editorFontSize: 12.5,
+        }),
+      ),
+    ).toMatchObject({
+      version: 2,
+      interfaceFontSize: 13,
+      editorFontSize: 15,
+    });
+    expect(
+      parseWorkbenchPreferences(
+        JSON.stringify({
+          version: 1,
+          interfaceFontSize: 11.5,
+          editorFontSize: 16,
+        }),
+      ),
+    ).toMatchObject({
+      version: 2,
+      interfaceFontSize: 11.5,
+      editorFontSize: 16,
+    });
+  });
+
   it("ignores malformed JSON and unsupported schema versions", () => {
     expect(parseWorkbenchPreferences("{")).toEqual(defaultWorkbenchPreferences);
-    expect(parseWorkbenchPreferences('{"version":2}')).toEqual(
+    expect(parseWorkbenchPreferences('{"version":3}')).toEqual(
       defaultWorkbenchPreferences,
     );
   });

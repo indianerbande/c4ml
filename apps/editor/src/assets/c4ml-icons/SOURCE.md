@@ -1,4 +1,4 @@
-# C4ML workbench icon source
+# C4thedral workbench icon source
 
 `source-control.svg` is an original C4ML-owned activity-bar asset. It is
 licensed with the repository under Apache-2.0 and is not used in authored

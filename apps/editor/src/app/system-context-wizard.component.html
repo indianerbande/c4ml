@@ -67,20 +67,32 @@
 
         <div class="field-grid">
           <label>
-            <span>{{ i18n.t("wizard.application.name") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.application.name") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.application.name') })" [attr.aria-expanded]="openHelp() === 'application-name'" aria-controls="wizard-help-application-name" (click)="toggleHelp('application-name', $event)">?</button>
+            </span>
             <input [value]="answers().systemName" (input)="updateSystemName($event)" />
+            @if (openHelp() === "application-name") { <small class="field-help" id="wizard-help-application-name">{{ i18n.t("wizard.help.application.name") }}</small> }
             @if (issueFor("systemName"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
           <label>
-            <span>{{ i18n.t("wizard.application.owner") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.application.owner") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.application.owner') })" [attr.aria-expanded]="openHelp() === 'application-owner'" aria-controls="wizard-help-application-owner" (click)="toggleHelp('application-owner', $event)">?</button>
+            </span>
             <select [value]="answers().systemClassification" (change)="updateField('systemClassification', $event)">
               <option value="internal">{{ i18n.t("wizard.application.internal") }}</option>
               <option value="external">{{ i18n.t("wizard.application.external") }}</option>
             </select>
+            @if (openHelp() === "application-owner") { <small class="field-help" id="wizard-help-application-owner">{{ i18n.t("wizard.help.application.owner") }}</small> }
           </label>
           <label class="wide">
-            <span>{{ i18n.t("wizard.application.job") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.application.job") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.application.job') })" [attr.aria-expanded]="openHelp() === 'application-job'" aria-controls="wizard-help-application-job" (click)="toggleHelp('application-job', $event)">?</button>
+            </span>
             <textarea rows="3" [value]="answers().systemResponsibility" (input)="updateField('systemResponsibility', $event)" [placeholder]="i18n.t('wizard.application.jobPlaceholder')"></textarea>
+            @if (openHelp() === "application-job") { <small class="field-help" id="wizard-help-application-job">{{ i18n.t("wizard.help.application.job") }}</small> }
             @if (issueFor("systemResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
         </div>
@@ -88,9 +100,12 @@
         <details class="advanced-fields">
           <summary>{{ i18n.t("wizard.technicalNames") }}</summary>
           <label>
-            <span>{{ i18n.t("wizard.application.id") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.application.id") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.application.id') })" [attr.aria-expanded]="openHelp() === 'application-id'" aria-controls="wizard-help-application-id" (click)="toggleHelp('application-id', $event)">?</button>
+            </span>
             <input [value]="answers().systemId" (input)="updateField('systemId', $event)" />
-            <small>{{ i18n.t("wizard.application.idHint") }}</small>
+            @if (openHelp() === "application-id") { <small class="field-help" id="wizard-help-application-id">{{ i18n.t("wizard.help.application.id") }}</small> }
             @if (issueFor("systemId"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
         </details>
@@ -105,20 +120,32 @@
 
         <div class="field-grid">
           <label>
-            <span>{{ i18n.t("wizard.people.role") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.people.role") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.people.role') })" [attr.aria-expanded]="openHelp() === 'people-role'" aria-controls="wizard-help-people-role" (click)="toggleHelp('people-role', $event)">?</button>
+            </span>
             <input [value]="answers().personName" (input)="updatePersonName($event)" />
+            @if (openHelp() === "people-role") { <small class="field-help" id="wizard-help-people-role">{{ i18n.t("wizard.help.people.role") }}</small> }
             @if (issueFor("personName"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
           <label>
-            <span>{{ i18n.t("wizard.people.location") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.people.location") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.people.location') })" [attr.aria-expanded]="openHelp() === 'people-location'" aria-controls="wizard-help-people-location" (click)="toggleHelp('people-location', $event)">?</button>
+            </span>
             <select [value]="answers().personClassification" (change)="updateField('personClassification', $event)">
               <option value="internal">{{ i18n.t("wizard.people.internal") }}</option>
               <option value="external">{{ i18n.t("wizard.people.external") }}</option>
             </select>
+            @if (openHelp() === "people-location") { <small class="field-help" id="wizard-help-people-location">{{ i18n.t("wizard.help.people.location") }}</small> }
           </label>
           <label class="wide">
-            <span>{{ i18n.t("wizard.people.goal") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.people.goal") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.people.goal') })" [attr.aria-expanded]="openHelp() === 'people-goal'" aria-controls="wizard-help-people-goal" (click)="toggleHelp('people-goal', $event)">?</button>
+            </span>
             <textarea rows="3" [value]="answers().personResponsibility" (input)="updateField('personResponsibility', $event)"></textarea>
+            @if (openHelp() === "people-goal") { <small class="field-help" id="wizard-help-people-goal">{{ i18n.t("wizard.help.people.goal") }}</small> }
             @if (issueFor("personResponsibility"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
         </div>
@@ -131,8 +158,12 @@
         <details class="advanced-fields">
           <summary>{{ i18n.t("wizard.technicalName") }}</summary>
           <label>
-            <span>{{ i18n.t("wizard.people.id") }}</span>
+            <span class="field-heading">
+              <span>{{ i18n.t("wizard.people.id") }}</span>
+              <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.people.id') })" [attr.aria-expanded]="openHelp() === 'people-id'" aria-controls="wizard-help-people-id" (click)="toggleHelp('people-id', $event)">?</button>
+            </span>
             <input [value]="answers().personId" (input)="updateField('personId', $event)" />
+            @if (openHelp() === "people-id") { <small class="field-help" id="wizard-help-people-id">{{ i18n.t("wizard.help.people.id") }}</small> }
             @if (issueFor("personId"); as issue) { <small class="issue">{{ issue }}</small> }
           </label>
         </details>
@@ -158,25 +189,44 @@
               </header>
               <div class="field-grid compact-grid">
                 <label>
-                  <span>{{ i18n.t("wizard.parts.name") }}</span>
+                  <span class="field-heading">
+                    <span>{{ i18n.t("wizard.parts.name") }}</span>
+                    <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.parts.name') })" [attr.aria-expanded]="openHelp() === 'part-name-' + index" [attr.aria-controls]="'wizard-help-part-name-' + index" (click)="toggleHelp('part-name-' + index, $event)">?</button>
+                  </span>
                   <input [value]="part.name" (input)="updatePart(index, 'name', $event)" />
+                  @if (openHelp() === "part-name-" + index) { <small class="field-help" [id]="'wizard-help-part-name-' + index">{{ i18n.t("wizard.help.parts.name") }}</small> }
                   @if (partIssue(index, "name"); as issue) { <small class="issue">{{ issue }}</small> }
                 </label>
                 <label>
-                  <span>{{ i18n.t("wizard.parts.technology") }}</span>
+                  <span class="field-heading">
+                    <span>{{ i18n.t("wizard.parts.technology") }}</span>
+                    <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.parts.technology') })" [attr.aria-expanded]="openHelp() === 'part-technology-' + index" [attr.aria-controls]="'wizard-help-part-technology-' + index" (click)="toggleHelp('part-technology-' + index, $event)">?</button>
+                  </span>
                   <input [value]="part.technology" (input)="updatePart(index, 'technology', $event)" />
+                  @if (openHelp() === "part-technology-" + index) { <small class="field-help" [id]="'wizard-help-part-technology-' + index">{{ i18n.t("wizard.help.parts.technology") }}</small> }
                   @if (partIssue(index, "technology"); as issue) { <small class="issue">{{ issue }}</small> }
                 </label>
                 <label class="wide">
-                  <span>{{ i18n.t("wizard.parts.responsibility") }}</span>
+                  <span class="field-heading">
+                    <span>{{ i18n.t("wizard.parts.responsibility") }}</span>
+                    <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.parts.responsibility') })" [attr.aria-expanded]="openHelp() === 'part-responsibility-' + index" [attr.aria-controls]="'wizard-help-part-responsibility-' + index" (click)="toggleHelp('part-responsibility-' + index, $event)">?</button>
+                  </span>
                   <input [value]="part.responsibility" (input)="updatePart(index, 'responsibility', $event)" />
+                  @if (openHelp() === "part-responsibility-" + index) { <small class="field-help" [id]="'wizard-help-part-responsibility-' + index">{{ i18n.t("wizard.help.parts.responsibility") }}</small> }
                   @if (partIssue(index, "responsibility"); as issue) { <small class="issue">{{ issue }}</small> }
                 </label>
               </div>
               <details class="card-advanced">
                 <summary>{{ i18n.t("wizard.parts.id") }}</summary>
-                <input [value]="part.id" (input)="updatePart(index, 'id', $event)" />
-                @if (partIssue(index, "id"); as issue) { <small class="issue">{{ issue }}</small> }
+                <label>
+                  <span class="field-heading">
+                    <span>{{ i18n.t("wizard.parts.id") }}</span>
+                    <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.parts.id') })" [attr.aria-expanded]="openHelp() === 'part-id-' + index" [attr.aria-controls]="'wizard-help-part-id-' + index" (click)="toggleHelp('part-id-' + index, $event)">?</button>
+                  </span>
+                  <input [value]="part.id" (input)="updatePart(index, 'id', $event)" />
+                  @if (openHelp() === "part-id-" + index) { <small class="field-help" [id]="'wizard-help-part-id-' + index">{{ i18n.t("wizard.help.parts.id") }}</small> }
+                  @if (partIssue(index, "id"); as issue) { <small class="issue">{{ issue }}</small> }
+                </label>
               </details>
             </article>
           }
@@ -198,17 +248,25 @@
         @if (answers().viewKind === "container") {
           <div class="entry-connection">
             <label>
-              <span>{{ i18n.t("wizard.connections.entry", { name: answers().personName }) }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.connections.entry", { name: answers().personName }) }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.entry', { name: answers().personName }) })" [attr.aria-expanded]="openHelp() === 'connections-entry'" aria-controls="wizard-help-connections-entry" (click)="toggleHelp('connections-entry', $event)">?</button>
+              </span>
               <select [value]="answers().entryPartId" (change)="selectEntryPart($event)">
                 @for (part of answers().parts; track part.id) {
                   <option [value]="part.id" [selected]="part.id === answers().entryPartId">{{ part.name }}</option>
                 }
               </select>
+              @if (openHelp() === "connections-entry") { <small class="field-help" id="wizard-help-connections-entry">{{ i18n.t("wizard.help.connections.entry") }}</small> }
               @if (issueFor("entryPartId"); as issue) { <small class="issue">{{ issue }}</small> }
             </label>
             <label>
-              <span>{{ i18n.t("wizard.connections.personAction") }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.connections.personAction") }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.personAction') })" [attr.aria-expanded]="openHelp() === 'connections-person-action'" aria-controls="wizard-help-connections-person-action" (click)="toggleHelp('connections-person-action', $event)">?</button>
+              </span>
               <input [value]="answers().relationshipIntent" (input)="updateField('relationshipIntent', $event)" />
+              @if (openHelp() === "connections-person-action") { <small class="field-help" id="wizard-help-connections-person-action">{{ i18n.t("wizard.help.connections.personAction") }}</small> }
               @if (issueFor("relationshipIntent"); as issue) { <small class="issue">{{ issue }}</small> }
             </label>
           </div>
@@ -226,29 +284,45 @@
               <article class="connection-card">
                 <div class="connection-path">
                   <label>
-                    <span>{{ i18n.t("wizard.connections.from") }}</span>
+                    <span class="field-heading">
+                      <span>{{ i18n.t("wizard.connections.from") }}</span>
+                      <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.from') })" [attr.aria-expanded]="openHelp() === 'connection-from-' + index" [attr.aria-controls]="'wizard-help-connection-from-' + index" (click)="toggleHelp('connection-from-' + index, $event)">?</button>
+                    </span>
                     <select [value]="connection.fromId" (change)="updateConnection(index, 'fromId', $event)">
                       @for (part of answers().parts; track part.id) { <option [value]="part.id" [selected]="part.id === connection.fromId">{{ part.name }}</option> }
                     </select>
+                    @if (openHelp() === "connection-from-" + index) { <small class="field-help" [id]="'wizard-help-connection-from-' + index">{{ i18n.t("wizard.help.connections.from") }}</small> }
                   </label>
                   <span aria-hidden="true">→</span>
                   <label>
-                    <span>{{ i18n.t("wizard.connections.to") }}</span>
+                    <span class="field-heading">
+                      <span>{{ i18n.t("wizard.connections.to") }}</span>
+                      <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.to') })" [attr.aria-expanded]="openHelp() === 'connection-to-' + index" [attr.aria-controls]="'wizard-help-connection-to-' + index" (click)="toggleHelp('connection-to-' + index, $event)">?</button>
+                    </span>
                     <select [value]="connection.toId" (change)="updateConnection(index, 'toId', $event)">
                       @for (part of answers().parts; track part.id) { <option [value]="part.id" [selected]="part.id === connection.toId">{{ part.name }}</option> }
                     </select>
+                    @if (openHelp() === "connection-to-" + index) { <small class="field-help" [id]="'wizard-help-connection-to-' + index">{{ i18n.t("wizard.help.connections.to") }}</small> }
                   </label>
                   <button type="button" (click)="removeConnection(index)" [attr.aria-label]="i18n.t('wizard.connections.remove')">×</button>
                 </div>
                 <div class="field-grid compact-grid">
                   <label>
-                    <span>{{ i18n.t("wizard.connections.intent") }}</span>
+                    <span class="field-heading">
+                      <span>{{ i18n.t("wizard.connections.intent") }}</span>
+                      <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.intent') })" [attr.aria-expanded]="openHelp() === 'connection-intent-' + index" [attr.aria-controls]="'wizard-help-connection-intent-' + index" (click)="toggleHelp('connection-intent-' + index, $event)">?</button>
+                    </span>
                     <input [value]="connection.intent" (input)="updateConnection(index, 'intent', $event)" />
+                    @if (openHelp() === "connection-intent-" + index) { <small class="field-help" [id]="'wizard-help-connection-intent-' + index">{{ i18n.t("wizard.help.connections.intent") }}</small> }
                     @if (connectionIssue(index, "intent"); as issue) { <small class="issue">{{ issue }}</small> }
                   </label>
                   <label>
-                    <span>{{ i18n.t("wizard.connections.protocol") }}</span>
+                    <span class="field-heading">
+                      <span>{{ i18n.t("wizard.connections.protocol") }}</span>
+                      <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.protocol') })" [attr.aria-expanded]="openHelp() === 'connection-protocol-' + index" [attr.aria-controls]="'wizard-help-connection-protocol-' + index" (click)="toggleHelp('connection-protocol-' + index, $event)">?</button>
+                    </span>
                     <input [value]="connection.protocol" (input)="updateConnection(index, 'protocol', $event)" />
+                    @if (openHelp() === "connection-protocol-" + index) { <small class="field-help" [id]="'wizard-help-connection-protocol-' + index">{{ i18n.t("wizard.help.connections.protocol") }}</small> }
                     @if (connectionIssue(index, "protocol"); as issue) { <small class="issue">{{ issue }}</small> }
                   </label>
                 </div>
@@ -260,8 +334,12 @@
         } @else {
           <div class="field-grid">
             <label class="wide">
-              <span>{{ i18n.t("wizard.connections.contextIntent", { person: answers().personName, system: answers().systemName }) }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.connections.contextIntent", { person: answers().personName, system: answers().systemName }) }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.connections.contextIntent', { person: answers().personName, system: answers().systemName }) })" [attr.aria-expanded]="openHelp() === 'connections-context-intent'" aria-controls="wizard-help-connections-context-intent" (click)="toggleHelp('connections-context-intent', $event)">?</button>
+              </span>
               <input [value]="answers().relationshipIntent" (input)="updateField('relationshipIntent', $event)" />
+              @if (openHelp() === "connections-context-intent") { <small class="field-help" id="wizard-help-connections-context-intent">{{ i18n.t("wizard.help.connections.contextIntent") }}</small> }
               @if (issueFor("relationshipIntent"); as issue) { <small class="issue">{{ issue }}</small> }
             </label>
           </div>
@@ -271,22 +349,34 @@
           <summary>{{ i18n.t("wizard.result.heading") }}</summary>
           <div class="field-grid compact-grid">
             <label>
-              <span>{{ i18n.t("wizard.result.title") }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.result.title") }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.result.title') })" [attr.aria-expanded]="openHelp() === 'result-title'" aria-controls="wizard-help-result-title" (click)="toggleHelp('result-title', $event)">?</button>
+              </span>
               <input [value]="answers().viewTitle" (input)="updateField('viewTitle', $event)" />
+              @if (openHelp() === "result-title") { <small class="field-help" id="wizard-help-result-title">{{ i18n.t("wizard.help.result.title") }}</small> }
               @if (issueFor("viewTitle"); as issue) { <small class="issue">{{ issue }}</small> }
             </label>
             <label>
-              <span>{{ i18n.t("wizard.result.direction") }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.result.direction") }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.result.direction') })" [attr.aria-expanded]="openHelp() === 'result-direction'" aria-controls="wizard-help-result-direction" (click)="toggleHelp('result-direction', $event)">?</button>
+              </span>
               <select [value]="answers().flow" (change)="updateField('flow', $event)">
                 <option value="right">{{ i18n.t("wizard.result.right") }}</option>
                 <option value="down">{{ i18n.t("wizard.result.down") }}</option>
                 <option value="left">{{ i18n.t("wizard.result.left") }}</option>
                 <option value="up">{{ i18n.t("wizard.result.up") }}</option>
               </select>
+              @if (openHelp() === "result-direction") { <small class="field-help" id="wizard-help-result-direction">{{ i18n.t("wizard.help.result.direction") }}</small> }
             </label>
             <label class="wide">
-              <span>{{ i18n.t("wizard.result.purpose") }}</span>
+              <span class="field-heading">
+                <span>{{ i18n.t("wizard.result.purpose") }}</span>
+                <button type="button" class="field-help-button" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('wizard.result.purpose') })" [attr.aria-expanded]="openHelp() === 'result-purpose'" aria-controls="wizard-help-result-purpose" (click)="toggleHelp('result-purpose', $event)">?</button>
+              </span>
               <input [value]="answers().viewPurpose" (input)="updateField('viewPurpose', $event)" />
+              @if (openHelp() === "result-purpose") { <small class="field-help" id="wizard-help-result-purpose">{{ i18n.t("wizard.help.result.purpose") }}</small> }
               @if (issueFor("viewPurpose"); as issue) { <small class="issue">{{ issue }}</small> }
             </label>
           </div>

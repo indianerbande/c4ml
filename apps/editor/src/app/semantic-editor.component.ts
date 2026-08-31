@@ -22,6 +22,7 @@ import type {
   PreviewSemanticChangeWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import type { SemanticEditorMode } from "./workbench-semantic.facade.js";
 
 type SemanticEditorOperationKind = "create-element" | "create-relationship";
 
@@ -35,8 +36,12 @@ export class SemanticEditorComponent {
   readonly project = input.required<CompilerWorkerProject>();
   readonly activeFile = input.required<string>();
   readonly viewId = input.required<string>();
+  readonly mode = input<SemanticEditorMode>("element");
+  readonly initialSourceId = input<string | undefined>(undefined);
+  readonly initialTargetId = input<string | undefined>(undefined);
   readonly applied = output<PreviewSemanticChangeWorkerResponse>();
   readonly cancelled = output<void>();
+  readonly selectionRequested = output<{ readonly sourceId?: string }>();
 
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
@@ -88,8 +93,14 @@ export class SemanticEditorComponent {
     () =>
       !this.loadingContext() &&
       this.context() !== undefined &&
-      this.createActions().length === 0 &&
-      this.sourceOptions().length === 0,
+      (this.mode() === "element"
+        ? this.createActions().length === 0
+        : this.sourceOptions().length === 0),
+  );
+  readonly canSwapDirection = computed(() =>
+    this.context()?.connectionOptions.find(
+      ({ sourceId }) => sourceId === this.targetId(),
+    )?.targetIds.includes(this.sourceId()) === true,
   );
   readonly canPreview = computed(() => {
     if (this.operationKind() === "create-element") {
@@ -126,10 +137,32 @@ export class SemanticEditorComponent {
 
   constructor() {
     effect(() => {
-      const key = `${this.project().id}:${this.viewId()}:${this.project().documents.map(({ uri, source }) => `${uri}\u0000${source}`).join("\u0001")}`;
+      const key = `${this.project().id}:${this.viewId()}:${this.mode()}:${this.initialSourceId() ?? ""}:${this.initialTargetId() ?? ""}:${this.project().documents.map(({ uri, source }) => `${uri}\u0000${source}`).join("\u0001")}`;
       if (key === this.#contextKey) return;
       this.#contextKey = key;
-      void this.#loadContext();
+      void this.#loadContext(key);
+    });
+    effect(() => {
+      const context = this.context();
+      const requestedSource = this.initialSourceId();
+      const requestedTarget = this.initialTargetId();
+      if (
+        this.mode() !== "relationship" ||
+        context === undefined ||
+        requestedSource === undefined
+      ) return;
+      const source = context.connectionOptions.find(
+        ({ sourceId }) => sourceId === requestedSource,
+      );
+      if (source === undefined) return;
+      const targetId =
+        requestedTarget !== undefined && source.targetIds.includes(requestedTarget)
+          ? requestedTarget
+          : source.targetIds[0] ?? "";
+      this.sourceId.set(source.sourceId);
+      this.targetId.set(targetId);
+      this.relationshipId.set(`${source.sourceId}-to-${targetId}`);
+      this.preview.set(undefined);
     });
     effect((onCleanup) => {
       const svg = this.preview()?.compilation?.svg;
@@ -143,13 +176,6 @@ export class SemanticEditorComponent {
     });
   }
 
-  selectOperation(event: Event): void {
-    const value = selectValue(event);
-    if (value !== "create-element" && value !== "create-relationship") return;
-    this.operationKind.set(value);
-    this.preview.set(undefined);
-  }
-
   selectCreateKind(event: Event): void {
     const value = selectValue(event);
     if (!isSemanticKind(value)) return;
@@ -160,9 +186,18 @@ export class SemanticEditorComponent {
   selectSource(event: Event): void {
     const value = selectValue(event);
     if (value === undefined) return;
+    const previousSource = this.sourceId();
+    const previousTarget = this.targetId();
+    const nextTarget =
+      this.context()?.connectionOptions.find(({ sourceId }) => sourceId === value)
+        ?.targetIds[0] ?? "";
     this.sourceId.set(value);
-    this.targetId.set(
-      this.context()?.connectionOptions.find(({ sourceId }) => sourceId === value)?.targetIds[0] ?? "",
+    this.targetId.set(nextTarget);
+    this.#updateRelationshipId(
+      previousSource,
+      previousTarget,
+      value,
+      nextTarget,
     );
     this.preview.set(undefined);
   }
@@ -170,9 +205,35 @@ export class SemanticEditorComponent {
   selectTarget(event: Event): void {
     const value = selectValue(event);
     if (value !== undefined) {
+      const previousTarget = this.targetId();
       this.targetId.set(value);
+      this.#updateRelationshipId(
+        this.sourceId(),
+        previousTarget,
+        this.sourceId(),
+        value,
+      );
       this.preview.set(undefined);
     }
+  }
+
+  swapDirection(): void {
+    if (!this.canSwapDirection()) return;
+    const sourceId = this.sourceId();
+    const targetId = this.targetId();
+    this.sourceId.set(targetId);
+    this.targetId.set(sourceId);
+    this.#updateRelationshipId(sourceId, targetId, targetId, sourceId);
+    this.preview.set(undefined);
+  }
+
+  requestDiagramSelection(): void {
+    const sourceId = this.initialSourceId() === undefined
+      ? undefined
+      : this.sourceId();
+    this.selectionRequested.emit({
+      ...(sourceId === undefined ? {} : { sourceId }),
+    });
   }
 
   update(target: ReturnType<typeof signal<string>>, event: Event): void {
@@ -232,7 +293,7 @@ export class SemanticEditorComponent {
     return this.i18n.t(`semanticEditor.kind.${kind}`);
   }
 
-  async #loadContext(): Promise<void> {
+  async #loadContext(expectedKey: string): Promise<void> {
     this.context.set(undefined);
     this.contextIssues.set([]);
     const response = await this.compiler.inspectSemanticAuthoring(
@@ -240,6 +301,7 @@ export class SemanticEditorComponent {
       this.activeFile(),
       this.viewId(),
     );
+    if (expectedKey !== this.#contextKey) return;
     if (response?.status !== "valid" || response.context === undefined) {
       this.contextIssues.set([
         ...(response?.issues ?? []).map(({ message }) => message),
@@ -248,15 +310,27 @@ export class SemanticEditorComponent {
       return;
     }
     this.context.set(response.context);
+    this.operationKind.set(
+      this.mode() === "relationship" ? "create-relationship" : "create-element",
+    );
     const firstCreate = response.context.createActions[0];
     const firstSource = response.context.connectionOptions[0];
     if (firstCreate !== undefined) this.createKind.set(firstCreate.kind);
     if (firstSource !== undefined) {
-      this.sourceId.set(firstSource.sourceId);
-      this.targetId.set(firstSource.targetIds[0] ?? "");
-    }
-    if (firstCreate === undefined && firstSource !== undefined) {
-      this.operationKind.set("create-relationship");
+      const requestedSource = this.initialSourceId();
+      const source = response.context.connectionOptions.find(
+        ({ sourceId }) => sourceId === requestedSource,
+      ) ?? firstSource;
+      const requestedTarget = this.initialTargetId();
+      const targetId =
+        requestedTarget !== undefined && source.targetIds.includes(requestedTarget)
+          ? requestedTarget
+          : source.targetIds[0] ?? "";
+      this.sourceId.set(source.sourceId);
+      this.targetId.set(targetId);
+      if (this.mode() === "relationship" && this.relationshipId().length === 0) {
+        this.relationshipId.set(`${source.sourceId}-to-${targetId}`);
+      }
     }
   }
 
@@ -285,6 +359,21 @@ export class SemanticEditorComponent {
       ...(action.kind === "container" || action.kind === "component" ? { technology: this.technology().trim() } : {}),
       ...(action.kind === "code-element" ? { codeKind: this.codeKind().trim(), ...(this.language().trim() ? { language: this.language().trim() } : {}) } : {}),
     };
+  }
+
+  #updateRelationshipId(
+    previousSource: string,
+    previousTarget: string,
+    nextSource: string,
+    nextTarget: string,
+  ): void {
+    const current = this.relationshipId();
+    if (
+      current.length === 0 ||
+      current === `${previousSource}-to-${previousTarget}`
+    ) {
+      this.relationshipId.set(`${nextSource}-to-${nextTarget}`);
+    }
   }
 }
 

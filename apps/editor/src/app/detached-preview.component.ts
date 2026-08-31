@@ -162,6 +162,6 @@ export class DetachedPreviewComponent {
       return;
     }
     this.projection.set(projection);
-    this.#document.title = `${projection.view?.title ?? "C4ML Preview"} — C4ML`;
+    this.#document.title = `${projection.view?.title ?? "C4thedral Preview"} — C4thedral`;
   }
 }

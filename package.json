@@ -26,7 +26,7 @@
     "desktop:make": "pnpm run desktop:build && pnpm --filter @c4ml/desktop run make",
     "desktop:package": "pnpm run desktop:build && pnpm --filter @c4ml/desktop run package",
     "desktop:smoke": "pnpm run desktop:package && pnpm --filter @c4ml/desktop run smoke",
-    "desktop:start": "pnpm run desktop:package && pnpm --filter @c4ml/desktop run start",
+    "desktop:start": "pnpm run desktop:build && pnpm --filter @c4ml/desktop run start",
     "renderer:build": "pnpm --filter @c4ml/editor run build",
     "renderer:start": "pnpm --filter @c4ml/editor run start",
     "test": "pnpm --recursive --sort --if-present run test",

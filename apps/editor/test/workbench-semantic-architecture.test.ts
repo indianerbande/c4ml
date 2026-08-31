@@ -24,7 +24,13 @@ describe("workbench semantic authoring architecture", () => {
     expect(root).not.toContain("projectChangeToSourceChange");
     expect(facade).toContain("projectChangeToSourceChange");
     expect(facade).toContain("WorkbenchDocumentFacade");
+    expect(facade).toContain("inspectSemanticAuthoring(");
+    expect(facade).toContain("connectionOptions");
+    expect(facade).toContain("pickConnectionElement");
+    expect(root).toContain("target?.kind !== \"node\"");
+    expect(root).toContain("target.nodeRole !== \"element\"");
     expect(editor).toContain("this.compiler.inspectSemanticAuthoring(");
+    expect(editor).toContain("if (expectedKey !== this.#contextKey) return;");
     expect(editor).toContain("this.compiler.previewSemanticChange(");
     expect(editor).not.toContain("proposeC4mlSemanticEdit");
     expect(runtime).toContain("inspectC4mlSemanticAuthoringContext");

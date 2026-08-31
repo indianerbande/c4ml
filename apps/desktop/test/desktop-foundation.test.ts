@@ -17,12 +17,20 @@ import {
   resolveEditorAssetPath,
 } from "../src/editor-protocol.js";
 import { createDesktopWebPreferences } from "../src/window-options.js";
+import { desktopMessage } from "../src/desktop-localization.js";
 import {
   DesktopPreviewProjectionSequence,
   normalizePreviewWindowBounds,
 } from "../src/preview-window.js";
 
 describe("desktop foundation", () => {
+  it("labels the context-sensitive close action in both interface languages", () => {
+    expect(desktopMessage("en", "menu.closeDocument")).toBe("Close File");
+    expect(desktopMessage("en", "menu.closeProject")).toBe("Close Project");
+    expect(desktopMessage("de", "menu.closeDocument")).toBe("Datei schließen");
+    expect(desktopMessage("de", "menu.closeProject")).toBe("Projekt schließen");
+  });
+
   it("keeps privileged Electron capabilities out of the renderer", () => {
     expect(createDesktopWebPreferences("/trusted/preload.cjs")).toEqual({
       preload: "/trusted/preload.cjs",
@@ -77,10 +85,10 @@ describe("desktop foundation", () => {
       resolveDesktopPngFontFiles({
         appPath: "/unused",
         packaged: true,
-        resourcesPath: "/Applications/C4ML.app/Contents/Resources",
+        resourcesPath: "/Applications/C4thedral.app/Contents/Resources",
       })[0],
     ).toBe(
-      "/Applications/C4ML.app/Contents/Resources/sans/IBMPlexSans-Regular.ttf",
+      "/Applications/C4thedral.app/Contents/Resources/sans/IBMPlexSans-Regular.ttf",
     );
   });
 

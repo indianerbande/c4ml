@@ -27,7 +27,7 @@ interface HelpTopicDefinition {
   readonly paragraphs: readonly LocalizedText[];
   readonly points: readonly LocalizedText[];
   readonly exampleTitle?: LocalizedText;
-  readonly example?: string;
+  readonly example?: LocalizedText | string;
   readonly keywords: LocalizedText;
 }
 
@@ -89,7 +89,7 @@ const topics: readonly HelpTopicDefinition[] = [
       text("Architecture changes, placement, and Route editing are separate tools.", "Architekturänderungen, Platzierung und Routenbearbeitung sind getrennte Werkzeuge."),
     ],
     exampleTitle: text("Small executable structure", "Kleine ausführbare Struktur"),
-    example: `c4ml draft-1
+    example: text(`c4ml draft-1
 model {
   person gardener {
     name = "Garden Caretaker"
@@ -116,7 +116,34 @@ view garden-context {
   purpose = "Explain who uses Garden Pulse."
   audience = default
   legend = generated
-}`,
+}`, `c4ml draft-1
+model {
+  person gardener {
+    name = "Gartenbetreuung"
+    responsibility = "Plant und prüft die Gartenarbeit."
+    classification = external
+  }
+  system garden-pulse {
+    name = "Gartenplanung"
+    responsibility = "Macht aus Beobachtungen einen gemeinsamen Arbeitsplan."
+    classification = internal
+  }
+}
+relations {
+  relation gardener-reviews-plan {
+    from = gardener
+    to = garden-pulse
+    intent = "Prüft und aktualisiert den Gartenarbeitsplan"
+  }
+}
+view garden-context {
+  type = system-context
+  scope = garden-pulse
+  title = "Systemkontext — Gartenplanung"
+  purpose = "Zeigt, wer die Gartenplanung verwendet."
+  audience = default
+  legend = generated
+}`),
     keywords: text("start first diagram document", "start erstes diagramm dokument"),
   },
   {
@@ -166,11 +193,15 @@ view garden-context {
       text("classification is internal or external.", "classification ist internal oder external."),
     ],
     exampleTitle: text("Person declaration", "Person deklarieren"),
-    example: `person caretaker {
+    example: text(`person caretaker {
   name = "Garden Caretaker"
   responsibility = "Reviews cultivation signals and schedules work."
   classification = external
-}`,
+}`, `person caretaker {
+  name = "Gartenbetreuung"
+  responsibility = "Prüft Anbausignale und plant die Arbeit."
+  classification = external
+}`),
     keywords: text("person role team user internal external", "person rolle team nutzer intern extern"),
   },
   {
@@ -192,11 +223,15 @@ view garden-context {
       text("Mark ownership with internal or external.", "Kennzeichne die Zugehörigkeit mit internal oder external."),
     ],
     exampleTitle: text("Software System declaration", "Softwaresystem deklarieren"),
-    example: `system garden-pulse {
+    example: text(`system garden-pulse {
   name = "Garden Pulse"
   responsibility = "Turns observations into a shared work plan."
   classification = internal
-}`,
+}`, `system garden-pulse {
+  name = "Gartenplanung"
+  responsibility = "Macht aus Beobachtungen einen gemeinsamen Arbeitsplan."
+  classification = internal
+}`),
     keywords: text("system application product platform", "system anwendung produkt plattform"),
   },
   {
@@ -218,11 +253,15 @@ view garden-context {
       text("technology names the runtime or storage technology.", "technology nennt Laufzeit- oder Speichertechnik."),
     ],
     exampleTitle: text("Container declaration", "Container deklarieren"),
-    example: `container planning-api inside garden-pulse {
+    example: text(`container planning-api inside garden-pulse {
   name = "Planning API"
   responsibility = "Maintains the shared garden work plan."
   technology = "TypeScript service"
-}`,
+}`, `container planning-api inside garden-pulse {
+  name = "Planungs-API"
+  responsibility = "Verwaltet den gemeinsamen Gartenarbeitsplan."
+  technology = "TypeScript-Service"
+}`),
     keywords: text("container service database job runtime technology", "container service datenbank job laufzeit technologie"),
   },
   {
@@ -244,7 +283,7 @@ view garden-context {
       text("Code Elements require code-kind; language is optional.", "Code-Elemente benötigen code-kind; language ist optional."),
     ],
     exampleTitle: text("Two C4 zoom levels", "Zwei C4-Zoomstufen"),
-    example: `component scheduler inside planning-api {
+    example: text(`component scheduler inside planning-api {
   name = "Work Scheduler"
   responsibility = "Orders recommended garden tasks."
   technology = "TypeScript module"
@@ -255,7 +294,18 @@ code priority-rule inside scheduler {
   responsibility = "Ranks one proposed task."
   code-kind = function
   language = "TypeScript"
-}`,
+}`, `component scheduler inside planning-api {
+  name = "Arbeitsplaner"
+  responsibility = "Ordnet empfohlene Gartenarbeiten."
+  technology = "TypeScript-Modul"
+}
+
+code priority-rule inside scheduler {
+  name = "Prioritätsregel"
+  responsibility = "Bewertet eine vorgeschlagene Aufgabe."
+  code-kind = function
+  language = "TypeScript"
+}`),
     keywords: text("component code module class function zoom", "komponente code modul klasse funktion zoom"),
   },
   {
@@ -281,11 +331,15 @@ code priority-rule inside scheduler {
       text("Layout instructions never create relationships.", "Layoutanweisungen erzeugen niemals Verbindungen."),
     ],
     exampleTitle: text("Directed relationship", "Gerichtete Verbindung"),
-    example: `relation caretaker-reviews-plan {
+    example: text(`relation caretaker-reviews-plan {
   from = caretaker
   to = garden-pulse
   intent = "Reviews and adjusts the garden work plan"
-}`,
+}`, `relation caretaker-reviews-plan {
+  from = caretaker
+  to = garden-pulse
+  intent = "Prüft und aktualisiert den Gartenarbeitsplan"
+}`),
     keywords: text("relationship relation from to intent protocol interaction", "verbindung beziehung von nach absicht protokoll interaktion"),
   },
   {
@@ -308,7 +362,7 @@ code priority-rule inside scheduler {
       text("Use audience = default and legend = generated for the standard profile.", "Verwende audience = default und legend = generated für das Standardprofil."),
     ],
     exampleTitle: text("System Context View", "System-Context-Ansicht"),
-    example: `view garden-context {
+    example: text(`view garden-context {
   type = system-context
   scope = garden-pulse
   title = "System Context — Garden Pulse"
@@ -316,7 +370,15 @@ code priority-rule inside scheduler {
   audience = default
   legend = generated
   layout { flow = right }
-}`,
+}`, `view garden-context {
+  type = system-context
+  scope = garden-pulse
+  title = "Systemkontext — Gartenplanung"
+  purpose = "Zeigt Nutzerrollen und benachbarte Systeme."
+  audience = default
+  legend = generated
+  layout { flow = right }
+}`),
     keywords: text("view diagram scope context landscape dynamic", "ansicht diagramm ausschnitt kontext landschaft dynamisch"),
   },
   {
@@ -338,7 +400,7 @@ code priority-rule inside scheduler {
       text("systems lists the Software Systems included in the view.", "systems listet die enthaltenen Softwaresysteme."),
     ],
     exampleTitle: text("Environment and instance", "Umgebung und Instanz"),
-    example: `deployments {
+    example: text(`deployments {
   environment production {
     name = "Production"
     responsibility = "Runs the live service."
@@ -349,7 +411,18 @@ code priority-rule inside scheduler {
     }
     system-instance garden-live of garden-pulse on regional-cloud
   }
-}`,
+}`, `deployments {
+  environment production {
+    name = "Produktion"
+    responsibility = "Betreibt den produktiven Dienst."
+    node regional-cloud {
+      name = "Regionale Cloud"
+      responsibility = "Betreibt die Anwendung."
+      technology = "Verwaltete Cloud"
+    }
+    system-instance garden-live of garden-pulse on regional-cloud
+  }
+}`),
     keywords: text("deployment environment node instance infrastructure", "deployment umgebung knoten instanz infrastruktur"),
   },
   {
@@ -532,7 +605,10 @@ function localizeTopic(
     paragraphs: topic.paragraphs.map((paragraph) => paragraph[language]),
     points: topic.points.map((point) => point[language]),
     exampleTitle: topic.exampleTitle?.[language],
-    example: topic.example,
+    example:
+      typeof topic.example === "string"
+        ? topic.example
+        : topic.example?.[language],
     keywords: topic.keywords[language],
     status: "available",
   };

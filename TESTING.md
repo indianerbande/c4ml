@@ -1,12 +1,13 @@
-# C4ML Testing Strategy
+# C4thedral Testing Strategy
 
 Status: Draft 0.46
 
 Date: 2026-08-31
 
-This document defines how C4ML behavior will be verified. It is normative for
-testing once implementation begins. `SPEC.md` defines product behavior; this
-document defines the evidence required to claim that behavior works.
+This document defines how C4thedral product behavior and C4ML language and
+compiler behavior will be verified. It is normative for testing once
+implementation begins. `SPEC.md` defines product behavior; this document
+defines the evidence required to claim that behavior works.
 
 Vitest is accepted for unit and adapter-contract tests. The verified
 commands are:
@@ -141,7 +142,10 @@ Node.js loader, while Angular provides project tabs, explorer selection,
 per-document buffers and dirty markers, aggregate close protection,
 cross-document source navigation, sequential Save All with partial-result and
 cancel behavior, and independent Monaco models with restored cursor and scroll
-state. The glossary-resource slice additionally proves versioned parsing,
+state. The empty-workspace slice additionally requires startup without an
+implied source, context-sensitive File/Project closing, disabled close when no
+document is open, dirty-state confirmation, and clearing derived compiler and
+preview state. The glossary-resource slice additionally proves versioned parsing,
 deterministic ordering and lookup, acronym expansion, alias handling,
 case-insensitive collision rejection, project-revision participation, local and
 read-only Git loading, and non-source desktop/worker transport. The
@@ -175,6 +179,10 @@ source-editor adapter evidence. It verifies deterministic source-to-SVG
 compilation, invalid-source diagnostics, monotonic request identifiers,
 rejection of deliberately out-of-order results, retention of the last valid
 SVG, context-valid completion ranges, exact completion and marker translation,
+document-level `model` recovery after an invalid header, localized empty
+completion-state copy, and `person`/`system` recovery at declaration level in
+an intact model block, plus View-property recovery inside an incomplete but
+structurally intact View block,
 lexer-owned syntax-span classification, semantic-token delta encoding, stale
 asynchronous completion and highlight settlement, deterministic Context and
 Container wizard source, normal compilation of that source, explicit Container
@@ -228,13 +236,15 @@ single 963 px grid track and retained one x position while successive rows
 advanced vertically. The first two cards showed source-located
 `C4ML-LANG-005` messages for proposed element tags and a View presentation
 block; neither reported a missing closing brace. The panel remained vertically
-scrollable and the last valid diagram stayed visible.
+scrollable and the last valid diagram stayed visible. The panel content keeps
+an explicit eight-pixel inset on every edge, including empty and populated
+states.
 
 Workbench interaction tests also require Source Control to appear between Files
 and Diagrams, Help to appear immediately above Settings, the Problems count and
 active panel tab to share one toggle behavior without a separate close glyph,
-and the Diagrams status action to use its destination label rather than an
-authored View title.
+and Diagram navigation to remain solely in the left activity bar rather than
+being duplicated in the status bar.
 
 On 2026-08-30 the updated workbench was visually inspected in the live Angular
 renderer and packaged macOS desktop shell in German and English, light and dark
@@ -248,6 +258,28 @@ and upstream names truncated safely, German commit copy wrapped without overlap,
 staged and unstaged groups remained distinct, file actions stayed aligned, Push
 showed the outgoing count, and entering a message enabled Commit. No real
 repository mutation was invoked during visual inspection.
+
+On 2026-08-31 a fresh-origin live renderer check confirmed the new 13 px
+interface and status-bar defaults, the 15 px Monaco default, disabled
+Architecture with no valid static View, available Assistant, and removal of the
+duplicate Diagrams status action. The CLI-rendered `workshop-lens-components`
+fixture was also inspected as SVG-derived PNG: the compound boundary retained
+clear space below its title and the long relationship label wrapped into two
+unchanged-size lines without entering either Component. The former
+canvas-colored label rectangle was then replaced with a bounded gap in the
+selected route segment, leaving no visible label background while preserving
+the line on both sides.
+
+On 2026-08-31 the German **Dein erstes Diagramm** handbook article was also
+inspected in the live renderer. Its example retained literal `draft-1`
+keywords and stable IDs while showing German names, responsibilities,
+relationship intent, title, and purpose throughout the visible source block.
+The same renderer session reproduced an invalid `c4ml testdatei` header and
+confirmed that completion offered `model` at document level and exactly
+`person` plus `system` at declaration level inside the intact model block.
+A subsequent rebuilt-worker check confirmed all ten executable View-property
+candidates inside an incomplete `view` block, including `type`, `scope`,
+`title`, and `purpose`.
 
 The first intent-authoring inspector evidence verifies that the worker returns
 automatic candidate bounds, final scene bounds, movement delta, and stable
@@ -284,6 +316,24 @@ candidates compiled and exposed their exact proposed source; apply produced one
 dirty Monaco edit; and Undo restored the clean starting document. The System
 Context form also explains that an unconnected new neighbor enters the model
 first and becomes visible after the next context-valid connection operation.
+Template tests additionally protect zero-minimum grid tracks, bounded form
+controls, and vertical-only responsibility resizing so switching operations or
+resizing the text area cannot cover the candidate preview.
+The separate connection-authoring template evidence protects the dedicated
+**Connect** action and dialog, Source-to-Target diagram-picking state, explicit
+direction reversal, element-only hit acceptance, worker-owned endpoint
+validation, and the return to the same proposed-source and candidate-preview
+boundary before apply. Source edits, document changes, view changes, cancel,
+and Escape terminate the temporary picker instead of retaining stale endpoint
+state.
+The local dark renderer harness was visually and interactively inspected on
+2026-08-31 with the German online-shop example. The dedicated **Verbinden**
+dialog remained contained beside its candidate preview; selecting Customer and
+then Online Shop in the diagram returned the same directed pair to the dialog;
+opening **Verbinden** with Online Shop already selected preselected it visibly
+as the Source and offered Customer as the Target; and a described relationship
+compiled to both candidate SVG and the exact proposed C4ML source without
+changing the active document.
 The packaged macOS application completed the Pillar 1 persistence acceptance on
 2026-08-30. It applied the same semantic Person creation, saved the resulting
 source through the native Save As dialog, fully quit, restarted, and reopened
@@ -359,7 +409,9 @@ settings control changes Monaco immediately without changing authored source.
 The local-handbook suite MUST verify that every help-topic identifier has
 English and German content, search is deterministic in both languages, only
 the executable `draft-1` set is marked available, and examples contain no
-external asset reference. Language-package tests MUST map representative model,
+external asset reference. It MUST also verify that German examples localize
+author-facing descriptive values without translating C4ML keywords or stable
+identifiers. Language-package tests MUST map representative model,
 relationship, view, deployment, layout, and route cursor positions to stable
 topic identifiers and reject offsets outside the source. Worker and editor-
 session tests MUST validate the versioned request/response boundary and reject
@@ -612,6 +664,9 @@ Shape tests MUST verify:
   vertical regions without overlap;
 - all definitions use a 100 x 100 normalized canvas;
 - content boxes and primitive geometry remain finite and inside that canvas;
+- the built-in box text gutter remains visibly separated from its accent rail;
+- the default box bar has deliberate equal end clearance, and project options
+  can hide it or apply validated hexadecimal color and percentage transparency;
 - all four cardinal Ports exist on their matching canvas sides;
 - only rectangles, ellipses, polygons, and lines enter the renderer contract;
 - shape paint uses semantic `surface`, `accent`, and `detail` roles;
@@ -744,15 +799,50 @@ The current new-document-only wizard foundation proves deterministic System
 Context and Container generation, normal parser and semantic validation,
 dynamic part and connection validation, explicit direction and protocol,
 stale-result rejection, cancel without source changes, and one explicit undo.
+Template and interaction tests MUST keep that undo out of the title actions,
+present it as contextual status feedback, require an explicit confirmation,
+contain keyboard focus in the confirmation dialog, and invalidate it on the
+next source or document change.
 Interaction review also checks that questions can be completed from familiar
-architecture concepts without prior C4 vocabulary. Existing-document
+architecture concepts without prior C4 vocabulary. Template and localization
+tests MUST additionally verify that every rendered form control has adjacent
+expandable help, that help controls expose expanded state and controlled
+content accessibly, that IDs are described as source tokens rather than vague
+technical names, and that German interface selection starts with German-owned
+example answers. Those answers MUST retain one coherent original online-shop
+story across role, application, separately running parts, technologies, and
+connections in both interface languages. Existing-document
 preservation tests do not apply until that separate capability is designed and
 implemented.
+
+On 2026-08-31 the German renderer harness was visually and interactively
+checked after generating the online-shop System Context. The contextual undo
+notice remained compact above the status bar and no undo action appeared in the
+title bar. Its confirmation dialog initially focused Cancel, trapped forward
+and reverse Tab movement, returned focus to the notice after Escape, and removed
+both the generated document and notice only after explicit confirmation.
+
+On 2026-08-31 the renamed macOS development application was launched through
+the ad-hoc-signed `C4thedral.app` wrapper. The empty workbench showed
+`C4thedral` without clipping in the native window title and upper-left brand,
+while the status bar retained the technical `C4ML` language label. The macOS
+application menu was named `C4thedral` and exposed `Über C4thedral`,
+`C4thedral ausblenden`, and `C4thedral beenden`. The German empty workspace also
+showed `C4thedral-Arbeitsbereich`; `.c4ml` source terminology remained C4ML.
 
 ### 2.11 Desktop shell and packaging
 
 Desktop tests MUST cover:
 
+- the visible product name `C4thedral` in workbench chrome, document and preview
+  titles, native menus, development wrappers, executables, installers, and
+  archives, while `.c4ml`, C4ML compiler and CLI names, diagnostics, bridge
+  channels, bundle identifiers, and storage keys remain stable;
+- reuse of the established `C4ML` application-data directory after the product
+  rename so existing local preferences and safe presentation state remain
+  available;
+- a direct unpackaged development launch that does not invoke the Node.js-24
+  packaging guard, while package, smoke, and make retain that guard;
 - runtime validation of every privileged renderer request;
 - rejection of IPC from untrusted pages and denial of external navigation,
   windows, permissions, and webviews;
@@ -762,6 +852,8 @@ Desktop tests MUST cover:
 - opaque document handles and the configured source-size limit;
 - native Open, Save, Save As, cancellation, failure reporting, dirty titles,
   and unsaved-close protection;
+- empty startup plus context-sensitive Close File/Close Project behavior that
+  returns to an empty workspace and clears derived state;
 - native project-directory opening through the shared manifest loader, opaque
   handles for every selected source, per-document size enforcement, and
   aggregate project dirty state;
@@ -772,6 +864,8 @@ Desktop tests MUST cover:
 - full-size preview entry and return without changing source or canonical SVG;
 - a separate preview window with a projection-only preload, no compiler,
   source-editor, document, save, export, filesystem, or Node authority;
+- one compact upper-right detach/redock control that retains its position,
+  reverses its arrow direction, and does not add a detached-state title action;
 - a seamless, unpatterned preview canvas matching the canonical diagram canvas
   in both main and detached workspaces across light and dark workbench schemes,
   without changing SVG;
@@ -782,7 +876,10 @@ Desktop tests MUST cover:
   visible bounded window restoration, including monotonic projection revisions
   across a main-renderer reload;
 - native Settings opening through the application menu and `Cmd/Ctrl+,`;
-- validated English/German synchronization of C4ML-owned native menu commands,
+- 13 px interface and status-bar defaults, a 15 px source-editor default,
+  context-sensitive Architecture/Assistant actions, and one unambiguous
+  Diagrams activity control;
+- validated English/German synchronization of C4thedral-owned native menu commands,
   dialog labels, failure copy, and unsaved-close protection;
 - packaging without development sources or an application `node_modules`
   tree;

@@ -1,10 +1,12 @@
-# C4ML Specification
+# C4thedral Specification
 
-Status: Draft 0.45
+Status: Draft 0.46
 
 Date: 2026-08-31
 
-Working title: C4ML
+Product name: C4thedral
+
+Language and compiler name: C4ML
 
 This document defines the intended product and architectural boundaries. It is
 not yet a frozen language grammar. Examples of concrete syntax must remain
@@ -15,8 +17,9 @@ strength in this specification.
 
 ## 1. Product statement
 
-C4ML is a compiler for software-architecture diagrams based on the C4 model.
-It combines:
+C4thedral is a local architecture workbench powered by C4ML, its
+model-and-diagram language and compiler for software architecture based on the
+C4 model. Together they combine:
 
 - a semantic architecture model;
 - explicit, reusable views of that model;
@@ -63,6 +66,20 @@ These pillars share the existing stable-identity, source-location, diagnostic,
 worker, CLI-parity, and deterministic-output foundations. Optional AI MAY help
 authors phrase questions or proposed edits, but it MUST NOT replace compiler
 validation, deterministic comparison, or rule evaluation.
+
+### 1.2 Product and technical naming
+
+**Status: Accepted.**
+
+The visible product name is **C4thedral**. Application chrome, window titles,
+native menus, About copy, development wrappers, executables, installers, and
+archives MUST use that exact spelling.
+
+**C4ML** remains the technical name of the language, source format, compiler,
+CLI, package namespace, diagnostic family, worker and desktop contracts, and
+other compatibility-sensitive identifiers. Existing `.c4ml` documents,
+settings records, application data, scripts, and integrations MUST NOT require
+migration solely because the workbench product was renamed.
 
 ## 2. Goals
 
@@ -585,6 +602,11 @@ canceled, and leaves every unsaved document visibly dirty. Diagnostics and
 preview navigation select the owning document before revealing its range.
 Context completion sees the complete project namespace while highlighting and
 cursor help remain properties of the active source text.
+The desktop starts with an empty editor rather than an implied
+`architecture.c4ml` source. Its File menu exposes one context-sensitive close
+action: Close File for an implicit single document and Close Project for an
+explicit project. Closing returns to the empty editor, clears derived compiler
+and preview state, and retains the existing aggregate dirty-state confirmation.
 
 The desktop loads and evaluates the optional policy resource with the complete
 project but does not expose it as an editable Monaco source tab in this first
@@ -664,9 +686,13 @@ preferences.
 
 The implemented version-one project shape resource wraps the existing safe,
 renderer-neutral shape contract. A `.c4ml-shapes.json` file declares one or more
-validated normalized definitions and optional architecture-identity-to-shape
-assignments. The shared catalogue rejects invalid canvas, content box, Ports,
-primitives, geometry, duplicate IDs, and built-in collisions; diagram
+validated normalized definitions, optional architecture-identity-to-shape
+assignments, or bounded presentation for the built-in box bar. That
+presentation accepts `bar` as `on` or `off`, an optional six-digit hexadecimal
+color, and an optional transparency percentage from zero through one hundred.
+The bar remains on, theme-colored, and opaque when those values are omitted.
+The shared catalogue rejects invalid canvas, content box, Ports, primitives,
+geometry, color, opacity, duplicate IDs, and built-in collisions; diagram
 preparation rejects unknown assignments. CLI and compiler worker pass the same
 options into shared preparation. The resource cannot contain SVG, scripts, CSS,
 fonts, filters, embedded images, network references, or new C4 kinds. It changes
@@ -702,6 +728,10 @@ The pipeline MUST treat layout as several explicit phases:
 6. place relationship labels;
 7. resolve or report remaining collisions; and
 8. normalize the canvas and coordinates.
+
+Automatic compound layout MUST reserve presentation-aware internal clearance
+between a boundary title and its first child. This is an effective layout
+default, not a frozen public source-level padding property.
 
 ### 8.2 Placement controls
 
@@ -797,10 +827,15 @@ The first release MUST support:
   and
 - view-local crossing and parallel-path preferences.
 
-Relationship labels MUST NOT show a visible card or banner by default. A
-canvas-colored clearance area MAY interrupt the route beneath a label, but it
-MUST render below elements and Arrowheads so it cannot cover or cut into a
-node's surface.
+Relationship labels MUST NOT show a visible card, banner, or canvas-colored
+background. The selected route segment MUST instead contain a bounded geometric
+gap behind the label so the route remains visible on both sides without running
+through the text. Elements and Arrowheads remain visually authoritative.
+
+Relationship labels and technology text MUST retain their controlled font size
+and wrap deterministically into bounded line blocks when one line would intrude
+into an endpoint element. The renderer-neutral scene owns the effective lines
+and bounds; SVG and PNG adapters MUST NOT choose different wrapping.
 
 A manually specified route MUST remain associated with stable relationship and
 view identifiers. Waypoints SHOULD be expressible relative to elements, ports,
@@ -895,7 +930,7 @@ small privileged adapter needed for those capabilities. It MUST NOT contain a
 second compiler, parser, language service, semantic model, layout pipeline, or
 renderer.
 
-C4ML is licensed under Apache License 2.0. Third-party dependencies retain
+C4thedral and C4ML are licensed under Apache License 2.0. Third-party dependencies retain
 their own licenses and MUST remain behind the boundaries recorded in
 `DEPENDENCIES.md`.
 
@@ -1325,6 +1360,14 @@ scope provider. It filters already-declared singleton properties and restricts
 cross-references by their semantic target type, including Software-System-only
 System Context and Container scopes, Container-only Component scopes, and
 Component-only Code scopes. Results are deterministically ordered.
+At a document-level cursor, error recovery MUST retain the foundational
+`model` candidate when an invalid or incomplete header would otherwise leave
+the completion list empty. At declaration level inside a lexically intact
+`model` block, the same recovery MUST retain the foundational `person` and
+`system` candidates. At property level inside a lexically intact but incomplete
+`view` block, it MUST retain the executable View-property candidates even when
+the View ID or document header is still invalid. Monaco-owned completion-state copy MUST follow the
+selected workbench language through the C4ML editor adapter.
 
 The guided-modeling foundation generates either a new System Context document
 or a new Container document. The Context path asks about one focal application,
@@ -1337,8 +1380,22 @@ semantic validator, compiler, and preview.
 Wizard questions MUST lead with familiar architecture tasks and descriptions.
 C4 terms such as System Context and Container MUST be presented as optional
 translations or explanations, not as knowledge the user must already possess.
+Owned labels, explanations, and initial example answers MUST follow the selected
+workbench language. Every form control MUST expose an adjacent, keyboard-
+accessible explanation on demand. Stable identities MUST be named explicitly
+as IDs or source tokens and explained as references that can remain unchanged
+when a visible name changes; vague labels such as "technical name" are not
+sufficient on their own. Initial answers across all wizard steps MUST form one
+coherent domain example rather than unrelated field-level samples. The current
+original example is an online shop whose customer-facing and administrative web
+applications communicate with an application service, Kafka, PostgreSQL, and
+S3-compatible object storage.
 The editor displays the proposed source before apply; cancel leaves the active
-source unchanged, and an applied generation has an explicit one-step undo. This
+source unchanged, and an applied generation has an explicit one-step undo. That
+single restoration is offered as contextual feedback above the status bar, not
+as a persistent title action, and requires confirmation because this bounded
+foundation does not yet provide redo. It expires on the next source or document
+change. This
 foundation does not extend or reformat existing documents and does not claim
 the full wizard scope described in Section 14.4.
 
@@ -1356,6 +1413,10 @@ The handbook MUST lead with recognizable authoring tasks before introducing C4
 vocabulary. It MUST distinguish executable `draft-1` syntax from proposed or
 planned constructs and MUST NOT present a planned construct as available. Its
 examples are original C4ML assets and MUST require no network content.
+Example syntax, keywords, and stable identifiers remain literal C4ML. In the
+German handbook, author-facing descriptive values such as names,
+responsibilities, relationship intent, titles, and purposes MUST be German;
+the English handbook presents the corresponding values in English.
 
 Help for the current cursor position MUST come from the language package through
 the versioned compiler-worker contract. Angular and Monaco MUST NOT infer block
@@ -1381,13 +1442,14 @@ validated on macOS arm64.**
 The first desktop shell is an Electron 44 application under `apps/desktop`.
 It loads the production Angular editor from packaged local resources and keeps
 the existing module Web Worker and C4ML compiler contracts unchanged. The
-interface is an original C4ML workbench; an IDE-like window model does not imply
+interface is the original C4thedral workbench; an IDE-like window model does not imply
 copying Visual Studio Code source, extensions, branding, layout, or assets.
 
 The Electron main process owns application lifecycle, the authoritative main
 workbench window, an optional projection-only preview window, native menus and
 shortcuts, Open/Save/Save As dialogs, source-file reads and writes, title
-updates, and close protection for unsaved source. The main renderer receives
+updates, context-sensitive File/Project closing, and close protection for
+unsaved source. The main renderer receives
 opaque document handles rather than filesystem paths. File operations are
 limited to validated C4ML source documents up to 8 MiB and report stable desktop
 diagnostic codes. Source remains authoritative and saving writes the current
@@ -1413,7 +1475,10 @@ source, canonical geometry, or exported SVG/PNG. Only bounded visible window
 geometry and ordinary workbench presentation state may be restored. Zoom,
 selection, fit, and Route-overlay changes travel through the same projection
 contract so main and detached views converge without a second compiler. A
-preview canvas matching the canonical diagram canvas surrounds the rendered
+single compact control occupies the same upper-right workbench position for
+both transitions: it points outward before detaching and inward while the
+preview is detached. Redocking MUST NOT introduce a separate title-bar action.
+A preview canvas matching the canonical diagram canvas surrounds the rendered
 SVG in both workspaces, independent of workbench brightness and color family,
 without a pattern or sheet shadow. The rendered diagram therefore does not
 appear as a separate pasted sheet. This canvas choice is workbench presentation
@@ -1467,7 +1532,7 @@ color family, and interface font size plus source-editor syntax theme, font
 family, and size.
 Settings apply live and persist locally
 as a validated, versioned record. Interface language supports `en` and `de`,
-with English as the default. It changes C4ML-owned interface copy, accessibility
+with English as the default. It changes C4thedral-owned interface copy, accessibility
 labels, command search, native menu commands, file-dialog labels, and
 unsaved-document warnings immediately. It MUST NOT translate authored names,
 descriptions, generated source, compiler diagnostics, or diagram content. The
@@ -1494,13 +1559,14 @@ appropriate; color-safe does not rely on red-versus-green distinctions.
 Every preset has explicit light and dark values. The active workbench color
 family supplies the declaration accent, cursor, selection, and focus colors;
 all other semantic role colors stay stable within the selected preset.
-Interface font size is bounded to 9–16 px in 0.5 px steps and scales
-C4ML-owned workbench text through one root typography token.
+Interface font size is bounded to 9–16 px in 0.5 px steps, defaults to 13 px,
+and scales C4thedral-owned workbench text through one root typography token. The
+status bar uses the same effective interface size as source and preview tabs.
 Source font choice is bounded to the packaged IBM Plex Mono, Fira Code, Hack,
 Source Code Pro, Intel One Mono, Inconsolata, and Cascadia Code families or a
 local system monospace stack. Source font size is bounded to 11–24 px in 0.5 px
-steps. A newly selected packaged face MUST be loaded locally and Monaco font
-metrics MUST be remeasured after loading.
+steps and defaults to 15 px. A newly selected packaged face MUST be loaded
+locally and Monaco font metrics MUST be remeasured after loading.
 
 Programming ligatures are enabled by default and MUST have an independent local
 on/off preference. C4ML MAY select documented family-specific OpenType features
@@ -1541,7 +1607,7 @@ capabilities to the renderer.
 **Status: Accepted, implemented, automatically validated, and visually
 validated foundation.**
 
-The editor uses an original C4ML workbench with C4ML-specific Files, Source
+The editor uses the original C4thedral workbench with C4ML-specific Files, Source
 Control, Diagrams, Output, and Help activity areas, simultaneous source,
 preview, and Handbook tabs, a bottom panel
 for Problems and Route details, a status bar, and a searchable command palette.
@@ -1550,7 +1616,7 @@ product's branding, source, extensions, assets, or distinctive interface.
 The activity areas and Settings use a fixed, locally packaged subset of
 Material Symbols Outlined plus one original C4ML Source Control symbol. Symbols
 are decorative inside already named buttons;
-localized accessible names and tooltips remain C4ML-owned text. The icon assets
+localized accessible names and tooltips remain C4thedral-owned text. The icon assets
 MUST load offline, follow the active workbench color, and MUST NOT enter diagram
 themes or exported SVG/PNG.
 
@@ -1651,7 +1717,18 @@ own those C4 rules. A requested action becomes a deterministic project-
 addressed source change, the worker compiles the complete candidate project,
 and Monaco applies an accepted single-document transaction as one undo unit.
 The dialog is visibly identified as an architecture-model change and remains a
-separate tool from placement and Route editing. Dynamic interactions and
+separate tool from placement and Route editing. Every operation form remains
+contained in its dialog column regardless of intrinsic control content;
+multi-line responsibility input can be resized vertically but cannot grow into
+the candidate preview. Element creation and directed connection authoring are
+separate top-level workbench actions rather than modes hidden in one operation
+selector. The connection action may begin with a currently selected element as
+its source. Its own dialog offers both bounded source/target lists and a
+temporary Source-then-Target diagram picker. The picker accepts only
+worker-reported, context-valid element pairs, keeps direction explicit, and
+returns to the same non-mutating candidate preview before any source change is
+applied. It creates no hidden relationship or selection state in the model.
+Dynamic interactions and
 deployment topology require dedicated later operations and are not represented
 by a generic element-creation action.
 
@@ -1918,7 +1995,13 @@ show a recognizable head-and-shoulders pictogram, with the explicit type label
 above the pictogram and the element title below it. Description and optional
 technology text MUST remain legible without overlapping the pictogram. Other C4
 element roles MAY share a box shape by default while retaining distinct type
-labels and semantic theme tokens. Shape selection MUST NOT change the element's
+labels and semantic theme tokens. The built-in box MUST keep a visible text
+gutter after its accent rail; the gutter is at least half again as wide as the
+former initial spacing. Its default accent rail MUST leave deliberate equal
+clearance at its top and bottom. Project presentation MAY hide that rail or
+override only its six-digit hexadecimal color and percentage transparency;
+omitted values retain the semantic theme accent and full opacity. Shape
+selection MUST NOT change the element's
 C4 kind, ownership, identity, validation, or view eligibility.
 
 C4ML MUST allow additional shapes to be defined without accepting arbitrary
@@ -2127,7 +2210,12 @@ about the architecture, including:
 - views, scopes, audiences, and purposes;
 - deployment environments, nodes, infrastructure, and instances; and
 - optional Visual Groups and presentation or layout preferences where they are
-  meaningful.
+meaningful.
+
+Each answer control SHOULD provide progressive, on-demand help in the selected
+interface language. The help MUST distinguish visible names and authored
+descriptions from stable source IDs, reference tokens, protocols, and layout
+preferences without requiring users to infer those distinctions from examples.
 
 Available questions and choices SHOULD be derived from the current semantic
 context. For example, Component questions require a selected owning Container,
@@ -2194,7 +2282,8 @@ original fixtures:
 
 The following decisions remain deliberately open:
 
-- final project name and source extension;
+- final public source extension and pre-release legal/trademark clearance for
+  the accepted C4thedral product name;
 - exact source grammar and formatting rules;
 - optional sidecar layout organization beyond normal View fragments;
 - module, alias, reusable-library, and external-project namespace rules beyond
@@ -2206,8 +2295,8 @@ The following decisions remain deliberately open:
   replaceable routing engine;
 - the accessibility target for generated SVG.
 
-The project license and initial distribution decision are accepted: C4ML is an
-open-source project under Apache License 2.0. Packaging formats and release
+The project license and initial distribution decision are accepted: C4thedral
+and C4ML are open source under Apache License 2.0. Packaging formats and release
 channels remain open implementation decisions.
 
 ## 17. Sources consulted for capability analysis

@@ -82,7 +82,7 @@ export function prepareDiagram(
   view: ResolvedView,
   shapeOptions: DiagramShapeOptions = {},
 ): PreparedDiagram {
-  const shapes = createShapeCatalog(shapeOptions.definitions);
+  const shapes = createShapeCatalog(shapeOptions.definitions, shapeOptions.box);
   const semanticNodes = createSemanticNodes(view);
   const semanticParentByNodeId = new Map(
     semanticNodes
@@ -534,7 +534,7 @@ function toLayoutNode(node: DiagramNode): LayoutNodeRequest {
     width: boundary ? boundaryWidth : person ? personWidth : elementWidth,
     height: boundary ? boundaryHeight : person ? personHeight : elementHeight,
     ...(node.parentId === undefined ? {} : { parentId: node.parentId }),
-    ...(boundary ? { padding: node.kind === "visual-group" ? 34 : 42 } : {}),
+    ...(boundary ? { padding: node.kind === "visual-group" ? 40 : 64 } : {}),
   };
 }
 

@@ -60,9 +60,6 @@ export function renderDiagramSvg(
     `  <g id="diagram-routes">`,
     ...scene.routes.map(renderRoutePath),
     `  </g>`,
-    `  <g id="diagram-route-label-backgrounds" aria-hidden="true">`,
-    ...scene.routes.map(renderRouteLabelBackground),
-    `  </g>`,
     `  <g id="diagram-elements">`,
     ...elements.map((node) => renderElement(node, requiredShape(node, shapeById))),
     `  </g>`,
@@ -123,7 +120,6 @@ ${renderElementThemeStyles(theme)}
       .route-arrow-automatic { fill: ${theme.routes.automatic}; }
       .route-arrow-fixed { fill: ${theme.routes.fixed}; }
       .route-port { display: none; }
-      .route-label-background { fill: ${theme.canvas.background}; pointer-events: none; }
       .route-label { fill: ${theme.routes.label}; font-size: 11px; font-weight: 700; text-anchor: middle; }
       .route-technology { fill: ${theme.routes.technology}; font-size: 10px; text-anchor: middle; }
       .legend-title { fill: ${theme.canvas.foreground}; font-size: 12px; font-weight: 700; }
@@ -283,6 +279,8 @@ function renderShapePrimitive(
     node.comparison,
     primitive.paint === "accent" ? "fill" : "stroke",
   );
+  const presentationStyle = primitivePresentationStyle(primitive);
+  const style = mergeStyleAttributes(presentationStyle, comparisonStyle);
   switch (primitive.kind) {
     case "rectangle": {
       const box = scaledBox(node, primitive);
@@ -290,7 +288,7 @@ function renderShapePrimitive(
         primitive.cornerRadius === undefined
           ? 0
           : (primitive.cornerRadius / shape.canvas.width) * node.width;
-      return `<rect class="${className}"${comparisonStyle} x="${number(box.x)}" y="${number(box.y)}" width="${number(box.width)}" height="${number(box.height)}" rx="${number(radius)}"/>`;
+      return `<rect class="${className}"${style} x="${number(box.x)}" y="${number(box.y)}" width="${number(box.width)}" height="${number(box.height)}" rx="${number(radius)}"/>`;
     }
     case "ellipse": {
       const center = scaledPoint(node, shape, {
@@ -307,6 +305,26 @@ function renderShapePrimitive(
       return `<line class="${className}"${comparisonStyle} x1="${number(start.x)}" y1="${number(start.y)}" x2="${number(end.x)}" y2="${number(end.y)}"/>`;
     }
   }
+}
+
+function primitivePresentationStyle(primitive: ShapePrimitive): string {
+  if (primitive.kind !== "rectangle") return "";
+  const declarations = [
+    ...(primitive.color === undefined
+      ? []
+      : [`${primitive.paint === "detail" ? "stroke" : "fill"}:${primitive.color}`]),
+    ...(primitive.opacity === undefined ? [] : [`opacity:${number(primitive.opacity)}`]),
+  ];
+  return declarations.length === 0 ? "" : ` style="${declarations.join(";")}"`;
+}
+
+function mergeStyleAttributes(...attributes: readonly string[]): string {
+  const declarations = attributes
+    .filter((attribute) => attribute.length > 0)
+    .flatMap((attribute) =>
+      attribute.replace(/^ style="|"$/gu, "").split(";").filter(Boolean),
+    );
+  return declarations.length === 0 ? "" : ` style="${declarations.join(";")}"`;
 }
 
 function scaledPoint(
@@ -351,7 +369,7 @@ function requiredShape(
 }
 
 function renderRoutePath(route: SceneRoute): string {
-  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}${comparisonClass(route.comparison)}"${comparisonPaintStyle(route.comparison, "stroke")} data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}"${comparisonAttributes(route.comparison)} d="${routePath(route.points)}"/>`;
+  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}${comparisonClass(route.comparison)}"${comparisonPaintStyle(route.comparison, "stroke")} data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}"${comparisonAttributes(route.comparison)} d="${routePath(route)}"/>`;
 }
 
 function renderPort(port: ScenePort): string {
@@ -377,18 +395,12 @@ function routePolicyClass(policy: SceneRoute["policy"], prefix: string): string 
 }
 
 function renderRouteLabel(route: SceneRoute): string {
-  const labelY =
-    route.technology === undefined
-      ? route.labelPoint.y + 4
-      : route.labelPoint.y - 4;
+  const labelStartY = route.labelBounds.y + 14;
+  const technologyStartY = labelStartY + route.labelLines.length * 13;
   return `    <g id="${svgSceneObjectId(`${route.id}:label`)}" class="route-label-group${comparisonClass(route.comparison)}" data-c4ml-id="${escapeXml(route.relationshipId)}"${comparisonAttributes(route.comparison)}>
-      <text class="route-label" x="${number(route.labelPoint.x)}" y="${number(labelY)}">${escapeXml(route.label)}</text>
-      ${route.technology === undefined ? "" : `<text class="route-technology" x="${number(route.labelPoint.x)}" y="${number(route.labelPoint.y + 11)}">${escapeXml(route.technology)}</text>`}
+      <text class="route-label">${tspans(route.labelLines, route.labelPoint.x, labelStartY, 13)}</text>
+      ${route.technologyLines.length === 0 ? "" : `<text class="route-technology">${tspans(route.technologyLines, route.labelPoint.x, technologyStartY, 12)}</text>`}
     </g>`;
-}
-
-function renderRouteLabelBackground(route: SceneRoute): string {
-  return `    <rect class="route-label-background" data-c4ml-id="${escapeXml(route.relationshipId)}" x="${number(route.labelBounds.x)}" y="${number(route.labelBounds.y)}" width="${number(route.labelBounds.width)}" height="${number(route.labelBounds.height)}" rx="4"/>`;
 }
 
 function renderLegend(scene: DiagramScene): string {
@@ -477,12 +489,50 @@ function renderLegendEntry(
     </g>`;
 }
 
-function routePath(points: readonly Point[]): string {
-  return points
-    .map((point, index) =>
-      `${index === 0 ? "M" : "L"} ${number(point.x)} ${number(point.y)}`,
-    )
-    .join(" ");
+function routePath(route: SceneRoute): string {
+  const points = route.points;
+  if (points.length < 2) {
+    return points
+      .map((point) => `M ${number(point.x)} ${number(point.y)}`)
+      .join(" ");
+  }
+  const commands = [`M ${number(points[0]!.x)} ${number(points[0]!.y)}`];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const start = points[index]!;
+    const end = points[index + 1]!;
+    if (index !== route.labelSegment) {
+      commands.push(`L ${number(end.x)} ${number(end.y)}`);
+      continue;
+    }
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length <= 16) {
+      commands.push(`L ${number(end.x)} ${number(end.y)}`);
+      continue;
+    }
+    const unitX = dx / length;
+    const unitY = dy / length;
+    const labelCenter =
+      (route.labelPoint.x - start.x) * unitX +
+      (route.labelPoint.y - start.y) * unitY;
+    const clearance =
+      Math.abs(unitX) * (route.labelBounds.width / 2) +
+      Math.abs(unitY) * (route.labelBounds.height / 2) +
+      4;
+    const gapStart = Math.max(8, labelCenter - clearance);
+    const gapEnd = Math.min(length - 8, labelCenter + clearance);
+    if (gapStart >= gapEnd) {
+      commands.push(`L ${number(end.x)} ${number(end.y)}`);
+      continue;
+    }
+    commands.push(
+      `L ${number(start.x + unitX * gapStart)} ${number(start.y + unitY * gapStart)}`,
+      `M ${number(start.x + unitX * gapEnd)} ${number(start.y + unitY * gapEnd)}`,
+      `L ${number(end.x)} ${number(end.y)}`,
+    );
+  }
+  return commands.join(" ");
 }
 
 function tspans(
@@ -496,7 +546,7 @@ function tspans(
       (line, index) =>
         `<tspan x="${number(x)}" y="${number(firstY + index * lineHeight)}">${escapeXml(line)}</tspan>`,
     )
-    .join("");
+    .join(" ");
 }
 
 export function svgSceneObjectId(id: string): string {

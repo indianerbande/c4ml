@@ -20,6 +20,14 @@ describe("Problems panel", () => {
     expect(diagnosticsListRule).not.toContain("auto-fill");
   });
 
+  it("keeps diagnostics inset from every panel edge", () => {
+    const diagnosticsRule = styles.match(/\.diagnostics\s*\{([^}]*)\}/u)?.[1];
+
+    expect(diagnosticsRule).toBeDefined();
+    expect(diagnosticsRule).toMatch(/box-sizing:\s*border-box/u);
+    expect(diagnosticsRule).toMatch(/padding:\s*8px/u);
+  });
+
   it("uses Problems itself as the open and close control", () => {
     expect(template).not.toContain('class="panel-close"');
     expect(template).toContain(
@@ -32,7 +40,17 @@ describe("Problems panel", () => {
     const statusBar = template.match(
       /<footer class="status-bar">[\s\S]*?<\/footer>/u,
     )?.[0];
-    expect(statusBar).toContain(`i18n.t("status.diagrams")`);
+    expect(statusBar).not.toContain(`i18n.t("status.diagrams")`);
     expect(statusBar).not.toContain("activeViewTitle()");
+  });
+
+  it("keeps the status bar at the same interface size as tabs", () => {
+    const statusBarRule = styles.match(/\.status-bar\s*\{([^}]*)\}/u)?.[1];
+    expect(statusBarRule).toMatch(/font-size:\s*1rem/u);
+  });
+
+  it("disables contextual authoring actions when they have no valid target", () => {
+    expect(template).toContain('[disabled]="!canEditArchitecture()"');
+    expect(template).toContain('[disabled]="!canStartWizard()"');
   });
 });

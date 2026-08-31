@@ -96,10 +96,23 @@ describe("desktop bridge contract", () => {
       isDesktopDocumentState({
         displayName: "architecture.c4ml",
         dirty: true,
+        hasOpenDocument: true,
+        projectMode: false,
       }),
     ).toBe(true);
     expect(
-      isDesktopDocumentState({ displayName: "", dirty: true }),
+      isDesktopDocumentState({
+        displayName: "",
+        dirty: true,
+        hasOpenDocument: true,
+        projectMode: false,
+      }),
+    ).toBe(false);
+    expect(
+      isDesktopDocumentState({
+        displayName: "architecture.c4ml",
+        dirty: true,
+      }),
     ).toBe(false);
   });
 
@@ -187,6 +200,7 @@ describe("desktop bridge contract", () => {
   });
 
   it("accepts only the owned desktop commands", () => {
+    expect(isDesktopCommand("close-workspace")).toBe(true);
     expect(isDesktopCommand("export-png")).toBe(true);
     expect(isDesktopCommand("open-document")).toBe(true);
     expect(isDesktopCommand("open-project")).toBe(true);

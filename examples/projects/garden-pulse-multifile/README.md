@@ -25,8 +25,9 @@ The optional `presentation/garden.c4ml-theme.json` resource applies the Garden
 diagram preset and a pale project background consistently in CLI and desktop
 worker rendering.
 
-The optional `presentation/garden.c4ml-shapes.json` resource assigns an original
-safe octagonal card to Sensor Post through the shared normalized shape contract.
+The optional `presentation/garden.c4ml-shapes.json` resource keeps the built-in
+box bar explicitly enabled and assigns an original safe octagonal card to
+Sensor Post through the shared normalized shape contract.
 
 The optional `assets/garden.c4ml-assets.json` manifest licenses and hashes the
 original passive offline review note. Loaders verify its exact SHA-256 before

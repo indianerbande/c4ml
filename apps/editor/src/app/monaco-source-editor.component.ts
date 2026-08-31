@@ -77,6 +77,7 @@ export class C4mlMonacoSourceEditorComponent
   readonly completionProvider =
     input.required<SourceEditorCompletionProvider>();
   readonly highlightProvider = input.required<SourceEditorHighlightProvider>();
+  readonly noSuggestionsLabel = input.required<string>();
   readonly colorScheme = input.required<EffectiveColorScheme>();
   readonly colorPalette = input.required<WorkbenchColorPalette>();
   readonly syntaxTheme = input.required<C4mlSyntaxThemePreset>();
@@ -102,6 +103,12 @@ export class C4mlMonacoSourceEditorComponent
   #runtime: MonacoRuntime | undefined;
 
   constructor() {
+    effect(() => {
+      const noSuggestionsLabel = this.noSuggestionsLabel();
+      this.#runtime?.setNoSuggestionsMessage(noSuggestionsLabel);
+      this.#editor?.trigger("c4ml.localization", "hideSuggest", undefined);
+    });
+
     effect(() => {
       const value = this.value();
       const uri = this.documentUri();
@@ -210,6 +217,10 @@ export class C4mlMonacoSourceEditorComponent
     this.#editor?.trigger("c4ml.authoring", "undo", undefined);
   }
 
+  focus(): void {
+    this.#editor?.focus();
+  }
+
   revealSource(source: NonNullable<CompilerWorkerDiagnostic["source"]>): void {
     if (this.#editor === undefined) {
       return;
@@ -243,6 +254,7 @@ export class C4mlMonacoSourceEditorComponent
       return;
     }
     this.#runtime = runtime;
+    runtime.setNoSuggestionsMessage(this.noSuggestionsLabel());
     registerC4mlLanguage(runtime);
     this.#editor = runtime.editor.create(this.editorHost().nativeElement, {
       model: null,

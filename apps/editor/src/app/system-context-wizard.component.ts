@@ -19,6 +19,7 @@ import {
 
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import type { WorkbenchUiLanguage } from "./workbench-preferences.js";
 
 @Component({
   selector: "c4ml-system-context-wizard",
@@ -32,13 +33,10 @@ export class SystemContextWizardComponent {
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly step = signal(0);
-  readonly answers = signal<C4mlSystemContextWizardAnswers>({
-    ...defaultSystemContextWizardAnswers,
-    parts: defaultSystemContextWizardAnswers.parts.map((part) => ({ ...part })),
-    connections: defaultSystemContextWizardAnswers.connections.map(
-      (connection) => ({ ...connection }),
-    ),
-  });
+  readonly answers = signal<C4mlSystemContextWizardAnswers>(
+    initialWizardAnswers(this.i18n.language()),
+  );
+  readonly openHelp = signal<string | undefined>(undefined);
   readonly lastStep = computed(() =>
     this.answers().viewKind === "container" ? 4 : 3,
   );
@@ -69,18 +67,16 @@ export class SystemContextWizardComponent {
   selectViewKind(viewKind: C4mlArchitectureWizardViewKind): void {
     this.answers.update((answers) => {
       const systemSlug = slug(answers.systemName, "application");
+      const viewCopy = localizedViewCopy(
+        this.i18n.language(),
+        viewKind,
+        answers.systemName,
+      );
       return {
         ...answers,
         viewKind,
         viewId: `${systemSlug}-${viewKind === "container" ? "containers" : "context"}`,
-        viewTitle:
-          viewKind === "container"
-            ? `Container View — ${answers.systemName}`
-            : `System Context — ${answers.systemName}`,
-        viewPurpose:
-          viewKind === "container"
-            ? `Show what runs inside ${answers.systemName} and how the parts communicate.`
-            : `Show who uses ${answers.systemName} and why.`,
+        ...viewCopy,
       };
     });
     this.step.set(Math.min(this.step(), viewKind === "container" ? 4 : 3));
@@ -107,20 +103,18 @@ export class SystemContextWizardComponent {
     this.answers.update((answers) => {
       const systemId = slug(name, "application");
       const suffix = answers.viewKind === "container" ? "containers" : "context";
+      const viewCopy = localizedViewCopy(
+        this.i18n.language(),
+        answers.viewKind,
+        name,
+      );
       return {
         ...answers,
         systemName: name,
         systemId,
         relationshipId: `${answers.personId}-uses-${systemId}`,
         viewId: `${systemId}-${suffix}`,
-        viewTitle:
-          answers.viewKind === "container"
-            ? `Container View — ${name}`
-            : `System Context — ${name}`,
-        viewPurpose:
-          answers.viewKind === "container"
-            ? `Show what runs inside ${name} and how the parts communicate.`
-            : `Show who uses ${name} and why.`,
+        ...viewCopy,
       };
     });
     this.#scheduleGeneration();
@@ -187,15 +181,20 @@ export class SystemContextWizardComponent {
   addPart(): void {
     this.answers.update((answers) => {
       const number = answers.parts.length + 1;
+      const german = this.i18n.language() === "de";
       return {
         ...answers,
         parts: [
           ...answers.parts,
           {
             id: `running-part-${number}`,
-            name: `Running part ${number}`,
-            responsibility: "Describe the one job this part performs.",
-            technology: "Runtime or data technology",
+            name: german ? `Laufender Teil ${number}` : `Running part ${number}`,
+            responsibility: german
+              ? "Beschreibe die eine Aufgabe dieses Teils."
+              : "Describe the one job this part performs.",
+            technology: german
+              ? "Laufzeit- oder Datentechnologie"
+              : "Runtime or data technology",
           },
         ],
       };
@@ -265,6 +264,7 @@ export class SystemContextWizardComponent {
     this.answers.update((answers) => {
       const fromId = answers.parts[0]?.id ?? "";
       const toId = answers.parts[1]?.id ?? answers.parts[0]?.id ?? "";
+      const german = this.i18n.language() === "de";
       return {
         ...answers,
         connections: [
@@ -273,8 +273,12 @@ export class SystemContextWizardComponent {
             id: `${fromId}-to-${toId}-${answers.connections.length + 1}`,
             fromId,
             toId,
-            intent: "Describe what is requested or transferred.",
-            protocol: "Protocol or communication mechanism",
+            intent: german
+              ? "Beschreibe, was angefordert oder übertragen wird."
+              : "Describe what is requested or transferred.",
+            protocol: german
+              ? "Protokoll oder Kommunikationsmechanismus"
+              : "Protocol or communication mechanism",
           },
         ],
       };
@@ -330,6 +334,12 @@ export class SystemContextWizardComponent {
     return this.issueFor(`connections.${index}.${field}`);
   }
 
+  toggleHelp(id: string, event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.openHelp.update((open) => (open === id ? undefined : id));
+  }
+
   #scheduleGeneration(): void {
     if (this.#generationTimer !== undefined) {
       clearTimeout(this.#generationTimer);
@@ -338,6 +348,142 @@ export class SystemContextWizardComponent {
       this.compiler.generateSystemContext(this.answers());
     }, 90);
   }
+}
+
+function initialWizardAnswers(
+  language: WorkbenchUiLanguage,
+): C4mlSystemContextWizardAnswers {
+  const base = {
+    ...defaultSystemContextWizardAnswers,
+    parts: defaultSystemContextWizardAnswers.parts.map((part) => ({ ...part })),
+    connections: defaultSystemContextWizardAnswers.connections.map(
+      (connection) => ({ ...connection }),
+    ),
+  };
+  if (language === "en") {
+    return base;
+  }
+  return {
+    ...base,
+    personName: "Kundin oder Kunde",
+    personResponsibility:
+      "Sucht Produkte, gibt Bestellungen auf und prüft den Lieferstatus.",
+    systemName: "Onlineshop",
+    systemResponsibility:
+      "Zeigt Produkte, nimmt Bestellungen entgegen und informiert über den Bestellstatus.",
+    relationshipIntent:
+      "Sucht Produkte, bestellt sie und prüft den Bestellstatus.",
+    parts: [
+      {
+        id: "shop-web-interface",
+        name: "Shop-Weboberfläche",
+        responsibility:
+          "Ermöglicht Kunden die Produktsuche, den Warenkorb und die Bestellung.",
+        technology: "Webanwendung",
+      },
+      {
+        id: "admin-interface",
+        name: "Verwaltungsoberfläche",
+        responsibility:
+          "Ermöglicht Mitarbeitenden die Verwaltung von Produkten, Bestand und Bestellungen.",
+        technology: "Webanwendung",
+      },
+      {
+        id: "shop-service",
+        name: "Shop-Dienst",
+        responsibility:
+          "Verarbeitet Produktanfragen, Warenkörbe und Bestellungen.",
+        technology: "Anwendungsdienst",
+      },
+      {
+        id: "order-events",
+        name: "Bestellereignisse",
+        responsibility:
+          "Verteilt Bestellereignisse an nachgelagerte Prozesse.",
+        technology: "Apache Kafka",
+      },
+      {
+        id: "shop-database",
+        name: "Shop-Datenbank",
+        responsibility:
+          "Speichert Produkte, Kundenkonten und den Bestellstatus.",
+        technology: "PostgreSQL",
+      },
+      {
+        id: "product-media",
+        name: "Produktmedien",
+        responsibility:
+          "Speichert Produktbilder und herunterladbare Dokumente.",
+        technology: "S3-kompatibler Objektspeicher",
+      },
+    ],
+    connections: [
+      {
+        id: "shop-interface-requests-service",
+        fromId: "shop-web-interface",
+        toId: "shop-service",
+        intent: "Fragt Produkte ab und übermittelt Bestellungen",
+        protocol: "HTTPS/JSON",
+      },
+      {
+        id: "admin-interface-requests-service",
+        fromId: "admin-interface",
+        toId: "shop-service",
+        intent: "Verwaltet Produkte, Bestand und Bestellungen",
+        protocol: "HTTPS/JSON",
+      },
+      {
+        id: "service-publishes-order-events",
+        fromId: "shop-service",
+        toId: "order-events",
+        intent: "Veröffentlicht Bestellereignisse",
+        protocol: "Kafka-Protokoll",
+      },
+      {
+        id: "service-reads-shop-database",
+        fromId: "shop-service",
+        toId: "shop-database",
+        intent: "Liest und speichert Produkte, Kunden und Bestellungen",
+        protocol: "PostgreSQL-Protokoll",
+      },
+      {
+        id: "service-reads-product-media",
+        fromId: "shop-service",
+        toId: "product-media",
+        intent: "Liest Produktbilder und Dokumente",
+        protocol: "S3-API",
+      },
+    ],
+    viewTitle: "Systemkontext — Onlineshop",
+    viewPurpose: "Zeigt, wie Kunden den Onlineshop verwenden.",
+  };
+}
+
+function localizedViewCopy(
+  language: WorkbenchUiLanguage,
+  viewKind: C4mlArchitectureWizardViewKind,
+  systemName: string,
+): Pick<C4mlSystemContextWizardAnswers, "viewPurpose" | "viewTitle"> {
+  if (language === "de") {
+    return viewKind === "container"
+      ? {
+          viewTitle: `Container-Ansicht — ${systemName}`,
+          viewPurpose: `Zeigt, was innerhalb von ${systemName} läuft und wie die Teile miteinander kommunizieren.`,
+        }
+      : {
+          viewTitle: `Systemkontext — ${systemName}`,
+          viewPurpose: `Zeigt, wer ${systemName} verwendet und warum.`,
+        };
+  }
+  return viewKind === "container"
+    ? {
+        viewTitle: `Container View — ${systemName}`,
+        viewPurpose: `Show what runs inside ${systemName} and how the parts communicate.`,
+      }
+    : {
+        viewTitle: `System Context — ${systemName}`,
+        viewPurpose: `Show who uses ${systemName} and why.`,
+      };
 }
 
 function inputValue(event: Event): string | undefined {

@@ -1,7 +1,7 @@
-# C4ML desktop renderer
+# C4thedral desktop renderer
 
 This private Angular application is the renderer UI of the production-bound
-C4ML desktop workbench. Electron owns native application and filesystem
+C4thedral desktop workbench. Electron owns native application and filesystem
 integration in `apps/desktop`; Angular and Monaco remain confined to the
 sandboxed renderer. The product interface and the `.c4ml` language are not yet
 stable or feature-complete.
@@ -73,7 +73,9 @@ Implemented:
 - a versioned local workbench session that stores only safe UI presentation
   state, never source, handles, or filesystem paths; and
 - a plain-language new-document wizard for bounded System Context and Container
-  starters, with generated-source review, cancel, apply, and one explicit undo.
+  starters, with one coherent localized online-shop example, on-demand help for
+  every field, explicit source-ID explanations, generated-source review, cancel,
+  apply, and one explicit undo.
 
 Monaco owns source-text editing and presentation only. The C4ML worker remains
 the sole source of completions, highlighting, diagnostics, and navigation
@@ -89,6 +91,12 @@ or Container document and does not edit existing source. Questions lead with
 familiar architecture concepts; C4 vocabulary is optional explanatory text.
 Future Component, Code, Deployment, Visual Group, and merge behavior must
 continue to produce ordinary C4ML source rather than hidden editor state.
+
+For the five static C4 views, **Architecture** creates context-valid elements
+and **Connect** creates directed relationships as two separate workbench tasks.
+The connection dialog can use worker-filtered endpoint lists or a temporary
+Source-then-Target diagram picker; both paths still compile and show the exact
+proposed source before one explicit apply.
 
 From the repository root:
 
@@ -112,6 +120,6 @@ application performs no font-CDN request.
 Workbench settings are installation-local presentation state. They are opened
 from the toolbar or the desktop `Cmd/Ctrl+,` command, apply live, and are stored
 under a versioned key. They never enter compiler requests or canonical diagram
-exports. Interface language also synchronizes C4ML-owned native controls while
+exports. Interface language also synchronizes C4thedral-owned native controls while
 leaving authored source, model text, diagnostics, and diagrams unchanged. See
 `SETTINGS.md` for the setting catalogue and extension contract.

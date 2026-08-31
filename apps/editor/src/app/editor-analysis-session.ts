@@ -39,6 +39,10 @@ export class EditorAnalysisSession {
     return this.#state;
   }
 
+  reset(): void {
+    this.#state = initialAnalysisState;
+  }
+
   begin(
     source: string,
     file: string,

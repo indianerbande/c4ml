@@ -1,9 +1,10 @@
-# C4ML
+# C4thedral
 
-C4ML is an open-source model-and-diagram compiler for software architecture
-based on the C4 model. It is designed around one shared architecture model,
-explicit diagram views, useful automatic layout, and precise author control
-when a diagram needs deliberate placement or routing.
+C4thedral is an open-source local architecture workbench powered by C4ML, its
+model-and-diagram language and compiler for software architecture based on the
+C4 model. It is designed around one shared architecture model, explicit diagram
+views, useful automatic layout, and precise author control when a diagram needs
+deliberate placement or routing.
 
 The intended user experience has two entry points:
 
@@ -19,7 +20,7 @@ installed workflow.
 
 ## Project status
 
-C4ML is currently in Phase 1.
+The C4thedral project and its C4ML compiler are currently in Phase 1.
 
 Implemented and automatically validated:
 
@@ -113,11 +114,12 @@ Implemented and automatically validated:
   modules behind one combined transport boundary;
 - an Electron 44 desktop shell with a narrow typed preload bridge, native
   Open/Save/Save All/Save As, normal desktop menus and shortcuts, document
-  titles and dirty-state close protection;
+  titles, an empty startup workspace, context-sensitive File/Project closing,
+  and dirty-state close protection;
 - explicit local Git status, staging, commit, and push controls behind that
   bridge, without exposing repository paths or Node.js to the renderer;
 - an extensible local settings area with live English/German interface copy,
-  synchronized C4ML-owned native controls, System/Light/Dark workbench schemes,
+  synchronized C4thedral-owned native controls, System/Light/Dark workbench schemes,
   eight quiet color families for sixteen light/dark combinations, and persisted
   source-editor font family and size;
 - a bounded local workbench session that restores only presentation state and
@@ -268,10 +270,14 @@ type-checks source and tests, and runs the semantic, view-resolution, and
 adapter suites. `demo:render` creates a real SVG and PNG under
 `apps/reference-export/build/reference/` from an in-code original model. It is
 a contributor reference path, not the future `.c4ml` command-line interface.
-`desktop:start` builds and opens the real Electron desktop workbench for all
-seven bounded executable view types. Angular, Monaco, and Electron are accepted
-production libraries; the language and several MVP editor capabilities remain
-under development. Contributors can start the isolated renderer harness with
+`desktop:start` builds and opens the real Electron desktop workbench through a
+C4thedral-owned development launcher; on macOS that launcher uses a cached
+`C4thedral.app` wrapper so the operating system does not present the application as
+Electron. It does not create a distributable package and can use the currently
+tested Node.js 26 line. Packaging and packaged smoke tests remain guarded to
+Node.js 24.x. Angular, Monaco, and Electron are accepted production libraries;
+the language and several MVP editor capabilities remain under development.
+Contributors can start the isolated renderer harness with
 `pnpm run renderer:start`; it is a development tool, not a supported browser
 application.
 
@@ -343,8 +349,9 @@ Its command names and current static-language scope remain provisional.
 
 ## Relationship to the wider ecosystem
 
-C4ML is being developed within a mature and respected ecosystem. The C4 model,
-PlantUML, Structurizr, Mermaid, LikeC4, D2, Graphviz, ELK, Penrose, and other
+C4thedral and C4ML are being developed within a mature and respected ecosystem.
+The C4 model, PlantUML, Structurizr, Mermaid, LikeC4, D2, Graphviz, ELK,
+Penrose, and other
 projects have each contributed valuable ideas and working approaches to
 architecture communication, text-based diagrams, layout, or visual constraint
 systems.
@@ -356,5 +363,5 @@ examples, interface, themes, and visual assets are developed independently.
 
 ## License
 
-C4ML is licensed under the [Apache License 2.0](LICENSE). Third-party
+C4thedral and C4ML are licensed under the [Apache License 2.0](LICENSE). Third-party
 dependencies retain their own licenses and are documented separately.

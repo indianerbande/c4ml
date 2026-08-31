@@ -1,19 +1,19 @@
 <div class="placement-backdrop semantic-backdrop" (click)="cancel()">
-  <section class="placement-editor semantic-editor" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('semanticEditor.title')" (click)="$event.stopPropagation()">
+  <section class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.title' : 'semanticEditor.title')" (click)="$event.stopPropagation()">
     <header>
       <div>
-        <p>{{ i18n.t("semanticEditor.eyebrow") }}</p>
-        <h2>{{ i18n.t("semanticEditor.title") }}</h2>
-        <span>{{ i18n.t("semanticEditor.description") }}</span>
+        <p>{{ i18n.t(mode() === "relationship" ? "connectionEditor.eyebrow" : "semanticEditor.eyebrow") }}</p>
+        <h2>{{ i18n.t(mode() === "relationship" ? "connectionEditor.title" : "semanticEditor.title") }}</h2>
+        <span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.description" : "semanticEditor.description") }}</span>
       </div>
-      <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('semanticEditor.cancel')">×</button>
+      <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.cancel' : 'semanticEditor.cancel')">×</button>
     </header>
 
     <div class="placement-body">
       <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
         <aside class="semantic-authority">
-          <strong>{{ i18n.t("semanticEditor.architectureWarning") }}</strong>
-          <span>{{ i18n.t("semanticEditor.architectureWarningText") }}</span>
+          <strong>{{ i18n.t(mode() === "relationship" ? "connectionEditor.architectureWarning" : "semanticEditor.architectureWarning") }}</strong>
+          <span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.architectureWarningText" : "semanticEditor.architectureWarningText") }}</span>
         </aside>
 
         @if (loadingContext()) {
@@ -24,16 +24,7 @@
             <span>{{ i18n.t("semanticEditor.unsupportedText") }}</span>
           </div>
         } @else if (context()) {
-          <label>
-            <span>{{ i18n.t("semanticEditor.operation") }}</span>
-            <select [value]="operationKind()" (change)="selectOperation($event)">
-              <option value="create-element" [disabled]="createActions().length === 0">{{ i18n.t("semanticEditor.createElement") }}</option>
-              <option value="create-relationship" [disabled]="sourceOptions().length === 0">{{ i18n.t("semanticEditor.createRelationship") }}</option>
-            </select>
-            <small>{{ i18n.t("semanticEditor.contextHint") }}</small>
-          </label>
-
-          @if (operationKind() === "create-element") {
+          @if (mode() === "element") {
             <label>
               <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
               <select [value]="createKind()" (change)="selectCreateKind($event)">
@@ -89,12 +80,15 @@
               </div>
             }
           } @else {
-            <div class="field-row">
+            <button type="button" class="semantic-pick-button" (click)="requestDiagramSelection()">
+              {{ i18n.t(initialSourceId() === undefined ? "connectionEditor.pickBoth" : "connectionEditor.pickTarget") }}
+            </button>
+            <div class="field-row connection-endpoints">
               <label>
                 <span>{{ i18n.t("semanticEditor.from") }}</span>
                 <select [value]="sourceId()" (change)="selectSource($event)">
                   @for (element of sourceOptions(); track element.id) {
-                    <option [value]="element.id">{{ element.label }} · {{ element.id }}</option>
+                    <option [value]="element.id" [selected]="element.id === sourceId()">{{ element.label }} · {{ element.id }}</option>
                   }
                 </select>
               </label>
@@ -102,10 +96,14 @@
                 <span>{{ i18n.t("semanticEditor.to") }}</span>
                 <select [value]="targetId()" (change)="selectTarget($event)">
                   @for (element of targetOptions(); track element.id) {
-                    <option [value]="element.id">{{ element.label }} · {{ element.id }}</option>
+                    <option [value]="element.id" [selected]="element.id === targetId()">{{ element.label }} · {{ element.id }}</option>
                   }
                 </select>
               </label>
+              <button type="button" class="swap-direction-button" [disabled]="!canSwapDirection()" (click)="swapDirection()">
+                <span aria-hidden="true">⇄</span>
+                {{ i18n.t("connectionEditor.swap") }}
+              </button>
             </div>
             <label>
               <span>{{ i18n.t("semanticEditor.connectionIntent") }}</span>
@@ -128,19 +126,19 @@
           }
 
           <button type="submit" class="preview-button semantic-preview-button" [disabled]="!canPreview() || busy()">
-            {{ busy() ? i18n.t("semanticEditor.previewing") : i18n.t("semanticEditor.preview") }}
+            {{ busy() ? i18n.t(mode() === "relationship" ? "connectionEditor.previewing" : "semanticEditor.previewing") : i18n.t(mode() === "relationship" ? "connectionEditor.preview" : "semanticEditor.preview") }}
           </button>
         }
       </form>
 
-      <section class="placement-result" [attr.aria-label]="i18n.t('semanticEditor.result')">
+      <section class="placement-result" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.result' : 'semanticEditor.result')">
         @if (previewUrl(); as url) {
-          <div class="candidate-preview"><img [src]="url" [alt]="i18n.t('semanticEditor.previewAlt')" /></div>
+          <div class="candidate-preview"><img [src]="url" [alt]="i18n.t(mode() === 'relationship' ? 'connectionEditor.previewAlt' : 'semanticEditor.previewAlt')" /></div>
         } @else {
-          <div class="candidate-empty"><strong>{{ i18n.t("semanticEditor.noPreview") }}</strong><span>{{ i18n.t("semanticEditor.noPreviewHint") }}</span></div>
+          <div class="candidate-empty"><strong>{{ i18n.t(mode() === "relationship" ? "connectionEditor.noPreview" : "semanticEditor.noPreview") }}</strong><span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.noPreviewHint" : "semanticEditor.noPreviewHint") }}</span></div>
         }
         @if (proposedText(); as text) {
-          <div class="source-proposal"><strong>{{ i18n.t("semanticEditor.sourceChange") }}</strong><pre><code>{{ text }}</code></pre></div>
+          <div class="source-proposal"><strong>{{ i18n.t(mode() === "relationship" ? "connectionEditor.sourceChange" : "semanticEditor.sourceChange") }}</strong><pre><code>{{ text }}</code></pre></div>
         }
         @if (issues().length > 0) {
           <section class="semantic-conflicts"><strong>{{ i18n.t("semanticEditor.conflicts") }}</strong><ul>@for (issue of issues(); track $index) { <li><code>{{ issue.code }}</code><span>{{ issue.message }}</span>@if (issue.correction) { <small>{{ issue.correction }}</small> }</li> }</ul></section>
@@ -149,8 +147,8 @@
     </div>
 
     <footer>
-      <span>{{ i18n.t("semanticEditor.authority") }}</span>
-      <div><button type="button" (click)="cancel()">{{ i18n.t("semanticEditor.cancel") }}</button><button type="button" class="apply-button semantic-apply-button" [disabled]="!canApply()" (click)="apply()">{{ i18n.t("semanticEditor.apply") }}</button></div>
+      <span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.authority" : "semanticEditor.authority") }}</span>
+      <div><button type="button" (click)="cancel()">{{ i18n.t(mode() === "relationship" ? "connectionEditor.cancel" : "semanticEditor.cancel") }}</button><button type="button" class="apply-button semantic-apply-button" [disabled]="!canApply()" (click)="apply()">{{ i18n.t(mode() === "relationship" ? "connectionEditor.apply" : "semanticEditor.apply") }}</button></div>
     </footer>
   </section>
 </div>
