@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.42
+Status: Draft 0.43
 
 Date: 2026-08-31
 
@@ -524,7 +524,8 @@ manifest contains:
 - an optional non-empty `narratives` list naming local version-one architecture
   narrative chapters; and
 - an optional `publication` path naming one local version-one publication
-  resource.
+  resource; and
+- an optional `theme` path naming one local version-one semantic diagram theme.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
@@ -537,6 +538,7 @@ in `.c4ml-glossary.json`. Narrative paths follow those rules, are unique, and
 MUST end in `.c4ml-narrative.md`.
 A publication path follows the same rules and MUST end in
 `.c4ml-publication.json`.
+A theme path follows the same rules and MUST end in `.c4ml-theme.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -559,7 +561,7 @@ document.
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
 documents, and the optional raw local policy, observation, glossary, and
-narrative, and publication resources. It MUST NOT open files itself. CLI,
+narrative, publication, and theme resources. It MUST NOT open files itself. CLI,
 Electron, and renderer adapters load documents and enforce their environment's
 path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
@@ -593,7 +595,7 @@ input fails visibly and never changes source, model, layout, or diagram output.
 
 One project revision is derived deterministically from the project identity,
 ordered document identities, exact document revisions, and optional policy,
-observation, glossary, narrative, and publication resource identities and
+observation, glossary, narrative, publication, and theme resource identities and
 content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
@@ -602,8 +604,7 @@ transaction at the editor boundary.
 
 Further project resources are reserved as separate typed concerns:
 
-- controlled presentation resources such as themes, shapes, and licensed local
-  assets.
+- controlled presentation resources such as shapes and licensed local assets.
 
 These further resources MUST NOT be treated as architecture source until their
 individual contracts are specified and implemented. Publication settings MUST
@@ -646,6 +647,16 @@ compiler worker validate publication View references against the compiled
 project. Publication content participates in project revisions but MUST NOT
 mutate architecture semantics, source, View definitions, layout, or styling.
 Print composition and a visible publication editor remain later work.
+
+The implemented version-one project theme resource wraps the existing portable
+semantic theme selection. A `.c4ml-theme.json` file declares `version: 1`, a
+theme identity, a built-in preset, and optional deep canvas, element, boundary,
+and route token overrides. Unknown top-level fields, presets, or malformed color
+values fail before rendering. CLI and compiler worker pass the same validated
+selection into the shared scene builder. The resource participates in project
+revisions and changes diagram presentation only; it MUST NOT change model, View,
+layout intent, source, exports' semantics, or installation-local workbench
+preferences.
 
 ## 8. Layout model
 

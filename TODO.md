@@ -117,7 +117,7 @@ implementation.
 - [x] add a separately reviewed typed glossary resource;
 - [x] add a separately reviewed typed narrative resource;
 - [x] add a separately reviewed typed publication resource;
-- [ ] add a separately reviewed typed theme resource;
+- [x] add a separately reviewed typed theme resource;
 - [ ] add a separately reviewed typed shape resource; and
 - [ ] add a separately reviewed typed licensed-asset resource.
 
@@ -143,6 +143,13 @@ render profiles with explicit scale and background mode. CLI and compiler
 worker validate every selected View against the compiled project. The resource
 participates in project revisions but does not alter semantic architecture,
 View definitions, layout, or source.
+
+The version-one theme slice adds one local `.c4ml-theme.json` selection over the
+existing semantic theme resolver. It supports a built-in preset plus deep token
+overrides, participates in project revisions, and drives identical CLI and
+desktop-worker scene rendering. Invalid presets, colors, paths, and unknown
+top-level fields fail before rendering. It never changes architecture semantics
+or installation-local workbench colors.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own

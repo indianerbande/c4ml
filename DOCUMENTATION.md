@@ -484,6 +484,7 @@ sources:
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],
   "publication": "publication/review.c4ml-publication.json",
+  "theme": "presentation/garden.c4ml-theme.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -535,6 +536,11 @@ The optional `publication` path selects ordered Views, optional captions, and
 named SVG/PNG profiles with scale and background mode. Every View reference is
 validated against the compiled project; publication data never changes source,
 architecture semantics, or layout.
+
+The optional `theme` path selects a built-in semantic diagram preset plus
+optional deep color-token overrides. CLI and desktop worker use the same
+validated theme selection; workbench UI colors and architecture semantics stay
+separate.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

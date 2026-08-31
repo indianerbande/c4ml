@@ -1,6 +1,6 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.43
+Status: Draft 0.44
 
 Date: 2026-08-31
 
@@ -144,6 +144,12 @@ slice proves ordered View selection, captions, deterministic profiles, formats,
 scales, backgrounds, compiled-View reference validation in CLI and worker,
 revision participation, and filesystem/Git loading. Reusable project libraries
 and remote imports remain unimplemented.
+The project-theme gate additionally proves preset resolution, deep token
+inheritance, invalid preset/color/property rejection, project revision and
+filesystem/Git loading, and identical CLI/worker scene selection. The original
+Garden Pulse PNG was visually inspected with its Garden preset and custom pale
+background; text, types, routes, labels, and geometry remained legible and
+unchanged.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
 source-editor adapter evidence. It verifies deterministic source-to-SVG
@@ -996,6 +1002,9 @@ Project-source tests MUST prove that:
 - an optional `.c4ml-publication.json` resource validates ordered declared View
   references and deterministic render profiles, participates in the project
   revision, and never mutates source or architecture semantics;
+- an optional `.c4ml-theme.json` resource validates through the shared semantic
+  theme resolver, participates in the project revision, and changes only scene
+  presentation;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

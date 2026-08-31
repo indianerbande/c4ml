@@ -45,6 +45,7 @@ export interface WorkbenchProjectSnapshot {
     readonly uri: string;
     readonly source: string;
   };
+  readonly theme?: { readonly uri: string; readonly source: string };
 }
 
 export interface WorkbenchDocumentState {
@@ -81,6 +82,7 @@ export class WorkbenchDocumentFacade {
   readonly projectGlossary = signal<WorkbenchProjectSnapshot["glossary"]>(undefined);
   readonly projectNarratives = signal<WorkbenchProjectSnapshot["narratives"]>(undefined);
   readonly projectPublication = signal<WorkbenchProjectSnapshot["publication"]>(undefined);
+  readonly projectTheme = signal<WorkbenchProjectSnapshot["theme"]>(undefined);
   readonly projectMode = signal(false);
   readonly activeDocument = computed(
     () =>
@@ -132,6 +134,7 @@ export class WorkbenchDocumentFacade {
     const glossary = this.projectGlossary();
     const narratives = this.projectNarratives();
     const publication = this.projectPublication();
+    const theme = this.projectTheme();
     return {
       version: 1,
       id: this.projectId(),
@@ -142,6 +145,7 @@ export class WorkbenchDocumentFacade {
       ...(glossary === undefined ? {} : { glossary }),
       ...(narratives === undefined ? {} : { narratives }),
       ...(publication === undefined ? {} : { publication }),
+      ...(theme === undefined ? {} : { theme }),
       documents: this.projectDocuments().map(({ uri, source }) => ({
         uri,
         source,
@@ -167,6 +171,7 @@ export class WorkbenchDocumentFacade {
     this.projectGlossary.set(state.project.glossary);
     this.projectNarratives.set(state.project.narratives);
     this.projectPublication.set(state.project.publication);
+    this.projectTheme.set(state.project.theme);
     this.projectMode.set(state.projectMode);
     this.projectDocuments.set(state.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(state.activeUri);
@@ -272,6 +277,7 @@ export class WorkbenchDocumentFacade {
           ...(result.project.publication === undefined
             ? {}
             : { publication: result.project.publication }),
+          ...(result.project.theme === undefined ? {} : { theme: result.project.theme }),
           documents: result.project.documents.map((document) => ({
             ...document,
             dirty: false,
@@ -430,6 +436,7 @@ export class WorkbenchDocumentFacade {
     readonly glossary?: WorkbenchProjectSnapshot["glossary"];
     readonly narratives?: WorkbenchProjectSnapshot["narratives"];
     readonly publication?: WorkbenchProjectSnapshot["publication"];
+    readonly theme?: WorkbenchProjectSnapshot["theme"];
     readonly projectMode: boolean;
     readonly documents: readonly WorkbenchProjectDocument[];
   }): void {
@@ -445,6 +452,7 @@ export class WorkbenchDocumentFacade {
     this.projectGlossary.set(input.glossary);
     this.projectNarratives.set(input.narratives);
     this.projectPublication.set(input.publication);
+    this.projectTheme.set(input.theme);
     this.projectMode.set(input.projectMode);
     this.projectDocuments.set(input.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(first.uri);

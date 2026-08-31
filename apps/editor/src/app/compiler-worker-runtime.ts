@@ -12,6 +12,7 @@ import {
   createArchitectureProjectInput,
   parseArchitectureObservationSet,
   parseArchitecturePublication,
+  parseArchitectureThemeResource,
   parseArchitecturePolicySet,
   previewProjectSourceChangeSet,
   resolveArchitectureSnapshot,
@@ -419,6 +420,29 @@ export async function compileWorkerRequest(
       );
     }
 
+    const themeResource = request.project?.theme;
+    const parsedTheme = themeResource === undefined
+      ? undefined
+      : parseArchitectureThemeResource(themeResource.source);
+    if (parsedTheme !== undefined && !parsedTheme.valid) {
+      return response(
+        request,
+        "invalid",
+        [{
+          code: parsedTheme.error.code,
+          severity: "error",
+          message: parsedTheme.error.message,
+          source: resourceSource(themeResource!.uri, themeResource!.source),
+          related: [],
+          correction: "Review the project-local theme resource.",
+        }],
+        undefined,
+        undefined,
+        parsed.views.map(toWorkerView),
+        parsed.views[0].id,
+      );
+    }
+
     const views = parsed.views.map(toWorkerView);
     const view =
       parsed.views.find(({ id }) => id === request.requestedViewId) ??
@@ -436,7 +460,10 @@ export async function compileWorkerRequest(
       ...(parsed.routingByViewId?.[view.id] === undefined
         ? {}
         : { routing: parsed.routingByViewId[view.id] }),
-      scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+      scene: {
+        fontFamily: ibmPlexSansFamily,
+        theme: parsedTheme?.theme.selection ?? "c4ml-blue",
+      },
       svg: { embeddedFontFaces: effectiveFontFaces },
     });
     if (!compiled.valid || compiled.svg === undefined) {
@@ -703,6 +730,7 @@ export async function previewProjectChangeWorkerRequest(
       ...(request.project.publication === undefined
         ? {}
         : { publication: { ...request.project.publication } }),
+      ...(request.project.theme === undefined ? {} : { theme: { ...request.project.theme } }),
     });
     const preview = await previewProjectSourceChangeSet(
       activeProject,
@@ -749,6 +777,7 @@ export async function previewProjectChangeWorkerRequest(
           ...(candidate.publication === undefined
             ? {}
             : { publication: { ...candidate.publication } }),
+          ...(candidate.theme === undefined ? {} : { theme: { ...candidate.theme } }),
         };
         const activeDocument = candidateProject.documents.find(
           ({ uri }) => uri === request.file,
@@ -1138,6 +1167,7 @@ function toArchitectureProject(project: {
     readonly uri: string;
     readonly source: string;
   };
+  readonly theme?: { readonly uri: string; readonly source: string };
 }) {
   return createArchitectureProjectInput({
     id: project.id,
@@ -1179,6 +1209,7 @@ function toArchitectureProject(project: {
     ...(project.publication === undefined
       ? {}
       : { publication: { ...project.publication } }),
+    ...(project.theme === undefined ? {} : { theme: { ...project.theme } }),
   });
 }
 

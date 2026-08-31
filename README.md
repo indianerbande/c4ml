@@ -55,6 +55,8 @@ Implemented and automatically validated:
   identities, and local links only;
 - one project publication resource with ordered View captions and deterministic
   SVG/PNG render profiles validated against compiled Views;
+- one project semantic-theme resource applied identically by CLI and desktop
+  worker rendering through the existing deep-token resolver;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,

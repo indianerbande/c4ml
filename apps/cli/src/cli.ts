@@ -19,6 +19,7 @@ import {
   executeArchitectureQuery,
   parseArchitectureObservationSet,
   parseArchitecturePublication,
+  parseArchitectureThemeResource,
   parseArchitecturePolicySet,
   renderDiagramSvg,
   resolveArchitectureSnapshot,
@@ -33,6 +34,7 @@ import {
   type DiagramPlacementOptions,
   type PreparedDiagram,
   type SceneComparisonMode,
+  type SceneThemeSelection,
   type SvgEmbeddedFontFace,
 } from "@c4ml/compiler-core";
 import { ibmPlexSansFamily } from "@c4ml/font-ibm-plex";
@@ -214,6 +216,15 @@ export async function runCli(
       }
       throw error;
     }
+  }
+  let projectTheme: SceneThemeSelection = "c4ml-blue";
+  if (loaded.project.theme !== undefined) {
+    const theme = parseArchitectureThemeResource(loaded.project.theme.source);
+    if (!theme.valid) {
+      reportCliFailure(theme.error.code, theme.error.message, parsedCommand.diagnostics, io);
+      return cliExitCode.source;
+    }
+    projectTheme = theme.theme.selection;
   }
   if (parsedCommand.kind === "check") {
     reportSuccess(
@@ -416,7 +427,7 @@ export async function runCli(
         ...(parsed.routingByViewId?.[view.id] === undefined
           ? {}
           : { routing: parsed.routingByViewId[view.id] }),
-        scene: { fontFamily: ibmPlexSansFamily, theme: "c4ml-blue" },
+        scene: { fontFamily: ibmPlexSansFamily, theme: projectTheme },
         svg: { embeddedFontFaces },
       });
       if (!result.valid || result.svg === undefined) {
