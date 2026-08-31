@@ -16,7 +16,6 @@ const targetByPlatform = {
   "linux-arm64": "@resvg/resvg-js-linux-arm64-gnu",
   "linux-x64": "@resvg/resvg-js-linux-x64-gnu",
   "win32-arm64": "@resvg/resvg-js-win32-arm64-msvc",
-  "win32-ia32": "@resvg/resvg-js-win32-ia32-msvc",
   "win32-x64": "@resvg/resvg-js-win32-x64-msvc",
 };
 

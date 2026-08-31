@@ -34,6 +34,15 @@ commands are:
 All commands run locally after dependency installation and require no compiler
 service or runtime network access.
 
+The source gate accepts the installed Node.js runtime when it satisfies the
+root `engines` range. Node.js 24.15.0 or newer within 24.x is the native desktop
+packaging baseline. A different installed runtime MUST produce a warning and
+MUST NOT trigger a managed-runtime download; the Forge packaging commands MUST
+fail early with a useful message outside the accepted 24.x line. The production boundary check also protects the
+reviewed repository-firewall pins for webpack, minimizer-webpack-plugin, and
+terser, requires Windows, macOS, and Linux maker coverage, and prevents macOS
+native maker helpers from becoming direct cross-platform dependencies.
+
 The Phase 1 semantic evidence uses the original `signal-garden` fixture in
 `packages/compiler-core/test`. The compiler-core suite currently verifies the
 complete static element family, source-located semantic failures, deployment
@@ -383,8 +392,8 @@ menu. Selection, zoom, Route-overlay changes, and redocking were exercised; the
 detached window showed no source or file controls. The
 macOS application passes strict deep code-signature verification after ad-hoc
 signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
-testing. Native file-dialog interaction and the Windows installer remain
-manual/platform-specific evidence.
+testing. Native file-dialog interaction, the Windows installer, and the Linux
+portable application remain manual/platform-specific evidence.
 
 The experimental CLI suite exercises successful validation, semantic comparison
 of two valid sources, deterministic semantic impact exposure, empty comparison
@@ -785,6 +794,12 @@ Desktop tests MUST cover:
 - signature, installer/archive integrity, installation, launch, file round
   trip, and uninstall behavior on every supported release platform.
 
+The native platform matrix is defined in `PLATFORMS.md`. Every target host MUST
+run install, the complete check, packaged smoke, and its configured makers.
+macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
+Setup EXE; Linux evidence covers the unpacked application and portable ZIP.
+No host may satisfy another host's launch or filesystem evidence.
+
 Automated tests may substitute adapters for native dialogs, but at least one
 manual file round trip and close-protection check is required on each supported
 desktop platform before release. Apple Developer ID signing/notarization and
@@ -1163,6 +1178,9 @@ license.
 
 The desktop dependency check pins Electron, Forge, makers, fuses, Windows
 startup handling, and macOS maker helpers to the reviewed versions and licenses.
+It also verifies that macOS-only native helpers are reached only through the
+optional DMG-maker graph, that Linux shares the dependency-free ZIP maker, and
+that the current host receives exactly one reviewed resvg binary.
 It also protects the local CSP, main/preview preload separation, the restricted
 preview channel inventory, and packaged resource inventory. A release pipeline
 MUST additionally inventory the complete installer payload and verify platform

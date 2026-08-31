@@ -43,7 +43,8 @@ The shell currently provides:
   native adapter, controlled IBM Plex Sans TTF files, and no system fonts;
 - packaged application resources in ASAR with integrity-oriented Electron
   fuses; and
-- macOS app/DMG/ZIP makers plus a configured Windows Squirrel maker.
+- macOS app/DMG/ZIP makers, a configured Windows Squirrel maker, and a portable
+  Linux ZIP maker.
 
 From the repository root:
 
@@ -54,8 +55,15 @@ pnpm run desktop:package
 pnpm run desktop:make
 ```
 
+Packaging requires Node.js 24.15 or newer within the 24.x line and reports a
+clear error before Forge starts when another major version is active. This is
+only a contributor build requirement; the packaged Electron application brings
+its own runtime. Portable side-by-side setup is documented in
+[`PLATFORMS.md`](../../PLATFORMS.md).
+
 Generated files are ignored under `build/desktop/`. A local macOS make produces
 `C4ML.app`, `C4ML.dmg`, and a ZIP archive. The current build uses the default
 Electron icon and version `0.0.0`; macOS artifacts are ad-hoc signed for local
-testing, not Developer ID signed or notarized. Windows code signing and a real
-Windows installer run remain release work.
+testing, not Developer ID signed or notarized. Windows code signing and native
+Windows installer and Linux portable-app runs remain release work. Build each
+platform on its native host; see [`PLATFORMS.md`](../../PLATFORMS.md).

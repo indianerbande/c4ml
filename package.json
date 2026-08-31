@@ -11,8 +11,8 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "24.19.0",
-      "onFail": "download"
+      "version": "24.15.0",
+      "onFail": "warn"
     }
   },
   "scripts": {

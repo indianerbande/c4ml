@@ -3,6 +3,7 @@ const { spawnSync } = require("node:child_process");
 
 const { FusesPlugin } = require("@electron-forge/plugin-fuses");
 const { FuseV1Options, FuseVersion } = require("@electron/fuses");
+const electronChecksums = require("electron/checksums.json");
 
 module.exports = {
   outDir: path.resolve(__dirname, "../../build/desktop"),
@@ -10,6 +11,9 @@ module.exports = {
     appBundleId: "org.c4ml.desktop",
     appCategoryType: "public.app-category.developer-tools",
     appCopyright: "Copyright C4ML contributors",
+    download: {
+      checksums: electronChecksums,
+    },
     asar: {
       unpack: "dist/*.node",
     },
@@ -30,6 +34,7 @@ module.exports = {
       /^\/tsconfig(?:\.test)?\.json$/,
       /^\/forge\.config\.cjs$/,
     ],
+    prune: false,
   },
   makers: [
     {
@@ -51,7 +56,7 @@ module.exports = {
     },
     {
       name: "@electron-forge/maker-zip",
-      platforms: ["darwin"],
+      platforms: ["darwin", "linux"],
     },
   ],
   hooks: {

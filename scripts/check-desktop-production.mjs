@@ -15,13 +15,49 @@ const requireFromResvgAdapter = createRequire(
 );
 
 const rootManifest = JSON.parse(readRequired("package.json"));
+const workspaceConfiguration = readRequired("pnpm-workspace.yaml");
+const lockfile = readRequired("pnpm-lock.yaml");
 assert.deepEqual(
   rootManifest.devEngines?.runtime,
-  { name: "node", version: "24.19.0", onFail: "download" },
-  "desktop builds must use the locked pnpm-managed Node.js runtime",
+  { name: "node", version: "24.15.0", onFail: "warn" },
+  "desktop builds must prefer Node.js 24.15.0 without forcing a runtime download",
 );
 const desktopManifest = JSON.parse(readRequired("apps/desktop/package.json"));
+const packagingRuntimeGuard = readRequired(
+  "apps/desktop/scripts/check-packaging-runtime.cjs",
+);
 assert.equal(desktopManifest.main, "dist/main.cjs");
+assert.equal(
+  desktopManifest.scripts?.premake,
+  undefined,
+  "cross-platform makes must not rebuild macOS-native helpers on every host",
+);
+for (const command of ["package", "make"]) {
+  assert.match(
+    desktopManifest.scripts?.[command] ?? "",
+    /^node scripts\/check-packaging-runtime\.cjs && electron-forge /,
+    `${command} must reject unsupported build runtimes before invoking Forge`,
+  );
+}
+assert.match(
+  packagingRuntimeGuard,
+  /major !== 24 \|\| minor < 15/,
+  "desktop packaging must require the accepted Node.js 24.15+ build line",
+);
+for (const [packageName, version] of [
+  ["webpack", "5.109.2"],
+  ["minimizer-webpack-plugin", "5.7.0"],
+  ["terser", "5.51.1"],
+]) {
+  assert.ok(
+    workspaceConfiguration.includes(`${packageName}: '${version}'`),
+    `${packageName} must remain pinned to the reviewed repository-firewall version`,
+  );
+  assert.ok(
+    lockfile.includes(`  ${packageName}@${version}:`),
+    `${packageName}@${version} must be present in the locked graph`,
+  );
+}
 assert.equal(
   desktopManifest.dependencies,
   undefined,
@@ -37,6 +73,23 @@ assert.equal(
   "workspace:*",
   "desktop project loading must use the shared replaceable Node.js adapter",
 );
+for (const macOnlyPackage of ["fs-xattr", "macos-alias", "node-gyp"]) {
+  assert.equal(
+    desktopManifest.devDependencies?.[macOnlyPackage],
+    undefined,
+    `${macOnlyPackage} must not be a direct cross-platform desktop dependency`,
+  );
+}
+assert.match(
+  lockfile,
+  /appdmg@0\.6\.6:\n    dependencies:[\s\S]*?      fs-xattr: 0\.3\.1[\s\S]*?    optional: true/,
+  "fs-xattr must remain owned by the optional macOS DMG dependency graph",
+);
+assert.match(
+  lockfile,
+  /ds-store@0\.1\.6:\n    dependencies:[\s\S]*?      macos-alias: 0\.2\.12[\s\S]*?    optional: true/,
+  "macos-alias must remain owned by the optional macOS DMG dependency graph",
+);
 
 const expectedPackages = [
   ["electron", "44.0.0", "MIT"],
@@ -48,9 +101,6 @@ const expectedPackages = [
   ["@electron/fuses", "2.1.3", "MIT"],
   ["@electron/node-gyp", "10.2.0-electron.2", "MIT"],
   ["electron-squirrel-startup", "1.0.1", "Apache-2.0"],
-  ["fs-xattr", "0.3.1", "MIT"],
-  ["macos-alias", "0.2.12", "MIT"],
-  ["node-gyp", "12.3.0", "MIT"],
 ];
 
 for (const [packageName, version, license] of expectedPackages) {
@@ -105,6 +155,23 @@ const previewPreloadBundle = readRequired(
   "apps/desktop/dist/preview-preload.cjs",
 );
 const forgeConfig = readRequired("apps/desktop/forge.config.cjs");
+const forgeConfiguration = requireFromDesktop("./forge.config.cjs");
+const electronChecksums = JSON.parse(
+  readFileSync(
+    findPackageManifest("electron").replace(/package\.json$/, "checksums.json"),
+    "utf8",
+  ),
+);
+assert.deepEqual(
+  forgeConfiguration.packagerConfig?.download?.checksums,
+  electronChecksums,
+  "packaging must validate Electron archives without a separate GitHub checksum request",
+);
+assert.equal(
+  forgeConfiguration.packagerConfig?.prune,
+  false,
+  "the bundled desktop must not run a redundant production install while packaging",
+);
 const desktopNotices = readRequired("apps/desktop/THIRD_PARTY_NOTICES.txt");
 const packagedLauncher = readRequired(
   "apps/desktop/scripts/launch-packaged.cjs",
@@ -191,6 +258,15 @@ for (const requiredFuse of [
 assert.match(forgeConfig, /@electron-forge\/maker-squirrel/);
 assert.match(forgeConfig, /@electron-forge\/maker-dmg/);
 assert.match(forgeConfig, /@electron-forge\/maker-zip/);
+assert.deepEqual(
+  forgeConfiguration.makers.map(({ name, platforms }) => [name, platforms]),
+  [
+    ["@electron-forge/maker-squirrel", ["win32"]],
+    ["@electron-forge/maker-dmg", ["darwin"]],
+    ["@electron-forge/maker-zip", ["darwin", "linux"]],
+  ],
+  "desktop makers must cover native Windows, macOS, and Linux hosts",
+);
 assert.match(desktopNotices, /electron-squirrel-startup 1\.0\.1/);
 assert.match(desktopNotices, /Apache License, Version 2\.0/);
 assert.match(desktopNotices, /resvg-js 2\.6\.2/);

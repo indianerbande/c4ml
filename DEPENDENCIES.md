@@ -327,7 +327,7 @@ not depend on Electron.
 
 ### Electron 44.0.0
 
-- **Capability:** native macOS/Windows application lifecycle, Chromium renderer,
+- **Capability:** native macOS/Windows/Linux application lifecycle, Chromium renderer,
   isolated preload, native windows, menus, keyboard shortcuts, file dialogs,
   and IPC.
 - **Why external:** maintaining a cross-platform native web-runtime container,
@@ -358,7 +358,7 @@ and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial
 
 - **Capability:** replaceable application packaging and platform makers;
   production Electron fuse configuration; DMG and ZIP creation on macOS; and a
-  Squirrel Setup EXE maker on Windows.
+  Squirrel Setup EXE maker on Windows plus a portable ZIP on Linux.
 - **Why external:** platform application assembly, installer formats, Electron
   binary mutation, and maker integration are established release engineering
   concerns rather than C4ML product semantics.
@@ -367,18 +367,22 @@ and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial
   and its license is retained in the packaged notices.
 - **Impact:** these are build-time dependencies. The Windows startup helper is
   bundled into the small main-process artifact; Forge and makers are not copied
-  into application ASAR. The configured outputs are macOS `.app`, DMG, ZIP,
-  and Windows Squirrel installer files.
-- **Offline behavior:** packaging may need Electron release/checksum access
-  until its build cache is complete. Resulting applications and installers
-  require no runtime network service.
+  into application ASAR. The configured outputs are macOS `.app`, DMG, and ZIP,
+  a Windows Squirrel installer, and a portable Linux ZIP.
+- **Offline behavior:** packaging may need Electron archive access until its
+  build cache is complete. The packager validates that archive with the
+  checksum catalogue included in the pinned Electron package, avoiding a
+  separate GitHub checksum request. Because the application has no copied
+  runtime dependencies, Forge's redundant production-install pruning step is
+  disabled. Resulting applications and installers require no runtime network
+  service.
 - **Boundary:** `forge.config.cjs` owns packager, maker, signing-hook, and fuse
   settings. A different packaging system can replace Forge without changing
   the desktop bridge, Angular renderer, or compiler.
 - **Protecting evidence:** exact version/license checks, ASAR content review,
   all nine Electron 44 fuse values, strict packaged-app signature verification,
-  packaged launch smoke, DMG verification, and ZIP integrity testing. A native
-  Windows build/install test and release signatures remain required.
+  packaged launch smoke, DMG verification, and ZIP integrity testing. Native
+  Windows and Linux build/run tests plus release signatures remain required.
 
 The Forge fuses plugin currently declares a peer range that excludes the newer
 `@electron/fuses` 2.x metadata even though Electron 44 exposes a ninth V1 fuse.
@@ -387,33 +391,39 @@ check and packaged smoke protect the integration.
 
 Sources: [Electron Forge Squirrel maker](https://www.electronforge.io/config/makers/squirrel.windows),
 [Electron Forge DMG maker](https://www.electronforge.io/config/makers/dmg), and
+[Electron Forge ZIP maker](https://www.electronforge.io/config/makers/zip), and
 [Electron code signing](https://www.electronjs.org/docs/latest/tutorial/code-signing).
 
 ### Native maker helpers and build runtime
 
-- **Packages:** `@electron/node-gyp` 10.2.0-electron.2, `node-gyp` 12.3.0,
-  `fs-xattr` 0.3.1, and `macos-alias` 0.2.12, all MIT.
+- **Packages:** `@electron/node-gyp` 10.2.0-electron.2 plus the optional
+  transitive `fs-xattr` 0.3.1 and `macos-alias` 0.2.12 packages, all MIT.
 - **Capability:** compile the native extended-attribute and alias helpers used
-  by the macOS DMG maker against the pinned build runtime.
+  by the macOS DMG maker when that optional platform graph is installed.
 - **Why external:** native ABI builds, extended attributes, and Finder aliases
   are operating-system packaging mechanics.
 - **Impact:** build-only dependencies; a macOS compiler toolchain is required
   when the native helpers are not already available for the active ABI. They
-  are rebuilt before `desktop:make` and are excluded from the packaged app.
+  remain optional dependencies below the DMG maker, are skipped on Windows and
+  Linux, and are excluded from the packaged app.
 - **Offline behavior:** after dependency installation and header/toolchain
   availability, the rebuild and maker operate locally.
-- **Boundary:** `apps/desktop/scripts/rebuild-maker-native.cjs` is used only by
-  the maker lifecycle. No native helper enters runtime or compiler packages.
+- **Boundary:** Forge's DMG-maker dependency graph owns the helpers. C4ML has no
+  custom native rebuild hook, and no native helper enters runtime or compiler
+  packages.
 - **Protecting evidence:** the macOS make, DMG verification, packaged ASAR
-  inventory, and dependency-license check.
+  inventory, dependency-license check, and production check that rejects these
+  helpers as direct desktop dependencies.
 
 Forge 7.11.2 transitively identifies Electron's `node-gyp` fork through a Git
 reference. The workspace replaces only that exact transitive edge with the
 published npm version `10.2.0-electron.2`, avoiding an unpinned Git install
-while retaining the reviewed MIT Electron fork. Repository scripts run with
-the pnpm-managed Node.js 24.19.0 runtime recorded in `package.json` and the
-lockfile. This exact runtime avoids host-version-dependent packaging behavior;
-it is build tooling, not a runtime requirement for installed C4ML.
+while retaining the reviewed MIT Electron fork. Node.js 24.15.0 or newer within
+24.x is the repository's reference native packaging runtime. The runtime policy
+warns instead of downloading a managed Node binary. Source installation and
+checks also pass with the currently tested Node.js 26, but Forge packaging is
+guarded to the reliable Node.js 24.x line. Node.js is build tooling, not a
+runtime requirement for installed C4ML.
 
 Source: [pnpm managed runtime (`devEngines.runtime`)](https://pnpm.io/package_json#devenginesruntime).
 
@@ -443,7 +453,8 @@ remains a Node frontend responsibility and does not enter the compiler core.
 Development tools do not define C4ML runtime semantics. Their versions are
 pinned by the root manifest and lockfile and may be upgraded only with a clean
 validation gate. Only the reviewed esbuild 0.28.2, electron-winstaller 5.4.4,
-fs-xattr 0.3.1, and macos-alias 0.2.12 packages are permitted to execute
+and optional macOS-only fs-xattr 0.3.1 and macos-alias 0.2.12 packages are
+permitted to execute
 dependency build scripts. The version-specific `allowBuilds` map in
 `pnpm-workspace.yaml` records those narrow approvals; all unreviewed dependency
 build scripts remain blocked by pnpm.
@@ -520,10 +531,11 @@ loads the matching TTF faces with system fonts disabled. The current artifact
 has been visually inspected; promotion to a committed golden still requires
 the golden-update procedure in `TESTING.md`.
 
-The complete local gate and desktop packaging run on macOS arm64 use the exact
-pnpm-managed Node.js 24.19.0 runtime. Node.js 24.15.0 remains the declared
-minimum compatible workspace line, but 24.19.0 is the reproducible repository
-script and packaging runtime.
+Node.js 24.15.0 or newer within 24.x is the reference repository and native
+packaging runtime. The repository does not ask pnpm to download Node.js from
+the public internet. Source validation also passes with the currently tested
+Node.js 26; native Forge packaging fails early outside the accepted 24.x line.
+Native build evidence is recorded separately for each host in `PLATFORMS.md`.
 
 ## Asset status
 

@@ -125,8 +125,8 @@ Implemented and automatically validated:
 - hardened local-only application loading with renderer sandboxing, no Node.js
   integration, denied navigation/permissions, an application-owned protocol,
   ASAR integrity checks, and Electron production fuses;
-- local macOS `.app`, `.dmg`, and `.zip` packaging, plus a configured Windows
-  Squirrel installer maker;
+- local macOS `.app`, `.dmg`, and `.zip` packaging, a configured Windows
+  Squirrel installer maker, and a portable Linux ZIP maker;
 - an accepted lazy Monaco 0.56.0 adapter that presents only the language
   worker's context-valid completions, applies exact source edits, displays
   inline diagnostic markers, supports keyboard undo/redo, and navigates from
@@ -191,8 +191,8 @@ Not implemented yet:
   Arrowheads, accessibility validation, and dedicated semantic authoring for
   Dynamic interactions and Deployment topology;
 - release identity and distribution work: a final product version and icon,
-  Apple Developer ID signing/notarization, Windows code signing, and a Windows
-  build-and-install validation run; and
+  Apple Developer ID signing/notarization, Windows code signing, and native
+  Windows and Linux build-and-run validation; and
 - the complete guided modeling wizard for Components, Code, deployments,
   Visual Groups, and safe extension of existing documents.
 
@@ -250,10 +250,11 @@ text layout rather than from a browser screenshot.
 
 ## Development quick start
 
-Use the pnpm version pinned in `package.json`. During installation pnpm resolves
-the repository's pinned Node.js 24.19 runtime for scripts, so the packaging
-toolchain is reproducible even when a newer supported Node.js is installed on
-the workstation.
+Use the pnpm version pinned in `package.json`. Node.js 24.15 or newer within the
+24.x line is the reference build runtime. pnpm warns and does not try to
+download Node.js from the public internet. Source checks also pass on the
+currently tested Node.js 26, but native Electron Forge packaging is guarded to
+the accepted Node.js 24.x line; see [`PLATFORMS.md`](PLATFORMS.md).
 
 ```shell
 pnpm install
@@ -285,7 +286,9 @@ On macOS, the packaged application appears below `build/desktop/` and `make`
 adds a DMG and ZIP below `build/desktop/make/`. These development artifacts are
 ad-hoc signed so they can be tested locally; they are not notarized release
 downloads. The Windows Squirrel maker is configured to produce a Setup EXE on
-Windows, but that platform build still requires native Windows validation.
+Windows. Linux produces an unpacked app and portable ZIP. Build every target on
+its native host; the Windows and Linux paths still require native validation.
+See [PLATFORMS.md](PLATFORMS.md) for prerequisites and the verification matrix.
 
 The experimental local CLI builds its required workspace packages and runs
 through the same language and compiler core:
