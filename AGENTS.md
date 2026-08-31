@@ -130,9 +130,12 @@ query grammar or duplicating architecture definitions. The first portable
 architecture-policy contract evaluates forbidden dependencies, required
 protocols, ownership, allowed direction, deployment consistency, and selected
 metadata requirements over canonical snapshots. It produces source-located
-findings and accepts corrections only as reviewable source change sets. No
-policy file format or public syntax is accepted yet, and worker/CLI/CI
-policy-set injection remains the next slice. The first
+findings and accepts corrections only as reviewable source change sets. An
+explicit project can select one local version-one `.c4ml-policy.json` resource;
+the Node.js filesystem and Git loaders validate it, the compiler worker and CLI
+use the same evaluator, and CLI `analyze --fail-on` provides the first CI exit
+boundary. No public `.c4ml` policy syntax, hosted-provider CI format, or Monaco
+policy-resource editor is accepted yet. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
@@ -158,8 +161,8 @@ separate added, removed, modified, affected-path, and layout-movement encodings
 through both a visible legend and SVG metadata. The compiler worker returns the
 portable difference and impact reports; the experimental CLI can export a
 selected shared View in every comparison mode. Executable policy rules remain
-an internal compiler-core contract; frontend policy-set injection remains a
-later slice.
+an internal compiler-core contract even though the approved local project
+resource now injects one normalized set into both frontend paths.
 The local version-control slice is implemented in the existing Node.js
 `project-node` adapter used by desktop and CLI boundaries. Its revision loader reads a `.c4ml`
 file, implicit directory, or explicit manifest from a commit, tag, or branch

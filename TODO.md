@@ -113,8 +113,9 @@ implementation.
       and several source tabs;
 - [x] add an explicit Save All command and preserve independent Monaco undo and
       cursor history per project document; and
-- [ ] add typed glossary, narrative, policy, publication, theme, shape, and
-      asset resources only through separately reviewed slices.
+- [x] add the separately reviewed typed local architecture-policy resource;
+- [ ] add typed glossary, narrative, publication, theme, shape, and asset
+      resources only through separately reviewed slices.
 
 The first manifest intentionally has no globs, remote sources, transitive
 project dependencies, or module aliases. Those features require their own
@@ -309,7 +310,7 @@ changing authored Views.
 - [x] define a typed internal policy contract before proposing public syntax;
 - [x] cover forbidden dependencies, required protocols, ownership, allowed
       direction, deployment consistency, and selected metadata requirements;
-- [ ] run the same policies in editor and CLI/CI; and
+- [x] run the same policies in editor and CLI/CI; and
 - [x] offer corrections only as reviewable source change sets.
 
 The portable version-one contract uses exact kind-qualified stable identities,
@@ -318,9 +319,11 @@ over validated canonical snapshots. Violations become ordinary source-located
 analysis findings with authored and derived evidence. Malformed, unknown, and
 inapplicable policies fail with stable `C4ML-POLICY-*` codes. An optional
 correction can only be a complete proposed single-document or atomic project
-source change set with policy intent. No policy file format, public source
-syntax, editor loading path, or CLI flag is accepted yet; feeding one identical
-policy set through worker and CLI/CI boundaries is the remaining slice.
+source change set with policy intent. An explicit project may now reference one
+local version-one `.c4ml-policy.json` resource; desktop and CLI evaluate it
+through the same portable core, and CLI CI thresholds use `--fail-on`. This
+does not add public `.c4ml` policy syntax, hosted-provider configuration, or
+policy-resource editing in Monaco.
 
 ### Slice 3.4 — claimed versus observed architecture
 

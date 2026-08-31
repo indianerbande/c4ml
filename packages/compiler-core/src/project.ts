@@ -2,10 +2,16 @@ import { compareText } from "./ordering.js";
 
 export const architectureProjectVersion = 1 as const;
 export const architectureProjectManifestName = "c4ml.project.json" as const;
+export const architecturePolicyResourceSuffix = ".c4ml-policy.json" as const;
 
 export interface ArchitectureProjectDocument {
   readonly uri: string;
   readonly text: string;
+}
+
+export interface ArchitectureProjectPolicyResource {
+  readonly uri: string;
+  readonly source: string;
 }
 
 export interface ArchitectureProjectInput {
@@ -14,6 +20,7 @@ export interface ArchitectureProjectInput {
   readonly name?: string;
   readonly description?: string;
   readonly documents: readonly ArchitectureProjectDocument[];
+  readonly policy?: ArchitectureProjectPolicyResource;
 }
 
 export interface ArchitectureProjectManifest {
@@ -22,6 +29,7 @@ export interface ArchitectureProjectManifest {
   readonly name?: string;
   readonly description?: string;
   readonly sources: readonly string[];
+  readonly policy?: string;
 }
 
 export type ArchitectureProjectIssueCode =
@@ -29,7 +37,8 @@ export type ArchitectureProjectIssueCode =
   | "C4ML-PROJECT-002"
   | "C4ML-PROJECT-003"
   | "C4ML-PROJECT-004"
-  | "C4ML-PROJECT-005";
+  | "C4ML-PROJECT-005"
+  | "C4ML-PROJECT-006";
 
 export interface ArchitectureProjectIssue {
   readonly code: ArchitectureProjectIssueCode;
@@ -60,6 +69,7 @@ export function createArchitectureProjectInput(input: {
   readonly name?: string;
   readonly description?: string;
   readonly documents: readonly ArchitectureProjectDocument[];
+  readonly policy?: ArchitectureProjectPolicyResource;
 }): ArchitectureProjectInput {
   const project: ArchitectureProjectInput = {
     version: architectureProjectVersion,
@@ -69,6 +79,9 @@ export function createArchitectureProjectInput(input: {
     documents: [...input.documents]
       .map((document) => ({ ...document }))
       .sort((left, right) => compareText(left.uri, right.uri)),
+    ...(input.policy === undefined
+      ? {}
+      : { policy: { uri: input.policy.uri, source: input.policy.source } }),
   };
   const issues = validateArchitectureProjectInput(project);
   if (issues.length > 0) {
@@ -131,6 +144,23 @@ export function validateArchitectureProjectInput(
     seen.add(document.uri);
     seenCaseFolded.add(caseFolded);
   }
+  if (project.policy !== undefined) {
+    const policyCaseFolded = project.policy.uri.toLocaleLowerCase("en-US");
+    if (
+      !isPortableProjectUri(project.policy.uri) ||
+      !project.policy.uri.endsWith(architecturePolicyResourceSuffix) ||
+      project.policy.source.trim().length === 0 ||
+      seenCaseFolded.has(policyCaseFolded)
+    ) {
+      issues.push({
+        code: "C4ML-PROJECT-006",
+        message:
+          `Project policy URI "${project.policy.uri}" must be a unique normalized relative ` +
+          `${architecturePolicyResourceSuffix} path with non-empty local content.`,
+        uri: project.policy.uri,
+      });
+    }
+  }
   return issues;
 }
 
@@ -153,7 +183,7 @@ export function parseArchitectureProjectManifest(
     return invalidManifest("The project manifest must contain one JSON object.");
   }
 
-  const { version, id, name, description, sources } = candidate;
+  const { version, id, name, description, sources, policy } = candidate;
   if (
     version !== architectureProjectVersion ||
     typeof id !== "string" ||
@@ -163,10 +193,13 @@ export function parseArchitectureProjectManifest(
       (typeof description !== "string" || description.trim().length === 0)) ||
     !Array.isArray(sources) ||
     sources.length === 0 ||
-    sources.some((value) => typeof value !== "string")
+    sources.some((value) => typeof value !== "string") ||
+    (policy !== undefined &&
+      (typeof policy !== "string" || policy.trim().length === 0))
   ) {
     return invalidManifest(
-      "The project manifest requires version 1, a stable id, and a non-empty sources array.",
+      "The project manifest requires version 1, a stable id, a non-empty sources array, " +
+        "and at most one non-empty policy resource path.",
     );
   }
 
@@ -177,6 +210,9 @@ export function parseArchitectureProjectManifest(
     ...(typeof name === "string" ? { name } : {}),
     ...(typeof description === "string" ? { description } : {}),
     documents: normalizedSources.map((uri) => ({ uri, text: "" })),
+    ...(typeof policy === "string"
+      ? { policy: { uri: policy, source: "{}" } }
+      : {}),
   });
   if (projectIssues.length > 0) {
     return { valid: false, issues: projectIssues };
@@ -189,6 +225,7 @@ export function parseArchitectureProjectManifest(
       ...(typeof name === "string" ? { name } : {}),
       ...(typeof description === "string" ? { description } : {}),
       sources: normalizedSources,
+      ...(typeof policy === "string" ? { policy } : {}),
     },
     issues: [],
   };

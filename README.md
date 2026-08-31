@@ -43,6 +43,9 @@ Implemented and automatically validated:
 - implicit one-file and explicit multifile project contracts with deterministic
   project revisions, atomic document-addressed edits, cross-file references,
   and project-aware CLI validation and rendering;
+- one optional project-local version-one architecture-policy resource evaluated
+  identically by the compiler worker and CLI, with source-located Output
+  findings and classified `analyze --fail-on` CI exits;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,
@@ -79,6 +82,8 @@ Implemented and automatically validated:
   comparison modes;
 - shared built-in architecture-quality findings with explicit evidence,
   deterministic source locations, CLI reporting, and workbench navigation;
+- deterministic project-selected architecture policies for dependencies,
+  protocols, ownership, direction, deployment consistency, and metadata;
 - an Angular 22 desktop workbench with simultaneous source/preview tabs,
   C4ML-specific Files, Source Control, Diagrams, Output, and Help activity
   areas, a Problems/Route

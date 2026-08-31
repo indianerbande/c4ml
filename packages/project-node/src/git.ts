@@ -16,6 +16,7 @@ import {
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
+  parseArchitecturePolicySet,
   type ArchitectureProjectInput,
 } from "@c4ml/compiler-core";
 
@@ -237,6 +238,25 @@ async function loadManifestProject(
     if (!source.valid) return source;
     documents.push({ uri, text: source.text });
   }
+  let policy: { readonly uri: string; readonly source: string } | undefined;
+  if (parsed.manifest.policy !== undefined) {
+    const uri = parsed.manifest.policy;
+    const source = await readBlob(
+      repositoryRoot,
+      revision.commit,
+      joinGitPath(projectPath, uri),
+    );
+    if (!source.valid) return source;
+    const parsedPolicy = parseArchitecturePolicySet(source.text);
+    if (!parsedPolicy.valid) {
+      return failure(
+        "source",
+        parsedPolicy.error.code,
+        parsedPolicy.error.message,
+      );
+    }
+    policy = { uri, source: source.text };
+  }
   return {
     valid: true,
     project: createArchitectureProjectInput({
@@ -246,6 +266,7 @@ async function loadManifestProject(
         ? {}
         : { description: parsed.manifest.description }),
       documents,
+      ...(policy === undefined ? {} : { policy }),
     }),
     revision,
     projectPath,

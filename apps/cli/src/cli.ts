@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  ArchitecturePolicyError,
   ArchitectureQueryError,
   compareArchitectureSnapshots,
   compileArchitectureDiagram,
@@ -10,8 +11,10 @@ import {
   createDiagramScene,
   createTemporaryArchitectureView,
   deriveArchitectureImpacts,
+  evaluateArchitecturePolicies,
   evaluateBuiltInArchitectureQuality,
   executeArchitectureQuery,
+  parseArchitecturePolicySet,
   renderDiagramSvg,
   resolveArchitectureSnapshot,
   routeDiagram,
@@ -53,6 +56,7 @@ export const cliExitCode = {
   source: 3,
   compilation: 4,
   environment: 5,
+  findings: 6,
 } as const;
 
 export interface CliIo {
@@ -62,6 +66,7 @@ export interface CliIo {
 }
 
 type DiagnosticFormat = "human" | "json";
+type FindingFailureThreshold = "error" | "never" | "warning";
 type RenderFormat = "png" | "svg";
 
 interface CheckCommand {
@@ -74,6 +79,7 @@ interface AnalyzeCommand {
   readonly kind: "analyze";
   readonly file: string;
   readonly diagnostics: DiagnosticFormat;
+  readonly failOn: FindingFailureThreshold;
 }
 
 interface QueryCommand {
@@ -129,6 +135,7 @@ const usage = `C4ML experimental CLI
 
 Usage:
   c4ml analyze <file-or-project> [--diagnostics human|json]
+               [--fail-on never|error|warning]
   c4ml check <file-or-project> [--diagnostics human|json]
   c4ml query <file-or-project> --kind upstream|downstream|path|containment|deployment|view-coverage
              --subject <kind:id> [--target <kind:id>] [--direction upstream|downstream]
@@ -209,26 +216,60 @@ export async function runCli(
         routingByViewId: parsed.routingByViewId,
       },
     ).snapshot!;
+    const findings = evaluateBuiltInArchitectureQuality({
+      model: parsed.model,
+      views: parsed.views,
+      snapshot,
+      diagnostics: parsed.diagnostics,
+    });
+    if (loaded.project.policy !== undefined) {
+      const parsedPolicy = parseArchitecturePolicySet(
+        loaded.project.policy.source,
+      );
+      if (!parsedPolicy.valid) {
+        reportCliFailure(
+          parsedPolicy.error.code,
+          parsedPolicy.error.message,
+          parsedCommand.diagnostics,
+          io,
+        );
+        return cliExitCode.source;
+      }
+      try {
+        findings.push(...evaluateArchitecturePolicies({
+          model: parsed.model,
+          views: parsed.views,
+          snapshot,
+          policySet: parsedPolicy.policySet,
+        }));
+      } catch (error: unknown) {
+        if (error instanceof ArchitecturePolicyError) {
+          reportCliFailure(
+            error.code,
+            error.message,
+            parsedCommand.diagnostics,
+            io,
+          );
+          return cliExitCode.source;
+        }
+        throw error;
+      }
+    }
+    const report = createArchitectureAnalysisReport(snapshot, findings);
     reportSuccess(
       {
         command: "analyze",
         file: sourcePath,
         languageVersion: parsed.languageVersion,
         valid: true,
-        report: createArchitectureAnalysisReport(
-          snapshot,
-          evaluateBuiltInArchitectureQuality({
-            model: parsed.model,
-            views: parsed.views,
-            snapshot,
-            diagnostics: parsed.diagnostics,
-          }),
-        ),
+        report,
       },
       parsedCommand.diagnostics,
       io,
     );
-    return cliExitCode.success;
+    return analysisThresholdReached(report.findings, parsedCommand.failOn)
+      ? cliExitCode.findings
+      : cliExitCode.success;
   }
   if (parsedCommand.kind === "query") {
     const snapshot = resolveArchitectureSnapshot(
@@ -445,8 +486,10 @@ function parseCommand(args: readonly string[]): CliCommand | string {
   }
 
   const allowed =
-    command === "analyze" || command === "check"
-      ? new Set(["--diagnostics"])
+    command === "analyze"
+      ? new Set(["--diagnostics", "--fail-on"])
+      : command === "check"
+        ? new Set(["--diagnostics"])
       : command === "query"
         ? new Set([
             "--diagnostics",
@@ -467,9 +510,19 @@ function parseCommand(args: readonly string[]): CliCommand | string {
       return "--all is available only for render.";
     }
     const diagnostics = diagnosticFormat(options.get("--diagnostics"));
-    return typeof diagnostics === "string"
-      ? diagnostics
-      : { kind: command, file, diagnostics: diagnostics.value };
+    if (typeof diagnostics === "string") return diagnostics;
+    if (command === "analyze") {
+      const failOn = findingFailureThreshold(options.get("--fail-on"));
+      return typeof failOn === "string"
+        ? failOn
+        : {
+            kind: command,
+            file,
+            diagnostics: diagnostics.value,
+            failOn: failOn.value,
+          };
+    }
+    return { kind: command, file, diagnostics: diagnostics.value };
   }
   if (command === "query") {
     if (flags.size > 0) return "--all is available only for render.";
@@ -930,6 +983,31 @@ function diagnosticFormat(
     return { value: value ?? "human" };
   }
   return "--diagnostics must be human or json.";
+}
+
+function findingFailureThreshold(
+  value: string | undefined,
+): { readonly value: FindingFailureThreshold } | string {
+  if (
+    value === undefined ||
+    value === "never" ||
+    value === "error" ||
+    value === "warning"
+  ) {
+    return { value: value ?? "never" };
+  }
+  return "--fail-on must be never, error, or warning.";
+}
+
+function analysisThresholdReached(
+  findings: readonly { readonly severity: string }[],
+  threshold: FindingFailureThreshold,
+): boolean {
+  if (threshold === "never") return false;
+  return findings.some(({ severity }) =>
+    severity === "error" ||
+    (threshold === "warning" && severity === "warning")
+  );
 }
 
 function renderFormats(

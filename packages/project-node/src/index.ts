@@ -15,6 +15,7 @@ import {
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
+  parseArchitecturePolicySet,
   type ArchitectureProjectInput,
 } from "@c4ml/compiler-core";
 
@@ -160,6 +161,46 @@ export async function loadArchitectureProject(
     }
   }
 
+  let policy: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.policy !== undefined) {
+    const uri = parsedManifest.manifest.policy;
+    const policyPath = resolve(projectRoot, ...uri.split("/"));
+    let policyRealPath: string;
+    try {
+      policyRealPath = await realpath(policyPath);
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-006",
+        `Cannot read project policy ${policyPath}: ${errorMessage(error)}`,
+      );
+    }
+    const relativeRealPath = relative(rootRealPath, policyRealPath);
+    if (
+      relativeRealPath === ".." ||
+      relativeRealPath.split(sep)[0] === ".." ||
+      isAbsolute(relativeRealPath)
+    ) {
+      return sourceFailure(
+        "C4ML-PROJECT-NODE-007",
+        `Project policy "${uri}" resolves outside the project directory.`,
+      );
+    }
+    let source: string;
+    try {
+      source = await readFile(policyRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-006",
+        `Cannot read project policy ${policyPath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedPolicy = parseArchitecturePolicySet(source);
+    if (!parsedPolicy.valid) {
+      return sourceFailure(parsedPolicy.error.code, parsedPolicy.error.message);
+    }
+    policy = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -173,6 +214,7 @@ export async function loadArchitectureProject(
         ? {}
         : { description: parsedManifest.manifest.description }),
       documents,
+      ...(policy === undefined ? {} : { policy }),
     }),
     documentPaths,
   };

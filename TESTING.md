@@ -1,8 +1,8 @@
 # C4ML Testing Strategy
 
-Status: Draft 0.38
+Status: Draft 0.39
 
-Date: 2026-08-30
+Date: 2026-08-31
 
 This document defines how C4ML behavior will be verified. It is normative for
 testing once implementation begins. `SPEC.md` defines product behavior; this
@@ -114,7 +114,8 @@ separate deployment, View, presentation, and layout categories, layout-only
 changes without architecture noise, deterministic serialization, and empty
 results for equivalent snapshots. Compiler-worker/direct-core parity and CLI
 tests cover the same rename result; a separate CLI pair proves that comments do
-not create a semantic change. Executable policy rules remain unimplemented.
+not create a semantic change. Project-selected policy evaluation now adds the
+same worker and CLI report path without duplicating evaluator semantics.
 
 The first project-source foundation adds contract evidence for canonical
 project-relative document URIs, deterministic document ordering, explicit
@@ -130,7 +131,7 @@ Node.js loader, while Angular provides project tabs, explorer selection,
 per-document buffers and dirty markers, aggregate close protection,
 cross-document source navigation, sequential Save All with partial-result and
 cancel behavior, and independent Monaco models with restored cursor and scroll
-state. Glossary/narrative/policy/publication resources, reusable project
+state. Glossary/narrative/publication resources, reusable project
 libraries, and remote imports remain unimplemented.
 
 The Angular editor foundation adds typed worker-runtime, editor-session, and
@@ -931,8 +932,13 @@ authored and derived evidence plus an architecture source location. Separate
 negative tests require stable errors for malformed rule kinds, unknown stable
 identities, and rules that are inapplicable to the selected architecture kind.
 Correction evidence accepts only complete versioned policy-intent source change
-sets, including atomic project changes. Worker and CLI/CI parity remain required
-before the project-policy slice is reported as complete.
+sets, including atomic project changes. The project-policy gate additionally
+proves versioned JSON parsing, local path containment, Git-revision loading,
+policy participation in deterministic project revisions, worker/CLI finding
+parity, source-located architecture navigation, and stable failure for malformed
+or inapplicable resources. CLI tests prove that the default emits findings
+without failing, `--fail-on error` fails only for errors, and `--fail-on
+warning` fails for warnings or errors using classified exit code `6`.
 
 ### 2.15 Project and multi-document source
 
@@ -942,6 +948,9 @@ Project-source tests MUST prove that:
   equivalent implicit projects;
 - an explicit manifest loads only its listed local sources in normalized URI
   order;
+- an optional `.c4ml-policy.json` manifest resource is loaded locally through
+  the same filesystem and Git-revision adapters, participates in the project
+  revision, and never becomes an architecture source document;
 - malformed manifests, duplicate sources, absolute paths, traversal segments,
   platform-specific separators, and symbolic-link escape are rejected with
   stable codes;

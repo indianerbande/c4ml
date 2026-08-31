@@ -105,6 +105,18 @@ export interface ArchitecturePolicyEvaluationInput {
   readonly policySet: ArchitecturePolicySet;
 }
 
+export type ArchitecturePolicySetParseResult =
+  | {
+      readonly valid: true;
+      readonly policySet: ArchitecturePolicySet;
+      readonly error: undefined;
+    }
+  | {
+      readonly valid: false;
+      readonly policySet: undefined;
+      readonly error: ArchitecturePolicyError;
+    };
+
 export class ArchitecturePolicyError extends Error {
   constructor(
     readonly code:
@@ -115,6 +127,56 @@ export class ArchitecturePolicyError extends Error {
   ) {
     super(message);
     this.name = "ArchitecturePolicyError";
+  }
+}
+
+export function parseArchitecturePolicySet(
+  source: string,
+): ArchitecturePolicySetParseResult {
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(source);
+  } catch {
+    return {
+      valid: false,
+      policySet: undefined,
+      error: new ArchitecturePolicyError(
+        "C4ML-POLICY-001",
+        "An architecture policy resource must contain valid JSON.",
+      ),
+    };
+  }
+  try {
+    if (!isRecord(candidate)) {
+      malformed("An architecture policy resource must contain one JSON object.");
+    }
+    if (candidate["version"] !== architecturePolicySetVersion) {
+      malformed(
+        `An architecture policy resource must declare version ${architecturePolicySetVersion}.`,
+      );
+    }
+    return {
+      valid: true,
+      policySet: createArchitecturePolicySet({
+        id: candidate["id"] as string,
+        ...(candidate["name"] === undefined
+          ? {}
+          : { name: candidate["name"] as string }),
+        policies: candidate["policies"] as ArchitecturePolicy[],
+      }),
+      error: undefined,
+    };
+  } catch (error: unknown) {
+    return {
+      valid: false,
+      policySet: undefined,
+      error: error instanceof ArchitecturePolicyError
+        ? error
+        : new ArchitecturePolicyError(
+            "C4ML-POLICY-001",
+            "The architecture policy resource is malformed.",
+          ),
+    };
   }
 }
 

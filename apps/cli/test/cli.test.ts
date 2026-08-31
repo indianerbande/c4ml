@@ -112,6 +112,72 @@ describe("experimental C4ML CLI", () => {
     expect(stderr).toEqual([]);
   });
 
+  it("evaluates project-local policies and exposes a CI failure threshold", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-policy-"));
+    await writePolicyContextProject(directory, "error");
+
+    const defaultExit = await runCli(
+      ["analyze", directory, "--diagnostics", "json"],
+      io(directory),
+    );
+    const defaultResult = JSON.parse(stdout.join("")) as {
+      readonly report: {
+        readonly findings: readonly {
+          readonly ruleId: string;
+          readonly severity: string;
+          readonly sourceLocations: readonly { readonly file: string }[];
+        }[];
+      };
+    };
+
+    expect(defaultExit).toBe(cliExitCode.success);
+    expect(defaultResult.report.findings).toEqual([
+      expect.objectContaining({
+        ruleId: "garden.owner",
+        severity: "error",
+        sourceLocations: [
+          expect.objectContaining({ file: "architecture.c4ml" }),
+        ],
+      }),
+    ]);
+
+    stdout = [];
+    const ciExit = await runCli(
+      ["analyze", directory, "--fail-on", "error"],
+      io(directory),
+    );
+    expect(ciExit).toBe(cliExitCode.findings);
+    expect(stdout.join("")).toContain("garden.owner");
+    expect(stderr).toEqual([]);
+
+    const warningDirectory = await mkdtemp(
+      join(tmpdir(), "c4ml-cli-policy-warning-"),
+    );
+    await writePolicyContextProject(warningDirectory, "warning");
+    stdout = [];
+    expect(await runCli(
+      ["analyze", warningDirectory, "--fail-on", "error"],
+      io(warningDirectory),
+    )).toBe(cliExitCode.success);
+    stdout = [];
+    expect(await runCli(
+      ["analyze", warningDirectory, "--fail-on", "warning"],
+      io(warningDirectory),
+    )).toBe(cliExitCode.findings);
+  });
+
+  it("rejects unsupported analysis failure thresholds as usage errors", async () => {
+    const exitCode = await runCli(
+      ["analyze", "architecture.c4ml", "--fail-on", "fatal"],
+      io(tmpdir()),
+    );
+
+    expect(exitCode).toBe(cliExitCode.usage);
+    expect(stderr.join("")).toContain(
+      "--fail-on must be never, error, or warning.",
+    );
+  });
+
   it("returns an explained temporary focus View for a graph query", async () => {
     const cwd = fileURLToPath(new URL("../../..", import.meta.url));
     const exitCode = await runCli(
@@ -765,6 +831,42 @@ async function writeMultifileContextProject(directory: string): Promise<void> {
     writeFile(
       join(directory, "views", "context.c4ml"),
       section(viewStart),
+      "utf8",
+    ),
+  ]);
+}
+
+async function writePolicyContextProject(
+  directory: string,
+  severity: "error" | "warning",
+): Promise<void> {
+  const source = await readFile(contextUrl, "utf8");
+  await Promise.all([
+    writeFile(
+      join(directory, "c4ml.project.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-policy-project",
+        sources: ["architecture.c4ml"],
+        policy: "governance.c4ml-policy.json",
+      }),
+      "utf8",
+    ),
+    writeFile(join(directory, "architecture.c4ml"), source, "utf8"),
+    writeFile(
+      join(directory, "governance.c4ml-policy.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-policies",
+        policies: [{
+          id: "garden.owner",
+          title: "Garden Pulse requires an owner",
+          severity,
+          kind: "required-metadata",
+          subjectKeys: ["element:garden-pulse"],
+          requirements: [{ kind: "metadata", key: "owner" }],
+        }],
+      }),
       "utf8",
     ),
   ]);

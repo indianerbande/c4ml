@@ -452,7 +452,11 @@
                 <p>{{ i18n.t("output.qualityLoading") }}</p>
               }
               @case ("invalid") {
-                <p>{{ i18n.t("output.qualityInvalid") }}</p>
+                @if (compiler.analysis().diagnostics[0]; as diagnostic) {
+                  <p><code>{{ diagnostic.code }}</code> {{ diagnostic.message }}</p>
+                } @else {
+                  <p>{{ i18n.t("output.qualityInvalid") }}</p>
+                }
               }
               @case ("failed") {
                 <p>{{ i18n.t("output.qualityFailed") }}</p>

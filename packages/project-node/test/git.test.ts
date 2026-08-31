@@ -64,11 +64,31 @@ describe("Git project revision adapter", () => {
     await initializeRepository(directory);
     await writeFile(
       join(projectDirectory, "c4ml.project.json"),
-      JSON.stringify({ version: 1, id: "garden", sources: ["model.c4ml", "views.c4ml"] }),
+      JSON.stringify({
+        version: 1,
+        id: "garden",
+        sources: ["model.c4ml", "views.c4ml"],
+        policy: "garden.c4ml-policy.json",
+      }),
       "utf8",
     );
     await writeFile(join(projectDirectory, "model.c4ml"), "c4ml draft-1\n// model\n", "utf8");
     await writeFile(join(projectDirectory, "views.c4ml"), "c4ml draft-1\n// views\n", "utf8");
+    await writeFile(
+      join(projectDirectory, "garden.c4ml-policy.json"),
+      JSON.stringify({
+        version: 1,
+        id: "garden-policies",
+        policies: [{
+          id: "garden.protocol",
+          title: "Require HTTPS",
+          severity: "warning",
+          kind: "required-protocol",
+          relationshipKeys: ["relationship:ui-calls-api"],
+        }],
+      }),
+      "utf8",
+    );
     await git(directory, "add", "architecture");
     await git(directory, "commit", "-m", "project");
 
@@ -82,6 +102,9 @@ describe("Git project revision adapter", () => {
       "views.c4ml",
     ]);
     expect(result.projectPath).toBe("architecture");
+    expect(result.project.policy).toMatchObject({
+      uri: "garden.c4ml-policy.json",
+    });
   });
 
   it("classifies unknown revisions without changing repository state", async () => {

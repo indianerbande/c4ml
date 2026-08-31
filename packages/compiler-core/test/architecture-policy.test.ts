@@ -8,6 +8,7 @@ import {
   createProposedProjectSourceChangeSet,
   evaluateArchitecturePolicies,
   isArchitecturePolicySet,
+  parseArchitecturePolicySet,
   resolveArchitectureSnapshot,
   type ArchitecturePolicy,
 } from "../src/index.js";
@@ -43,6 +44,40 @@ function evaluate(policies: readonly ArchitecturePolicy[]) {
 }
 
 describe("portable architecture policy contract", () => {
+  it("parses one versioned JSON policy resource through the portable contract", () => {
+    const result = parseArchitecturePolicySet(JSON.stringify({
+      version: 1,
+      id: "signal-garden-policies",
+      policies: [{
+        ...policyBase("garden.https-protocol"),
+        kind: "required-protocol",
+        relationshipKeys: ["relationship:ui-calls-api"],
+        allowedProtocols: ["HTTPS"],
+      }],
+    }));
+
+    expect(result).toMatchObject({
+      valid: true,
+      policySet: {
+        version: 1,
+        id: "signal-garden-policies",
+        policies: [{ id: "garden.https-protocol" }],
+      },
+    });
+    expect(parseArchitecturePolicySet("{")).toMatchObject({
+      valid: false,
+      error: { code: "C4ML-POLICY-001" },
+    });
+    expect(parseArchitecturePolicySet(JSON.stringify({
+      version: 2,
+      id: "future-policy-set",
+      policies: [],
+    }))).toMatchObject({
+      valid: false,
+      error: { code: "C4ML-POLICY-001" },
+    });
+  });
+
   it("evaluates every version-one policy family as deterministic findings", () => {
     const policies: ArchitecturePolicy[] = [
       {
