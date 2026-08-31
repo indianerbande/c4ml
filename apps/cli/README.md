@@ -40,9 +40,12 @@ layout/render compilation, `5` filesystem/environment failure, and `6` an
 architecture-finding threshold selected by `analyze --fail-on`.
 
 An explicit `c4ml.project.json` may select one local
-`.c4ml-policy.json` resource. `analyze` evaluates that resource and the built-in
-catalogue through the same portable compiler-core evaluator used by the desktop
-worker. The default `--fail-on never` keeps findings informational to the
+`.c4ml-policy.json` resource and one local `.c4ml-observations.json` resource.
+`analyze` evaluates both resources and the built-in catalogue through the same
+portable compiler-core evaluators used by the desktop worker. Confirmed
+observation mismatches are warning-level drift; unreviewed or disputed input is
+information-level uncertainty and never changes authored source. The default
+`--fail-on never` keeps findings informational to the
 process; `error` fails on error findings, while `warning` fails on warnings or
 errors.
 

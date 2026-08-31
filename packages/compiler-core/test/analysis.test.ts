@@ -230,6 +230,44 @@ describe("analysis finding and evidence contracts", () => {
     );
   });
 
+  it("accepts only fully attributed and explicitly confirmed observation evidence", () => {
+    const finding = createAnalysisFinding({
+      id: "finding:confirmed-observation",
+      ruleId: "c4ml.observation.drift",
+      severity: "warning",
+      message: "A confirmed observation differs from the authored architecture.",
+      subjectKeys: [architectureGraphItemKey("element", "cultivation-api")],
+      evidence: [{
+        id: "observation:runtime-technology",
+        origin: "observed",
+        subjectKey: architectureGraphItemKey("element", "cultivation-api"),
+        statement: "The local inventory reported a Python runtime.",
+        adapterId: "c4ml.local-inventory/v1",
+        observedAt: "2026-08-31T10:15:00+02:00",
+        confirmation: "confirmed",
+      }],
+    });
+
+    expect(finding.evidence[0]).toMatchObject({
+      adapterId: "c4ml.local-inventory/v1",
+      observedAt: "2026-08-31T10:15:00+02:00",
+      confirmation: "confirmed",
+    });
+    expect(() => createAnalysisFinding({
+      ...finding,
+      id: "finding:invalid-observation-time",
+      evidence: [{
+        ...finding.evidence[0]!,
+        id: "observation:invalid-time",
+        observedAt: "2026-08-31 10:15",
+      }],
+    })).toThrowError(
+      expect.objectContaining<Partial<AnalysisContractError>>({
+        code: "C4ML-ANALYSIS-003",
+      }),
+    );
+  });
+
   it("normalizes query result sets while preserving the evidence path order", () => {
     const result = createArchitectureQueryResult({
       queryId: "impact:cultivation-api",

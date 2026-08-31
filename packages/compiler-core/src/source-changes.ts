@@ -188,6 +188,12 @@ export function createProjectRevision(
         ? ""
         : createSourceRevision(project.policy.source).hash
     }`,
+    `${project.observations?.uri.length ?? -1}:${project.observations?.uri ?? ""}`,
+    `${project.observations?.source.length ?? -1}:${
+      project.observations === undefined
+        ? ""
+        : createSourceRevision(project.observations.source).hash
+    }`,
     ...documents.map(
       ({ uri, revision }) =>
         `${uri.length}:${uri}:${revision.length}:${revision.hash}`,
@@ -356,6 +362,9 @@ export function applyProjectSourceChangeSet(
       : { description: project.description }),
     documents,
     ...(project.policy === undefined ? {} : { policy: project.policy }),
+    ...(project.observations === undefined
+      ? {}
+      : { observations: project.observations }),
   });
   return {
     valid: true,

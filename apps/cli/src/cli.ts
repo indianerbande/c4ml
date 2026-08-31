@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
+  ArchitectureObservationError,
   ArchitecturePolicyError,
   ArchitectureQueryError,
   compareArchitectureSnapshots,
@@ -12,8 +13,10 @@ import {
   createTemporaryArchitectureView,
   deriveArchitectureImpacts,
   evaluateArchitecturePolicies,
+  evaluateArchitectureObservations,
   evaluateBuiltInArchitectureQuality,
   executeArchitectureQuery,
+  parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   renderDiagramSvg,
   resolveArchitectureSnapshot,
@@ -244,6 +247,43 @@ export async function runCli(
         }));
       } catch (error: unknown) {
         if (error instanceof ArchitecturePolicyError) {
+          reportCliFailure(
+            error.code,
+            error.message,
+            parsedCommand.diagnostics,
+            io,
+          );
+          return cliExitCode.source;
+        }
+        throw error;
+      }
+    }
+    if (loaded.project.observations !== undefined) {
+      const parsedObservations = parseArchitectureObservationSet(
+        loaded.project.observations.source,
+      );
+      if (!parsedObservations.valid) {
+        reportCliFailure(
+          parsedObservations.error.code,
+          parsedObservations.error.message,
+          parsedCommand.diagnostics,
+          io,
+        );
+        return cliExitCode.source;
+      }
+      try {
+        findings.push(...evaluateArchitectureObservations({
+          model: parsed.model,
+          views: parsed.views,
+          snapshot,
+          observationSet: parsedObservations.observationSet,
+          resourceSource: resourceSource(
+            loaded.project.observations.uri,
+            loaded.project.observations.source,
+          ),
+        }).findings);
+      } catch (error: unknown) {
+        if (error instanceof ArchitectureObservationError) {
           reportCliFailure(
             error.code,
             error.message,
@@ -1158,6 +1198,22 @@ function processIo(): CliIo {
     cwd: process.cwd(),
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text),
+  };
+}
+
+function resourceSource(file: string, source: string) {
+  const lines = source.split("\n");
+  const lastLine = lines.length - 1;
+  return {
+    file,
+    range: {
+      start: { offset: 0, line: 0, column: 0 },
+      end: {
+        offset: source.length,
+        line: lastLine,
+        column: lines[lastLine]?.length ?? 0,
+      },
+    },
   };
 }
 

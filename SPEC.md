@@ -1,6 +1,6 @@
 # C4ML Specification
 
-Status: Draft 0.38
+Status: Draft 0.39
 
 Date: 2026-08-31
 
@@ -516,13 +516,17 @@ manifest contains:
 - optional non-empty `name` and `description` text;
 - a non-empty explicit `sources` list; and
 - an optional `policy` path naming one local version-one architecture-policy
-  resource.
+  resource; and
+- an optional `observations` path naming one local version-one architecture-
+  observation resource.
 
 Source entries are normalized forward-slash paths relative to the project
 directory. Absolute paths, URI schemes, backslashes, empty segments, `.` or
 `..` segments, duplicate entries, paths escaping through symbolic links, and
 remote sources MUST be rejected. A policy path follows the same containment
-rules, is unique within the project, and MUST end in `.c4ml-policy.json`.
+rules, is unique within the project, and MUST end in `.c4ml-policy.json`. An
+observation path follows the same containment and uniqueness rules and MUST end
+in `.c4ml-observations.json`.
 Version one intentionally has no globs,
 network imports, transitive project dependencies, or source-order precedence.
 The manifest and every source required for compilation MUST be available
@@ -544,9 +548,9 @@ document.
 
 The portable compiler core receives a versioned `ArchitectureProjectInput`
 containing project metadata, a deterministic URI-sorted set of source
-documents, and the optional raw local policy resource. It MUST NOT open files
-itself. CLI, Electron, and renderer
-adapters load documents and enforce their environment's path and access rules.
+documents, and the optional raw local policy and observation resources. It MUST
+NOT open files itself. CLI, Electron, and renderer adapters load documents and
+enforce their environment's path and access rules.
 Diagnostics and navigation retain project-relative source URIs.
 
 The desktop editor opens an explicit project directory through its native
@@ -569,9 +573,16 @@ and navigate to the affected architecture declaration. Malformed or
 inapplicable policy input fails visibly; it never changes the architecture
 model or diagram output.
 
+The desktop also loads and evaluates the optional observation resource with the
+complete project but does not expose it as an editable Monaco source tab.
+Confirmed drift and unreviewed or disputed uncertainty appear as ordinary
+architecture findings in Output. Selecting a finding navigates to the authored
+architecture declaration when one exists. Malformed or inapplicable observation
+input fails visibly and never changes source, model, layout, or diagram output.
+
 One project revision is derived deterministically from the project identity,
-ordered document identities, exact document revisions, and optional policy
-resource identity and content. A project source
+ordered document identities, exact document revisions, and optional policy and
+observation resource identities and content. A project source
 change set addresses every edit by document URI, validates all document ranges
 against one project revision, and applies all edits atomically or none. One
 authoring action spanning several documents MUST remain one preview and one undo
@@ -1641,7 +1652,8 @@ owns story validation, ordering, provenance, and presentation serialization.
 The implemented analysis contract represents findings and query results with
 stable rule/query identity, qualified affected items, ordered evidence, sorted
 source locations, and optional proposed source corrections. Observed evidence
-requires its adapter identity and observation time. A versioned portable analysis
+requires its adapter identity, observation time, and explicit confirmation
+state. A versioned portable analysis
 report combines the canonical snapshot and deterministic findings. The compiler
 worker and the experimental CLI `analyze` command expose that same report.
 
@@ -1704,6 +1716,47 @@ the first CI boundary; no hosted-provider workflow or separate CI configuration
 format is accepted. The desktop opens the same project policy through its typed
 bridge and shows its findings in Output, but policy-resource editing and saving
 remain later work.
+
+The implemented version-one architecture-observation contract is an internal,
+portable compiler-core boundary over validated canonical snapshots. A versioned
+observation set contains a stable identity and deterministic, uniquely
+identified observations. Each observation names one qualified architecture
+identity, the producing adapter, an ISO timestamp with timezone, and a
+confirmation state of `confirmed`, `unreviewed`, or `disputed`. A claim either
+states presence or states the canonical value of one selected field applicable
+to that architecture kind. Supported fields cover stable descriptive,
+ownership, endpoint, protocol, technology, scope, deployment, group, and
+interaction facts already present in the snapshot; the contract adds no C4
+element or Relationship kind.
+
+Evaluation compares each normalized claim with authored snapshot state. A
+confirmed equal value is consistent and produces no finding. A confirmed
+mismatch is warning-level drift. An unreviewed or disputed observation is
+information-level uncertainty regardless of whether its value currently
+matches source. Findings keep distinct authored and observed evidence; the
+observed evidence retains adapter identity, normalized time, confirmation state,
+and the observation-resource source location. Evaluation MUST NOT reconcile,
+copy, or write observed values into source, model, snapshot, View, layout, or
+render output. Malformed resources and fields inapplicable to their selected
+architecture kind fail with stable `C4ML-OBSERVATION-*` errors.
+
+An explicit project MAY select exactly one local JSON observation resource
+through the manifest's `observations` field. The resource MUST end in
+`.c4ml-observations.json`, declare `version: 1`, a non-empty stable `id`,
+optional non-empty `name`, and a non-empty `observations` array matching the
+portable contract. The Node.js project adapter validates path containment and
+resource content for both working files and read-only Git revisions. The
+desktop transports only the bounded raw local resource, and the compiler worker
+and CLI pass the same normalized set to the same portable evaluator. The
+resource participates in deterministic project revisions but is not an
+architecture source document or editable source tab.
+
+This local file is the first replaceable observation adapter boundary, not a
+runtime, repository, cloud, or monitoring integration. Such integrations MAY
+produce the same portable contract later, but remain optional frontend/importer
+adapters and require their own trust, credential, freshness, and failure
+decisions. No hosted-provider schema or public `.c4ml` observation syntax is
+accepted.
 
 ## 10. Scene graph and rendering
 

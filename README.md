@@ -46,6 +46,9 @@ Implemented and automatically validated:
 - one optional project-local version-one architecture-policy resource evaluated
   identically by the compiler worker and CLI, with source-located Output
   findings and classified `analyze --fail-on` CI exits;
+- one optional project-local version-one architecture-observation resource that
+  reports confirmed drift and unreviewed or disputed uncertainty without
+  changing authored source;
 - an initial portable diagram pipeline from a resolved view through layout,
   effective routing, a renderer-neutral scene graph, and deterministic SVG;
 - inspectable automatic, guided, and fixed route contracts with cardinal ports,

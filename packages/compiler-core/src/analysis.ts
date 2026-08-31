@@ -13,6 +13,7 @@ export type ProposedAnalysisCorrection =
   | ProposedSourceChangeSet;
 
 export type AnalysisEvidenceOrigin = "authored" | "derived" | "observed";
+export type ObservationConfirmation = "confirmed" | "disputed" | "unreviewed";
 
 export interface AnalysisEvidence {
   readonly id: string;
@@ -22,6 +23,7 @@ export interface AnalysisEvidence {
   readonly source?: SourceReference;
   readonly adapterId?: string;
   readonly observedAt?: string;
+  readonly confirmation?: ObservationConfirmation;
 }
 
 export interface AnalysisFinding {
@@ -210,11 +212,13 @@ function validateEvidence(evidence: AnalysisEvidence): AnalysisEvidence {
     (evidence.adapterId?.trim().length === 0 ||
       evidence.adapterId === undefined ||
       evidence.observedAt?.trim().length === 0 ||
-      evidence.observedAt === undefined)
+      evidence.observedAt === undefined ||
+      !isObservationConfirmation(evidence.confirmation) ||
+      !isTimestamp(evidence.observedAt))
   ) {
     throw new AnalysisContractError(
       "C4ML-ANALYSIS-003",
-      `Observed evidence ${evidence.id} requires adapter identity and observation time.`,
+      `Observed evidence ${evidence.id} requires adapter identity, observation time, and confirmation state.`,
     );
   }
   return {
@@ -231,7 +235,21 @@ function validateEvidence(evidence: AnalysisEvidence): AnalysisEvidence {
     ...(evidence.observedAt === undefined
       ? {}
       : { observedAt: evidence.observedAt }),
+    ...(evidence.confirmation === undefined
+      ? {}
+      : { confirmation: evidence.confirmation }),
   };
+}
+
+function isObservationConfirmation(
+  value: unknown,
+): value is ObservationConfirmation {
+  return value === "confirmed" || value === "disputed" || value === "unreviewed";
+}
+
+function isTimestamp(value: string): boolean {
+  return /(?:Z|[+-]\d{2}:\d{2})$/u.test(value) &&
+    Number.isFinite(Date.parse(value));
 }
 
 function isArchitectureSnapshot(value: unknown): value is ArchitectureSnapshot {

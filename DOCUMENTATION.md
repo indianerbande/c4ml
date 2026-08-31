@@ -273,9 +273,12 @@ View, and Views that resolve to no content. Human CLI output prints each source
 location. The editor presents the same report in **Output → Architecture
 findings**; selecting a finding opens and marks its owning source declaration.
 For an explicit project, the report also evaluates its optional local
-`.c4ml-policy.json` resource. `--fail-on never|error|warning` turns a selected
-finding severity into classified process exit `6` for CI while still printing
-the complete report; the default is `never`.
+`.c4ml-policy.json` and `.c4ml-observations.json` resources. Only confirmed
+observation mismatches are drift; unreviewed or disputed observations remain
+uncertainty, and neither changes authored source. `--fail-on
+never|error|warning` turns a selected finding severity into classified process
+exit `6` for CI while still printing the complete report; the default is
+`never`.
 
 `query` answers upstream, downstream, path, containment, deployment, and
 resolved-View-coverage questions. Subjects and path targets use qualified
@@ -477,6 +480,7 @@ sources:
   "id": "garden-architecture",
   "name": "Garden Architecture",
   "policy": "governance.c4ml-policy.json",
+  "observations": "evidence/local-inventory.c4ml-observations.json",
   "sources": [
     "model/systems.c4ml",
     "relations/relationships.c4ml",
@@ -504,6 +508,13 @@ not `.c4ml` source and does not extend the draft grammar. For example:
   ]
 }
 ```
+
+The optional `observations` path selects one local version-one JSON observation
+set. Each observation has a qualified `subjectKey`, an `adapterId`, an ISO
+`observedAt` timestamp with timezone, a `confirmation` value of `confirmed`,
+`unreviewed`, or `disputed`, and either a presence or selected-field `claim`.
+The analysis report keeps observed evidence separate from authored evidence and
+never rewrites the architecture.
 
 The desktop loads this resource with the project and lists violations in
 **Output → Architecture findings**. It remains read-only in this first editor

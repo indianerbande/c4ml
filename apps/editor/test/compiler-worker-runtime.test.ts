@@ -272,6 +272,92 @@ describe("compiler worker runtime", () => {
     });
   });
 
+  it("reports confirmed drift and uncertainty from a project-local observation resource", async () => {
+    const observationSource = JSON.stringify({
+      version: 1,
+      id: "garden-runtime",
+      observations: [
+        {
+          id: "garden-name-drift",
+          subjectKey: "element:garden-pulse",
+          adapterId: "c4ml.local-inventory/v1",
+          observedAt: "2026-08-31T08:15:00Z",
+          confirmation: "confirmed",
+          claim: { kind: "field", field: "name", value: "Garden Runtime" },
+        },
+        {
+          id: "sensor-presence-unreviewed",
+          subjectKey: "element:sensor-post",
+          adapterId: "c4ml.local-inventory/v1",
+          observedAt: "2026-08-31T08:15:00Z",
+          confirmation: "unreviewed",
+          claim: { kind: "presence", value: true },
+        },
+      ],
+    });
+    const result = await analyzeWorkerRequest({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 462,
+      file: "architecture.c4ml",
+      source: initialC4mlSource,
+      project: {
+        version: 1,
+        id: "garden-analysis",
+        documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+        observations: {
+          uri: "evidence/garden.c4ml-observations.json",
+          source: observationSource,
+        },
+      },
+    });
+
+    expect(result.status).toBe("valid");
+    expect(result.report?.findings.map(({ ruleId, severity, evidence }) => ({
+      ruleId,
+      severity,
+      adapterId: evidence.find(({ origin }) => origin === "observed")?.adapterId,
+    }))).toEqual([
+      {
+        ruleId: "c4ml.observation.drift",
+        severity: "warning",
+        adapterId: "c4ml.local-inventory/v1",
+      },
+      {
+        ruleId: "c4ml.observation.uncertain",
+        severity: "information",
+        adapterId: "c4ml.local-inventory/v1",
+      },
+    ]);
+  });
+
+  it("returns a source-located worker diagnostic for invalid observations", async () => {
+    const result = await analyzeWorkerRequest({
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 463,
+      file: "architecture.c4ml",
+      source: initialC4mlSource,
+      project: {
+        version: 1,
+        id: "garden-analysis",
+        documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+        observations: {
+          uri: "evidence/garden.c4ml-observations.json",
+          source: '{"version":2}',
+        },
+      },
+    });
+
+    expect(result).toMatchObject({
+      status: "invalid",
+      diagnostics: [{
+        code: "C4ML-OBSERVATION-001",
+        source: { file: "evidence/garden.c4ml-observations.json" },
+      }],
+    });
+  });
+
   it("returns the same semantic difference as the portable comparison path", async () => {
     const renamedSource = initialC4mlSource.replace(
       'name = "Garden Pulse"',

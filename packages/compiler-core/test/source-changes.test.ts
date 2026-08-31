@@ -182,6 +182,30 @@ describe("portable multi-document source change sets", () => {
     );
   });
 
+  it("includes the optional architecture observation resource in the project revision", () => {
+    const projectWithObservations = createArchitectureProjectInput({
+      ...project,
+      observations: {
+        uri: "evidence/team.c4ml-observations.json",
+        source: '{"version":1,"id":"runtime","observations":[]}',
+      },
+    });
+    const changedObservations = createArchitectureProjectInput({
+      ...project,
+      observations: {
+        uri: "evidence/team.c4ml-observations.json",
+        source: '{"version":1,"id":"runtime","name":"Team","observations":[]}',
+      },
+    });
+
+    expect(createProjectRevision(projectWithObservations)).not.toEqual(
+      createProjectRevision(project),
+    );
+    expect(createProjectRevision(changedObservations)).not.toEqual(
+      createProjectRevision(projectWithObservations),
+    );
+  });
+
   it("validates the portable project change boundary structurally", () => {
     const changeSet = createProposedProjectSourceChangeSet(project, {
       id: "rename-system",

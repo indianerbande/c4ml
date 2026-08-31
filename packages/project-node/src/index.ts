@@ -15,6 +15,7 @@ import {
   createArchitectureProjectInput,
   createImplicitArchitectureProject,
   parseArchitectureProjectManifest,
+  parseArchitectureObservationSet,
   parseArchitecturePolicySet,
   type ArchitectureProjectInput,
 } from "@c4ml/compiler-core";
@@ -201,6 +202,49 @@ export async function loadArchitectureProject(
     policy = { uri, source };
   }
 
+  let observations: { readonly uri: string; readonly source: string } | undefined;
+  if (parsedManifest.manifest.observations !== undefined) {
+    const uri = parsedManifest.manifest.observations;
+    const observationPath = resolve(projectRoot, ...uri.split("/"));
+    let observationRealPath: string;
+    try {
+      observationRealPath = await realpath(observationPath);
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-008",
+        `Cannot read project observations ${observationPath}: ${errorMessage(error)}`,
+      );
+    }
+    const relativeRealPath = relative(rootRealPath, observationRealPath);
+    if (
+      relativeRealPath === ".." ||
+      relativeRealPath.split(sep)[0] === ".." ||
+      isAbsolute(relativeRealPath)
+    ) {
+      return sourceFailure(
+        "C4ML-PROJECT-NODE-009",
+        `Project observations "${uri}" resolve outside the project directory.`,
+      );
+    }
+    let source: string;
+    try {
+      source = await readFile(observationRealPath, "utf8");
+    } catch (error: unknown) {
+      return environmentFailure(
+        "C4ML-PROJECT-NODE-008",
+        `Cannot read project observations ${observationPath}: ${errorMessage(error)}`,
+      );
+    }
+    const parsedObservations = parseArchitectureObservationSet(source);
+    if (!parsedObservations.valid) {
+      return sourceFailure(
+        parsedObservations.error.code,
+        parsedObservations.error.message,
+      );
+    }
+    observations = { uri, source };
+  }
+
   return {
     valid: true,
     inputPath,
@@ -215,6 +259,7 @@ export async function loadArchitectureProject(
         : { description: parsedManifest.manifest.description }),
       documents,
       ...(policy === undefined ? {} : { policy }),
+      ...(observations === undefined ? {} : { observations }),
     }),
     documentPaths,
   };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ArchitectureProjectError,
+  architectureObservationResourceSuffix,
   architecturePolicyResourceSuffix,
   architectureProjectManifestName,
   createArchitectureProjectInput,
@@ -61,6 +62,7 @@ describe("portable architecture project contract", () => {
       id: "signal-garden",
       name: "Signal Garden",
       policy: "governance/signal-garden.c4ml-policy.json",
+      observations: "evidence/signal-garden.c4ml-observations.json",
       sources: ["views/context.c4ml", "model/systems.c4ml"],
     }));
 
@@ -71,12 +73,37 @@ describe("portable architecture project contract", () => {
         id: "signal-garden",
         name: "Signal Garden",
         policy: "governance/signal-garden.c4ml-policy.json",
+        observations: "evidence/signal-garden.c4ml-observations.json",
         sources: ["model/systems.c4ml", "views/context.c4ml"],
       },
       issues: [],
     });
     expect(architectureProjectManifestName).toBe("c4ml.project.json");
     expect(architecturePolicyResourceSuffix).toBe(".c4ml-policy.json");
+    expect(architectureObservationResourceSuffix).toBe(".c4ml-observations.json");
+  });
+
+  it("retains one project-local observation resource independently of authored source", () => {
+    const project = createArchitectureProjectInput({
+      id: "signal-garden",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      observations: {
+        uri: "evidence/signal-garden.c4ml-observations.json",
+        source: '{"version":1}',
+      },
+    });
+
+    expect(project.observations).toEqual({
+      uri: "evidence/signal-garden.c4ml-observations.json",
+      source: '{"version":1}',
+    });
+    expect(() => createArchitectureProjectInput({
+      id: "invalid-observations",
+      documents: [{ uri: "architecture.c4ml", text: "c4ml draft-1" }],
+      observations: { uri: "../observations.json", source: "{}" },
+    })).toThrowError(expect.objectContaining<Partial<ArchitectureProjectError>>({
+      issues: [expect.objectContaining({ code: "C4ML-PROJECT-007" })],
+    }));
   });
 
   it("retains one project-local policy resource independently of source order", () => {

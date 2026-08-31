@@ -29,6 +29,10 @@ export interface WorkbenchProjectSnapshot {
     readonly uri: string;
     readonly source: string;
   };
+  readonly observations?: {
+    readonly uri: string;
+    readonly source: string;
+  };
 }
 
 export interface WorkbenchDocumentState {
@@ -61,6 +65,7 @@ export class WorkbenchDocumentFacade {
   readonly projectName = signal<string | undefined>(undefined);
   readonly projectDescription = signal<string | undefined>(undefined);
   readonly projectPolicy = signal<WorkbenchProjectSnapshot["policy"]>(undefined);
+  readonly projectObservations = signal<WorkbenchProjectSnapshot["observations"]>(undefined);
   readonly projectMode = signal(false);
   readonly activeDocument = computed(
     () =>
@@ -108,12 +113,14 @@ export class WorkbenchDocumentFacade {
     const name = this.projectName();
     const description = this.projectDescription();
     const policy = this.projectPolicy();
+    const observations = this.projectObservations();
     return {
       version: 1,
       id: this.projectId(),
       ...(name === undefined ? {} : { name }),
       ...(description === undefined ? {} : { description }),
       ...(policy === undefined ? {} : { policy }),
+      ...(observations === undefined ? {} : { observations }),
       documents: this.projectDocuments().map(({ uri, source }) => ({
         uri,
         source,
@@ -135,6 +142,7 @@ export class WorkbenchDocumentFacade {
     this.projectName.set(state.project.name);
     this.projectDescription.set(state.project.description);
     this.projectPolicy.set(state.project.policy);
+    this.projectObservations.set(state.project.observations);
     this.projectMode.set(state.projectMode);
     this.projectDocuments.set(state.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(state.activeUri);
@@ -228,6 +236,9 @@ export class WorkbenchDocumentFacade {
           ...(result.project.policy === undefined
             ? {}
             : { policy: result.project.policy }),
+          ...(result.project.observations === undefined
+            ? {}
+            : { observations: result.project.observations }),
           documents: result.project.documents.map((document) => ({
             ...document,
             dirty: false,
@@ -382,6 +393,7 @@ export class WorkbenchDocumentFacade {
     readonly name?: string;
     readonly description?: string;
     readonly policy?: WorkbenchProjectSnapshot["policy"];
+    readonly observations?: WorkbenchProjectSnapshot["observations"];
     readonly projectMode: boolean;
     readonly documents: readonly WorkbenchProjectDocument[];
   }): void {
@@ -393,6 +405,7 @@ export class WorkbenchDocumentFacade {
     this.projectName.set(input.name);
     this.projectDescription.set(input.description);
     this.projectPolicy.set(input.policy);
+    this.projectObservations.set(input.observations);
     this.projectMode.set(input.projectMode);
     this.projectDocuments.set(input.documents.map((document) => ({ ...document })));
     this.activeDocumentUri.set(first.uri);

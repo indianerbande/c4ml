@@ -541,6 +541,9 @@ function registerDesktopIpc(): void {
         ) ||
         (loaded.project.policy !== undefined &&
           Buffer.byteLength(loaded.project.policy.source, "utf8") >
+            maxDesktopSourceBytes) ||
+        (loaded.project.observations !== undefined &&
+          Buffer.byteLength(loaded.project.observations.source, "utf8") >
             maxDesktopSourceBytes)
       ) {
         return {
@@ -568,6 +571,14 @@ function registerDesktopIpc(): void {
                 policy: {
                   uri: loaded.project.policy.uri,
                   source: loaded.project.policy.source,
+                },
+              }),
+          ...(loaded.project.observations === undefined
+            ? {}
+            : {
+                observations: {
+                  uri: loaded.project.observations.uri,
+                  source: loaded.project.observations.source,
                 },
               }),
           documents: loaded.project.documents.map(({ uri, text }) => {
@@ -1003,6 +1014,9 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
         const editorReady = document.querySelector('.source-editor-host') !== null;
         const previewReady = document.querySelector('.diagram') !== null;
         const pngExportReady = document.querySelector('.png-export-button') !== null;
+        if (!pngExportReady) {
+          document.querySelector('button[data-activity="export"]')?.click();
+        }
         const compilerReady = document.querySelector('.worker-state[data-phase="valid"]') !== null;
         const fontsReady = document.fonts.check('14px "IBM Plex Sans"') &&
           document.fonts.check('14px "IBM Plex Mono"');

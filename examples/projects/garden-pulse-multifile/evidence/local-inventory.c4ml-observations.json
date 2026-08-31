@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "garden-pulse-local-inventory",
+  "name": "Reviewed local inventory sample",
+  "observations": [
+    {
+      "id": "garden-pulse-runtime-name",
+      "subjectKey": "element:garden-pulse",
+      "adapterId": "c4ml.example.local-inventory/v1",
+      "observedAt": "2026-08-31T08:15:00Z",
+      "confirmation": "confirmed",
+      "claim": {
+        "kind": "field",
+        "field": "name",
+        "value": "Garden Runtime"
+      }
+    },
+    {
+      "id": "sensor-post-presence",
+      "subjectKey": "element:sensor-post",
+      "adapterId": "c4ml.example.local-inventory/v1",
+      "observedAt": "2026-08-31T08:15:00Z",
+      "confirmation": "unreviewed",
+      "claim": {
+        "kind": "presence",
+        "value": true
+      }
+    }
+  ]
+}

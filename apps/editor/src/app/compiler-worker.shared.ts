@@ -1,4 +1,4 @@
-export const compilerWorkerProtocolVersion = 14 as const;
+export const compilerWorkerProtocolVersion = 15 as const;
 
 export interface CompilerWorkerPosition {
   readonly offset: number;

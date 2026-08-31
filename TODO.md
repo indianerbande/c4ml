@@ -2,7 +2,7 @@
 
 Status: Active roadmap
 
-Date: 2026-08-30
+Date: 2026-08-31
 
 `SPEC.md` defines product behavior and architecture. `TESTING.md` defines the
 evidence required to claim that behavior works. This file orders implementation
@@ -327,13 +327,26 @@ policy-resource editing in Monaco.
 
 ### Slice 3.4 — claimed versus observed architecture
 
-- [ ] attach origin, confirmation state, observation time, and adapter identity
+- [x] attach origin, confirmation state, observation time, and adapter identity
       to evidence without changing core C4 semantics;
-- [ ] compare authored claims with imported observations;
-- [ ] report drift and uncertainty instead of silently reconciling conflicts;
+- [x] compare authored claims with imported observations;
+- [x] report drift and uncertainty instead of silently reconciling conflicts;
       and
-- [ ] keep repository, cloud, runtime, and monitoring integrations optional and
+- [x] keep repository, cloud, runtime, and monitoring integrations optional and
       replaceable.
+
+The portable version-one observation contract compares explicit presence or
+selected-field claims against the canonical snapshot. Every observation keeps
+its adapter identity, normalized observation time, and `confirmed`,
+`unreviewed`, or `disputed` state. Only a confirmed mismatch becomes drift;
+unreviewed or disputed input remains uncertainty even when its value happens to
+match authored source. An explicit project may select one bounded local
+`.c4ml-observations.json` resource. Filesystem and Git-revision loading,
+desktop transport, worker evaluation, CLI analysis, deterministic project
+revision participation, and the original disagreeing Garden Pulse fixture are
+implemented without network access. No scanner, hosted-provider format,
+monitoring connection, source rewrite, or public `.c4ml` observation syntax is
+accepted by this slice.
 
 Pillar 3 is not complete until findings are deterministic, source-located,
 explainable, equivalent in editor and CLI, and independent of network access.
