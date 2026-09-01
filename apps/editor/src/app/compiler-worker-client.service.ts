@@ -196,8 +196,11 @@ export class CompilerWorkerClient {
     this.#worker.postMessage(request);
   }
 
-  generateSystemContext(answers: C4mlSystemContextWizardAnswers): void {
-    const request = this.#wizardSession.begin(answers);
+  generateSystemContext(
+    answers: C4mlSystemContextWizardAnswers,
+    extension?: { readonly file: string; readonly project: CompilerWorkerProject },
+  ): void {
+    const request = this.#wizardSession.begin(answers, extension);
     this.wizard.set(this.#wizardSession.state);
     this.#worker.postMessage(request);
   }

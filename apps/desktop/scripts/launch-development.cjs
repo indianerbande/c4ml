@@ -1,4 +1,5 @@
 const {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -6,12 +7,19 @@ const {
   rmSync,
   writeFileSync,
 } = require("node:fs");
+const { createHash } = require("node:crypto");
 const { resolve } = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const desktopRoot = resolve(__dirname, "..");
 const electronExecutable = require("electron");
 const electronVersion = require("electron/package.json").version;
+const desktopVersion = require("../package.json").version;
+const desktopBuildVersion = desktopVersion.replace("-beta.", ".");
+const applicationIcon = resolve(__dirname, "../assets/icon.icns");
+const developmentBundleVersion = `${electronVersion}:${desktopVersion}:${createHash("sha256")
+  .update(readFileSync(applicationIcon))
+  .digest("hex")}`;
 const applicationArguments = process.argv.slice(2).filter(
   (argument) => argument !== "--prepare-only",
 );
@@ -52,7 +60,7 @@ function prepareMacDevelopmentBundle() {
   if (
     existsSync(targetExecutable) &&
     existsSync(versionMarker) &&
-    readFileSync(versionMarker, "utf8").trim() === electronVersion
+    readFileSync(versionMarker, "utf8").trim() === developmentBundleVersion
   ) {
     return targetExecutable;
   }
@@ -78,6 +86,13 @@ function prepareMacDevelopmentBundle() {
       "CFBundleIdentifier",
       "org.c4ml.desktop.development",
     );
+    setPlistValue(plist, "CFBundleShortVersionString", desktopVersion);
+    setPlistValue(plist, "CFBundleVersion", desktopBuildVersion);
+    setPlistValue(plist, "CFBundleIconFile", "c4thedral.icns");
+    copyFileSync(
+      applicationIcon,
+      resolve(temporaryBundle, "Contents/Resources/c4thedral.icns"),
+    );
     runRequired(
       "/usr/bin/codesign",
       ["--sign", "-", "--force", "--deep", temporaryBundle],
@@ -86,7 +101,7 @@ function prepareMacDevelopmentBundle() {
 
     rmSync(targetBundle, { recursive: true, force: true });
     renameSync(temporaryBundle, targetBundle);
-    writeFileSync(versionMarker, `${electronVersion}\n`, "utf8");
+    writeFileSync(versionMarker, `${developmentBundleVersion}\n`, "utf8");
   } catch (error) {
     rmSync(temporaryBundle, { recursive: true, force: true });
     throw error;

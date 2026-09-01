@@ -66,4 +66,12 @@ describe("system context wizard template", () => {
       'viewTitle: "Systemkontext — Onlineshop"',
     );
   });
+
+  it("offers an explicit, source-preserving existing-document mode", () => {
+    expect(template).toContain('i18n.t("wizard.target.extend")');
+    expect(template).toContain("selectMode('extend')");
+    expect(template).toContain('mode() === "extend" ? "wizard.extend" : "wizard.create"');
+    expect(component).toContain('readonly mode = signal<"extend" | "new">("new")');
+    expect(component).toContain("this.compiler.generateSystemContext(");
+  });
 });

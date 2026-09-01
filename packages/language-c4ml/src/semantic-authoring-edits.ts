@@ -10,6 +10,8 @@ import { URI } from "langium";
 import type {
   C4mlDocument,
   ElementDeclaration,
+  EnvironmentDeclaration,
+  RelationshipDeclaration,
   ViewDeclaration,
 } from "./generated/ast.js";
 import { createC4mlDraftServices } from "./services.js";
@@ -48,6 +50,45 @@ export interface C4mlSemanticConnectionOption {
   readonly targetIds: readonly string[];
 }
 
+export type C4mlSemanticDeploymentItemKind =
+  | "container-instance"
+  | "deployment-node"
+  | "infrastructure-node"
+  | "software-system-instance";
+
+export interface C4mlSemanticDeploymentNodeOption {
+  readonly id: string;
+  readonly label: string;
+}
+
+export interface C4mlSemanticDeploymentElementOption {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: "container" | "software-system";
+}
+
+export interface C4mlSemanticDeploymentAuthoringContext {
+  readonly environmentId: string;
+  readonly environmentLabel: string;
+  readonly createActions: readonly C4mlSemanticDeploymentItemKind[];
+  readonly nodes: readonly C4mlSemanticDeploymentNodeOption[];
+  readonly elements: readonly C4mlSemanticDeploymentElementOption[];
+}
+
+export interface C4mlSemanticDynamicRelationshipOption {
+  readonly id: string;
+  readonly sourceId: string;
+  readonly sourceLabel: string;
+  readonly targetId: string;
+  readonly targetLabel: string;
+  readonly intent: string;
+}
+
+export interface C4mlSemanticDynamicAuthoringContext {
+  readonly nextOrder: number;
+  readonly relationships: readonly C4mlSemanticDynamicRelationshipOption[];
+}
+
 export interface C4mlSemanticAuthoringContext {
   readonly viewId: string;
   readonly viewKind: C4mlSemanticViewKind;
@@ -55,6 +96,8 @@ export interface C4mlSemanticAuthoringContext {
   readonly createActions: readonly C4mlSemanticCreateAction[];
   readonly elements: readonly C4mlSemanticAuthoringElement[];
   readonly connectionOptions: readonly C4mlSemanticConnectionOption[];
+  readonly deployment?: C4mlSemanticDeploymentAuthoringContext;
+  readonly dynamic?: C4mlSemanticDynamicAuthoringContext;
 }
 
 export type C4mlSemanticEditOperation =
@@ -78,6 +121,25 @@ export type C4mlSemanticEditOperation =
       readonly intent: string;
       readonly technology?: string;
       readonly protocol?: string;
+    }
+  | {
+      readonly kind: "create-deployment-item";
+      readonly itemKind: C4mlSemanticDeploymentItemKind;
+      readonly itemId: string;
+      readonly name?: string;
+      readonly responsibility?: string;
+      readonly technology?: string;
+      readonly parentNodeId?: string;
+      readonly nodeId?: string;
+      readonly elementId?: string;
+    }
+  | {
+      readonly kind: "create-dynamic-interaction";
+      readonly interactionId: string;
+      readonly order: number;
+      readonly relationshipId: string;
+      readonly intent: string;
+      readonly parallelGroup?: string;
     };
 
 export interface C4mlSemanticEditRequest {
@@ -198,10 +260,7 @@ export async function proposeC4mlSemanticEdit(
   const issue = validateOperation(parsed, context, request.operation);
   if (issue !== undefined) return proposalInvalid(issue.code, issue.message);
 
-  const generated =
-    request.operation.kind === "create-element"
-      ? createElementEdit(parsed, owner, request.operation)
-      : createRelationshipEdit(parsed, owner, request.operation);
+  const generated = createOperationEdit(parsed, owner, context, request.operation);
   if (generated === undefined) {
     return proposalInvalid(
       "C4ML-AUTHORING-205",
@@ -211,19 +270,7 @@ export async function proposeC4mlSemanticEdit(
   const changeSet = createProposedProjectSourceChangeSet(project, {
     id: request.id,
     intent: request.intent,
-    affectedIds:
-      request.operation.kind === "create-element"
-        ? [
-            request.operation.elementId,
-            ...(request.operation.ownerId === undefined
-              ? []
-              : [request.operation.ownerId]),
-          ]
-        : [
-            request.operation.relationshipId,
-            request.operation.sourceId,
-            request.operation.targetId,
-          ],
+    affectedIds: affectedIdsFor(request.operation),
     edits: [{ documentUri: generated.documentUri, ...generated.edit }],
   });
   const application = applyProjectSourceChangeSet(project, changeSet);
@@ -265,6 +312,12 @@ function createContext(
     }))
     .filter(({ targetIds }) => targetIds.length > 0)
     .sort((left, right) => compareText(left.sourceId, right.sourceId));
+  const deployment = viewKind === "deployment"
+    ? deploymentContext(documents, owner.view, allElements)
+    : undefined;
+  const dynamic = viewKind === "dynamic"
+    ? dynamicContext(documents, owner.view, allElements)
+    : undefined;
   return {
     viewId: owner.view.name,
     viewKind,
@@ -272,6 +325,97 @@ function createContext(
     createActions,
     elements: eligible.sort((left, right) => compareText(left.id, right.id)),
     connectionOptions,
+    ...(deployment === undefined ? {} : { deployment }),
+    ...(dynamic === undefined ? {} : { dynamic }),
+  };
+}
+
+function deploymentContext(
+  documents: readonly ParsedProjectDocument[],
+  view: ViewDeclaration,
+  elements: readonly ElementDeclaration[],
+): C4mlSemanticDeploymentAuthoringContext | undefined {
+  const environmentId = view.properties.find(
+    ({ $type }) => $type === "ViewEnvironmentProperty",
+  );
+  if (environmentId?.$type !== "ViewEnvironmentProperty") return undefined;
+  const environment = documents.flatMap(
+    ({ ast }) => ast.deployment?.environments ?? [],
+  ).find(({ name }) => name === environmentId.value.$refText);
+  if (environment === undefined) return undefined;
+  const systemsProperty = view.properties.find(
+    ({ $type }) => $type === "ViewSystemsProperty",
+  );
+  const selectedSystems = new Set(
+    systemsProperty?.$type === "ViewSystemsProperty"
+      ? systemsProperty.values.map(({ $refText }) => $refText)
+      : [],
+  );
+  const deployable = elements.flatMap<C4mlSemanticDeploymentElementOption>((element) => {
+    if (element.$type === "SoftwareSystemDeclaration" && selectedSystems.has(element.name)) {
+      return [{ id: element.name, label: elementLabel(element), kind: "software-system" as const }];
+    }
+    if (
+      element.$type === "ContainerDeclaration" &&
+      selectedSystems.has(element.owner.$refText)
+    ) {
+      return [{ id: element.name, label: elementLabel(element), kind: "container" as const }];
+    }
+    return [];
+  }).sort((left, right) => compareText(left.id, right.id));
+  const nodes = environment.items.flatMap((item) =>
+    item.$type === "DeploymentNodeDeclaration"
+      ? [{ id: item.name, label: deploymentItemLabel(item) }]
+      : [],
+  ).sort((left, right) => compareText(left.id, right.id));
+  return {
+    environmentId: environment.name,
+    environmentLabel: environmentLabel(environment),
+    createActions: [
+      "deployment-node",
+      ...(nodes.length === 0 ? [] : ["infrastructure-node" as const]),
+      ...(nodes.length === 0 || !deployable.some(({ kind }) => kind === "software-system")
+        ? []
+        : ["software-system-instance" as const]),
+      ...(nodes.length === 0 || !deployable.some(({ kind }) => kind === "container")
+        ? []
+        : ["container-instance" as const]),
+    ],
+    nodes,
+    elements: deployable,
+  };
+}
+
+function dynamicContext(
+  documents: readonly ParsedProjectDocument[],
+  view: ViewDeclaration,
+  elements: readonly ElementDeclaration[],
+): C4mlSemanticDynamicAuthoringContext {
+  const elementById = new Map(elements.map((element) => [element.name, element]));
+  const relationships = documents.flatMap(({ ast }) => ast.relations?.relationships ?? [])
+    .flatMap((relationship) => {
+      const details = relationshipDetails(relationship);
+      if (details === undefined) return [];
+      const source = elementById.get(details.sourceId);
+      const target = elementById.get(details.targetId);
+      if (!isDynamicEndpoint(source) || !isDynamicEndpoint(target)) return [];
+      return [{
+        id: relationship.name,
+        sourceId: source.name,
+        sourceLabel: elementLabel(source),
+        targetId: target.name,
+        targetLabel: elementLabel(target),
+        intent: details.intent,
+      }];
+    })
+    .sort((left, right) => compareText(left.id, right.id));
+  const orders = view.interactions.flatMap((interaction) => {
+    const order = interaction.properties.find(({ $type }) => $type === "InteractionOrderProperty");
+    return order?.$type === "InteractionOrderProperty" ? [order.value] : [];
+  });
+  return {
+    nextOrder: orders.length === 0 ? 1 : Math.max(...orders) + 1,
+    relationships,
   };
 }
 
@@ -365,6 +509,9 @@ function validateOperation(
   const relationships = documents.flatMap(
     ({ ast }) => ast.relations?.relationships ?? [],
   );
+  const deploymentItems = documents.flatMap(({ ast }) =>
+    ast.deployment?.environments.flatMap(({ items }) => items) ?? [],
+  );
   if (operation.kind === "create-element") {
     if (!identifierPattern.test(operation.elementId)) {
       return issue("C4ML-AUTHORING-203", "The element identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
@@ -403,6 +550,78 @@ function validateOperation(
     }
     return undefined;
   }
+  if (operation.kind === "create-deployment-item") {
+    if (context.deployment === undefined) {
+      return issue("C4ML-AUTHORING-203", "Deployment topology can be changed only from an active Deployment View.");
+    }
+    if (!context.deployment.createActions.includes(operation.itemKind)) {
+      return issue("C4ML-AUTHORING-203", `A ${operation.itemKind} cannot be created in this Deployment View context.`);
+    }
+    if (!identifierPattern.test(operation.itemId)) {
+      return issue("C4ML-AUTHORING-203", "The deployment item identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
+    }
+    if (deploymentItems.some(({ name }) => name === operation.itemId)) {
+      return issue("C4ML-AUTHORING-204", `Deployment item identifier "${operation.itemId}" is already in use.`);
+    }
+    const nodeIds = context.deployment.nodes.map(({ id }) => id);
+    if (operation.itemKind === "deployment-node") {
+      if (!operation.name?.trim() || !operation.responsibility?.trim() || !operation.technology?.trim()) {
+        return issue("C4ML-AUTHORING-203", "Deployment Nodes require a name, responsibility, and technology.");
+      }
+      if (operation.parentNodeId !== undefined && !nodeIds.includes(operation.parentNodeId)) {
+        return issue("C4ML-AUTHORING-203", "The selected parent Deployment Node does not belong to this environment.");
+      }
+      return undefined;
+    }
+    if (operation.nodeId === undefined || !nodeIds.includes(operation.nodeId)) {
+      return issue("C4ML-AUTHORING-203", "Select a Deployment Node from the active environment.");
+    }
+    if (operation.itemKind === "infrastructure-node") {
+      return !operation.name?.trim() ||
+        !operation.responsibility?.trim() ||
+        !operation.technology?.trim()
+        ? issue("C4ML-AUTHORING-203", "Infrastructure Nodes require a name, responsibility, and technology.")
+        : undefined;
+    }
+    const expectedKind = operation.itemKind === "container-instance"
+      ? "container"
+      : "software-system";
+    if (!context.deployment.elements.some(
+      ({ id, kind }) => id === operation.elementId && kind === expectedKind,
+    )) {
+      return issue("C4ML-AUTHORING-203", "The selected architecture element is outside this Deployment View's Software System scope.");
+    }
+    return undefined;
+  }
+  if (operation.kind === "create-dynamic-interaction") {
+    if (context.dynamic === undefined) {
+      return issue("C4ML-AUTHORING-203", "Dynamic interactions can be changed only from an active Dynamic View.");
+    }
+    if (!identifierPattern.test(operation.interactionId)) {
+      return issue("C4ML-AUTHORING-203", "The interaction identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
+    }
+    const view = documents.flatMap(({ ast }) => ast.views)
+      .find(({ name }) => name === context.viewId);
+    if (view?.interactions.some(({ name }) => name === operation.interactionId)) {
+      return issue("C4ML-AUTHORING-204", `Interaction identifier "${operation.interactionId}" is already in use in this Dynamic View.`);
+    }
+    if (!Number.isSafeInteger(operation.order) || operation.order <= 0) {
+      return issue("C4ML-AUTHORING-203", "A Dynamic interaction requires a positive integer order.");
+    }
+    if (operation.intent.trim().length === 0) {
+      return issue("C4ML-AUTHORING-203", "A Dynamic interaction requires a meaningful description.");
+    }
+    if (!context.dynamic.relationships.some(({ id }) => id === operation.relationshipId)) {
+      return issue("C4ML-AUTHORING-203", "Select a directed static relationship that is valid for Dynamic interactions.");
+    }
+    if (
+      operation.parallelGroup !== undefined &&
+      !identifierPattern.test(operation.parallelGroup)
+    ) {
+      return issue("C4ML-AUTHORING-203", "A parallel group must be a stable identifier.");
+    }
+    return undefined;
+  }
   if (!identifierPattern.test(operation.relationshipId)) {
     return issue("C4ML-AUTHORING-203", "The connection identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
   }
@@ -419,6 +638,42 @@ function validateOperation(
     return issue("C4ML-AUTHORING-203", "The selected source and target are not a valid connection in this C4 view context.");
   }
   return undefined;
+}
+
+function createOperationEdit(
+  documents: readonly ParsedProjectDocument[],
+  owner: ContextOwner,
+  context: C4mlSemanticAuthoringContext,
+  operation: C4mlSemanticEditOperation,
+) {
+  switch (operation.kind) {
+    case "create-element":
+      return createElementEdit(documents, owner, operation);
+    case "create-relationship":
+      return createRelationshipEdit(documents, owner, operation);
+    case "create-deployment-item":
+      return createDeploymentItemEdit(documents, context, operation);
+    case "create-dynamic-interaction":
+      return createDynamicInteractionEdit(owner, context, operation);
+  }
+}
+
+function affectedIdsFor(operation: C4mlSemanticEditOperation): readonly string[] {
+  switch (operation.kind) {
+    case "create-element":
+      return [operation.elementId, ...(operation.ownerId === undefined ? [] : [operation.ownerId])];
+    case "create-relationship":
+      return [operation.relationshipId, operation.sourceId, operation.targetId];
+    case "create-deployment-item":
+      return [
+        operation.itemId,
+        ...(operation.parentNodeId === undefined ? [] : [operation.parentNodeId]),
+        ...(operation.nodeId === undefined ? [] : [operation.nodeId]),
+        ...(operation.elementId === undefined ? [] : [operation.elementId]),
+      ];
+    case "create-dynamic-interaction":
+      return [operation.interactionId, operation.relationshipId];
+  }
 }
 
 function createElementEdit(
@@ -451,6 +706,46 @@ function createRelationshipEdit(
     ? insertRelationsBlock(target.source, target.ast, proposedText)
     : insertIntoBlock(target.source, target.ast.relations.$cstNode, proposedText);
   return edit === undefined ? undefined : { documentUri: target.uri, edit, proposedText };
+}
+
+function createDeploymentItemEdit(
+  documents: readonly ParsedProjectDocument[],
+  context: C4mlSemanticAuthoringContext,
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-deployment-item" }>,
+) {
+  const environmentId = context.deployment?.environmentId;
+  if (environmentId === undefined) return undefined;
+  const target = documents.flatMap((document) =>
+    (document.ast.deployment?.environments ?? []).map((environment) => ({ document, environment })),
+  ).find(({ environment }) => environment.name === environmentId);
+  if (target === undefined) return undefined;
+  const proposedText = deploymentItemDeclaration(operation);
+  const edit = insertIntoBlock(
+    target.document.source,
+    target.environment.$cstNode,
+    proposedText,
+  );
+  return edit === undefined
+    ? undefined
+    : { documentUri: target.document.uri, edit, proposedText };
+}
+
+function createDynamicInteractionEdit(
+  owner: ContextOwner,
+  context: C4mlSemanticAuthoringContext,
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-dynamic-interaction" }>,
+) {
+  const relationship = context.dynamic?.relationships.find(
+    ({ id }) => id === operation.relationshipId,
+  );
+  if (relationship === undefined) return undefined;
+  const proposedText = dynamicInteractionDeclaration(operation, relationship);
+  const edit = owner.view.layout?.$cstNode === undefined
+    ? insertIntoBlock(owner.document.source, owner.view.$cstNode, proposedText)
+    : insertBeforeNode(owner.document.source, owner.view.layout.$cstNode, proposedText);
+  return edit === undefined
+    ? undefined
+    : { documentUri: owner.document.uri, edit, proposedText };
 }
 
 function elementDeclaration(
@@ -503,6 +798,45 @@ function relationshipDeclaration(
   ].join("\n");
 }
 
+function deploymentItemDeclaration(
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-deployment-item" }>,
+): string {
+  if (operation.itemKind === "software-system-instance") {
+    return `    system-instance ${operation.itemId} of ${operation.elementId} on ${operation.nodeId}`;
+  }
+  if (operation.itemKind === "container-instance") {
+    return `    container-instance ${operation.itemId} of ${operation.elementId} on ${operation.nodeId}`;
+  }
+  const head = operation.itemKind === "deployment-node"
+    ? `node ${operation.itemId}${operation.parentNodeId === undefined ? "" : ` inside ${operation.parentNodeId}`}`
+    : `infrastructure ${operation.itemId} on ${operation.nodeId}`;
+  return [
+    `    ${head} {`,
+    `      name = ${JSON.stringify(operation.name?.trim() ?? "")}`,
+    `      responsibility = ${JSON.stringify(operation.responsibility?.trim() ?? "")}`,
+    `      technology = ${JSON.stringify(operation.technology?.trim() ?? "")}`,
+    "    }",
+  ].join("\n");
+}
+
+function dynamicInteractionDeclaration(
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-dynamic-interaction" }>,
+  relationship: C4mlSemanticDynamicRelationshipOption,
+): string {
+  return [
+    `  interaction ${operation.interactionId} {`,
+    `    order = ${operation.order}`,
+    ...(operation.parallelGroup?.trim()
+      ? [`    parallel = ${operation.parallelGroup.trim()}`]
+      : []),
+    `    from = ${relationship.sourceId}`,
+    `    to = ${relationship.targetId}`,
+    `    intent = ${JSON.stringify(operation.intent.trim())}`,
+    `    relation = ${relationship.id}`,
+    "  }",
+  ].join("\n");
+}
+
 function insertIntoBlock(
   source: string,
   node: { readonly offset: number; readonly end: number; readonly text: string } | undefined,
@@ -515,6 +849,21 @@ function insertIntoBlock(
   const eol = lineEnding(source);
   const leading = source.slice(0, closeOffset).endsWith("\n") ? "" : eol;
   return { startOffset: closeOffset, endOffset: closeOffset, text: `${leading}${declaration.replaceAll("\n", eol)}${eol}` };
+}
+
+function insertBeforeNode(
+  source: string,
+  node: { readonly offset: number } | undefined,
+  declaration: string,
+) {
+  if (node === undefined) return undefined;
+  const eol = lineEnding(source);
+  const lineStart = source.lastIndexOf("\n", Math.max(0, node.offset - 1)) + 1;
+  return {
+    startOffset: lineStart,
+    endOffset: lineStart,
+    text: `${declaration.replaceAll("\n", eol)}${eol}${eol}`,
+  };
 }
 
 function insertRelationsBlock(
@@ -612,6 +961,39 @@ function elementOwnerId(element: ElementDeclaration): string | undefined {
 function elementLabel(element: ElementDeclaration): string {
   const name = element.properties.find(({ $type }) => $type === "DisplayNameProperty");
   return name?.$type === "DisplayNameProperty" ? name.value : element.name;
+}
+
+function environmentLabel(environment: EnvironmentDeclaration): string {
+  const name = environment.properties.find(({ $type }) => $type === "DisplayNameProperty");
+  return name?.$type === "DisplayNameProperty" ? name.value : environment.name;
+}
+
+function deploymentItemLabel(
+  item: Extract<EnvironmentDeclaration["items"][number], { readonly $type: "DeploymentNodeDeclaration" }>,
+): string {
+  const name = item.properties.find(({ $type }) => $type === "DisplayNameProperty");
+  return name?.$type === "DisplayNameProperty" ? name.value : item.name;
+}
+
+function relationshipDetails(
+  relationship: RelationshipDeclaration,
+): { readonly sourceId: string; readonly targetId: string; readonly intent: string } | undefined {
+  const from = relationship.properties.find(({ $type }) => $type === "RelationshipFromProperty");
+  const to = relationship.properties.find(({ $type }) => $type === "RelationshipToProperty");
+  const intent = relationship.properties.find(({ $type }) => $type === "RelationshipIntentProperty");
+  return from?.$type === "RelationshipFromProperty" &&
+    to?.$type === "RelationshipToProperty" &&
+    intent?.$type === "RelationshipIntentProperty"
+    ? { sourceId: from.value.$refText, targetId: to.value.$refText, intent: intent.value }
+    : undefined;
+}
+
+function isDynamicEndpoint(
+  element: ElementDeclaration | undefined,
+): element is ElementDeclaration {
+  return element?.$type === "SoftwareSystemDeclaration" ||
+    element?.$type === "ContainerDeclaration" ||
+    element?.$type === "ComponentDeclaration";
 }
 
 function lineEnding(source: string): "\n" | "\r\n" {

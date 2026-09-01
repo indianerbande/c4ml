@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "id": "garden-pulse-governance",
+  "name": "Garden Pulse review policy",
+  "policies": [
+    {
+      "id": "garden-pulse.owner",
+      "title": "Garden Pulse requires a reviewed owner",
+      "severity": "warning",
+      "kind": "required-metadata",
+      "subjectKeys": ["element:garden-pulse"],
+      "requirements": [
+        {
+          "kind": "metadata",
+          "key": "owner"
+        }
+      ]
+    }
+  ]
+}

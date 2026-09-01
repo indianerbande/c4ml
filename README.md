@@ -164,6 +164,9 @@ Implemented and automatically validated:
   context-valid element creation and relationship pairs in System Landscape,
   System Context, Container, Component, and Code views, with candidate
   source/SVG review and one-step apply/undo;
+- context-specialized authoring in Component and Code views, plus dedicated
+  Deployment-topology and ordered Dynamic-interaction forms over worker-owned
+  environment, scope, and static-relationship rules;
 - an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
   renderer Web Worker entry points behind the shared layout contract;
 - locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
@@ -190,13 +193,11 @@ Not implemented yet:
 - a frozen author-facing theme grammar;
 - the public source grammar for custom shape definitions and assignments;
 - the remaining production editor capabilities: independently selectable
-  Arrowheads, accessibility validation, and dedicated semantic authoring for
-  Dynamic interactions and Deployment topology;
-- release identity and distribution work: a final product version and icon,
-  Apple Developer ID signing/notarization, Windows code signing, and native
-  Windows and Linux build-and-run validation; and
-- the complete guided modeling wizard for Components, Code, deployments,
-  Visual Groups, and safe extension of existing documents.
+  Arrowheads and complete accessibility validation;
+- public distribution work: Apple Developer ID signing/notarization, Windows
+  code signing, and native Windows and Linux build-and-run validation; and
+- broader guided modeling flows for Visual Groups and multi-document target
+  selection beyond the implemented source-preserving extension path.
 
 The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
 [`examples/draft`](examples/draft) remains a **design preview**. Bounded System
@@ -261,6 +262,7 @@ the accepted Node.js 24.x line; see [`PLATFORMS.md`](PLATFORMS.md).
 ```shell
 pnpm install
 pnpm run check
+pnpm run check:architecture-proof
 pnpm run demo:render
 pnpm run desktop:start
 ```
@@ -286,6 +288,7 @@ Create local distributable artifacts with:
 ```shell
 pnpm run desktop:package
 pnpm run desktop:make
+pnpm run check:native-release
 ```
 
 On macOS, the packaged application appears below `build/desktop/` and `make`
@@ -295,6 +298,9 @@ downloads. The Windows Squirrel maker is configured to produce a Setup EXE on
 Windows. Linux produces an unpacked app and portable ZIP. Build every target on
 its native host; the Windows and Linux paths still require native validation.
 See [PLATFORMS.md](PLATFORMS.md) for prerequisites and the verification matrix.
+On a release host, `pnpm run release:native` runs the full source gate, packaged
+smoke, makers, and artifact verification in one sequence and writes a local
+hash manifest below `build/desktop/release-evidence/`.
 
 The experimental local CLI builds its required workspace packages and runs
 through the same language and compiler core:

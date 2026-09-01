@@ -402,8 +402,59 @@ implemented without network access. No scanner, hosted-provider format,
 monitoring connection, source rewrite, or public `.c4ml` observation syntax is
 accepted by this slice.
 
-Pillar 3 is not complete until findings are deterministic, source-located,
-explainable, equivalent in editor and CLI, and independent of network access.
+Pillar 3 is complete. The permanent `check:architecture-proof` gate evaluates
+one original multifile project with a local policy and attributed observations
+twice through the CLI. It requires byte-equivalent reports, source-located and
+explained policy, drift, and uncertainty findings, the classified warning exit,
+retained observation provenance, an unchanged canonical authored value, and an
+unchanged project digest. Compiler-worker parity and source navigation remain
+covered by the editor test suite and packaged-workbench evidence.
+
+## Beta release gate
+
+- [x] close Pillar 3 with one permanent deterministic policy-and-observation
+      acceptance command;
+- [x] compose the native host gate as `release:native` and record
+      product/version-specific artifact hashes through `check:native-release`;
+- [x] validate the current macOS arm64 packaged application, detached preview,
+      native PNG path, ad-hoc signature, DMG, and ZIP under Node.js 24.15.0;
+- [ ] run the current native gate and installation round trip on Windows x64;
+- [ ] run the current native gate and portable ZIP round trip on Linux;
+- [x] set the first beta product version, original cross-platform application
+      icon, package metadata, and release notes;
+- [ ] configure the Apple and Windows release signing identities; and
+- [ ] perform Developer ID notarization and Windows release signing before a
+      public download is described as a release artifact.
+
+The earlier standalone Windows test proved that the application can install,
+build, and run there, but it predates this exact release branch and does not
+replace fresh Squirrel evidence. macOS evidence cannot close either remaining
+native row.
+
+## Next authoring block
+
+- [x] let the guided System Context/Container assistant explicitly choose
+      between a new document and a source-preserving extension of the active
+      valid document;
+- [x] generate the extension as one revision-checked project change set,
+      reject project-wide ID collisions, and retain unrelated source byte for
+      byte;
+- [x] derive guided Component and Code questions from the selected owner and
+      active View context;
+- [x] add the dedicated Deployment-topology authoring gesture; and
+- [x] add the dedicated Dynamic-interaction authoring gesture.
+
+The architecture action now specializes itself by active View. Component and
+Code retain the scope-derived owner with explicit guidance. Deployment offers
+environment-bounded nodes, infrastructure, and scoped instances. Dynamic adds
+ordered occurrences only through an existing directed static Relationship.
+All three remain deterministic source change sets with candidate compilation,
+explicit source review, and one-step undo.
+
+The bounded extension slice intentionally requires existing `model` and
+`relations` blocks. Creating missing top-level sections and choosing a target
+document in a multifile project remain later interactions rather than hidden
+heuristics.
 
 ## Decisions deliberately deferred
 

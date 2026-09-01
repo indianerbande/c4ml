@@ -43,6 +43,21 @@ describe("semantic graphical authoring", () => {
     expect(template).toContain('i18n.t("semanticEditor.stableId")');
     expect(template).toContain("selectedCreateAction()?.ownerLabel");
     expect(template).toContain('i18n.t("semanticEditor.contextVisibilityHint")');
+    expect(template).toContain('i18n.t("semanticEditor.componentContextHint")');
+    expect(template).toContain('i18n.t("semanticEditor.codeContextHint")');
+  });
+
+  it("uses dedicated context forms for Deployment topology and Dynamic interactions", () => {
+    expect(template).toContain('@if (editorKind() === "deployment")');
+    expect(template).toContain('i18n.t("deploymentEditor.environment")');
+    expect(template).toContain('selectDeploymentItemKind($event)');
+    expect(template).toContain('i18n.t("deploymentEditor.architectureElement")');
+    expect(template).toContain('@else if (editorKind() === "dynamic")');
+    expect(template).toContain('selectDynamicRelationship($event)');
+    expect(template).toContain('i18n.t("dynamicEditor.order")');
+    expect(template).toContain('i18n.t("dynamicEditor.parallelGroup")');
+    expect(messages).toContain("Die statische Architektur bleibt maßgeblich");
+    expect(messages).toContain("Static architecture remains authoritative");
   });
 
   it("previews worker-owned source and supports one explicit undo", () => {

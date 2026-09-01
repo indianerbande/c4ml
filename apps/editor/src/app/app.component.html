@@ -1299,6 +1299,8 @@
 
 @if (wizardOpen()) {
   <c4ml-system-context-wizard
+    [extensionProject]="compiler.state().phase === 'valid' ? documents.projectSnapshot() : undefined"
+    [extensionFile]="compiler.state().phase === 'valid' ? activeDocumentUri() : undefined"
     (applied)="applyWizard($event)"
     (cancelled)="cancelWizard()"
   />

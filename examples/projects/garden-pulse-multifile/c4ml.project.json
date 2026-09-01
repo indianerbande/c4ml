@@ -3,6 +3,7 @@
   "id": "garden-pulse",
   "name": "Garden Pulse Architecture",
   "description": "Original C4ML multifile project demonstrating one shared model and one view.",
+  "policy": "governance/garden.c4ml-policy.json",
   "observations": "evidence/local-inventory.c4ml-observations.json",
   "glossary": "knowledge/garden.c4ml-glossary.json",
   "narratives": ["docs/overview.c4ml-narrative.md"],

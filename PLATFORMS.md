@@ -1,7 +1,8 @@
 # C4thedral desktop platform builds
 
-Status: Accepted build contract; current source gate and packaged macOS smoke
-validated, fresh installers plus Windows and Linux native validation pending
+Status: Accepted build contract; current macOS arm64 package, smoke, DMG, and
+ZIP validated under Node.js 24.15.0; current Windows and Linux native evidence
+pending
 
 Date: 2026-08-31
 
@@ -35,8 +36,10 @@ C4thedral desktop application.
   installation because the desktop has no copied runtime dependencies and
   excludes `node_modules`. The installed C4thedral application itself requires no
   Node.js installation and no runtime network service.
-- Run `pnpm run check`, `pnpm run desktop:smoke`, and
-  `pnpm run desktop:make` on every native release host.
+- Run `pnpm run release:native` on every native release host. It executes the
+  complete source gate, packaged smoke, configured makers, and host-specific
+  artifact verification. The final step writes hashes and sizes to
+  `build/desktop/release-evidence/<platform>-<architecture>.json`.
 - Git is optional for editing and rendering. The Source Control area requires a
   locally installed `git` executable on every operating system.
 
@@ -62,6 +65,13 @@ The equivalent macOS/Linux approach is to put a Node.js 24 binary first on
 `PATH` for the build shell. No global installation or removal of Node.js 26 is
 required.
 
+Native maker helpers MUST be installed or rebuilt with the same Node.js 24
+runtime used for `desktop:make`. Reusing a `node_modules` tree whose optional
+native helpers were compiled under Node.js 26 can produce an ABI mismatch even
+though the application package itself builds. A clean release checkout MUST
+therefore run `pnpm install --frozen-lockfile` under Node.js 24 before the
+release gate.
+
 ## Platform matrix
 
 | Host | Packaged application | `desktop:make` output | Host-specific requirements |
@@ -69,6 +79,14 @@ required.
 | macOS | `.app` | DMG and ZIP | Electron 44 requires macOS 13 or newer. DMG creation may require Xcode Command Line Tools for its optional native helpers. Development artifacts are ad-hoc signed; releases require Developer ID signing and notarization. |
 | Windows | application directory with `C4thedral.exe` | Squirrel Setup EXE | Build from native PowerShell or Command Prompt, not WSL. Releases require Windows code signing. C4thedral's first native validation target is Windows x64. |
 | Linux | application directory with `C4thedral` | portable ZIP | The current resvg adapter targets GNU/glibc Linux on x64 or arm64. The machine needs the ordinary system libraries required by Electron/Chromium. A distro-specific DEB, RPM, Flatpak, or Snap is not yet part of the accepted distribution contract. |
+
+## Current native evidence
+
+| Host | Runtime | Result | Remaining release work |
+| --- | --- | --- | --- |
+| macOS 15 arm64 | Node.js 24.15.0, pnpm 11.24.0 | The `0.1.0-beta.1` `.app` packaged smoke passed; its name, version, original icon, ad-hoc deep signature, DMG checksum, and ZIP integrity passed on 2026-08-31. | Developer ID signing and notarization before public distribution. |
+| Windows x64 | Node.js 24.x | An earlier development checkout installed, built, and ran on a standalone Windows machine. | Run the current branch's `release:native` gate, verify Squirrel install/uninstall and no-system-Node runtime, then repeat on the enterprise-managed machine. |
+| Linux | Node.js 24.x | No native evidence yet. | Run the current branch's `release:native` gate and the manual file/export/offline round trip on a supported glibc host. |
 
 The portable Linux ZIP is deliberate: the existing Forge ZIP maker has no
 additional platform build dependency, while DEB, RPM, Flatpak, and Snap makers
@@ -101,7 +119,11 @@ pnpm exec node --version
 pnpm run check
 pnpm run desktop:smoke
 pnpm run desktop:make
+pnpm run check:native-release
 ```
+
+`pnpm run release:native` is the equivalent single release-host command after
+the Node-24 `pnpm install --frozen-lockfile` step.
 
 Then inspect the generated distributable on a machine without a system Node.js
 installation:

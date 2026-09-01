@@ -46,6 +46,7 @@ import {
   highlightC4mlDraft,
   parseC4mlDraft,
   parseC4mlProjectDraft,
+  proposeC4mlWizardExtension,
   inspectC4mlSemanticAuthoringContext,
   proposeC4mlPlacementEdit,
   proposeC4mlRouteEdit,
@@ -674,6 +675,33 @@ export async function generateWorkerRequest(
   request: WizardWorkerRequest,
 ): Promise<WizardWorkerResponse> {
   try {
+    if (request.extension !== undefined) {
+      const proposal = await proposeC4mlWizardExtension(
+        toArchitectureProject(request.extension.project),
+        request.extension.file,
+        request.answers,
+      );
+      if (!proposal.valid) {
+        return {
+          protocolVersion: compilerWorkerProtocolVersion,
+          type: "generation-result",
+          requestId: request.requestId,
+          status: "failed",
+          source: undefined,
+          issues: [],
+          message: proposal.issues[0]?.message ?? "Existing document extension failed.",
+        };
+      }
+      return {
+        protocolVersion: compilerWorkerProtocolVersion,
+        type: "generation-result",
+        requestId: request.requestId,
+        status: "valid",
+        source: proposal.proposedText,
+        issues: [],
+        message: undefined,
+      };
+    }
     const result = generateSystemContextDraft(request.answers);
     return {
       protocolVersion: compilerWorkerProtocolVersion,

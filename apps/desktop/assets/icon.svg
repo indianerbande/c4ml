@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">C4thedral application icon</title>
+  <desc id="description">A geometric C4 monogram inside a pointed architectural arch.</desc>
+  <defs>
+    <linearGradient id="background" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17324d"/>
+      <stop offset="0.55" stop-color="#087f9b"/>
+      <stop offset="1" stop-color="#15a0a2"/>
+    </linearGradient>
+    <linearGradient id="window" x1="512" y1="130" x2="512" y2="860" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#dff8fa" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#dff8fa" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="224" fill="url(#background)"/>
+  <path d="M214 844V448c0-142 94-268 298-350 204 82 298 208 298 350v396Z" fill="url(#window)" stroke="#dff8fa" stroke-width="34" stroke-linejoin="round"/>
+  <path d="M512 120v724" stroke="#dff8fa" stroke-opacity="0.24" stroke-width="22"/>
+  <path d="M448 365c-40-42-91-63-151-63-118 0-205 88-205 210s87 210 205 210c60 0 111-21 151-63" fill="none" stroke="#ffffff" stroke-width="76" stroke-linecap="round" transform="translate(190 0)"/>
+  <path d="M650 306v236H506l157-236v416M506 542h238" fill="none" stroke="#ffffff" stroke-width="70" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M238 844h548" stroke="#dff8fa" stroke-width="34" stroke-linecap="round"/>
+</svg>

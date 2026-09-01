@@ -19,6 +19,7 @@ import {
   helpContextAtC4mlDraft,
   parseC4mlDraft,
   parseC4mlProjectDraft,
+  proposeC4mlWizardExtension,
 } from "../src/index.js";
 
 const helloContextUrl = new URL(
@@ -476,7 +477,7 @@ view garden-context {
       file: "constraint-grid.c4ml",
     });
 
-    expect(parsed.valid).toBe(true);
+    expect(parsed.diagnostics).toEqual([]);
     expect(parsed.diagnostics).toEqual([]);
     expect(parsed.placementByViewId?.["garden-pulse-context"]).toMatchObject({
       constraints: [
@@ -1979,6 +1980,112 @@ describe("C4ML draft-1 System Context wizard source", () => {
         { field: "relationshipIntent", code: "C4ML-WIZARD-002" },
       ],
     });
+  });
+
+  it("extends a valid document through bounded insertions without rewriting existing source", async () => {
+    const source = [
+      "c4ml draft-1",
+      "",
+      "// This comment and the deliberate spacing must survive byte for byte.",
+      "model {",
+      "  person caretaker {",
+      '    name = "Caretaker"',
+      '    responsibility = "Keeps the existing architecture healthy."',
+      "    classification = internal",
+      "  }",
+      "}",
+      "",
+      "relations {",
+      "  // Existing relationships stay where their author placed them.",
+      "}",
+      "",
+      "view existing-landscape {",
+      "  type = system-landscape",
+      '  scope = "Existing architecture"',
+      '  title = "Existing landscape"',
+      '  purpose = "Retain this authored view."',
+      "  audience = default",
+      "  legend = generated",
+      "}",
+      "",
+    ].join("\n");
+    const project = createArchitectureProjectInput({
+      id: "wizard-extension",
+      documents: [{ uri: "architecture.c4ml", text: source }],
+    });
+
+    const proposal = await proposeC4mlWizardExtension(
+      project,
+      "architecture.c4ml",
+      defaultSystemContextWizardAnswers,
+    );
+
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.edits).toHaveLength(3);
+    expect(proposal.proposedText).toContain(
+      "// This comment and the deliberate spacing must survive byte for byte.\nmodel {\n  person caretaker {",
+    );
+    expect(proposal.proposedText).toContain(
+      "relations {\n  // Existing relationships stay where their author placed them.\n  relation customer-uses-online-shop",
+    );
+    expect(proposal.proposedText).toContain(
+      'view existing-landscape {\n  type = system-landscape\n  scope = "Existing architecture"\n  title = "Existing landscape"',
+    );
+    const parsed = await parseC4mlDraft(proposal.proposedText);
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.model?.elements.map(({ id }) => id)).toEqual([
+      "caretaker",
+      "customer",
+      "online-shop",
+    ]);
+    expect(parsed.views?.map(({ id }) => id)).toEqual([
+      "existing-landscape",
+      "online-shop-context",
+    ]);
+  });
+
+  it("rejects duplicate IDs and invalid target documents without changing the project", async () => {
+    const source = [
+      "c4ml draft-1",
+      "",
+      "model {",
+      "  system online-shop {",
+      '    name = "Existing shop"',
+      '    responsibility = "Already owns this stable identifier."',
+      "    classification = internal",
+      "  }",
+      "}",
+      "",
+      "relations {",
+      "}",
+      "",
+    ].join("\n");
+    const project = createArchitectureProjectInput({
+      id: "wizard-duplicate",
+      documents: [{ uri: "architecture.c4ml", text: source }],
+    });
+
+    const duplicate = await proposeC4mlWizardExtension(
+      project,
+      "architecture.c4ml",
+      defaultSystemContextWizardAnswers,
+    );
+    const missing = await proposeC4mlWizardExtension(
+      project,
+      "missing.c4ml",
+      defaultSystemContextWizardAnswers,
+    );
+
+    expect(duplicate).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-WIZARD-103" }],
+    });
+    expect(missing).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-WIZARD-102" }],
+    });
+    expect(project.documents[0]?.text).toBe(source);
   });
 });
 

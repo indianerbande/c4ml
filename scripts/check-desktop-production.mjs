@@ -32,6 +32,12 @@ assert.equal(
   "C4thedral",
   "the visible desktop product name must be C4thedral",
 );
+assert.equal(rootManifest.version, "0.1.0-beta.1");
+assert.equal(
+  desktopManifest.version,
+  rootManifest.version,
+  "the desktop and repository release identities must stay aligned",
+);
 assert.equal(
   rootManifest.scripts?.["desktop:start"],
   "pnpm run desktop:build && pnpm --filter @c4ml/desktop run start",
@@ -192,6 +198,17 @@ assert.equal(
   "C4thedral",
   "packaged executables must use the visible product name",
 );
+assert.equal(
+  forgeConfiguration.packagerConfig?.icon,
+  join(desktopRoot, "assets", "icon"),
+  "native packages must use the original C4thedral icon family",
+);
+for (const extension of ["svg", "png", "icns", "ico"]) {
+  assert.ok(
+    existsSync(join(desktopRoot, "assets", `icon.${extension}`)),
+    `C4thedral icon.${extension} missing`,
+  );
+}
 const desktopNotices = readRequired("apps/desktop/THIRD_PARTY_NOTICES.txt");
 const desktopMainSource = readRequired("apps/desktop/src/main.ts");
 const packagedLauncher = readRequired(
@@ -316,6 +333,11 @@ assert.match(
   developmentLauncher,
   /CFBundleDisplayName["'], ["']C4thedral/,
   "the macOS development bundle must identify itself as C4thedral",
+);
+assert.match(
+  developmentLauncher,
+  /CFBundleIconFile["'], ["']c4thedral\.icns/,
+  "the macOS development wrapper must use the C4thedral icon",
 );
 assert.match(
   developmentLauncher,

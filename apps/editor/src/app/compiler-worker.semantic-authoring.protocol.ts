@@ -193,10 +193,23 @@ function isSemanticOperation(value: Record<string, unknown>): boolean {
       optionalString(value["language"])
     );
   }
-  return value["kind"] === "create-relationship" &&
-    isId(value["relationshipId"]) && isId(value["sourceId"]) &&
-    isId(value["targetId"]) && typeof value["intent"] === "string" &&
-    optionalString(value["technology"]) && optionalString(value["protocol"]);
+  if (value["kind"] === "create-relationship") {
+    return isId(value["relationshipId"]) && isId(value["sourceId"]) &&
+      isId(value["targetId"]) && typeof value["intent"] === "string" &&
+      optionalString(value["technology"]) && optionalString(value["protocol"]);
+  }
+  if (value["kind"] === "create-deployment-item") {
+    return isDeploymentItemKind(value["itemKind"]) &&
+      isId(value["itemId"]) && optionalString(value["name"]) &&
+      optionalString(value["responsibility"]) && optionalString(value["technology"]) &&
+      optionalString(value["parentNodeId"]) && optionalString(value["nodeId"]) &&
+      optionalString(value["elementId"]);
+  }
+  return value["kind"] === "create-dynamic-interaction" &&
+    isId(value["interactionId"]) &&
+    typeof value["order"] === "number" && Number.isSafeInteger(value["order"]) &&
+    isId(value["relationshipId"]) && typeof value["intent"] === "string" &&
+    optionalString(value["parallelGroup"]);
 }
 
 function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthoringContext {
@@ -205,7 +218,31 @@ function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthor
     optionalString(value["scopeId"]) && Array.isArray(value["createActions"]) &&
     value["createActions"].every((action) => isRecord(action) && isSemanticKind(action["kind"]) && optionalString(action["ownerId"]) && optionalString(action["ownerLabel"])) &&
     Array.isArray(value["elements"]) && value["elements"].every((element) => isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" && isSemanticKind(element["kind"]) && optionalString(element["ownerId"])) &&
-    Array.isArray(value["connectionOptions"]) && value["connectionOptions"].every((option) => isRecord(option) && isId(option["sourceId"]) && Array.isArray(option["targetIds"]) && option["targetIds"].every(isId));
+    Array.isArray(value["connectionOptions"]) && value["connectionOptions"].every((option) => isRecord(option) && isId(option["sourceId"]) && Array.isArray(option["targetIds"]) && option["targetIds"].every(isId)) &&
+    (value["deployment"] === undefined || isDeploymentContext(value["deployment"])) &&
+    (value["dynamic"] === undefined || isDynamicContext(value["dynamic"]));
+}
+
+function isDeploymentContext(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return isId(value["environmentId"]) && typeof value["environmentLabel"] === "string" &&
+    Array.isArray(value["createActions"]) && value["createActions"].every(isDeploymentItemKind) &&
+    Array.isArray(value["nodes"]) && value["nodes"].every((node) =>
+      isRecord(node) && isId(node["id"]) && typeof node["label"] === "string") &&
+    Array.isArray(value["elements"]) && value["elements"].every((element) =>
+      isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" &&
+      (element["kind"] === "container" || element["kind"] === "software-system"));
+}
+
+function isDynamicContext(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  return typeof value["nextOrder"] === "number" && Number.isSafeInteger(value["nextOrder"]) &&
+    value["nextOrder"] > 0 && Array.isArray(value["relationships"]) &&
+    value["relationships"].every((relationship) =>
+      isRecord(relationship) && isId(relationship["id"]) &&
+      isId(relationship["sourceId"]) && typeof relationship["sourceLabel"] === "string" &&
+      isId(relationship["targetId"]) && typeof relationship["targetLabel"] === "string" &&
+      typeof relationship["intent"] === "string");
 }
 
 function isSemanticAuthoringIssue(value: unknown): value is C4mlSemanticAuthoringIssue {
@@ -214,6 +251,15 @@ function isSemanticAuthoringIssue(value: unknown): value is C4mlSemanticAuthorin
 
 function isSemanticKind(value: unknown): boolean {
   return ["code-element", "component", "container", "person", "software-system"].includes(String(value));
+}
+
+function isDeploymentItemKind(value: unknown): boolean {
+  return [
+    "container-instance",
+    "deployment-node",
+    "infrastructure-node",
+    "software-system-instance",
+  ].includes(String(value));
 }
 
 function isViewKind(value: unknown): boolean {

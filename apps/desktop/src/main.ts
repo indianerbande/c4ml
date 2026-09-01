@@ -1066,6 +1066,54 @@ function protectUnsavedDocument(window: BrowserWindow): void {
 }
 
 async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
+  window.show();
+  window.focus();
+  window.webContents.focus();
+  const editorInputReady = (await window.webContents.executeJavaScript(
+    `new Promise((resolve) => {
+      const deadline = Date.now() + 10000;
+      const check = () => {
+        const input = document.querySelector('.monaco-editor textarea.inputarea');
+        if (input instanceof HTMLTextAreaElement) {
+          input.focus();
+          resolve(true);
+        } else if (Date.now() >= deadline) {
+          resolve(false);
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
+    })`,
+    true,
+  )) as boolean;
+  if (!editorInputReady) {
+    console.log(
+      `C4ML_DESKTOP_SMOKE ${JSON.stringify({ ok: false, editorInputReady })}`,
+    );
+    app.exit(1);
+    return;
+  }
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+  await window.webContents.insertText(`c4ml draft-1
+
+model {
+  system smoke-system {
+    name = "Smoke System"
+    responsibility = "Validates the packaged desktop compiler and preview."
+    classification = internal
+  }
+}
+
+view smoke-context {
+  type = system-context
+  scope = smoke-system
+  title = "System Context — Smoke System"
+  purpose = "Validates the packaged desktop compiler and preview."
+  audience = default
+  legend = generated
+}
+`);
   const result = (await window.webContents.executeJavaScript(
     `new Promise((resolve) => {
       const deadline = Date.now() + 20000;
@@ -1081,6 +1129,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
           typeof window.c4mlDesktop?.onPreviewInteraction === 'function' &&
           typeof window.c4mlDesktop?.setUiLanguage === 'function';
         const editorReady = document.querySelector('.source-editor-host') !== null;
+        const editorDirty = document.querySelector('.dirty-indicator') !== null;
         const previewReady = document.querySelector('.diagram') !== null;
         const pngExportReady = document.querySelector('.png-export-button') !== null;
         if (!pngExportReady) {
@@ -1095,7 +1144,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
         if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady && detachButtonReady) {
           resolve({ ok: true, title: document.title, language, detachButtonReady });
         } else if (Date.now() >= deadline) {
-          resolve({ ok: false, bridgeReady, editorReady, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, detachButtonReady, language });
+          resolve({ ok: false, bridgeReady, editorReady, editorDirty, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, detachButtonReady, language });
         } else {
           setTimeout(check, 100);
         }

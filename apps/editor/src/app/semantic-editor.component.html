@@ -1,10 +1,10 @@
 <div class="placement-backdrop semantic-backdrop" (click)="cancel()">
-  <section class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.title' : 'semanticEditor.title')" (click)="$event.stopPropagation()">
+  <section class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(titleKey())" (click)="$event.stopPropagation()">
     <header>
       <div>
-        <p>{{ i18n.t(mode() === "relationship" ? "connectionEditor.eyebrow" : "semanticEditor.eyebrow") }}</p>
-        <h2>{{ i18n.t(mode() === "relationship" ? "connectionEditor.title" : "semanticEditor.title") }}</h2>
-        <span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.description" : "semanticEditor.description") }}</span>
+        <p>{{ i18n.t(eyebrowKey()) }}</p>
+        <h2>{{ i18n.t(titleKey()) }}</h2>
+        <span>{{ i18n.t(descriptionKey()) }}</span>
       </div>
       <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.cancel' : 'semanticEditor.cancel')">×</button>
     </header>
@@ -25,6 +25,107 @@
           </div>
         } @else if (context()) {
           @if (mode() === "element") {
+            @if (editorKind() === "deployment") {
+              <aside class="semantic-context-card">
+                <strong>{{ i18n.t("deploymentEditor.environment") }}</strong>
+                <span>{{ deploymentContext()?.environmentLabel }} · {{ deploymentContext()?.environmentId }}</span>
+              </aside>
+              <label>
+                <span>{{ i18n.t("deploymentEditor.itemKind") }}</span>
+                <select [value]="deploymentItemKind()" (change)="selectDeploymentItemKind($event)">
+                  @for (kind of deploymentActions(); track kind) {
+                    <option [value]="kind">{{ deploymentKindLabel(kind) }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                <span>{{ i18n.t("deploymentEditor.stableId") }}</span>
+                <input [value]="deploymentItemId()" (input)="update(deploymentItemId, $event)" placeholder="stable-deployment-id" />
+                <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+              </label>
+              @if (deploymentItemKind() === "deployment-node") {
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.parentNode") }}</span>
+                  <select [value]="deploymentParentNodeId()" (change)="selectDeploymentParent($event)">
+                    <option value="">{{ i18n.t("deploymentEditor.noParent") }}</option>
+                    @for (node of deploymentContext()?.nodes ?? []; track node.id) {
+                      <option [value]="node.id">{{ node.label }} · {{ node.id }}</option>
+                    }
+                  </select>
+                  <small>{{ i18n.t("deploymentEditor.parentHint") }}</small>
+                </label>
+              } @else {
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.node") }}</span>
+                  <select [value]="deploymentNodeId()" (change)="selectDeploymentNode($event)">
+                    @for (node of deploymentContext()?.nodes ?? []; track node.id) {
+                      <option [value]="node.id">{{ node.label }} · {{ node.id }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (deploymentItemKind() === "software-system-instance" || deploymentItemKind() === "container-instance") {
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.architectureElement") }}</span>
+                  <select [value]="deploymentElementId()" (change)="selectDeploymentElement($event)">
+                    @for (element of deploymentElementOptions(); track element.id) {
+                      <option [value]="element.id">{{ element.label }} · {{ element.id }}</option>
+                    }
+                  </select>
+                  <small>{{ i18n.t("deploymentEditor.architectureElementHint") }}</small>
+                </label>
+              } @else {
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.name") }}</span>
+                  <input [value]="deploymentName()" (input)="update(deploymentName, $event)" [placeholder]="i18n.t('deploymentEditor.namePlaceholder')" />
+                </label>
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.responsibility") }}</span>
+                  <textarea [value]="deploymentResponsibility()" (input)="update(deploymentResponsibility, $event)" [placeholder]="i18n.t('deploymentEditor.responsibilityPlaceholder')"></textarea>
+                </label>
+                <label>
+                  <span>{{ i18n.t("deploymentEditor.technology") }}</span>
+                  <input [value]="deploymentTechnology()" (input)="update(deploymentTechnology, $event)" [placeholder]="i18n.t('deploymentEditor.technologyPlaceholder')" />
+                </label>
+              }
+            } @else if (editorKind() === "dynamic") {
+              <aside class="semantic-context-card">
+                <strong>{{ i18n.t("dynamicEditor.context") }}</strong>
+                <span>{{ i18n.t("dynamicEditor.contextHint") }}</span>
+              </aside>
+              <label>
+                <span>{{ i18n.t("dynamicEditor.relationship") }}</span>
+                <select [value]="interactionRelationshipId()" (change)="selectDynamicRelationship($event)">
+                  @for (relationship of dynamicContext()?.relationships ?? []; track relationship.id) {
+                    <option [value]="relationship.id">{{ relationship.sourceLabel }} → {{ relationship.targetLabel }} · {{ relationship.id }}</option>
+                  }
+                </select>
+                @if (dynamicRelationship(); as relationship) {
+                  <small>{{ relationship.sourceId }} → {{ relationship.targetId }}</small>
+                }
+              </label>
+              <div class="field-row">
+                <label>
+                  <span>{{ i18n.t("dynamicEditor.order") }}</span>
+                  <input type="number" min="1" step="1" [value]="interactionOrder()" (input)="update(interactionOrder, $event)" />
+                  <small>{{ i18n.t("dynamicEditor.orderHint") }}</small>
+                </label>
+                <label>
+                  <span>{{ i18n.t("dynamicEditor.parallelGroup") }}</span>
+                  <input [value]="interactionParallelGroup()" (input)="update(interactionParallelGroup, $event)" placeholder="optional-parallel-group" />
+                  <small>{{ i18n.t("dynamicEditor.parallelHint") }}</small>
+                </label>
+              </div>
+              <label>
+                <span>{{ i18n.t("dynamicEditor.intent") }}</span>
+                <input [value]="interactionIntent()" (input)="update(interactionIntent, $event)" [placeholder]="i18n.t('dynamicEditor.intentPlaceholder')" />
+              </label>
+              <label>
+                <span>{{ i18n.t("dynamicEditor.stableId") }}</span>
+                <input [value]="interactionId()" (input)="update(interactionId, $event)" placeholder="stable-interaction-id" />
+                <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+              </label>
+            } @else {
             <label>
               <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
               <select [value]="createKind()" (change)="selectCreateKind($event)">
@@ -37,6 +138,12 @@
               }
               @if (context()?.viewKind === "system-context") {
                 <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.contextVisibilityHint") }}</small>
+              }
+              @if (context()?.viewKind === "component") {
+                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.componentContextHint") }}</small>
+              }
+              @if (context()?.viewKind === "code") {
+                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.codeContextHint") }}</small>
               }
             </label>
             <label>
@@ -78,6 +185,7 @@
                   <input [value]="language()" (input)="update(language, $event)" placeholder="TypeScript" />
                 </label>
               </div>
+            }
             }
           } @else {
             <button type="button" class="semantic-pick-button" (click)="requestDiagramSelection()">

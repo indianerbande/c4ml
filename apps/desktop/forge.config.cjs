@@ -18,6 +18,7 @@ module.exports = {
       unpack: "dist/*.node",
     },
     executableName: "C4thedral",
+    icon: path.resolve(__dirname, "assets/icon"),
     extraResource: [
       path.resolve(__dirname, "../../build/editor/browser"),
       path.resolve(__dirname, "../../build/editor/3rdpartylicenses.txt"),
