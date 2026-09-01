@@ -635,7 +635,10 @@ export class EditorWizardGenerationSession {
     return this.#state;
   }
 
-  begin(answers: C4mlSystemContextWizardAnswers): WizardWorkerRequest {
+  begin(
+    answers: C4mlSystemContextWizardAnswers,
+    extension?: { readonly file: string; readonly project: CompilerWorkerProject },
+  ): WizardWorkerRequest {
     const requestId = this.sequence.next();
     this.#state = {
       phase: "loading",
@@ -649,6 +652,7 @@ export class EditorWizardGenerationSession {
       type: "generate-system-context",
       requestId,
       answers,
+      ...(extension === undefined ? {} : { extension }),
     };
   }
 

@@ -790,6 +790,104 @@ describe("compiler worker runtime", () => {
     expect(project.documents[0]?.source).toBe(initialC4mlSource);
   });
 
+  it("previews a Dynamic interaction through the same non-mutating worker boundary", async () => {
+    const source = await readFile(dynamicSourceUrl, "utf8");
+    const project = {
+      version: 1 as const,
+      id: "dynamic-semantic-preview",
+      documents: [{ uri: "dynamic.c4ml", source }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 50,
+      file: "dynamic.c4ml",
+      project,
+      requestedViewId: "finalize-release",
+      semantic: {
+        id: "semantic:add-dynamic-step",
+        viewId: "finalize-release",
+        intent: {
+          id: "architecture:create-dynamic-interaction",
+          kind: "architecture",
+          summary: "Add one ordered scenario step.",
+        },
+        operation: {
+          kind: "create-dynamic-interaction",
+          interactionId: "confirm-decision",
+          order: 3,
+          relationshipId: "console-submits-decision",
+          intent: "Confirms the reviewed decision",
+        },
+      },
+    };
+
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      documentUri: "dynamic.c4ml",
+      proposedText: expect.stringContaining("interaction confirm-decision"),
+      compilation: { status: "valid" },
+    });
+    expect(project.documents[0]?.source).toBe(source);
+  });
+
+  it("previews Deployment topology through the same non-mutating worker boundary", async () => {
+    const source = await readFile(deploymentSourceUrl, "utf8");
+    const project = {
+      version: 1 as const,
+      id: "deployment-semantic-preview",
+      documents: [{ uri: "deployment.c4ml", source }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 51,
+      file: "deployment.c4ml",
+      project,
+      requestedViewId: "parcel-observer-production",
+      semantic: {
+        id: "semantic:add-deployment-node",
+        viewId: "parcel-observer-production",
+        intent: {
+          id: "architecture:create-deployment-item",
+          kind: "architecture",
+          summary: "Add one runtime location.",
+        },
+        operation: {
+          kind: "create-deployment-item",
+          itemKind: "deployment-node",
+          itemId: "edge-cluster",
+          name: "Edge Cluster",
+          responsibility: "Runs regional edge workloads.",
+          technology: "Kubernetes",
+          parentNodeId: "regional-cloud",
+        },
+      },
+    };
+
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      documentUri: "deployment.c4ml",
+      proposedText: expect.stringContaining("node edge-cluster inside regional-cloud"),
+      compilation: { status: "valid" },
+    });
+    expect(project.documents[0]?.source).toBe(source);
+  });
+
   it("rejects stale project previews before compilation", async () => {
     const project = createArchitectureProjectInput({
       id: "garden-preview",
@@ -1120,6 +1218,26 @@ model {
     expect(compiled.svg).toContain("PostgreSQL");
     expect(compiled.svg).toContain("S3-compatible object storage");
     expect(compiled.svg).toContain("HTTPS/JSON");
+  });
+
+  it("extends an existing worker project without replacing its authored source", async () => {
+    const generated = await generateWorkerRequest({
+      ...wizardRequest(),
+      extension: {
+        file: "garden.c4ml",
+        project: {
+          version: 1,
+          id: "garden",
+          documents: [{ uri: "garden.c4ml", source: initialC4mlSource }],
+        },
+      },
+    });
+
+    expect(generated.status).toBe("valid");
+    expect(generated.source).toContain("person caretaker");
+    expect(generated.source).toContain("person customer");
+    expect(generated.source).toContain("view online-shop-context");
+    expect(generated.source).toContain("route caretaker-reviews-plan");
   });
 });
 

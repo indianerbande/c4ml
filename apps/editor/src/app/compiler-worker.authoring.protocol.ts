@@ -33,6 +33,10 @@ export interface WizardWorkerRequest {
   readonly type: "generate-system-context";
   readonly requestId: number;
   readonly answers: C4mlSystemContextWizardAnswers;
+  readonly extension?: {
+    readonly file: string;
+    readonly project: CompilerWorkerProject;
+  };
 }
 
 export interface WizardWorkerResponse {
@@ -129,7 +133,15 @@ export function isWizardWorkerRequest(
     candidate.protocolVersion === compilerWorkerProtocolVersion &&
     candidate.type === "generate-system-context" &&
     isPositiveRequestId(candidate.requestId) &&
-    isWizardAnswers(candidate.answers)
+    isWizardAnswers(candidate.answers) &&
+    (candidate.extension === undefined ||
+      (typeof candidate.extension === "object" &&
+        candidate.extension !== null &&
+        typeof candidate.extension.file === "string" &&
+        isCompilerWorkerProject(candidate.extension.project) &&
+        candidate.extension.project.documents.some(
+          ({ uri }) => uri === candidate.extension?.file,
+        )))
   );
 }
 

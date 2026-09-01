@@ -23,6 +23,8 @@
 .semantic-empty span { color: var(--muted); }
 .semantic-empty { display: grid; gap: 5px; padding: 16px; border: 1px solid var(--line); border-radius: 9px; }
 .semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
+.semantic-context-card { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
+.semantic-context-card span { color: var(--muted); }
 .semantic-preview-button,
 .semantic-apply-button { background: color-mix(in srgb, var(--accent) 72%, var(--danger)); }
 .semantic-editor.is-connection-editor .semantic-preview-button,

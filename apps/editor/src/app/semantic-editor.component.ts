@@ -12,6 +12,7 @@ import {
 import type {
   C4mlSemanticAuthoringContext,
   C4mlSemanticCreateAction,
+  C4mlSemanticDeploymentItemKind,
   C4mlSemanticEditOperation,
   C4mlSemanticElementKind,
 } from "@c4ml/language-c4ml";
@@ -24,7 +25,11 @@ import type {
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import type { SemanticEditorMode } from "./workbench-semantic.facade.js";
 
-type SemanticEditorOperationKind = "create-element" | "create-relationship";
+type SemanticEditorOperationKind =
+  | "create-deployment-item"
+  | "create-dynamic-interaction"
+  | "create-element"
+  | "create-relationship";
 
 @Component({
   selector: "c4ml-semantic-editor",
@@ -62,6 +67,19 @@ export class SemanticEditorComponent {
   readonly relationshipIntent = signal("");
   readonly relationshipTechnology = signal("");
   readonly protocol = signal("");
+  readonly deploymentItemKind = signal<C4mlSemanticDeploymentItemKind>("deployment-node");
+  readonly deploymentItemId = signal("");
+  readonly deploymentName = signal("");
+  readonly deploymentResponsibility = signal("");
+  readonly deploymentTechnology = signal("");
+  readonly deploymentParentNodeId = signal("");
+  readonly deploymentNodeId = signal("");
+  readonly deploymentElementId = signal("");
+  readonly interactionId = signal("");
+  readonly interactionOrder = signal("1");
+  readonly interactionRelationshipId = signal("");
+  readonly interactionIntent = signal("");
+  readonly interactionParallelGroup = signal("");
   readonly preview = signal<PreviewSemanticChangeWorkerResponse | undefined>(undefined);
   readonly previewUrl = signal<string | undefined>(undefined);
   readonly loadingContext = computed(
@@ -89,13 +107,44 @@ export class SemanticEditorComponent {
       return element === undefined ? [] : [element];
     });
   });
+  readonly deploymentContext = computed(() => this.context()?.deployment);
+  readonly deploymentActions = computed(
+    () => this.deploymentContext()?.createActions ?? [],
+  );
+  readonly deploymentElementOptions = computed(() => {
+    const expectedKind = this.deploymentItemKind() === "container-instance"
+      ? "container"
+      : "software-system";
+    return (this.deploymentContext()?.elements ?? []).filter(
+      ({ kind }) => kind === expectedKind,
+    );
+  });
+  readonly dynamicContext = computed(() => this.context()?.dynamic);
+  readonly dynamicRelationship = computed(() =>
+    this.dynamicContext()?.relationships.find(
+      ({ id }) => id === this.interactionRelationshipId(),
+    ),
+  );
+  readonly editorKind = computed<"deployment" | "dynamic" | "relationship" | "static">(
+    () => this.mode() === "relationship"
+      ? "relationship"
+      : this.context()?.viewKind === "deployment"
+        ? "deployment"
+        : this.context()?.viewKind === "dynamic"
+          ? "dynamic"
+          : "static",
+  );
   readonly unsupported = computed(
     () =>
       !this.loadingContext() &&
       this.context() !== undefined &&
-      (this.mode() === "element"
-        ? this.createActions().length === 0
-        : this.sourceOptions().length === 0),
+      (this.editorKind() === "relationship"
+        ? this.sourceOptions().length === 0
+        : this.editorKind() === "deployment"
+          ? this.deploymentActions().length === 0
+          : this.editorKind() === "dynamic"
+            ? (this.dynamicContext()?.relationships.length ?? 0) === 0
+            : this.createActions().length === 0),
   );
   readonly canSwapDirection = computed(() =>
     this.context()?.connectionOptions.find(
@@ -103,6 +152,26 @@ export class SemanticEditorComponent {
     )?.targetIds.includes(this.sourceId()) === true,
   );
   readonly canPreview = computed(() => {
+    if (this.operationKind() === "create-deployment-item") {
+      const itemKind = this.deploymentItemKind();
+      const named = itemKind === "deployment-node" || itemKind === "infrastructure-node";
+      return this.deploymentActions().includes(itemKind) &&
+        this.deploymentItemId().trim().length > 0 &&
+        (!named || (
+          this.deploymentName().trim().length > 0 &&
+          this.deploymentResponsibility().trim().length > 0 &&
+          this.deploymentTechnology().trim().length > 0
+        )) &&
+        (itemKind === "deployment-node" || this.deploymentNodeId().length > 0) &&
+        (named || this.deploymentElementId().length > 0);
+    }
+    if (this.operationKind() === "create-dynamic-interaction") {
+      const order = Number(this.interactionOrder());
+      return this.interactionId().trim().length > 0 &&
+        Number.isSafeInteger(order) && order > 0 &&
+        this.dynamicRelationship() !== undefined &&
+        this.interactionIntent().trim().length > 0;
+    }
     if (this.operationKind() === "create-element") {
       return this.selectedCreateAction() !== undefined &&
         this.elementId().trim().length > 0 &&
@@ -116,6 +185,33 @@ export class SemanticEditorComponent {
       this.sourceId() !== this.targetId() &&
       this.relationshipIntent().trim().length > 0;
   });
+  readonly eyebrowKey = computed(() =>
+    this.editorKind() === "deployment"
+      ? "deploymentEditor.eyebrow"
+      : this.editorKind() === "dynamic"
+        ? "dynamicEditor.eyebrow"
+        : this.editorKind() === "relationship"
+          ? "connectionEditor.eyebrow"
+          : "semanticEditor.eyebrow",
+  );
+  readonly titleKey = computed(() =>
+    this.editorKind() === "deployment"
+      ? "deploymentEditor.title"
+      : this.editorKind() === "dynamic"
+        ? "dynamicEditor.title"
+        : this.editorKind() === "relationship"
+          ? "connectionEditor.title"
+          : "semanticEditor.title",
+  );
+  readonly descriptionKey = computed(() =>
+    this.editorKind() === "deployment"
+      ? "deploymentEditor.description"
+      : this.editorKind() === "dynamic"
+        ? "dynamicEditor.description"
+        : this.editorKind() === "relationship"
+          ? "connectionEditor.description"
+          : "semanticEditor.description",
+  );
   readonly issues = computed(() => {
     const response = this.preview();
     return [
@@ -251,6 +347,58 @@ export class SemanticEditorComponent {
     }
   }
 
+  selectDeploymentItemKind(event: Event): void {
+    const value = selectValue(event);
+    if (!isDeploymentItemKind(value)) return;
+    this.deploymentItemKind.set(value);
+    const firstNode = this.deploymentContext()?.nodes[0]?.id ?? "";
+    this.deploymentNodeId.set(firstNode);
+    this.deploymentParentNodeId.set("");
+    this.deploymentElementId.set(
+      this.deploymentElementOptions()[0]?.id ?? "",
+    );
+    this.preview.set(undefined);
+  }
+
+  selectDeploymentParent(event: Event): void {
+    this.deploymentParentNodeId.set(selectValue(event) ?? "");
+    this.preview.set(undefined);
+  }
+
+  selectDeploymentNode(event: Event): void {
+    this.deploymentNodeId.set(selectValue(event) ?? "");
+    this.preview.set(undefined);
+  }
+
+  selectDeploymentElement(event: Event): void {
+    this.deploymentElementId.set(selectValue(event) ?? "");
+    this.preview.set(undefined);
+  }
+
+  selectDynamicRelationship(event: Event): void {
+    const value = selectValue(event) ?? "";
+    const previous = this.dynamicRelationship();
+    const order = Number(this.interactionOrder());
+    const previousSuggestion = previous === undefined
+      ? undefined
+      : dynamicInteractionSuggestion(previous.id, order);
+    this.interactionRelationshipId.set(value);
+    const selected = this.dynamicContext()?.relationships.find(({ id }) => id === value);
+    if (
+      selected !== undefined &&
+      (this.interactionIntent().length === 0 || this.interactionIntent() === previous?.intent)
+    ) {
+      this.interactionIntent.set(selected.intent);
+    }
+    if (
+      selected !== undefined &&
+      (this.interactionId().length === 0 || this.interactionId() === previousSuggestion)
+    ) {
+      this.interactionId.set(dynamicInteractionSuggestion(selected.id, order));
+    }
+    this.preview.set(undefined);
+  }
+
   async buildPreview(): Promise<void> {
     const operation = this.#operation();
     if (operation === undefined) return;
@@ -264,9 +412,7 @@ export class SemanticEditorComponent {
         intent: {
           id: `architecture:${operation.kind}`,
           kind: "architecture",
-          summary: operation.kind === "create-element"
-            ? `Create architecture element ${operation.elementId}.`
-            : `Create architecture relationship ${operation.relationshipId}.`,
+          summary: operationSummary(operation),
         },
         operation,
       },
@@ -293,6 +439,19 @@ export class SemanticEditorComponent {
     return this.i18n.t(`semanticEditor.kind.${kind}`);
   }
 
+  deploymentKindLabel(kind: C4mlSemanticDeploymentItemKind): string {
+    switch (kind) {
+      case "container-instance":
+        return this.i18n.t("deploymentEditor.kind.container-instance");
+      case "deployment-node":
+        return this.i18n.t("deploymentEditor.kind.deployment-node");
+      case "infrastructure-node":
+        return this.i18n.t("deploymentEditor.kind.infrastructure-node");
+      case "software-system-instance":
+        return this.i18n.t("deploymentEditor.kind.software-system-instance");
+    }
+  }
+
   async #loadContext(expectedKey: string): Promise<void> {
     this.context.set(undefined);
     this.contextIssues.set([]);
@@ -310,12 +469,37 @@ export class SemanticEditorComponent {
       return;
     }
     this.context.set(response.context);
-    this.operationKind.set(
-      this.mode() === "relationship" ? "create-relationship" : "create-element",
-    );
+    this.operationKind.set(this.mode() === "relationship"
+      ? "create-relationship"
+      : response.context.viewKind === "deployment"
+        ? "create-deployment-item"
+        : response.context.viewKind === "dynamic"
+          ? "create-dynamic-interaction"
+          : "create-element");
     const firstCreate = response.context.createActions[0];
     const firstSource = response.context.connectionOptions[0];
     if (firstCreate !== undefined) this.createKind.set(firstCreate.kind);
+    const firstDeploymentAction = response.context.deployment?.createActions[0];
+    const firstDeploymentNode = response.context.deployment?.nodes[0]?.id ?? "";
+    if (firstDeploymentAction !== undefined) {
+      this.deploymentItemKind.set(firstDeploymentAction);
+      this.deploymentNodeId.set(firstDeploymentNode);
+      this.deploymentParentNodeId.set("");
+      const expectedKind = firstDeploymentAction === "container-instance"
+        ? "container"
+        : "software-system";
+      this.deploymentElementId.set(
+        response.context.deployment?.elements.find(({ kind }) => kind === expectedKind)?.id ?? "",
+      );
+    }
+    const firstDynamic = response.context.dynamic?.relationships[0];
+    if (firstDynamic !== undefined) {
+      this.interactionRelationshipId.set(firstDynamic.id);
+      this.interactionIntent.set(firstDynamic.intent);
+      const nextOrder = response.context.dynamic?.nextOrder ?? 1;
+      this.interactionOrder.set(String(nextOrder));
+      this.interactionId.set(dynamicInteractionSuggestion(firstDynamic.id, nextOrder));
+    }
     if (firstSource !== undefined) {
       const requestedSource = this.initialSourceId();
       const source = response.context.connectionOptions.find(
@@ -335,6 +519,39 @@ export class SemanticEditorComponent {
   }
 
   #operation(): C4mlSemanticEditOperation | undefined {
+    if (this.operationKind() === "create-deployment-item") {
+      const itemKind = this.deploymentItemKind();
+      return {
+        kind: "create-deployment-item",
+        itemKind,
+        itemId: this.deploymentItemId().trim(),
+        ...(itemKind === "deployment-node" || itemKind === "infrastructure-node"
+          ? {
+              name: this.deploymentName().trim(),
+              responsibility: this.deploymentResponsibility().trim(),
+              technology: this.deploymentTechnology().trim(),
+            }
+          : {}),
+        ...(itemKind === "deployment-node"
+          ? (this.deploymentParentNodeId() ? { parentNodeId: this.deploymentParentNodeId() } : {})
+          : { nodeId: this.deploymentNodeId() }),
+        ...(itemKind === "software-system-instance" || itemKind === "container-instance"
+          ? { elementId: this.deploymentElementId() }
+          : {}),
+      };
+    }
+    if (this.operationKind() === "create-dynamic-interaction") {
+      return {
+        kind: "create-dynamic-interaction",
+        interactionId: this.interactionId().trim(),
+        order: Number(this.interactionOrder()),
+        relationshipId: this.interactionRelationshipId(),
+        intent: this.interactionIntent().trim(),
+        ...(this.interactionParallelGroup().trim()
+          ? { parallelGroup: this.interactionParallelGroup().trim() }
+          : {}),
+      };
+    }
     if (this.operationKind() === "create-relationship") {
       return {
         kind: "create-relationship",
@@ -383,4 +600,30 @@ function selectValue(event: Event): string | undefined {
 
 function isSemanticKind(value: unknown): value is C4mlSemanticElementKind {
   return ["code-element", "component", "container", "person", "software-system"].includes(String(value));
+}
+
+function isDeploymentItemKind(value: unknown): value is C4mlSemanticDeploymentItemKind {
+  return [
+    "container-instance",
+    "deployment-node",
+    "infrastructure-node",
+    "software-system-instance",
+  ].includes(String(value));
+}
+
+function operationSummary(operation: C4mlSemanticEditOperation): string {
+  switch (operation.kind) {
+    case "create-element":
+      return `Create architecture element ${operation.elementId}.`;
+    case "create-relationship":
+      return `Create architecture relationship ${operation.relationshipId}.`;
+    case "create-deployment-item":
+      return `Create deployment topology item ${operation.itemId}.`;
+    case "create-dynamic-interaction":
+      return `Create Dynamic interaction ${operation.interactionId}.`;
+  }
+}
+
+function dynamicInteractionSuggestion(relationshipId: string, order: number): string {
+  return `${relationshipId}-step-${order}`;
 }

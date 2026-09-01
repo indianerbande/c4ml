@@ -172,6 +172,33 @@ nav span.complete i {
   gap: 14px;
 }
 
+.wizard-target-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.wizard-target-options button {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  text-align: left;
+}
+
+.wizard-target-options button.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.wizard-target-options span {
+  color: var(--muted);
+}
+
 .goal-options > button {
   display: grid;
   grid-template-rows: auto auto auto 1fr;

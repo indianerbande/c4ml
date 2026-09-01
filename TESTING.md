@@ -23,6 +23,8 @@ commands are:
   worker, reviewed IBM Plex assets, and packaged license notices;
 - `pnpm run check:desktop-production` for pinned desktop dependencies, secure
   main/preload boundaries, CSP, and required packaged editor resources;
+- `pnpm run check:architecture-proof` for the deterministic, non-mutating
+  Pillar 3 policy-and-observation acceptance project;
 - `pnpm run check` for the complete current gate;
 - `pnpm run renderer:build` for the production-mode Angular renderer build;
 - `pnpm run desktop:smoke` for the built Electron shell and live compiler
@@ -298,8 +300,8 @@ facades for document/export, preview, help, and command-palette state. Existing
 runtime and session suites continue to exercise the unchanged public protocol
 barrel and stale-response behavior.
 
-The first semantic graphical-authoring evidence verifies context-derived
-creation kinds and relationship endpoint pairs for all five static C4 views,
+The semantic graphical-authoring evidence verifies context-derived creation
+kinds and relationship endpoint pairs for all five static C4 views,
 scope-owned Container, Component, and Code Element insertion, top-level Person
 and Software System insertion, missing-block creation, project-relative
 multifile targeting, duplicate and invalid-input rejection, and preservation of
@@ -326,6 +328,19 @@ validation, and the return to the same proposed-source and candidate-preview
 boundary before apply. Source edits, document changes, view changes, cancel,
 and Escape terminate the temporary picker instead of retaining stale endpoint
 state.
+Component and Code template evidence additionally protects the visible,
+scope-derived Container or Component owner guidance. Deployment tests derive
+the active environment, eligible nodes, and Software System/Container instance
+choices from the View, reject cross-environment or out-of-scope selections,
+and parse generated nested-node and instance source through the normal project
+compiler. Dynamic tests expose only eligible directed static Relationships,
+derive immutable endpoint direction and the next positive order, insert
+interactions before an existing layout block, and reject duplicate IDs,
+invalid orders, or unknown Relationships. Worker tests compile non-mutating
+Deployment and Dynamic candidates through the same protocol guards used by
+static authoring. Template tests protect the separate contextual forms,
+explicit Dynamic order/parallel fields, and Deployment environment/placement
+choices.
 The local dark renderer harness was visually and interactively inspected on
 2026-08-31 with the German online-shop example. The dedicated **Verbinden**
 dialog remained contained beside its candidate preview; selecting Customer and
@@ -437,15 +452,23 @@ the editor, worker, fonts, resvg native binary, and notices before packaging. A
 smoke test from the packaged macOS `.app` verifies the main bridge, Monaco host,
 valid compiler state, detached projection-only bridge and window, absence of a
 source editor in that window, controlled Sans/Mono typography, and in-memory
-native PNG rasterization.
+native PNG rasterization. Normal startup remains empty; only the explicit
+`--c4ml-smoke` path focuses Monaco and enters a transient original model so the
+packaged compiler and preview are exercised without restoring the retired
+automatic example document.
 The application was visually inspected as a native two-pane workbench, a
 full-size single-window preview, and a separate preview window with its native
 menu. Selection, zoom, Route-overlay changes, and redocking were exercised; the
 detached window showed no source or file controls. The
-macOS application passes strict deep code-signature verification after ad-hoc
-signing; its DMG passes `hdiutil verify`, and its ZIP passes archive integrity
-testing. Native file-dialog interaction, the Windows installer, and the Linux
-portable application remain manual/platform-specific evidence.
+current `0.1.0-beta.1` macOS arm64 application was built and smoked with Node.js
+24.15.0. Its native bundle name and version match the release identity, its
+packaged ICNS content matches the reviewed original icon, and it passes strict
+deep code-signature verification after ad-hoc signing. Its DMG passes
+`hdiutil verify`, and its version-specific ZIP passes archive integrity testing. The
+host-specific `check:native-release` command records the executable and
+distributable sizes and SHA-256 hashes below the ignored build tree. Native
+file-dialog interaction, the current Windows installer, and the Linux portable
+application remain manual/platform-specific evidence.
 
 The experimental CLI suite exercises successful validation, semantic comparison
 of two valid sources, deterministic semantic impact exposure, empty comparison
@@ -795,14 +818,21 @@ changes its generated technical identifier. Tests that extend existing
 documents MUST also verify that unrelated declarations, comments, stable
 identifiers, and formatting are not silently rewritten.
 
-The current new-document-only wizard foundation proves deterministic System
-Context and Container generation, normal parser and semantic validation,
+The current wizard foundation proves deterministic System Context and Container
+generation, normal parser and semantic validation,
 dynamic part and connection validation, explicit direction and protocol,
 stale-result rejection, cancel without source changes, and one explicit undo.
 Template and interaction tests MUST keep that undo out of the title actions,
 present it as contextual status feedback, require an explicit confirmation,
 contain keyboard focus in the confirmation dialog, and invalidate it on the
-next source or document change.
+next source or document change. The existing-document path additionally requires
+three bounded project edits for model, Relationships, and View insertion; exact
+retention of unrelated comments, declarations, stable identifiers, and
+formatting; normal parsing of the candidate; rejection of project-wide ID
+collisions and unknown targets; worker-protocol validation; and an explicit
+new-document/extend-document choice. Apply retains the active project and marks
+its active document dirty, while the captured document state supplies the same
+confirmed one-step undo.
 Interaction review also checks that questions can be completed from familiar
 architecture concepts without prior C4 vocabulary. Template and localization
 tests MUST additionally verify that every rendered form control has adjacent
@@ -811,9 +841,7 @@ content accessibly, that IDs are described as source tokens rather than vague
 technical names, and that German interface selection starts with German-owned
 example answers. Those answers MUST retain one coherent original online-shop
 story across role, application, separately running parts, technologies, and
-connections in both interface languages. Existing-document
-preservation tests do not apply until that separate capability is designed and
-implemented.
+connections in both interface languages.
 
 On 2026-08-31 the German renderer harness was visually and interactively
 checked after generating the online-shop System Context. The contextual undo
@@ -896,6 +924,13 @@ run install, the complete check, packaged smoke, and its configured makers.
 macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
 Setup EXE; Linux evidence covers the unpacked application and portable ZIP.
 No host may satisfy another host's launch or filesystem evidence.
+`pnpm run release:native` composes those automated steps and
+`check:native-release` additionally requires the current product/version
+artifacts, verifies macOS signature/DMG/ZIP integrity or Linux ZIP integrity,
+and writes a host-local hash manifest. On Windows it requires the packaged EXE,
+Squirrel Setup EXE, full NuGet package, and RELEASES index. A release install
+MUST be performed under Node.js 24 so optional native maker helpers do not
+retain an ABI from another Node.js line.
 
 Automated tests may substitute adapters for native dialogs, but at least one
 manual file round trip and close-protection check is required on each supported
@@ -1100,6 +1135,16 @@ with the original multifile Garden Pulse example: the Output activity visibly
 showed two separate cards for `c4ml.observation.drift` and
 `c4ml.observation.uncertain`, while the three authored source tabs and unchanged
 diagram remained present.
+
+The formal Pillar 3 gate additionally runs that original project with its local
+governance policy and observation resource twice through the built CLI. It
+requires deterministic JSON, classified exit code `6`, source locations and
+evidence for every finding, retained observation adapter/time/confirmation,
+the authored `Garden Pulse` name in the canonical snapshot, and an identical
+SHA-256 digest for every project file before and after evaluation. The complete
+test suite retains the equivalent compiler-worker reports and Output-to-source
+navigation evidence. Pillar 3 is therefore accepted as deterministic,
+source-located, explained, frontend-equivalent, offline, and non-mutating.
 
 ### 2.15 Project and multi-document source
 

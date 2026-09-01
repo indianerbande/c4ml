@@ -147,14 +147,17 @@ export class AppComponent {
     const activeView = state.views.find(({ id }) => id === state.activeViewId);
     return (
       state.phase === "valid" &&
-      activeView !== undefined &&
-      activeView.kind !== "dynamic" &&
-      activeView.kind !== "deployment"
+      activeView !== undefined
     );
   });
-  readonly canConnectArchitecture = computed(
-    () => this.canEditArchitecture() && !this.semanticEditor.picking(),
-  );
+  readonly canConnectArchitecture = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return this.canEditArchitecture() &&
+      activeView?.kind !== "dynamic" &&
+      activeView?.kind !== "deployment" &&
+      !this.semanticEditor.picking();
+  });
   readonly canStartWizard = computed(
     () => this.compiler.state().phase !== "compiling" && !this.wizardOpen(),
   );
@@ -724,9 +727,13 @@ export class AppComponent {
     this.wizardOpen.set(false);
   }
 
-  applyWizard(source: string): void {
-    const next = this.#wizardSourceSession.apply(source);
-    this.documents.resetAsGeneratedDocument(next);
+  applyWizard(result: { readonly mode: "extend" | "new"; readonly source: string }): void {
+    const next = this.#wizardSourceSession.apply(result.source);
+    if (result.mode === "extend") {
+      this.documents.replaceSource(next, true);
+    } else {
+      this.documents.resetAsGeneratedDocument(next);
+    }
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardUndoConfirmationOpen.set(false);

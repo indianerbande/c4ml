@@ -1,4 +1,14 @@
 import { c4mlDraftLanguageVersion } from "./language.js";
+import {
+  applyProjectSourceChangeSet,
+  createProposedProjectSourceChangeSet,
+  type ArchitectureProjectInput,
+  type ProposedProjectSourceChangeSet,
+} from "@c4ml/compiler-core";
+import { URI } from "langium";
+
+import type { C4mlDocument } from "./generated/ast.js";
+import { createC4mlDraftServices } from "./services.js";
 
 export type C4mlDraftClassification = "external" | "internal";
 export type C4mlDraftFlowDirection = "down" | "left" | "right" | "up";
@@ -65,6 +75,30 @@ export interface C4mlSystemContextWizardResult {
   readonly source: string | undefined;
   readonly issues: readonly C4mlWizardIssue[];
 }
+
+export type C4mlWizardExtensionIssueCode =
+  | "C4ML-WIZARD-101"
+  | "C4ML-WIZARD-102"
+  | "C4ML-WIZARD-103"
+  | "C4ML-WIZARD-104";
+
+export interface C4mlWizardExtensionIssue {
+  readonly code: C4mlWizardExtensionIssueCode;
+  readonly message: string;
+}
+
+export type C4mlWizardExtensionProposal =
+  | {
+      readonly valid: true;
+      readonly changeSet: ProposedProjectSourceChangeSet;
+      readonly documentUri: string;
+      readonly proposedText: string;
+      readonly issues: readonly [];
+    }
+  | {
+      readonly valid: false;
+      readonly issues: readonly C4mlWizardExtensionIssue[];
+    };
 
 export const defaultSystemContextWizardAnswers: C4mlSystemContextWizardAnswers = {
   viewKind: "system-context",
@@ -198,6 +232,131 @@ export function generateSystemContextDraft(
     `c4ml ${c4mlDraftLanguageVersion}`,
     "",
     "model {",
+    ...wizardModelLines(answers),
+    "}",
+    "",
+    "relations {",
+    ...wizardRelationLines(answers),
+    "}",
+    "",
+    ...wizardViewLines(answers),
+    "",
+  ].join("\n");
+
+  return {
+    languageVersion: c4mlDraftLanguageVersion,
+    valid: true,
+    source,
+    issues: [],
+  };
+}
+
+export async function proposeC4mlWizardExtension(
+  project: ArchitectureProjectInput,
+  documentUri: string,
+  answers: C4mlSystemContextWizardAnswers,
+): Promise<C4mlWizardExtensionProposal> {
+  const generated = generateSystemContextDraft(answers);
+  if (!generated.valid) {
+    return extensionInvalid(
+      "C4ML-WIZARD-101",
+      "The assistant answers must be valid before an existing document can be extended.",
+    );
+  }
+  const parsed = await parseWizardProject(project);
+  if (parsed === undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-101",
+      "The assistant can extend only a valid C4ML project.",
+    );
+  }
+  const target = parsed.find(({ uri }) => uri === documentUri);
+  if (target === undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-102",
+      `The target document "${documentUri}" is not part of the active project.`,
+    );
+  }
+  if (target.ast.model?.$cstNode === undefined || target.ast.relations?.$cstNode === undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-102",
+      "Safe assistant extension currently requires model and relations blocks in the target document.",
+    );
+  }
+  const existingIds = new Set(
+    parsed.flatMap(({ ast }) => [
+      ...(ast.model?.elements.map(({ name }) => name) ?? []),
+      ...(ast.relations?.relationships.map(({ name }) => name) ?? []),
+      ...ast.views.map(({ name }) => name),
+    ]),
+  );
+  const requestedIds = wizardIds(answers);
+  const duplicate = requestedIds.find((id) => existingIds.has(id));
+  if (duplicate !== undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-103",
+      `The stable identifier "${duplicate}" already exists in the active project.`,
+    );
+  }
+  const eol = lineEnding(target.source);
+  const modelEdit = insertWizardLines(
+    target.source,
+    target.ast.model.$cstNode,
+    wizardModelLines(answers),
+  );
+  const relationsEdit = insertWizardLines(
+    target.source,
+    target.ast.relations.$cstNode,
+    wizardRelationLines(answers),
+  );
+  if (modelEdit === undefined || relationsEdit === undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-104",
+      "C4ML could not locate stable insertion points for the assistant result.",
+    );
+  }
+  const viewText = wizardViewLines(answers).join(eol);
+  const viewEdit = {
+    startOffset: target.source.length,
+    endOffset: target.source.length,
+    text: `${target.source.endsWith(eol) ? eol : `${eol}${eol}`}${viewText}${eol}`,
+  };
+  const changeSet = createProposedProjectSourceChangeSet(project, {
+    id: `wizard-extend-${answers.viewId}`,
+    intent: {
+      id: "wizard-extend-existing-document",
+      kind: "architecture",
+      summary: `Extend ${documentUri} with assistant-generated architecture`,
+    },
+    affectedIds: requestedIds,
+    edits: [modelEdit, relationsEdit, viewEdit].map((edit) => ({
+      documentUri,
+      ...edit,
+    })),
+  });
+  const application = applyProjectSourceChangeSet(project, changeSet);
+  if (!application.valid) {
+    return extensionInvalid(
+      "C4ML-WIZARD-104",
+      "The assistant extension could not be applied atomically.",
+    );
+  }
+  const proposedText = application.project.documents.find(
+    ({ uri }) => uri === documentUri,
+  )?.text;
+  if (proposedText === undefined) {
+    return extensionInvalid(
+      "C4ML-WIZARD-104",
+      "The assistant extension did not produce the target document.",
+    );
+  }
+  return { valid: true, changeSet, documentUri, proposedText, issues: [] };
+}
+
+function wizardModelLines(
+  answers: C4mlSystemContextWizardAnswers,
+): string[] {
+  return [
     ...declaration("person", answers.personId, [
       ["name", quote(answers.personName)],
       ["responsibility", quote(answers.personResponsibility)],
@@ -212,24 +371,23 @@ export function generateSystemContextDraft(
     ...(answers.viewKind === "container"
       ? answers.parts.flatMap((part) => [
           "",
-          ...declaration(`container`, `${part.id} inside ${answers.systemId}`, [
+          ...declaration("container", `${part.id} inside ${answers.systemId}`, [
             ["name", quote(part.name)],
             ["responsibility", quote(part.responsibility)],
             ["technology", quote(part.technology)],
           ]),
         ])
       : []),
-    "}",
-    "",
-    "relations {",
+  ];
+}
+
+function wizardRelationLines(
+  answers: C4mlSystemContextWizardAnswers,
+): string[] {
+  return [
     ...declaration("relation", answers.relationshipId, [
       ["from", answers.personId],
-      [
-        "to",
-        answers.viewKind === "container"
-          ? answers.entryPartId
-          : answers.systemId,
-      ],
+      ["to", answers.viewKind === "container" ? answers.entryPartId : answers.systemId],
       ["intent", quote(answers.relationshipIntent)],
     ]),
     ...(answers.viewKind === "container"
@@ -243,8 +401,11 @@ export function generateSystemContextDraft(
           ]),
         ])
       : []),
-    "}",
-    "",
+  ];
+}
+
+function wizardViewLines(answers: C4mlSystemContextWizardAnswers): string[] {
+  return [
     `view ${answers.viewId} {`,
     `  type = ${answers.viewKind}`,
     `  scope = ${answers.systemId}`,
@@ -257,15 +418,71 @@ export function generateSystemContextDraft(
     `    flow = ${answers.flow}`,
     "  }",
     "}",
-    "",
-  ].join("\n");
+  ];
+}
 
+function wizardIds(answers: C4mlSystemContextWizardAnswers): string[] {
+  return [
+    answers.personId,
+    answers.systemId,
+    ...(answers.viewKind === "container" ? answers.parts.map(({ id }) => id) : []),
+    answers.relationshipId,
+    ...(answers.viewKind === "container" ? answers.connections.map(({ id }) => id) : []),
+    answers.viewId,
+  ];
+}
+
+function insertWizardLines(
+  source: string,
+  node: { readonly offset: number; readonly text: string },
+  lines: readonly string[],
+): { readonly startOffset: number; readonly endOffset: number; readonly text: string } | undefined {
+  const relativeClose = node.text.lastIndexOf("}");
+  if (relativeClose < 0) return undefined;
+  const closeOffset = node.offset + relativeClose;
+  const eol = lineEnding(source);
+  const leading = source.slice(0, closeOffset).endsWith("\n") ? "" : eol;
   return {
-    languageVersion: c4mlDraftLanguageVersion,
-    valid: true,
-    source,
-    issues: [],
+    startOffset: closeOffset,
+    endOffset: closeOffset,
+    text: `${leading}${lines.join(eol)}${eol}`,
   };
+}
+
+async function parseWizardProject(project: ArchitectureProjectInput) {
+  const services = createC4mlDraftServices();
+  const documents = project.documents.map((sourceDocument) => {
+    const document = services.shared.workspace.LangiumDocumentFactory.fromString(
+      sourceDocument.text,
+      URI.from({ scheme: "c4ml-wizard", path: `/${sourceDocument.uri}` }),
+    );
+    services.shared.workspace.LangiumDocuments.addDocument(document);
+    return { sourceDocument, document };
+  });
+  await services.shared.workspace.DocumentBuilder.build(
+    documents.map(({ document }) => document),
+    { validation: true },
+  );
+  if (documents.some(({ document }) =>
+    (document.diagnostics ?? []).some(({ severity }) => severity === 1))) {
+    return undefined;
+  }
+  return documents.map(({ sourceDocument, document }) => ({
+    uri: sourceDocument.uri,
+    source: sourceDocument.text,
+    ast: document.parseResult.value as C4mlDocument,
+  }));
+}
+
+function lineEnding(source: string): "\n" | "\r\n" {
+  return source.includes("\r\n") ? "\r\n" : "\n";
+}
+
+function extensionInvalid(
+  code: C4mlWizardExtensionIssueCode,
+  message: string,
+): C4mlWizardExtensionProposal {
+  return { valid: false, issues: [{ code, message }] };
 }
 
 function validateAnswers(

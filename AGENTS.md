@@ -154,14 +154,16 @@ project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
 same boundaries for cardinal Port choice and add/move/remove/reset guidance,
 with explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
-review, and one-step apply/undo. The first semantic graphical authoring slice
-creates or connects architecture elements in the five static C4 views through
+review, and one-step apply/undo. Semantic graphical authoring creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
 source review, and one-step apply/undo. Creation and connection are separate
 top-level actions; connection authoring additionally supports a temporary,
 worker-validated Source-to-Target diagram picker without hidden model state.
-Dynamic-interaction and deployment-
-topology authoring remain dedicated later gestures. The portable version-one
+Component and Code guidance derives the fixed owner from the active View.
+Dedicated Deployment-topology authoring adds environment-bounded nodes,
+infrastructure, and scoped instances; dedicated Dynamic-interaction authoring
+reuses eligible directed static Relationships with explicit order and optional
+parallel grouping. Both use the same source-review and undo boundary. The portable version-one
 semantic differ is implemented and automatically validated: it matches
 kind-qualified stable identities, separates model, Relationship, deployment,
 View, presentation, and layout changes, recognizes renames, ignores source and
@@ -324,11 +326,14 @@ commitment.
 The completion and wizard source-generation APIs are experimental authoring
 contracts over those same subsets. They MUST stay outside Angular components and
 MUST produce ordinary source edits or complete source documents. The wizard
-currently creates a new System Context or Container document. It asks first in
-familiar architecture language and presents C4 terminology only as optional
-translation; users MUST NOT need to recall C4 vocabulary to complete it.
-Extending existing source without disturbing comments and formatting remains
-unimplemented.
+currently creates a new System Context or Container document or extends the
+active valid document through bounded project edits. Existing-document
+extension requires model and relations blocks, rejects project-wide stable-ID
+collisions, preserves unrelated source, and remains explicitly selectable. It
+asks first in familiar architecture language and presents C4 terminology only
+as optional translation; users MUST NOT need to recall C4 vocabulary to
+complete it. Component, Code, Dynamic, Deployment, and missing-section wizard
+flows remain unimplemented.
 
 A thin experimental Node.js CLI now exists under `apps/cli`. It accepts the
 same executable language slices, delegates all compilation to the shared
@@ -527,6 +532,8 @@ repository:
   pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run check:desktop-production` verifies the pinned Electron/Forge stack,
   hardened main/preload boundary, local CSP, and required editor resources;
+- `pnpm run check:architecture-proof` runs the deterministic, non-mutating
+  Pillar 3 policy-and-observation acceptance project;
 - `pnpm run typecheck` builds source and type-checks test code;
 - `pnpm run test` runs the semantic, view-resolution, adapter, language,
   editor, and CLI tests;
@@ -545,6 +552,9 @@ repository:
   desktop application under `build/desktop/`;
 - `pnpm run desktop:make` creates the ignored current-platform development
   installers/archives under `build/desktop/make/`; and
+- `pnpm run check:native-release` verifies the current host's packaged
+  executable and configured distributables and writes ignored hash evidence;
+- `pnpm run release:native` runs the complete native release-host gate; and
 - `pnpm run c4ml -- version` builds the CLI dependency slice and runs the
   experimental command-line frontend.
 

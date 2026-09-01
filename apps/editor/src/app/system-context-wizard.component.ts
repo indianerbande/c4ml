@@ -4,6 +4,7 @@ import {
   DestroyRef,
   computed,
   inject,
+  input,
   output,
   signal,
 } from "@angular/core";
@@ -18,6 +19,7 @@ import {
 } from "@c4ml/language-c4ml";
 
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
+import type { CompilerWorkerProject } from "./compiler-worker.compile.protocol.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import type { WorkbenchUiLanguage } from "./workbench-preferences.js";
 
@@ -28,11 +30,17 @@ import type { WorkbenchUiLanguage } from "./workbench-preferences.js";
   styleUrl: "./system-context-wizard.component.css",
 })
 export class SystemContextWizardComponent {
-  readonly applied = output<string>();
+  readonly extensionProject = input<CompilerWorkerProject | undefined>();
+  readonly extensionFile = input<string | undefined>();
+  readonly applied = output<{ readonly mode: "extend" | "new"; readonly source: string }>();
   readonly cancelled = output<void>();
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly step = signal(0);
+  readonly mode = signal<"extend" | "new">("new");
+  readonly extensionAvailable = computed(
+    () => this.extensionProject() !== undefined && this.extensionFile() !== undefined,
+  );
   readonly answers = signal<C4mlSystemContextWizardAnswers>(
     initialWizardAnswers(this.i18n.language()),
   );
@@ -61,7 +69,13 @@ export class SystemContextWizardComponent {
         clearTimeout(this.#generationTimer);
       }
     });
-    this.compiler.generateSystemContext(this.answers());
+    this.#generate();
+  }
+
+  selectMode(mode: "extend" | "new"): void {
+    if (mode === "extend" && !this.extensionAvailable()) return;
+    this.mode.set(mode);
+    this.#generate();
   }
 
   selectViewKind(viewKind: C4mlArchitectureWizardViewKind): void {
@@ -311,7 +325,7 @@ export class SystemContextWizardComponent {
   apply(): void {
     const state = this.compiler.wizard();
     if (state.phase === "valid" && state.source !== undefined) {
-      this.applied.emit(state.source);
+      this.applied.emit({ mode: this.mode(), source: state.source });
     }
   }
 
@@ -345,8 +359,19 @@ export class SystemContextWizardComponent {
       clearTimeout(this.#generationTimer);
     }
     this.#generationTimer = setTimeout(() => {
-      this.compiler.generateSystemContext(this.answers());
+      this.#generate();
     }, 90);
+  }
+
+  #generate(): void {
+    const project = this.extensionProject();
+    const file = this.extensionFile();
+    this.compiler.generateSystemContext(
+      this.answers(),
+      this.mode() === "extend" && project !== undefined && file !== undefined
+        ? { project, file }
+        : undefined,
+    );
   }
 }
 

@@ -412,6 +412,10 @@ const englishMessages = {
   "semanticEditor.owner": "Created inside {owner}; the active C4 scope supplies this owner.",
   "semanticEditor.contextVisibilityHint":
     "A new context neighbor is added to the model first. Use Connect next to make it visible in this System Context.",
+  "semanticEditor.componentContextHint":
+    "The active Component View fixes the owning Container. Describe one cohesive part inside it.",
+  "semanticEditor.codeContextHint":
+    "The active Code View fixes the owning Component. Document only a code structure important to understanding it.",
   "semanticEditor.name": "Name people will read",
   "semanticEditor.namePlaceholder": "A short, recognizable name",
   "semanticEditor.responsibility": "What is its one main responsibility?",
@@ -444,6 +448,48 @@ const englishMessages = {
   "semanticEditor.authority":
     "Applying changes the architecture source in one undoable edit; no semantic state is hidden in the editor.",
   "semanticEditor.apply": "Apply architecture change",
+  "deploymentEditor.eyebrow": "Deployment topology change",
+  "deploymentEditor.title": "Change the deployment topology",
+  "deploymentEditor.description":
+    "Add a runtime location, infrastructure dependency, or application instance to the active environment.",
+  "deploymentEditor.environment": "Active runtime environment",
+  "deploymentEditor.itemKind": "What should be added?",
+  "deploymentEditor.kind.deployment-node": "Runtime location (Deployment Node)",
+  "deploymentEditor.kind.infrastructure-node": "Infrastructure dependency",
+  "deploymentEditor.kind.software-system-instance": "Application instance",
+  "deploymentEditor.kind.container-instance": "Running or data-holding part instance",
+  "deploymentEditor.stableId": "Stable deployment identifier",
+  "deploymentEditor.parentNode": "Contained in which runtime location?",
+  "deploymentEditor.noParent": "No parent — top-level location",
+  "deploymentEditor.parentHint":
+    "Choose a parent only when this location physically or logically runs inside it.",
+  "deploymentEditor.node": "On which runtime location?",
+  "deploymentEditor.architectureElement": "Which existing architecture element runs here?",
+  "deploymentEditor.architectureElementHint":
+    "Only Software Systems and Containers selected by this Deployment View are offered.",
+  "deploymentEditor.name": "Readable runtime name",
+  "deploymentEditor.namePlaceholder": "For example: Application Cluster",
+  "deploymentEditor.responsibility": "What does this runtime location provide?",
+  "deploymentEditor.responsibilityPlaceholder":
+    "Describe the operational responsibility of this location.",
+  "deploymentEditor.technology": "Platform or infrastructure technology",
+  "deploymentEditor.technologyPlaceholder": "For example: Kubernetes or PostgreSQL",
+  "dynamicEditor.eyebrow": "Ordered runtime interaction",
+  "dynamicEditor.title": "Add a Dynamic interaction",
+  "dynamicEditor.description":
+    "Add one meaningful step to the active scenario using an existing directed architecture relationship.",
+  "dynamicEditor.context": "Static architecture remains authoritative",
+  "dynamicEditor.contextHint":
+    "A Dynamic step reuses an existing directed relationship; it does not invent a second connection.",
+  "dynamicEditor.relationship": "Which existing interaction happens now?",
+  "dynamicEditor.order": "Step order",
+  "dynamicEditor.orderHint": "The next unused order is suggested.",
+  "dynamicEditor.parallelGroup": "Parallel group (optional)",
+  "dynamicEditor.parallelHint":
+    "Use the same stable group identifier for steps that happen at the same order.",
+  "dynamicEditor.intent": "What happens in this step?",
+  "dynamicEditor.intentPlaceholder": "A short active description of this occurrence",
+  "dynamicEditor.stableId": "Stable interaction identifier",
   "connectionEditor.eyebrow": "Directed architecture connection",
   "connectionEditor.title": "Connect elements",
   "connectionEditor.description":
@@ -491,6 +537,11 @@ const englishMessages = {
   "wizard.goal.title": "What should the first diagram explain?",
   "wizard.goal.description": "No prior knowledge of C4 terms is required.",
   "wizard.goal.label": "Diagram goal",
+  "wizard.target.label": "Assistant result",
+  "wizard.target.new": "Create a new document",
+  "wizard.target.newHint": "Replace the workbench with a new assistant-generated document.",
+  "wizard.target.extend": "Extend the current document",
+  "wizard.target.extendHint": "Insert only the new declarations; retain existing comments and formatting.",
   "wizard.goal.context": "Who uses this application, and what is around it?",
   "wizard.goal.contextHint":
     "Good for explaining the purpose and external contacts of one application.",
@@ -625,6 +676,7 @@ const englishMessages = {
   "wizard.back": "Back",
   "wizard.continue": "Continue",
   "wizard.create": "Create C4ML document",
+  "wizard.extend": "Extend current document",
 } as const;
 
 export type WorkbenchMessageKey = keyof typeof englishMessages;
@@ -1049,6 +1101,10 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.owner": "Wird in {owner} angelegt; der aktive C4-Bereich gibt diesen Besitzer vor.",
   "semanticEditor.contextVisibilityHint":
     "Ein neuer Kontextnachbar wird zuerst dem Modell hinzugefügt. Nutze anschließend Verbinden, damit er in diesem System Context sichtbar wird.",
+  "semanticEditor.componentContextHint":
+    "Die aktive Component-Ansicht legt den besitzenden Container fest. Beschreibe einen zusammengehörigen Teil darin.",
+  "semanticEditor.codeContextHint":
+    "Die aktive Code-Ansicht legt die besitzende Component fest. Dokumentiere nur eine Codestruktur, die für ihr Verständnis wichtig ist.",
   "semanticEditor.name": "Lesbarer Name",
   "semanticEditor.namePlaceholder": "Ein kurzer, wiedererkennbarer Name",
   "semanticEditor.responsibility": "Was ist die eine wichtigste Verantwortung?",
@@ -1081,6 +1137,48 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.authority":
     "Übernehmen ändert den Architekturquelltext in einem rücknehmbaren Schritt; der Editor verbirgt keinen semantischen Zustand.",
   "semanticEditor.apply": "Architekturänderung übernehmen",
+  "deploymentEditor.eyebrow": "Änderung der Deployment-Topologie",
+  "deploymentEditor.title": "Deployment-Topologie ändern",
+  "deploymentEditor.description":
+    "Füge der aktiven Laufzeitumgebung einen Ausführungsort, eine Infrastrukturabhängigkeit oder eine Anwendungsinstanz hinzu.",
+  "deploymentEditor.environment": "Aktive Laufzeitumgebung",
+  "deploymentEditor.itemKind": "Was soll hinzugefügt werden?",
+  "deploymentEditor.kind.deployment-node": "Ausführungsort (Deployment Node)",
+  "deploymentEditor.kind.infrastructure-node": "Infrastrukturabhängigkeit",
+  "deploymentEditor.kind.software-system-instance": "Anwendungsinstanz",
+  "deploymentEditor.kind.container-instance": "Instanz eines laufenden oder datenhaltenden Teils",
+  "deploymentEditor.stableId": "Stabile Deployment-Kennung",
+  "deploymentEditor.parentNode": "In welchem Ausführungsort liegt dieser Ort?",
+  "deploymentEditor.noParent": "Kein übergeordneter Ort",
+  "deploymentEditor.parentHint":
+    "Wähle nur dann einen übergeordneten Ort, wenn dieser Ort physisch oder logisch darin läuft.",
+  "deploymentEditor.node": "Auf welchem Ausführungsort?",
+  "deploymentEditor.architectureElement": "Welches vorhandene Architekturelement läuft hier?",
+  "deploymentEditor.architectureElementHint":
+    "Es werden nur Softwaresysteme und Container aus dem Bereich dieser Deployment-Ansicht angeboten.",
+  "deploymentEditor.name": "Lesbarer Laufzeitname",
+  "deploymentEditor.namePlaceholder": "Zum Beispiel: Anwendungscluster",
+  "deploymentEditor.responsibility": "Was stellt dieser Ausführungsort bereit?",
+  "deploymentEditor.responsibilityPlaceholder":
+    "Beschreibe die betriebliche Verantwortung dieses Ortes.",
+  "deploymentEditor.technology": "Plattform- oder Infrastrukturtechnologie",
+  "deploymentEditor.technologyPlaceholder": "Zum Beispiel: Kubernetes oder PostgreSQL",
+  "dynamicEditor.eyebrow": "Geordnete Laufzeitinteraktion",
+  "dynamicEditor.title": "Dynamic-Interaktion hinzufügen",
+  "dynamicEditor.description":
+    "Ergänze das aktive Szenario um einen sinnvollen Schritt auf Basis einer vorhandenen gerichteten Architekturbeziehung.",
+  "dynamicEditor.context": "Die statische Architektur bleibt maßgeblich",
+  "dynamicEditor.contextHint":
+    "Ein Dynamic-Schritt verwendet eine vorhandene gerichtete Beziehung; er erfindet keine zweite Verbindung.",
+  "dynamicEditor.relationship": "Welche vorhandene Interaktion geschieht jetzt?",
+  "dynamicEditor.order": "Reihenfolge des Schritts",
+  "dynamicEditor.orderHint": "Die nächste noch freie Reihenfolge wird vorgeschlagen.",
+  "dynamicEditor.parallelGroup": "Parallele Gruppe (optional)",
+  "dynamicEditor.parallelHint":
+    "Verwende für gleichzeitig ablaufende Schritte derselben Reihenfolge dieselbe stabile Gruppenkennung.",
+  "dynamicEditor.intent": "Was geschieht in diesem Schritt?",
+  "dynamicEditor.intentPlaceholder": "Kurze aktive Beschreibung dieses Vorkommens",
+  "dynamicEditor.stableId": "Stabile Interaktionskennung",
   "connectionEditor.eyebrow": "Gerichtete Architekturverbindung",
   "connectionEditor.title": "Elemente verbinden",
   "connectionEditor.description":
@@ -1129,6 +1227,11 @@ const germanMessages: WorkbenchMessages = {
   "wizard.goal.description":
     "Vorkenntnisse der C4-Begriffe sind nicht erforderlich.",
   "wizard.goal.label": "Ziel des Diagramms",
+  "wizard.target.label": "Ergebnis des Assistenten",
+  "wizard.target.new": "Neues Dokument erstellen",
+  "wizard.target.newHint": "Die Werkbank durch ein neues, vom Assistenten erzeugtes Dokument ersetzen.",
+  "wizard.target.extend": "Aktuelles Dokument erweitern",
+  "wizard.target.extendHint": "Nur neue Deklarationen einfügen; vorhandene Kommentare und Formatierung erhalten.",
   "wizard.goal.context":
     "Wer benutzt diese Anwendung und was befindet sich um sie herum?",
   "wizard.goal.contextHint":
@@ -1264,6 +1367,7 @@ const germanMessages: WorkbenchMessages = {
   "wizard.back": "Zurück",
   "wizard.continue": "Weiter",
   "wizard.create": "C4ML-Dokument erstellen",
+  "wizard.extend": "Aktuelles Dokument erweitern",
 };
 
 const messages: Record<WorkbenchUiLanguage, WorkbenchMessages> = {

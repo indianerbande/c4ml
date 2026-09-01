@@ -81,6 +81,12 @@ other compatibility-sensitive identifiers. Existing `.c4ml` documents,
 settings records, application data, scripts, and integrations MUST NOT require
 migration solely because the workbench product was renamed.
 
+The first internal beta identity is `0.1.0-beta.1`. Its original application
+icon combines a geometric C4 monogram with a pointed architectural arch and is
+packaged in SVG, PNG, ICNS, and ICO forms. This product icon is installation
+chrome only; it MUST NOT become a C4 notation symbol, source-language value, or
+diagram/export default.
+
 ## 2. Goals
 
 C4ML MUST:
@@ -1395,9 +1401,18 @@ source unchanged, and an applied generation has an explicit one-step undo. That
 single restoration is offered as contextual feedback above the status bar, not
 as a persistent title action, and requires confirmation because this bounded
 foundation does not yet provide redo. It expires on the next source or document
-change. This
-foundation does not extend or reformat existing documents and does not claim
-the full wizard scope described in Section 14.4.
+change.
+
+The first existing-document mode is implemented as an explicit alternative to
+new-document creation. It is offered only for a currently valid project and
+adds generated model declarations, Relationships, and one View to the active
+document through a revision-checked project change set. This bounded slice
+requires existing `model` and `relations` blocks, rejects every stable-ID
+collision across the project, previews the complete candidate source, and
+preserves unrelated declarations, comments, stable identifiers, line endings,
+and formatting byte for byte. Apply and one-step undo reuse the same explicit
+editor interaction as new-document generation. It does not yet claim the full
+wizard scope described in Section 14.4.
 
 #### 9.6.1 Local handbook and contextual help
 
@@ -1510,11 +1525,12 @@ artifacts are configured and locally validated. The Windows Squirrel maker is
 configured for a Setup EXE, and Linux uses a portable ZIP without an additional
 distribution-specific maker. Windows and Linux still require native build,
 launch, and install or unpack validation. Current macOS artifacts are ad-hoc
-signed for local execution only.
-A release MUST add a final product version and icon, Apple Developer ID signing
-and notarization, Windows code signing, and native validation on each supported
-platform. The installed application MUST run offline; dependency and Electron
-binary downloads are build/install-time concerns only.
+signed for local execution only. The first internal beta candidate has a
+product version and original native icon. A public release MUST still add Apple
+Developer ID signing and notarization, Windows code signing, and native
+validation on each supported platform. The installed application MUST run
+offline; dependency and Electron binary downloads are build/install-time
+concerns only.
 
 Builds MUST run on their target operating system. Platform-specific packaging
 helpers MUST remain optional or transitive to their maker and MUST NOT execute
@@ -1637,8 +1653,8 @@ destination rather than repeating the authored title of the current View.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
-**Status: Accepted architectural direction; portable version-one contracts
-implemented and automatically validated.**
+**Status: Accepted; portable version-one contracts and all three product
+pillars implemented and automatically validated.**
 
 The three product pillars in Section 1.1 require shared portable contracts
 before feature-specific editor work begins:
@@ -1706,8 +1722,8 @@ candidate project and reports hard diagnostics separately before Angular can
 enable apply. Monaco applies an accepted transaction as one undo unit, and the
 editor retains no hidden Route geometry.
 
-The first semantic graphical-authoring slice is implemented for the five
-static C4 views. The language package inspects the active resolved view and
+Semantic graphical authoring is implemented for all seven C4 view types. For
+the five static views, the language package inspects the active resolved view and
 returns the permitted creation kinds, their scope-derived owner, and valid
 directed relationship endpoint pairs. System Landscape and System Context may
 create People or Software Systems; Container, Component, and Code views create
@@ -1728,9 +1744,21 @@ temporary Source-then-Target diagram picker. The picker accepts only
 worker-reported, context-valid element pairs, keeps direction explicit, and
 returns to the same non-mutating candidate preview before any source change is
 applied. It creates no hidden relationship or selection state in the model.
-Dynamic interactions and
-deployment topology require dedicated later operations and are not represented
-by a generic element-creation action.
+Component and Code forms explicitly explain the Container or Component owner
+derived from the active View so the author answers only questions valid inside
+that scope. A Deployment View changes the same entry point into a dedicated
+topology gesture over its referenced environment and Software System set. It
+can add nested Deployment Nodes, Infrastructure Nodes, Software System
+instances, and Container instances; only nodes from that environment and
+static elements inside the View's selected systems are offered. A Dynamic View
+changes the entry point into a dedicated ordered-interaction gesture. It offers
+only existing directed static Relationships whose endpoints are Software
+Systems, Containers, or Components, derives the endpoints from the selected
+Relationship, and suggests the next unused positive order. Parallel grouping
+remains explicit. Both gestures use the same deterministic candidate
+compilation, exact proposed-source review, one-unit apply, and one-step undo as
+static authoring. Neither is represented as a generic box or hidden model
+state.
 
 The implemented architecture snapshot removes source locations and parser
 objects, sorts unordered declarations, preserves typed semantic, deployment,
@@ -2232,15 +2260,17 @@ operation.
 
 Before applying generated source, the editor SHOULD show the proposed source
 and resulting diagnostics or preview. Applying, cancelling, and undoing the
-wizard operation MUST be explicit. Whether the first wizard creates only new
-documents or can also extend existing source without disturbing comments and
-formatting remains an open interaction-design decision.
+wizard operation MUST be explicit. The user explicitly chooses between creating
+a new document and extending the active valid document. Existing-document
+extension MUST use bounded syntax-aware edits and MUST reject an unsafe
+insertion point or identity collision rather than reserialize the source.
 
-The implemented experimental wizard currently chooses the conservative
-new-document-only behavior and supports bounded System Context and Container
-starters. This is foundation evidence, not acceptance of the final wizard
-interaction model; Components, Code, deployments, Visual Groups, and safe
-extension of existing documents remain open and unimplemented.
+The implemented experimental wizard supports bounded System Context and
+Container starters as either a new document or a source-preserving extension
+of an active document that already has model and Relationship sections. This is
+foundation evidence, not acceptance of the final wizard interaction model;
+Components, Code, deployments, Visual Groups, cross-document insertion choices,
+and creation of missing top-level sections remain open and unimplemented.
 
 ## 15. MVP acceptance criteria
 

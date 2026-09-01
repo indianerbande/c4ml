@@ -25,6 +25,19 @@
           <span>{{ i18n.t("wizard.goal.description") }}</span>
         </div>
 
+        @if (extensionAvailable()) {
+          <div class="wizard-target-options" role="radiogroup" [attr.aria-label]="i18n.t('wizard.target.label')">
+            <button type="button" role="radio" [attr.aria-checked]="mode() === 'new'" [class.is-selected]="mode() === 'new'" (click)="selectMode('new')">
+              <strong>{{ i18n.t("wizard.target.new") }}</strong>
+              <span>{{ i18n.t("wizard.target.newHint") }}</span>
+            </button>
+            <button type="button" role="radio" [attr.aria-checked]="mode() === 'extend'" [class.is-selected]="mode() === 'extend'" (click)="selectMode('extend')">
+              <strong>{{ i18n.t("wizard.target.extend") }}</strong>
+              <span>{{ i18n.t("wizard.target.extendHint") }}</span>
+            </button>
+          </div>
+        }
+
         <div class="goal-options" role="radiogroup" [attr.aria-label]="i18n.t('wizard.goal.label')">
           <button
             type="button"
@@ -417,7 +430,7 @@
       <button type="button" class="primary" (click)="next()">{{ i18n.t("wizard.continue") }}</button>
     } @else {
       <button type="button" class="primary" (click)="apply()" [disabled]="compiler.wizard().phase !== 'valid'">
-        {{ i18n.t("wizard.create") }}
+        {{ i18n.t(mode() === "extend" ? "wizard.extend" : "wizard.create") }}
       </button>
     }
   </footer>

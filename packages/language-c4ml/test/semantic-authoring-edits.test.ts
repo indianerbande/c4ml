@@ -55,6 +55,27 @@ model {
 
 relations {
   // Existing declarations and comments must survive semantic authoring.
+  relation garden-reads-weather {
+    from = garden-pulse
+    to = weather-feed
+    intent = "Reads the local forecast"
+    protocol = "HTTPS/JSON"
+  }
+}
+
+deployments {
+  environment production {
+    name = "Production"
+    responsibility = "Runs the live Garden Pulse installation."
+
+    node garden-cloud {
+      name = "Garden Cloud"
+      responsibility = "Hosts the production application."
+      technology = "European cloud region"
+    }
+
+    system-instance live-garden-pulse of garden-pulse on garden-cloud
+  }
 }
 
 view garden-context {
@@ -98,6 +119,38 @@ view garden-landscape {
   scope = "Community Garden"
   title = "System Landscape — Community Garden"
   purpose = "Shows the application landscape."
+  audience = default
+  legend = generated
+}
+
+view garden-weather-sequence {
+  type = dynamic
+  scope = "Read the weather forecast"
+  title = "Dynamic View — Read Weather"
+  purpose = "Shows how Garden Pulse obtains a forecast."
+  audience = default
+  legend = generated
+  display = sequence
+
+  interaction read-weather {
+    order = 1
+    from = garden-pulse
+    to = weather-feed
+    intent = "Reads the local forecast"
+    relation = garden-reads-weather
+  }
+
+  layout {
+    flow = right
+  }
+}
+
+view garden-production {
+  type = deployment
+  environment = production
+  systems = [garden-pulse]
+  title = "Deployment View — Garden Pulse Production"
+  purpose = "Shows where Garden Pulse runs."
   audience = default
   legend = generated
 }
@@ -176,6 +229,50 @@ describe("semantic authoring context", () => {
       targetIds: ["weather-feed"],
     });
   });
+
+  it("derives Deployment topology choices from the active environment and system scope", async () => {
+    const result = await inspectC4mlSemanticAuthoringContext(
+      project(),
+      "garden-production",
+    );
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.context.deployment).toMatchObject({
+      environmentId: "production",
+      environmentLabel: "Production",
+      createActions: [
+        "deployment-node",
+        "infrastructure-node",
+        "software-system-instance",
+        "container-instance",
+      ],
+      nodes: [{ id: "garden-cloud", label: "Garden Cloud" }],
+    });
+    expect(result.context.deployment?.elements).toEqual([
+      { id: "garden-api", label: "Garden API", kind: "container" },
+      { id: "garden-pulse", label: "Garden Pulse", kind: "software-system" },
+    ]);
+  });
+
+  it("derives the next Dynamic order and only directed static-model relationships", async () => {
+    const result = await inspectC4mlSemanticAuthoringContext(
+      project(),
+      "garden-weather-sequence",
+    );
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.context.dynamic).toEqual({
+      nextOrder: 2,
+      relationships: [{
+        id: "garden-reads-weather",
+        sourceId: "garden-pulse",
+        sourceLabel: "Garden Pulse",
+        targetId: "weather-feed",
+        targetLabel: "Weather Feed",
+        intent: "Reads the local forecast",
+      }],
+    });
+  });
 });
 
 describe("semantic source edits", () => {
@@ -245,10 +342,12 @@ describe("semantic source edits", () => {
   });
 
   it("inserts a missing relations block before the owning view", async () => {
-    const withoutRelations = source.replace(
-      /\nrelations \{[\s\S]*?\n\}\n\nview garden-context/u,
-      "\nview garden-context",
-    );
+    const relationsStart = source.indexOf("\nrelations {");
+    const deploymentsStart = source.indexOf("\ndeployments {");
+    const withoutRelationsAndDynamic = `${source.slice(0, relationsStart)}${source.slice(deploymentsStart)}`;
+    const dynamicStart = withoutRelationsAndDynamic.indexOf("\nview garden-weather-sequence");
+    const deploymentViewStart = withoutRelationsAndDynamic.indexOf("\nview garden-production");
+    const withoutRelations = `${withoutRelationsAndDynamic.slice(0, dynamicStart)}${withoutRelationsAndDynamic.slice(deploymentViewStart)}`;
     const proposal = await proposeC4mlSemanticEdit(
       project(withoutRelations),
       request("garden-context", {
@@ -273,12 +372,11 @@ describe("semantic source edits", () => {
   });
 
   it("targets the owner document in an explicit multifile project", async () => {
-    const modelEnd = source.indexOf("\nrelations {");
     const viewStart = source.indexOf("\nview garden-context");
     const multifile = createArchitectureProjectInput({
       id: "semantic-multifile",
       documents: [
-        { uri: "model.c4ml", text: `${source.slice(0, modelEnd)}\n` },
+        { uri: "model.c4ml", text: `${source.slice(0, viewStart)}\n` },
         {
           uri: "views.c4ml",
           text: `c4ml draft-1\n${source.slice(viewStart)}\n`,
@@ -330,6 +428,153 @@ describe("semantic source edits", () => {
       }),
     );
     expect(code).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-AUTHORING-203" }],
+    });
+  });
+
+  it("adds Deployment Nodes and scoped instances to the active environment", async () => {
+    const nodeProposal = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-production", {
+        kind: "create-deployment-item",
+        itemKind: "deployment-node",
+        itemId: "application-cluster",
+        name: "Application Cluster",
+        responsibility: "Runs the application workloads.",
+        technology: "Kubernetes",
+        parentNodeId: "garden-cloud",
+      }),
+    );
+    expect(nodeProposal.valid).toBe(true);
+    if (!nodeProposal.valid) return;
+    const withNode = applyProjectSourceChangeSet(project(), nodeProposal.changeSet);
+    expect(withNode.valid).toBe(true);
+    if (!withNode.valid) return;
+    expect(withNode.project.documents[0]?.text).toContain(
+      "node application-cluster inside garden-cloud",
+    );
+    expect((await parseC4mlProjectDraft(withNode.project)).valid).toBe(true);
+
+    const instanceProposal = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-production", {
+        kind: "create-deployment-item",
+        itemKind: "container-instance",
+        itemId: "live-garden-api",
+        nodeId: "garden-cloud",
+        elementId: "garden-api",
+      }),
+    );
+    expect(instanceProposal.valid).toBe(true);
+    if (!instanceProposal.valid) return;
+    const withInstance = applyProjectSourceChangeSet(project(), instanceProposal.changeSet);
+    expect(withInstance.valid).toBe(true);
+    if (!withInstance.valid) return;
+    expect(withInstance.project.documents[0]?.text).toContain(
+      "container-instance live-garden-api of garden-api on garden-cloud",
+    );
+    expect((await parseC4mlProjectDraft(withInstance.project)).valid).toBe(true);
+  });
+
+  it("adds an ordered Dynamic interaction before a View layout block", async () => {
+    const proposal = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-weather-sequence", {
+        kind: "create-dynamic-interaction",
+        interactionId: "refresh-weather",
+        order: 2,
+        relationshipId: "garden-reads-weather",
+        intent: "Refreshes the local forecast",
+      }),
+    );
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    const applied = applyProjectSourceChangeSet(project(), proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const changed = applied.project.documents[0]!.text;
+    expect(changed).toContain("interaction refresh-weather");
+    expect(changed.indexOf("interaction refresh-weather")).toBeLessThan(
+      changed.indexOf("layout {", changed.indexOf("view garden-weather-sequence")),
+    );
+    expect((await parseC4mlProjectDraft(applied.project)).valid).toBe(true);
+  });
+
+  it("rejects out-of-scope Deployment selections and invalid Dynamic steps", async () => {
+    const outsideDeploymentScope = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-production", {
+        kind: "create-deployment-item",
+        itemKind: "software-system-instance",
+        itemId: "live-weather-feed",
+        nodeId: "garden-cloud",
+        elementId: "weather-feed",
+      }),
+    );
+    expect(outsideDeploymentScope).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-AUTHORING-203" }],
+    });
+
+    const wrongEnvironmentNode = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-production", {
+        kind: "create-deployment-item",
+        itemKind: "deployment-node",
+        itemId: "nested-elsewhere",
+        name: "Nested Elsewhere",
+        responsibility: "Would use a node outside this environment.",
+        technology: "Virtual machine",
+        parentNodeId: "unknown-node",
+      }),
+    );
+    expect(wrongEnvironmentNode).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-AUTHORING-203" }],
+    });
+
+    const invalidDynamic = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-weather-sequence", {
+        kind: "create-dynamic-interaction",
+        interactionId: "read-weather",
+        order: 0,
+        relationshipId: "unknown-relationship",
+        intent: "Repeats an invalid step",
+      }),
+    );
+    expect(invalidDynamic).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-AUTHORING-204" }],
+    });
+
+    const invalidOrder = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-weather-sequence", {
+        kind: "create-dynamic-interaction",
+        interactionId: "invalid-order",
+        order: 0,
+        relationshipId: "garden-reads-weather",
+        intent: "Uses an invalid order",
+      }),
+    );
+    expect(invalidOrder).toMatchObject({
+      valid: false,
+      issues: [{ code: "C4ML-AUTHORING-203" }],
+    });
+
+    const unknownRelationship = await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-weather-sequence", {
+        kind: "create-dynamic-interaction",
+        interactionId: "unknown-static-relation",
+        order: 2,
+        relationshipId: "unknown-relationship",
+        intent: "Uses an unknown relationship",
+      }),
+    );
+    expect(unknownRelationship).toMatchObject({
       valid: false,
       issues: [{ code: "C4ML-AUTHORING-203" }],
     });
