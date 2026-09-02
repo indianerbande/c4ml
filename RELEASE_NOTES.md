@@ -2,7 +2,7 @@
 
 Status: Internal beta candidate
 
-Date: 2026-08-31
+Date: 2026-09-01
 
 This is the first release identity for the C4thedral desktop architecture
 workbench. C4ML remains the name of its language, compiler, CLI, file format,
@@ -30,10 +30,27 @@ diagnostics, and technical protocol boundaries.
 - macOS arm64: the exact `0.1.0-beta.1` package, release metadata and icon,
   smoke, detached preview, native PNG, ad-hoc deep signature, DMG verification,
   and ZIP integrity passed under Node.js 24.15.0;
-- Windows x64: an earlier development build ran successfully, but the exact
-  beta candidate still requires the current native gate and Squirrel round
-  trip; and
-- Linux: native package, portable ZIP, and runtime round trip remain pending.
+- Windows x64: the exact beta candidate passes the complete source gate, native
+  Squirrel build, artifact verification, packaged smoke, Squirrel
+  install/remove/reinstall, and installed offline smoke with no system Node.js
+  visible. Native Open, edit, Save As, full restart/reopen, SVG export, PNG
+  export, and dirty-close cancellation passed in the installed application,
+  and the saved project survived uninstall. Release signing remains; and
+- Linux arm64: the exact DEB builds on Ubuntu with Node.js 24.15.0, passes
+  metadata and sandbox-mode inspection, installs/removes/reinstalls through APT,
+  and passes the installed offline smoke as a normal user. Visible open, edit,
+  Save As, full restart/reopen, native SVG/PNG export, and read-only Source
+  Control also passed. That run exposed and fixed a packaged SVG `blob:` handoff
+  to Nautilus by routing desktop SVG saving through the validated native bridge;
+- Linux x64: commit `9b9fbdc` passed the complete source gate with 562 tests,
+  DEB inspection, APT install/remove/reinstall, two installed network-isolated
+  smokes without a system Node.js, and the visible file/export, Source Control,
+  dirty-close, and minimum-window-height round trips on Ubuntu 26.04.1. The
+  amd64 DEB SHA-256 is
+  `ce5282e014f595f19ea7a672fadec4f11aebc294088122ca030ae59f96b238f1`.
+  Restricted user namespaces exposed an unpacked-smoke prerequisite; the
+  release command now prepares only that disposable helper as
+  `root:root`/`4755`, without disabling Chromium's sandbox.
 
 This beta candidate is not yet a public signed release. Apple Developer ID
 signing/notarization and Windows code signing are still required, and no host's

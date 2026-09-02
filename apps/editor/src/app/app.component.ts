@@ -548,7 +548,7 @@ export class AppComponent {
     if (svg === undefined) {
       return;
     }
-    this.documents.downloadSvg(svg, this.compiler.state().activeViewId);
+    void this.documents.downloadSvg(svg, this.compiler.state().activeViewId);
   }
 
   async exportPng(): Promise<void> {

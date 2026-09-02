@@ -8,6 +8,7 @@ import {
   isDesktopDocumentState,
   isDesktopOpenPreviewRequest,
   isDesktopPngExportRequest,
+  isDesktopSvgExportRequest,
   isDesktopPreviewInteraction,
   isDesktopPreviewProjection,
   isDesktopPreviewWindowState,
@@ -23,6 +24,7 @@ describe("desktop bridge contract", () => {
       protocolVersion: desktopBridgeProtocolVersion,
       platform: "darwin",
       exportPng: async () => ({ status: "canceled" as const }),
+      exportSvg: async () => ({ status: "canceled" as const }),
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),
@@ -169,6 +171,18 @@ describe("desktop bridge contract", () => {
   });
 
   it("accepts only bounded SVG export payloads and reviewed scales", () => {
+    expect(
+      isDesktopSvgExportRequest({
+        suggestedName: "context.svg",
+        svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+      }),
+    ).toBe(true);
+    expect(
+      isDesktopSvgExportRequest({
+        suggestedName: "context.svg",
+        svg: "<html></html>",
+      }),
+    ).toBe(false);
     expect(
       isDesktopPngExportRequest({
         suggestedName: "context.png",

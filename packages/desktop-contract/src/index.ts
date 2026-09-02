@@ -1,8 +1,9 @@
-export const desktopBridgeProtocolVersion = 16 as const;
+export const desktopBridgeProtocolVersion = 17 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
   exportPng: "c4ml:desktop:export-png",
+  exportSvg: "c4ml:desktop:export-svg",
   openDocument: "c4ml:desktop:open-document",
   openProject: "c4ml:desktop:open-project",
   openPreviewWindow: "c4ml:desktop:open-preview-window",
@@ -173,6 +174,11 @@ export interface DesktopPngExportRequest {
   readonly svg: string;
 }
 
+export interface DesktopSvgExportRequest {
+  readonly suggestedName: string;
+  readonly svg: string;
+}
+
 export interface DesktopPreviewPoint {
   readonly x: number;
   readonly y: number;
@@ -335,10 +341,19 @@ export type DesktopPngExportResult =
     }
   | DesktopOperationFailure;
 
+export type DesktopSvgExportResult =
+  | { readonly status: "canceled" }
+  | {
+      readonly status: "exported";
+      readonly displayName: string;
+    }
+  | DesktopOperationFailure;
+
 export interface C4mlDesktopApi {
   readonly protocolVersion: typeof desktopBridgeProtocolVersion;
   readonly platform: DesktopPlatform;
   exportPng(request: DesktopPngExportRequest): Promise<DesktopPngExportResult>;
+  exportSvg(request: DesktopSvgExportRequest): Promise<DesktopSvgExportResult>;
   openDocument(): Promise<DesktopOpenResult>;
   openProject(): Promise<DesktopOpenProjectResult>;
   openPreviewWindow(
@@ -492,6 +507,20 @@ export function isDesktopPngExportRequest(
   );
 }
 
+export function isDesktopSvgExportRequest(
+  value: unknown,
+): value is DesktopSvgExportRequest {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    isNonEmptyString(value.suggestedName) &&
+    typeof value.svg === "string" &&
+    startsWithSvgDocument(value.svg) &&
+    value.svg.length <= maxDesktopSvgBytes
+  );
+}
+
 export function isDesktopSaveRequest(
   value: unknown,
 ): value is DesktopSaveRequest {
@@ -582,6 +611,7 @@ export function isC4mlDesktopApi(value: unknown): value is C4mlDesktopApi {
     value.protocolVersion === desktopBridgeProtocolVersion &&
     isDesktopPlatform(value.platform) &&
     typeof value.exportPng === "function" &&
+    typeof value.exportSvg === "function" &&
     typeof value.openDocument === "function" &&
     typeof value.openProject === "function" &&
     typeof value.openPreviewWindow === "function" &&
@@ -613,6 +643,7 @@ export function isC4mlPreviewApi(value: unknown): value is C4mlPreviewApi {
     value.saveDocument === undefined &&
     value.sourceControl === undefined &&
     value.exportPng === undefined &&
+    value.exportSvg === undefined &&
     value.setDocumentState === undefined &&
     value.setUiLanguage === undefined &&
     value.updatePreviewProjection === undefined

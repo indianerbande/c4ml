@@ -2,7 +2,7 @@
 
 Status: Accepted desktop application, editor, automatic-layout, and PNG stack with remaining candidates
 
-Date: 2026-08-28
+Date: 2026-09-02
 
 This file records why each direct dependency exists, its license and runtime
 impact, the boundary that makes it replaceable, and the evidence required to
@@ -358,17 +358,21 @@ and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial
 
 - **Capability:** replaceable application packaging and platform makers;
   production Electron fuse configuration; DMG and ZIP creation on macOS; and a
-  Squirrel Setup EXE maker on Windows plus a portable ZIP on Linux.
+  Squirrel Setup EXE maker on Windows plus a native DEB on Debian-family Linux.
 - **Why external:** platform application assembly, installer formats, Electron
   binary mutation, and maker integration are established release engineering
   concerns rather than C4ML product semantics.
-- **License:** Forge CLI, DMG/Squirrel/ZIP makers, the Forge fuses plugin, and
-  `@electron/fuses` are MIT. `electron-squirrel-startup` 1.0.1 is Apache-2.0
-  and its license is retained in the packaged notices.
+- **License:** Forge CLI, DEB/DMG/Squirrel/ZIP makers, the Forge fuses plugin,
+  `@electron/fuses`, `electron-installer-debian` 3.2.0, and its packaging
+  helpers are MIT. `electron-squirrel-startup` 1.0.1 is Apache-2.0 and its
+  license is retained in the packaged notices.
 - **Impact:** these are build-time dependencies. The Windows startup helper is
   bundled into the small main-process artifact; Forge and makers are not copied
   into application ASAR. The configured outputs are macOS `.app`, DMG, and ZIP,
-  a Windows Squirrel installer, and a portable Linux ZIP.
+  a Windows Squirrel installer, and a Debian-family Linux DEB. Building the DEB
+  requires host-provided `dpkg` and `fakeroot`; installation records the
+  Chromium sandbox helper as `root:root` with mode `4755` and adds the desktop
+  menu entry.
 - **Offline behavior:** packaging may need Electron archive access until its
   build cache is complete. The packager validates that archive with the
   checksum catalogue included in the pinned Electron package, avoiding a
@@ -381,8 +385,9 @@ and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial
   the desktop bridge, Angular renderer, or compiler.
 - **Protecting evidence:** exact version/license checks, ASAR content review,
   all nine Electron 44 fuse values, strict packaged-app signature verification,
-  packaged launch smoke, DMG verification, and ZIP integrity testing. Native
-  Windows and Linux build/run tests plus release signatures remain required.
+  packaged launch smoke, DMG/ZIP verification, DEB metadata and sandbox-mode
+  inspection, and native installation/removal testing. Native Windows evidence
+  plus release signatures remain required.
 
 The Forge fuses plugin currently declares a peer range that excludes the newer
 `@electron/fuses` 2.x metadata even though Electron 44 exposes a ninth V1 fuse.
@@ -391,7 +396,8 @@ check and packaged smoke protect the integration.
 
 Sources: [Electron Forge Squirrel maker](https://www.electronforge.io/config/makers/squirrel.windows),
 [Electron Forge DMG maker](https://www.electronforge.io/config/makers/dmg), and
-[Electron Forge ZIP maker](https://www.electronforge.io/config/makers/zip), and
+[Electron Forge ZIP maker](https://www.electronforge.io/config/makers/zip),
+[Electron Forge DEB maker](https://www.electronforge.io/config/makers/deb), and
 [Electron code signing](https://www.electronjs.org/docs/latest/tutorial/code-signing).
 
 ### Native maker helpers and build runtime
@@ -458,6 +464,38 @@ permitted to execute
 dependency build scripts. The version-specific `allowBuilds` map in
 `pnpm-workspace.yaml` records those narrow approvals; all unreviewed dependency
 build scripts remain blocked by pnpm.
+
+## Dependency maintenance and update gate
+
+`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, this record, and the
+packaged third-party notices are the dependency ledger. A release build MUST
+use the committed lockfile and MUST NOT discover or adopt newer Monaco,
+Electron, compiler, renderer, font, or build-tool versions as a side effect.
+
+Important upstream updates are handled as explicit maintenance changes:
+
+1. review the upstream release notes, security advisories, supported operating
+   systems and runtimes, license, transitive graph, install scripts, and
+   redistribution obligations;
+2. update the exact manifest and lockfile versions in a dedicated branch or PR;
+3. update this record when version, license, impact, boundary, workaround, or
+   notice obligations change;
+4. run `pnpm install --frozen-lockfile`, `pnpm run check`, and every
+   dependency-specific production check;
+5. rebuild and inspect native artifacts on every affected platform through
+   `pnpm run release:native`; and
+6. merge only after the protecting evidence recorded for that dependency still
+   passes. Security fixes may be prioritized, but they do not bypass this gate.
+
+Monaco updates additionally require the pinned Suggest-controller integration,
+semantic-token behavior, completion edits, keyboard interaction, worker
+packaging, notices, and editor visual behavior to be revalidated. Electron or
+Forge updates additionally require the preload/IPC boundary, CSP and fuses,
+native menus and dialogs, packaged offline smoke, sandbox helper, installers,
+install/remove/reinstall, signatures, and visible file/export/dirty-close
+round trips on every affected operating system and architecture. The same rule
+applies to transitive version changes that alter packaged code or native
+binaries.
 
 ## Phase 0 results
 

@@ -1,8 +1,8 @@
 # C4thedral Specification
 
-Status: Draft 0.46
+Status: Draft 0.48
 
-Date: 2026-08-31
+Date: 2026-09-01
 
 Product name: C4thedral
 
@@ -1220,8 +1220,11 @@ presentation. Context-valid candidates and
 their exact replacement ranges still come only from the C4ML language worker.
 Compiler diagnostics are mapped to Monaco markers and can be selected in the
 diagnostic list to reveal and focus their source range. Zoom, fit-to-view,
-scroll-pan at enlarged scale, and local SVG download are implemented without
-mutating compiler geometry. Syntax highlighting is implemented with spans from
+scroll-pan at enlarged scale, and local SVG export are implemented without
+mutating compiler geometry. The browser harness downloads SVG directly; the
+desktop uses its validated bridge and a native save dialog so the custom local
+protocol never delegates a `blob:` URL to the operating system. Syntax
+highlighting is implemented with spans from
 the authoritative C4ML lexer, transported through the compiler worker and
 encoded as Monaco semantic tokens. The language package contextually
 distinguishes declaration words, properties, predefined values, identifiers and
@@ -1522,13 +1525,27 @@ ASAR integrity and ASAR-only application loading, and enable cookie encryption.
 
 Electron Forge is the replaceable packaging adapter. macOS `.app`, DMG, and ZIP
 artifacts are configured and locally validated. The Windows Squirrel maker is
-configured for a Setup EXE, and Linux uses a portable ZIP without an additional
-distribution-specific maker. Windows and Linux still require native build,
-launch, and install or unpack validation. Current macOS artifacts are ad-hoc
+configured for a Setup EXE. Debian-family Linux systems use a native DEB whose
+package metadata provides the application-menu entry and whose root-owned
+installation preserves the Chromium sandbox helper's required mode. A plain
+Linux archive is not a supported release artifact because it cannot establish
+that ownership safely. Linux build, launch, installation, removal, offline
+smoke, native open/save/reopen, SVG/PNG export, and Source Control validation
+have passed on Ubuntu arm64 and x64. The x64 run also passed dirty-close
+cancellation and minimum-window-height behavior. Its restrictive
+unprivileged-user-namespace policy requires the unpacked Chromium helper to be
+`root:root`/`4755` before packaged smoke, so the release command performs that
+exact preparation through `sudo` without disabling the sandbox. The exact
+Windows x64 beta candidate has passed its
+source gate, Squirrel build, native artifact verification, packaged and
+installed no-system-Node smoke, install/remove/reinstall cycle, and visible
+open/edit/Save As/restart/reopen, SVG/PNG export, and dirty-close cancellation
+validation. Current macOS artifacts are ad-hoc
 signed for local execution only. The first internal beta candidate has a
 product version and original native icon. A public release MUST still add Apple
-Developer ID signing and notarization, Windows code signing, and native
-validation on each supported platform. The installed application MUST run
+Developer ID signing and notarization and Windows code signing. Native
+validation remains required on each supported platform for every release
+candidate. The installed application MUST run
 offline; dependency and Electron binary downloads are build/install-time
 concerns only.
 
@@ -2326,7 +2343,8 @@ The following decisions remain deliberately open:
 - the accessibility target for generated SVG.
 
 The project license and initial distribution decision are accepted: C4thedral
-and C4ML are open source under Apache License 2.0. Packaging formats and release
+and C4ML are open source under Apache License 2.0. The first Debian-family Linux
+format is DEB; additional Linux formats, package repositories, and release
 channels remain open implementation decisions.
 
 ## 17. Sources consulted for capability analysis

@@ -26,6 +26,9 @@ const desktopManifest = JSON.parse(readRequired("apps/desktop/package.json"));
 const packagingRuntimeGuard = readRequired(
   "apps/desktop/scripts/check-packaging-runtime.cjs",
 );
+const packagedSmokePreparation = readRequired(
+  "apps/desktop/scripts/prepare-packaged-smoke.cjs",
+);
 assert.equal(desktopManifest.main, "dist/main.cjs");
 assert.equal(
   desktopManifest.productName,
@@ -47,6 +50,21 @@ assert.equal(
   desktopManifest.scripts?.start,
   "node scripts/launch-development.cjs",
   "desktop development start must use the C4thedral-owned cross-platform launcher",
+);
+assert.equal(
+  desktopManifest.scripts?.smoke,
+  "node scripts/prepare-packaged-smoke.cjs && node scripts/launch-packaged.cjs --smoke",
+  "packaged smoke must prepare the Linux Chromium sandbox before launch",
+);
+assert.match(packagedSmokePreparation, /process\.platform !== "linux"/);
+assert.match(packagedSmokePreparation, /chrome-sandbox/);
+assert.match(packagedSmokePreparation, /stat\.uid === 0 && stat\.gid === 0/);
+assert.match(packagedSmokePreparation, /0o4755/);
+assert.match(packagedSmokePreparation, /\/usr\/bin\/sudo/);
+assert.doesNotMatch(
+  packagedSmokePreparation,
+  /--no-sandbox/,
+  "packaged smoke must never disable Chromium's production sandbox",
 );
 assert.equal(
   desktopManifest.scripts?.premake,
@@ -115,6 +133,7 @@ assert.match(
 const expectedPackages = [
   ["electron", "44.0.0", "MIT"],
   ["@electron-forge/cli", "7.11.2", "MIT"],
+  ["@electron-forge/maker-deb", "7.11.2", "MIT"],
   ["@electron-forge/maker-dmg", "7.11.2", "MIT"],
   ["@electron-forge/maker-squirrel", "7.11.2", "MIT"],
   ["@electron-forge/maker-zip", "7.11.2", "MIT"],
@@ -136,6 +155,36 @@ for (const [packageName, version, license] of expectedPackages) {
     manifest.license,
     license,
     `${packageName} must retain the reviewed license`,
+  );
+}
+
+const debMakerManifestPath = findPackageManifest("@electron-forge/maker-deb");
+const debMakerManifest = JSON.parse(readFileSync(debMakerManifestPath, "utf8"));
+assert.equal(
+  debMakerManifest.optionalDependencies?.["electron-installer-debian"],
+  "^3.2.0",
+  "the DEB maker must retain the reviewed optional installer version",
+);
+assert.match(
+  lockfile,
+  /electron-installer-debian@3\.2\.0:\n[\s\S]*?    os: \[darwin, linux\]/,
+  "the DEB installer must remain limited to its supported host platforms",
+);
+if (process.platform === "darwin" || process.platform === "linux") {
+  const requireFromDebMaker = createRequire(debMakerManifestPath);
+  const debInstallerManifest = JSON.parse(
+    readFileSync(
+      findPackageManifest("electron-installer-debian", requireFromDebMaker),
+      "utf8",
+    ),
+  );
+  assert.equal(debInstallerManifest.version, "3.2.0");
+  assert.equal(debInstallerManifest.license, "MIT");
+} else {
+  assert.equal(
+    process.platform,
+    "win32",
+    "desktop production checks support the accepted macOS, Linux, and Windows hosts",
   );
 }
 
@@ -256,6 +305,10 @@ assert.ok(
   "desktop preload must expose the owned PNG export channel",
 );
 assert.ok(
+  preloadBundle.includes("c4ml:desktop:export-svg"),
+  "desktop preload must expose the owned SVG export channel",
+);
+assert.ok(
   preloadBundle.includes("c4ml:desktop:open-project"),
   "desktop preload must expose the owned project-open channel",
 );
@@ -277,7 +330,7 @@ assert.ok(
 );
 assert.doesNotMatch(
   previewPreloadBundle,
-  /c4mlDesktop|open-document|open-project|save-document|export-png/,
+  /c4mlDesktop|open-document|open-project|save-document|export-png|export-svg/,
   "preview preload must not expose document, project, save, or export authority",
 );
 assert.ok(
@@ -313,14 +366,73 @@ for (const requiredFuse of [
 assert.match(forgeConfig, /@electron-forge\/maker-squirrel/);
 assert.match(forgeConfig, /@electron-forge\/maker-dmg/);
 assert.match(forgeConfig, /@electron-forge\/maker-zip/);
+assert.match(forgeConfig, /@electron-forge\/maker-deb/);
 assert.deepEqual(
   forgeConfiguration.makers.map(({ name, platforms }) => [name, platforms]),
   [
     ["@electron-forge/maker-squirrel", ["win32"]],
     ["@electron-forge/maker-dmg", ["darwin"]],
-    ["@electron-forge/maker-zip", ["darwin", "linux"]],
+    ["@electron-forge/maker-zip", ["darwin"]],
+    ["@electron-forge/maker-deb", ["linux"]],
   ],
   "desktop makers must cover native Windows, macOS, and Linux hosts",
+);
+const debMaker = forgeConfiguration.makers.find(
+  ({ name }) => name === "@electron-forge/maker-deb",
+);
+assert.deepEqual(
+  debMaker?.config?.options,
+  {
+    name: "c4thedral",
+    productName: "C4thedral",
+    genericName: "Architecture Workbench",
+    description: "Local architecture workbench powered by C4ML",
+    productDescription:
+      "C4thedral is a local architecture workbench for editing C4ML source and exporting deterministic SVG and PNG diagrams.",
+    section: "devel",
+    priority: "optional",
+    maintainer: "C4thedral contributors",
+    homepage: "https://github.com/indianerbande/c4ml",
+    bin: "C4thedral",
+    icon: join(desktopRoot, "assets", "icon.png"),
+    categories: ["Development"],
+  },
+  "the Linux DEB must have stable user-facing package metadata",
+);
+const linuxInstallGuide = readRequired("INSTALL-LINUX.md");
+const debianVersion = rootManifest.version.replace(
+  /(\d)[_.+-]?((?:RC|rc|pre|dev|beta|alpha)[_.+-]?\d*)$/u,
+  "$1~$2",
+);
+for (const debianArchitecture of ["amd64", "arm64"]) {
+  assert.ok(
+    linuxInstallGuide.includes(
+      `sudo apt install ./c4thedral_${debianVersion}_${debianArchitecture}.deb`,
+    ),
+    `the Linux install guide must name the current ${debianArchitecture} DEB exactly`,
+  );
+}
+assert.ok(
+  linuxInstallGuide.includes("sudo apt remove c4thedral"),
+  "the Linux install guide must include the supported removal command",
+);
+assert.ok(
+  linuxInstallGuide.includes("Starte C4thedral nicht mit `--no-sandbox`"),
+  "the Linux install guide must prohibit disabling the production sandbox",
+);
+const windowsInstallGuide = readRequired("INSTALL-WINDOWS.md");
+const squirrelSetupName = `C4thedral-${rootManifest.version} Setup.exe`;
+assert.ok(
+  windowsInstallGuide.includes(squirrelSetupName),
+  "the Windows install guide must name the current Squirrel Setup executable exactly",
+);
+assert.ok(
+  windowsInstallGuide.includes("brauchst weder Node.js noch pnpm"),
+  "the Windows install guide must distinguish end-user installation from the build toolchain",
+);
+assert.ok(
+  windowsInstallGuide.includes("Einstellungen → Apps → Installierte Apps"),
+  "the Windows install guide must document normal application removal",
 );
 assert.match(desktopNotices, /electron-squirrel-startup 1\.0\.1/);
 assert.match(desktopNotices, /Apache License, Version 2\.0/);
@@ -373,7 +485,7 @@ assert.ok(
 );
 
 console.log(
-  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, separated secure preloads, local editor assets, controlled resvg PNG export).",
+  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, native Squirrel/DMG/ZIP/DEB makers, separated secure preloads, local editor assets, native SVG save, controlled resvg PNG export).",
 );
 
 function readRequired(relativePath) {

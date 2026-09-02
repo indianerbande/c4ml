@@ -1,4 +1,4 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -9,8 +9,10 @@ import {
 } from "../src/document-registry.js";
 import {
   ensurePngExtension,
+  ensureSvgExtension,
   resolveDesktopPngFontFiles,
   safeSuggestedPngName,
+  safeSuggestedSvgName,
 } from "../src/diagram-export.js";
 import {
   editorEntryUrl,
@@ -70,26 +72,50 @@ describe("desktop foundation", () => {
     expect(safeSuggestedPngName("... ")).toBe("architecture.png");
     expect(ensurePngExtension("VIEW.PNG")).toBe("VIEW.PNG");
 
+    const workspaceRoot = resolve("test-workspace");
+    const developmentAppPath = join(workspaceRoot, "apps", "desktop");
+    const packagedResourcesPath = join(
+      workspaceRoot,
+      "C4thedral",
+      "resources",
+    );
+
     expect(
       resolveDesktopPngFontFiles({
-        appPath: "/workspace/apps/desktop",
+        appPath: developmentAppPath,
         packaged: false,
-        resourcesPath: "/unused",
+        resourcesPath: join(workspaceRoot, "unused"),
       }),
     ).toEqual([
-      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Regular.ttf",
-      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Bold.ttf",
-      "/workspace/packages/font-ibm-plex/fonts/sans/IBMPlexSans-Italic.ttf",
+      join(
+        workspaceRoot,
+        "packages/font-ibm-plex/fonts/sans/IBMPlexSans-Regular.ttf",
+      ),
+      join(
+        workspaceRoot,
+        "packages/font-ibm-plex/fonts/sans/IBMPlexSans-Bold.ttf",
+      ),
+      join(
+        workspaceRoot,
+        "packages/font-ibm-plex/fonts/sans/IBMPlexSans-Italic.ttf",
+      ),
     ]);
     expect(
       resolveDesktopPngFontFiles({
-        appPath: "/unused",
+        appPath: join(workspaceRoot, "unused"),
         packaged: true,
-        resourcesPath: "/Applications/C4thedral.app/Contents/Resources",
+        resourcesPath: packagedResourcesPath,
       })[0],
-    ).toBe(
-      "/Applications/C4thedral.app/Contents/Resources/sans/IBMPlexSans-Regular.ttf",
+    ).toBe(join(packagedResourcesPath, "sans/IBMPlexSans-Regular.ttf"));
+  });
+
+  it("normalizes native SVG export suggestions without accepting a path", () => {
+    expect(safeSuggestedSvgName("../System Context")).toBe(
+      "System Context.svg",
     );
+    expect(safeSuggestedSvgName("bad:name.SVG")).toBe("bad-name.SVG");
+    expect(safeSuggestedSvgName("... ")).toBe("architecture.svg");
+    expect(ensureSvgExtension("VIEW.SVG")).toBe("VIEW.SVG");
   });
 
   it("maps only owned application URLs into the packaged editor root", () => {

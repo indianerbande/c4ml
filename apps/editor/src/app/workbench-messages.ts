@@ -319,6 +319,9 @@ const englishMessages = {
   "operation.saveAllFailed":
     "Saved {saved} source files; {failed} could not be saved.",
   "operation.saveFailed": "The desktop save operation failed unexpectedly.",
+  "operation.exportingSvg": "Choosing SVG export location…",
+  "operation.exportedSvg": "Exported {name}",
+  "operation.svgFailed": "The desktop SVG export failed unexpectedly.",
   "operation.renderingPng": "Rendering PNG…",
   "operation.exportedPng": "Exported {name} ({width} × {height})",
   "operation.pngFailed": "The desktop PNG export failed unexpectedly.",
@@ -1007,6 +1010,10 @@ const germanMessages: WorkbenchMessages = {
     "{saved} Quelldateien gespeichert; {failed} konnten nicht gespeichert werden.",
   "operation.saveFailed":
     "Der Desktop-Speichervorgang ist unerwartet fehlgeschlagen.",
+  "operation.exportingSvg": "SVG-Speicherort wird gewählt…",
+  "operation.exportedSvg": "{name} exportiert",
+  "operation.svgFailed":
+    "Der Desktop-SVG-Export ist unerwartet fehlgeschlagen.",
   "operation.renderingPng": "PNG wird gerendert…",
   "operation.exportedPng": "{name} exportiert ({width} × {height})",
   "operation.pngFailed":
