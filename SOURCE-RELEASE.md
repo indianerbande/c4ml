@@ -90,11 +90,10 @@ Before changing repository visibility or creating the first public source tag:
 1. run `pnpm audit --prod`, `pnpm run check`, and `git diff --check`;
 2. review every reachable branch, tag, Actions log, and Git commit for material
    that must not become public;
-3. confirm that the existing Git commit author name and email address are
-   intended to become public;
-4. decide whether three older commits containing the obsolete private Windows
-   host label may remain or require an intentional history rewrite;
-5. decide whether merged remote work branches should be deleted;
+3. verify that published maintainer commits use the GitHub `noreply` address;
+4. confirm the documented acceptance of any obsolete local-host evidence in
+   published history;
+5. verify that no obsolete merged work branches remain on the remote;
 6. enable GitHub private vulnerability reporting and restore branch/ruleset
    protection after the visibility change;
 7. verify a clone over the public HTTPS URL on a clean machine; and
