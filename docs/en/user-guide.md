@@ -1,8 +1,10 @@
 # C4thedral User Guide
 
+[English](user-guide.md) | [Deutsch](../de/user-guide.md)
+
 Status: Draft syntax preview with executable language and desktop workbench
 
-Date: 2026-09-01
+Date: 2026-09-02
 
 **C4thedral** is the desktop architecture workbench. **C4ML** is its language,
 source format, compiler, and command-line interface.
@@ -11,24 +13,18 @@ This guide explains the intended C4ML authoring experience and gives the first
 complete syntax proposal. It is written as a user guide so that the language
 can be reviewed through realistic examples rather than grammar fragments.
 
-> **Important:** there is no complete public `.c4ml` parser, release-ready CLI,
-> or feature-complete editor yet. A working Electron desktop application now
-> packages the editor, but it is still a development build rather than a signed
-> and notarized public release. The syntax in this document is non-normative
-> and may change after review. An internal experimental language package and
-> the production-bound Angular editor execute the bounded slices in
-> `hello-context.c4ml`,
-> `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
-> `hello-deployment.c4ml`. The parser-independent C4 semantic model, all seven
-> view-resolution contracts, and a first internal model-to-SVG/PNG rendering
-> path are implemented today.
-> The internal path also carries explicit Ports, Routes, Arrowheads, and
-> restricted renderer-neutral shape definitions. `hello-context.c4ml` now
-> exercises the first executable placement-constraint slice and the current
-> view-local route-control slice through both the CLI and the editor worker.
+> **Important:** the beta contains a real `.c4ml` parser, a working Electron
+> desktop application, and an experimental CLI. It executes all seven C4 view
+> types and the documented placement and route controls. The author-facing
+> syntax and CLI command surface are not yet a stable compatibility promise,
+> and public macOS and Windows signing is still outstanding. Sections described
+> as proposals—currently Visual Groups, source-declared themes, and
+> source-declared custom shapes—remain non-executable design previews. The
+> [project status](project-status.md) records these boundaries.
 
-`SPEC.md` remains the normative definition of product behavior. If this guide
-and `SPEC.md` disagree, `SPEC.md` wins.
+The [engineering specification](../engineering/specification.md) remains the
+normative definition of product behavior. If this guide and the specification
+disagree, the specification wins.
 
 ## Contents
 
@@ -132,7 +128,7 @@ diagnostics, and diagrams are never translated automatically. Preferences do
 not edit the open `.c4ml` document or alter exported diagram colors, fonts, or
 geometry. **Reset defaults** restores English and the remaining version-one
 defaults. The settings catalogue and extension rules are documented in
-`SETTINGS.md`.
+the [settings contract](../engineering/settings-contract.md).
 
 The workbench restores the active activity area, bottom-panel state, preview
 workspace mode, preview zoom, Route Debug visibility, and safe bounded preview
@@ -182,9 +178,9 @@ artifacts, not notarized releases. The Windows Setup EXE has passed its native
 x64 build, artifact, install/remove/reinstall, no-system-Node smoke, and visible
 open/edit/Save As/restart/reopen, SVG/PNG export, and dirty-close cancellation
 checks; installation instructions are in
-[`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md). Windows release signing remains. On Debian/Ubuntu,
+the [Windows installation guide](install-windows.md). Windows release signing remains. On Debian/Ubuntu,
 `desktop:make` produces a DEB; installation instructions are in
-[`INSTALL-LINUX.md`](INSTALL-LINUX.md).
+the [Linux installation guide](install-linux.md).
 
 Inside a `route` block, IntelliSense first asks for `policy`. Once it is known,
 the editor offers only controls compatible with that policy and hides properties
@@ -448,18 +444,18 @@ aware operations and are deliberately not presented as generic element
 creation. The source grammar remains `draft-1` and is not frozen by this UI.
 
 For the quickest syntax review, begin with
-[`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml), move
-to [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml),
+[`examples/draft/hello-context.c4ml`](../../examples/draft/hello-context.c4ml), move
+to [`examples/draft/hello-container.c4ml`](../../examples/draft/hello-container.c4ml),
 then to
-[`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+[`examples/draft/hello-static-zoom.c4ml`](../../examples/draft/hello-static-zoom.c4ml)
 for Component and Code, continue with
-[`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) for
+[`examples/draft/hello-dynamic.c4ml`](../../examples/draft/hello-dynamic.c4ml) for
 System Landscape and Dynamic, then use
-[`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+[`examples/draft/hello-deployment.c4ml`](../../examples/draft/hello-deployment.c4ml)
 for Deployment. Finally, open the complete and executable
-[`signal-garden.c4ml`](examples/draft/signal-garden.c4ml) demonstration. Proposed
+[`signal-garden.c4ml`](../../examples/draft/signal-garden.c4ml) demonstration. Proposed
 tags, Visual Groups, and View presentation remain separately reviewable in
-[`signal-garden-language-preview.md`](examples/draft/signal-garden-language-preview.md)
+[`signal-garden-language-preview.md`](../../examples/draft/signal-garden-language-preview.md)
 without making the runnable demo invalid.
 
 ## 3. Proposed source format
@@ -614,7 +610,7 @@ Version one uses only explicit local relative paths. Globs, parent-directory
 traversal, remote includes, reusable external projects, and module aliases are
 not available. The executable original
 `examples/projects/garden-pulse-multifile` project shows the current structure;
-`PROJECTS.md` contains the complete project guide.
+the [project guide](projects.md) contains the complete project description.
 
 In the desktop application, choose **File → Open Project…** or use
 `Cmd/Ctrl+Alt+O`. The Files area and source tab strip then show every listed
@@ -1562,25 +1558,25 @@ preview while showing diagnostics for the current invalid source.
 The repository contains seven original syntax documents plus one separated
 language-preview companion:
 
-- [`examples/draft/hello-context.c4ml`](examples/draft/hello-context.c4ml) — a
+- [`examples/draft/hello-context.c4ml`](../../examples/draft/hello-context.c4ml) — a
   minimal model and System Context View;
-- [`examples/draft/hello-container.c4ml`](examples/draft/hello-container.c4ml)
+- [`examples/draft/hello-container.c4ml`](../../examples/draft/hello-container.c4ml)
   — Container ownership, technologies, protocols, and a Container View;
-- [`examples/draft/hello-static-zoom.c4ml`](examples/draft/hello-static-zoom.c4ml)
+- [`examples/draft/hello-static-zoom.c4ml`](../../examples/draft/hello-static-zoom.c4ml)
   — the full static ownership hierarchy and selectable Component, Code,
   Container, and System Context Views;
-- [`examples/draft/hello-dynamic.c4ml`](examples/draft/hello-dynamic.c4ml) — a
+- [`examples/draft/hello-dynamic.c4ml`](../../examples/draft/hello-dynamic.c4ml) — a
   named System Landscape plus ordered and parallel Dynamic Interactions;
-- [`examples/draft/hello-deployment.c4ml`](examples/draft/hello-deployment.c4ml)
+- [`examples/draft/hello-deployment.c4ml`](../../examples/draft/hello-deployment.c4ml)
   — nested runtime environments, instances, runtime relationships, and a
   Deployment View;
-- [`examples/draft/signal-garden.c4ml`](examples/draft/signal-garden.c4ml) — a
+- [`examples/draft/signal-garden.c4ml`](../../examples/draft/signal-garden.c4ml) — a
   larger executable model covering Containers, Components, Code, Dynamic
   behavior, Deployment, and every view type;
-- [`examples/draft/signal-garden-language-preview.md`](examples/draft/signal-garden-language-preview.md)
+- [`examples/draft/signal-garden-language-preview.md`](../../examples/draft/signal-garden-language-preview.md)
   — proposed tags, Visual Group, and View presentation constructs kept outside
   executable source; and
-- [`examples/draft/shape-marker.c4ml`](examples/draft/shape-marker.c4ml) — the
+- [`examples/draft/shape-marker.c4ml`](../../examples/draft/shape-marker.c4ml) — the
   restricted custom-shape contract and explicit cardinal Ports.
 
 The bounded `hello-context.c4ml`, `hello-container.c4ml`,
@@ -1624,4 +1620,5 @@ concepts; and the normalized local canvas follows the general SVG coordinate
 model. C4ML's exact object separation, restricted shape contract, source
 proposal, built-in shapes, fixtures, and implementation are an original
 synthesis for this project's requirements rather than an adaptation of one
-tool. Primary capability references are recorded in `SPEC.md`.
+tool. Primary capability references are recorded in the [engineering
+specification](../engineering/specification.md).

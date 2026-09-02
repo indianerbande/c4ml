@@ -1,5 +1,7 @@
 # C4thedral unter Ubuntu oder Debian installieren
 
+[English](../en/install-linux.md) | [Deutsch](install-linux.md)
+
 Diese Anleitung ist für das fertige C4thedral-Installationspaket. Du brauchst
 weder Node.js noch pnpm und musst keine Entwicklerwerkzeuge einrichten.
 

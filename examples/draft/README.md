@@ -30,5 +30,6 @@ Nothing in this directory defines a stable grammar or compatibility commitment.
   invalid.
 - `shape-marker.c4ml` isolates the proposed safe custom-shape and Port syntax.
 
-The accepted product behavior is defined in `SPEC.md`; the proposal is explained
-in `DOCUMENTATION.md`.
+The accepted product behavior is defined in
+[`docs/engineering/specification.md`](../../docs/engineering/specification.md);
+the proposal is explained in the [user guide](../../docs/en/user-guide.md).

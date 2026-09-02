@@ -1,5 +1,7 @@
 # C4thedral project status
 
+[English](project-status.md) | [Deutsch](../de/project-status.md)
+
 Status: Public source beta
 
 Current release: `v0.1.0-beta.1`
@@ -8,8 +10,10 @@ Updated: 2026-09-02
 
 This document states the current product maturity and the boundaries of the
 beta. It is not a development diary. Detailed product requirements live in
-`SPEC.md`, validation evidence in `TESTING.md`, completed release changes in
-`RELEASE_NOTES.md`, and engineering work items in `TODO.md`.
+the [engineering specification](../engineering/specification.md), validation
+evidence in [testing](../engineering/testing.md), completed changes in the
+[release notes](releases/0.1.0-beta.1.md), and engineering work items in the
+[roadmap](../engineering/roadmap.md).
 
 ## What beta means here
 
@@ -110,7 +114,7 @@ The following language boundaries remain provisional:
 - themes work through built-in presets and `.c4ml-theme.json` project resources,
   while a possible inline `.c4ml` theme grammar is not frozen.
 
-`DOCUMENTATION.md` distinguishes executable syntax from design previews, and
+The [user guide](user-guide.md) distinguishes executable syntax from design previews, and
 `examples/draft` contains the runnable beta examples.
 
 ## CLI status
@@ -142,8 +146,8 @@ and Squirrel installation have passed, but a public installer still requires a
 publisher signature. Ubuntu uses a native DEB so the Chromium sandbox helper is
 installed with the required ownership and permissions.
 
-Exact evidence and host-specific commands are recorded in `PLATFORMS.md` and
-`TESTING.md`.
+Exact evidence and host-specific commands are recorded in the [platform
+matrix](platforms.md) and [testing requirements](../engineering/testing.md).
 
 ## Remaining work before a signed public binary release
 
@@ -168,8 +172,12 @@ source beta:
 
 ## Status sources
 
-- `RELEASE_NOTES.md` records what is included in the current tagged release.
-- `PLATFORMS.md` records current native platform evidence.
-- `TESTING.md` defines what evidence is required for product claims.
-- `TODO.md` tracks implementation work and deliberately deferred decisions.
-- `SPEC.md` remains authoritative for product behavior and architecture.
+- [Release notes](releases/0.1.0-beta.1.md) record what is included in the
+  current tagged release.
+- The [platform matrix](platforms.md) records current native platform evidence.
+- [Testing](../engineering/testing.md) defines the evidence required for
+  product claims.
+- The [engineering roadmap](../engineering/roadmap.md) tracks implementation
+  work and deliberately deferred decisions.
+- The [specification](../engineering/specification.md) remains authoritative
+  for product behavior and architecture.

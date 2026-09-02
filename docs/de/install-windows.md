@@ -1,5 +1,7 @@
 # C4thedral unter Windows installieren
 
+[English](../en/install-windows.md) | [Deutsch](install-windows.md)
+
 Diese Anleitung ist für das fertige C4thedral-Installationsprogramm. Du
 brauchst weder Node.js noch pnpm und musst keine Entwicklerwerkzeuge
 einrichten.

@@ -87,7 +87,8 @@ the workbench root, Monaco, or compiler worker. It consumes only the restricted
 desktop preview bridge and never receives source or filesystem authority.
 
 The current wizard is intentionally narrower than the future guided-modeling
-scope recorded in `SPEC.md`. It creates one complete `draft-1` System Context
+scope recorded in [`docs/engineering/specification.md`](../../docs/engineering/specification.md).
+It creates one complete `draft-1` System Context
 or Container document and does not edit existing source. Questions lead with
 familiar architecture concepts; C4 vocabulary is optional explanatory text.
 Future Component, Code, Deployment, Visual Group, and merge behavior must
@@ -123,4 +124,5 @@ from the toolbar or the desktop `Cmd/Ctrl+,` command, apply live, and are stored
 under a versioned key. They never enter compiler requests or canonical diagram
 exports. Interface language also synchronizes C4thedral-owned native controls while
 leaving authored source, model text, diagnostics, and diagrams unchanged. See
-`SETTINGS.md` for the setting catalogue and extension contract.
+[`docs/engineering/settings-contract.md`](../../docs/engineering/settings-contract.md)
+for the setting catalogue and extension contract.

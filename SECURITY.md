@@ -1,5 +1,7 @@
 # Security policy
 
+[English](SECURITY.md) | [Deutsch](SECURITY.de.md)
+
 ## Supported source
 
 C4thedral is currently beta software. Security corrections are made against the

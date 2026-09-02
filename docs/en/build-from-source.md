@@ -1,5 +1,7 @@
 # Build C4thedral from source
 
+[English](build-from-source.md) | [Deutsch](../de/build-from-source.md)
+
 Status: Public source beta released from a clean GitHub history
 
 Version: 0.1.0-beta.1
@@ -17,7 +19,8 @@ Install:
 
 - Git;
 - Node.js 24.15.0 or a newer 24.x release; and
-- the native tools listed for your operating system in `PLATFORMS.md`.
+- the native tools listed for your operating system in [the platform
+  matrix](platforms.md).
 
 Then enable the repository's pinned pnpm version:
 
@@ -81,8 +84,9 @@ pnpm run c4ml -- render examples/draft/hello-context.c4ml --output build/example
 ```
 
 The CLI is useful but remains experimental and is not yet a separately
-published package. See `README.md`, `DOCUMENTATION.md`, `INSTALL-LINUX.md`, and
-`INSTALL-WINDOWS.md` for current capabilities and platform details.
+published package. See the [project README](../../README.md), [user guide](user-guide.md),
+[Linux installation guide](install-linux.md), and [Windows installation
+guide](install-windows.md) for current capabilities and platform details.
 
 ## Maintainer publication checklist
 

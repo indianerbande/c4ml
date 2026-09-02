@@ -938,7 +938,7 @@ renderer.
 
 C4thedral and C4ML are licensed under Apache License 2.0. Third-party dependencies retain
 their own licenses and MUST remain behind the boundaries recorded in
-`DEPENDENCIES.md`.
+[`dependencies.md`](dependencies.md).
 
 The compiler core MUST NOT depend on the DOM, Node.js filesystem APIs, process
 state, or a network service. Environment-specific behavior belongs behind small
@@ -1166,7 +1166,8 @@ route controls for Dynamic Interactions or Deployment
 Relationships, formatting, incremental documents, or complete editor language
 services. They expose context-completion for the executable subsets, including
 only valid properties and references inside route and corridor blocks. The rest
-of the syntax in `DOCUMENTATION.md` and `examples/draft` remains non-executable
+of the syntax in [`../en/user-guide.md`](../en/user-guide.md) and
+`examples/draft` remains non-executable
 review material.
 
 When the parser encounters a known, deliberately non-executable construct from
@@ -1552,7 +1553,8 @@ concerns only.
 Builds MUST run on their target operating system. Platform-specific packaging
 helpers MUST remain optional or transitive to their maker and MUST NOT execute
 on unrelated hosts. The exact host matrix, prerequisites, outputs, runtime
-differences, and native verification procedure are recorded in `PLATFORMS.md`.
+differences, and native verification procedure are recorded in
+[`../en/platforms.md`](../en/platforms.md).
 
 ### 9.8 Local workbench preferences
 
@@ -1633,7 +1635,8 @@ focus to its invoking toolbar control. The same panel is opened by the native
 `Cmd/Ctrl+,` application-menu command. The renderer-to-main language update MUST
 use the narrow validated desktop bridge and MUST NOT expose locale or filesystem
 capabilities to the renderer.
-`SETTINGS.md` records the current setting catalogue and extension rules.
+[`settings-contract.md`](settings-contract.md) records the current setting
+catalogue and extension rules.
 
 ### 9.9 Workbench shell and local session
 
@@ -2308,7 +2311,7 @@ original fixtures:
 9. Adding comments or reformatting source does not alter output geometry.
 10. SVG and PNG contain the same elements, labels, routes, and bounds.
 11. The CLI operates locally and does not require a browser or network service.
-12. All requirements in `TESTING.md` for an MVP change pass.
+12. All requirements in [`testing.md`](testing.md) for an MVP change pass.
 13. The editor uses the same compiler core as the CLI and produces equivalent
     diagnostics, geometry, and SVG for the same effective input.
 14. The editor hot-compiles in a worker, rejects stale results, retains the last

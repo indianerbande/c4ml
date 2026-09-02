@@ -3,7 +3,6 @@ import { build } from "esbuild";
 const probes = [
   ["compiler-core", "packages/compiler-core/src/index.ts"],
   ["language-c4ml", "packages/language-c4ml/src/index.ts"],
-  ["langium", "spikes/language-langium/src/services.ts"],
   ["elkjs-api", "packages/layout-elk/src/browser.ts"],
 ];
 
