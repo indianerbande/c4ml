@@ -29,6 +29,9 @@ commands are:
 - `pnpm run renderer:build` for the production-mode Angular renderer build;
 - `pnpm run desktop:smoke` for the built Electron shell and live compiler
   worker;
+- `pnpm run check:public-source` for required public documentation, locked tool
+  versions, pinned least-privilege CI actions, credential-file exclusions, and
+  current-tree credential/private-host hygiene;
 - `pnpm run desktop:package` for the unpacked current-platform application;
 - `pnpm run desktop:make` for current-platform installer/archive artifacts;
 - `pnpm run demo:render` for the ignored visual reference export; and
@@ -478,8 +481,8 @@ system. The exact Windows x64 beta candidate has passed the complete source
 gate, Squirrel build, artifact verification, packaged smoke, Squirrel
 install/remove/reinstall, installed offline smoke with no system Node.js
 visible, and visible native open/edit/Save As/full restart/reopen, SVG/PNG
-export, and dirty-close cancellation on `brainbird`. The saved project survived
-uninstall. The Ubuntu 26.04.1 x64 run of commit `9b9fbdc` then passed the same
+export, and dirty-close cancellation on the Windows x64 test host. The saved project survived
+uninstall. The Ubuntu 26.04.1 x64 run of rewritten commit `c578b3b` then passed the same
 source, DEB, install/remove/reinstall, installed offline-smoke, visible native
 file/export, Source Control, dirty-close, and minimum-window-height evidence.
 It exposed that restrictive unprivileged-user-namespace settings also require

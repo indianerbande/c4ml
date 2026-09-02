@@ -18,6 +18,11 @@ does not ship or host a standalone browser application. Neither entry point
 requires a Python service, cloud account, or network connection for the normal
 installed workflow.
 
+To build the current beta from a clean checkout, follow
+[SOURCE-RELEASE.md](SOURCE-RELEASE.md). Contributions are described in
+[CONTRIBUTING.md](CONTRIBUTING.md), and suspected vulnerabilities should follow
+[SECURITY.md](SECURITY.md).
+
 ## Project status
 
 The C4thedral project and its C4ML compiler are currently in Phase 1.

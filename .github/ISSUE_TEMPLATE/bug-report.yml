@@ -1,0 +1,57 @@
+name: Bug report
+description: Report reproducible incorrect behavior in C4thedral or C4ML
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Do not include private architecture source, credentials, or personal filesystem paths. Security vulnerabilities belong in the private reporting channel linked below.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Provide the C4thedral version or full source commit.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system and architecture
+      placeholder: Ubuntu 26.04 x64, Windows 11 x64, macOS 15 arm64
+    validations:
+      required: true
+  - type: dropdown
+    id: entrypoint
+    attributes:
+      label: Entry point
+      options:
+        - Desktop workbench built from source
+        - Experimental CLI built from source
+        - Compiler or package API
+        - Documentation or build process
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use a new, non-confidential C4ML example whenever possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Diagnostics or screenshots
+      description: Remove credentials, private source, usernames, and local paths first.

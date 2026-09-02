@@ -6,5 +6,15 @@ coverage/
 .angular/
 .DS_Store
 *.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.key
+*.keystore
+*.jks
+*.p12
+*.pem
+*.pfx
+electron-windows-sign.log
 /spikes/language-langium/src/generated/
 /packages/language-c4ml/src/generated/

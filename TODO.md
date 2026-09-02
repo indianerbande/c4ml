@@ -412,6 +412,31 @@ covered by the editor test suite and packaged-workbench evidence.
 
 ## Beta release gate
 
+### Public source preparation
+
+- [x] verify the current tree and all reachable revisions for high-confidence
+      credential patterns and sensitive filenames;
+- [x] add a source-build guide, contribution guide, and security policy;
+- [x] add a least-privilege, commit-pinned Linux source gate for pushes and pull
+      requests;
+- [x] schedule explicit dependency-update pull requests without automatic merge;
+- [x] correct the currently reported production dependency vulnerabilities;
+- [x] rewrite the personal maintainer email address out of `main` and every
+      retained local branch;
+- [x] configure the repository to use the maintainer's GitHub `noreply` address
+      for future commits;
+- [x] delete the 25 obsolete, already merged local and remote work branches;
+- [ ] prevent the 26 read-only historical GitHub pull-request refs from becoming
+      public, either by retaining this repository as a private archive and
+      publishing a clean repository or through an accepted GitHub Support purge;
+- [ ] enable GitHub private vulnerability reporting and restore the intended
+      branch/ruleset protection after changing visibility;
+- [ ] verify a clean clone through the public HTTPS URL; and
+- [ ] create the first public source tag from the reviewed `main` commit.
+
+Changing repository visibility is an explicit maintainer action and is not
+performed by a source-preparation change.
+
 - [x] close Pillar 3 with one permanent deterministic policy-and-observation
       acceptance command;
 - [x] compose the native host gate as `release:native` and record

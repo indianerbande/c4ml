@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const acceptedMonacoVersion = "0.56.0";
+const acceptedDomPurifyVersion = "3.4.13";
 const acceptedElkVersion = "0.12.0";
 const acceptedPlexVersion = "0.0.0";
 const acceptedEditorMonoVersion = "0.0.0";
@@ -37,6 +38,11 @@ const c4mlIconsRoot = join(editorRoot, "src", "assets", "c4ml-icons");
 const editorBuildRoot = join(repositoryRoot, "build", "editor");
 
 const editorManifest = await readJson(join(editorRoot, "package.json"));
+const workspaceConfiguration = await readFile(
+  join(repositoryRoot, "pnpm-workspace.yaml"),
+  "utf8",
+);
+const lockfile = await readFile(join(repositoryRoot, "pnpm-lock.yaml"), "utf8");
 const installedMonacoManifest = await readJson(
   join(installedMonacoRoot, "package.json"),
 );
@@ -55,6 +61,19 @@ assertEqual(
   acceptedMonacoVersion,
   "apps/editor must pin the accepted Monaco version exactly",
 );
+if (!workspaceConfiguration.includes(`dompurify: '${acceptedDomPurifyVersion}'`)) {
+  throw new Error(
+    `pnpm-workspace.yaml must override Monaco's DOMPurify dependency to ${acceptedDomPurifyVersion}.`,
+  );
+}
+if (!lockfile.includes(`dompurify@${acceptedDomPurifyVersion}:`)) {
+  throw new Error(
+    `pnpm-lock.yaml must resolve DOMPurify ${acceptedDomPurifyVersion}.`,
+  );
+}
+if (/dompurify@3\.4\.(?:[0-9]|1[0-2]):/u.test(lockfile)) {
+  throw new Error("pnpm-lock.yaml contains a reviewed-vulnerable DOMPurify version.");
+}
 assertEqual(
   editorManifest.dependencies?.["elkjs"],
   acceptedElkVersion,
@@ -408,7 +427,7 @@ for (const packageName of [
 }
 
 console.log(
-  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts, five Material Symbols, one original C4ML Source Control symbol).`,
+  `Accepted editor dependencies and packaged notices verified (Monaco ${acceptedMonacoVersion}, DOMPurify ${acceptedDomPurifyVersion}, ELK.js ${acceptedElkVersion}, IBM Plex v6.4.2 assets, six optional editor fonts, five Material Symbols, one original C4ML Source Control symbol).`,
 );
 
 async function readJson(path) {

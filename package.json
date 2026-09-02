@@ -22,6 +22,7 @@
     "check:desktop-production": "node scripts/check-desktop-production.mjs",
     "check:editor-production": "node scripts/check-editor-production.mjs",
     "check:native-release": "node scripts/check-native-release.mjs",
+    "check:public-source": "node scripts/check-public-source.mjs",
     "c4ml": "pnpm --filter @c4ml/cli... run build && node apps/cli/dist/main.js",
     "demo:render": "pnpm run build && pnpm --filter @c4ml/reference-export render",
     "desktop:build": "pnpm --filter @c4ml/editor... run build && pnpm --filter @c4ml/desktop... run build",
@@ -35,7 +36,7 @@
     "test": "pnpm --recursive --sort --if-present run test",
     "typecheck": "pnpm run build && pnpm run typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
-    "check": "pnpm run build && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run check:architecture-proof && pnpm run typecheck:tests && pnpm run test"
+    "check": "pnpm run build && pnpm run check:public-source && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run check:architecture-proof && pnpm run typecheck:tests && pnpm run test"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

@@ -272,10 +272,14 @@ validated for the desktop editor.**
   architecture compiler.
 - **License:** Monaco is MIT and carries `LICENSE` and
   `ThirdPartyNotices.txt`. Its installed runtime dependencies are Marked 14.0.0
-  under MIT and DOMPurify 3.4.8 under `MPL-2.0 OR Apache-2.0`. Release
+  under MIT and DOMPurify 3.4.13 under `MPL-2.0 OR Apache-2.0`. Monaco 0.56.0
+  declares DOMPurify 3.4.8 exactly; the workspace overrides it to the compatible
+  patched 3.4.13 after registry advisories reported two low and two moderate
+  sanitizer defects through 3.4.12. Release
   packaging must preserve the applicable licenses and notices.
 - **Impact:** the Monaco package-store entry is approximately 98 MB; Marked and
-  DOMPurify entries are approximately 952 KB and 756 KB. Shared pnpm storage
+  DOMPurify entries were approximately 952 KB and 756 KB at the original
+  acceptance checkpoint. Shared pnpm storage
   increased the complete workspace tree from approximately 298 MB to 372 MB on
   the reference macOS arm64 checkout. The production build keeps the app at a
   214.91 KB initial total and emits Monaco as a 3.06 MB lazy runtime with a

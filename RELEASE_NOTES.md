@@ -4,6 +4,18 @@ Status: Internal beta candidate
 
 Date: 2026-09-01
 
+The source tree is prepared for a later public source release with a reproducible
+build guide, contribution and security policies, issue templates, a
+least-privilege commit-pinned Linux source gate, scheduled dependency-update
+pull requests, and an automated public-source hygiene check. Monaco's transitive
+DOMPurify dependency is constrained to reviewed version 3.4.13; the production
+audit currently reports no known vulnerabilities. Retained branch commits use
+GitHub's private `noreply` address, and obsolete merged work branches have been
+removed. GitHub's read-only historical pull-request refs still require a clean
+public repository or an accepted Support purge before visibility changes.
+Repository visibility, the public-clone test, and the source tag remain explicit
+maintainer release actions.
+
 This is the first release identity for the C4thedral desktop architecture
 workbench. C4ML remains the name of its language, compiler, CLI, file format,
 diagnostics, and technical protocol boundaries.
@@ -42,7 +54,7 @@ diagnostics, and technical protocol boundaries.
   Save As, full restart/reopen, native SVG/PNG export, and read-only Source
   Control also passed. That run exposed and fixed a packaged SVG `blob:` handoff
   to Nautilus by routing desktop SVG saving through the validated native bridge;
-- Linux x64: commit `9b9fbdc` passed the complete source gate with 562 tests,
+- Linux x64: rewritten commit `c578b3b` passed the complete source gate with 562 tests,
   DEB inspection, APT install/remove/reinstall, two installed network-isolated
   smokes without a system Node.js, and the visible file/export, Source Control,
   dirty-close, and minimum-window-height round trips on Ubuntu 26.04.1. The
