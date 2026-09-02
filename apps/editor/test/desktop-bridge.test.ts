@@ -13,6 +13,7 @@ describe("editor desktop bridge", () => {
       protocolVersion: desktopBridgeProtocolVersion,
       platform: "win32",
       exportPng: async () => ({ status: "canceled" as const }),
+      exportSvg: async () => ({ status: "canceled" as const }),
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),

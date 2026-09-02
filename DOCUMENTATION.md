@@ -2,7 +2,7 @@
 
 Status: Draft syntax preview with executable language and desktop workbench
 
-Date: 2026-08-30
+Date: 2026-09-01
 
 **C4thedral** is the desktop architecture workbench. **C4ML** is its language,
 source format, compiler, and command-line interface.
@@ -115,11 +115,13 @@ action. Closing or moving it cannot change the `.c4ml` document or exported
 SVG/PNG. The detachable preview is a native Electron window. The internal
 renderer harness uses the full-size mode and does not provide a browser pop-out.
 
-Use **Export PNG** in Output or the File menu to save the current canonical
-diagram at 1x, 2x, or 3x. Rasterization runs locally in the desktop main process
-from the same SVG shown by the preview, with the packaged IBM Plex Sans fonts;
-it does not take a browser screenshot or run layout again. The internal
-renderer harness keeps SVG download but has no native PNG dialog.
+Use **Export SVG** in Output to save the current canonical vector diagram through
+the desktop's native save dialog. Use **Export PNG** in Output or the File menu
+to save the same diagram at 1x, 2x, or 3x. Rasterization runs locally in the
+desktop main process from the same SVG shown by the preview, with the packaged
+IBM Plex Sans fonts; it does not take a browser screenshot or run layout again.
+The internal renderer harness keeps browser SVG download but has no native
+filesystem dialogs.
 
 Open **Settings** from the toolbar or with `Cmd/Ctrl+,`. The first settings
 choose English or German interface copy, System, Light, or Dark workbench
@@ -176,8 +178,13 @@ pnpm run desktop:make
 
 Artifacts are ignored below `build/desktop/`. On macOS, `desktop:make` produces
 an application, DMG, and ZIP. These are ad-hoc signed local development
-artifacts, not notarized releases. The Windows Setup EXE maker is configured but
-still needs a native Windows build and installation test.
+artifacts, not notarized releases. The Windows Setup EXE has passed its native
+x64 build, artifact, install/remove/reinstall, no-system-Node smoke, and visible
+open/edit/Save As/restart/reopen, SVG/PNG export, and dirty-close cancellation
+checks; installation instructions are in
+[`INSTALL-WINDOWS.md`](INSTALL-WINDOWS.md). Windows release signing remains. On Debian/Ubuntu,
+`desktop:make` produces a DEB; installation instructions are in
+[`INSTALL-LINUX.md`](INSTALL-LINUX.md).
 
 Inside a `route` block, IntelliSense first asks for `policy`. Once it is known,
 the editor offers only controls compatible with that policy and hides properties

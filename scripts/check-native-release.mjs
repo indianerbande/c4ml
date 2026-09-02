@@ -75,14 +75,54 @@ if (platform === "darwin") {
   runRequired("/usr/bin/hdiutil", ["verify", distributables[0]]);
   runRequired("/usr/bin/unzip", ["-t", distributables[1]]);
 } else if (platform === "linux") {
-  distributables = [
-    findUnique(
-      madeFiles,
-      (path) => basename(path) === `${productName}-linux-${architecture}-${version}.zip`,
-      "current Linux ZIP",
-    ),
+  const debianArchitecture = architecture === "x64" ? "amd64" : architecture;
+  const debianVersion = version.replace(
+    /(\d)[_.+-]?((?:RC|rc|pre|dev|beta|alpha)[_.+-]?\d*)$/u,
+    "$1~$2",
+  );
+  const debianPackage = findUnique(
+    madeFiles,
+    (path) =>
+      basename(path) ===
+      `c4thedral_${debianVersion}_${debianArchitecture}.deb`,
+    "current Linux DEB",
+  );
+  const packageFields = runRequired("dpkg-deb", [
+    "--field",
+    debianPackage,
+    "Package",
+    "Version",
+    "Architecture",
+  ]);
+  const expectedFields = [
+    "Package: c4thedral",
+    `Version: ${debianVersion}`,
+    `Architecture: ${debianArchitecture}`,
   ];
-  runRequired("unzip", ["-t", distributables[0]]);
+  for (const field of expectedFields) {
+    if (!packageFields.includes(field)) {
+      throw new Error(`Linux DEB metadata is missing ${field}.`);
+    }
+  }
+  const packageContents = runRequired("dpkg-deb", ["--contents", debianPackage]);
+  if (!/^-rwsr-xr-x root\/root\s+\d+ .*\/chrome-sandbox$/mu.test(packageContents)) {
+    throw new Error(
+      "Linux DEB must install chrome-sandbox as root:root with mode 4755.",
+    );
+  }
+  if (!/usr\/share\/applications\/c4thedral\.desktop$/mu.test(packageContents)) {
+    throw new Error("Linux DEB is missing its desktop menu entry.");
+  }
+  if (
+    !/\/usr\/bin\/c4thedral -> \.\.\/lib\/c4thedral\/C4thedral$/mu.test(
+      packageContents,
+    )
+  ) {
+    throw new Error(
+      "Linux DEB is missing the c4thedral command or it targets the wrong executable.",
+    );
+  }
+  distributables = [debianPackage];
 } else if (platform === "win32") {
   distributables = [
     findUnique(
@@ -186,4 +226,5 @@ function runRequired(command, args) {
       `${command} ${args.join(" ")} failed:\n${result.stdout}${result.stderr}`,
     );
   }
+  return result.stdout;
 }

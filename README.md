@@ -128,7 +128,7 @@ Implemented and automatically validated:
   integration, denied navigation/permissions, an application-owned protocol,
   ASAR integrity checks, and Electron production fuses;
 - local macOS `.app`, `.dmg`, and `.zip` packaging, a configured Windows
-  Squirrel installer maker, and a portable Linux ZIP maker;
+  Squirrel installer maker, and a native Debian/Ubuntu DEB maker;
 - an accepted lazy Monaco 0.56.0 adapter that presents only the language
   worker's context-valid completions, applies exact source edits, displays
   inline diagnostic markers, supports keyboard undo/redo, and navigates from
@@ -195,7 +195,8 @@ Not implemented yet:
 - the remaining production editor capabilities: independently selectable
   Arrowheads and complete accessibility validation;
 - public distribution work: Apple Developer ID signing/notarization, Windows
-  code signing, and native Windows and Linux build-and-run validation; and
+  code signing, and Linux x64 native validation before an amd64 download is
+  published; and
 - broader guided modeling flows for Visual Groups and multi-document target
   selection beyond the implemented source-preserving extension path.
 
@@ -294,10 +295,18 @@ pnpm run check:native-release
 On macOS, the packaged application appears below `build/desktop/` and `make`
 adds a DMG and ZIP below `build/desktop/make/`. These development artifacts are
 ad-hoc signed so they can be tested locally; they are not notarized release
-downloads. The Windows Squirrel maker is configured to produce a Setup EXE on
-Windows. Linux produces an unpacked app and portable ZIP. Build every target on
-its native host; the Windows and Linux paths still require native validation.
-See [PLATFORMS.md](PLATFORMS.md) for prerequisites and the verification matrix.
+downloads. The Windows Squirrel maker produces a Setup EXE on Windows; the
+current beta's native x64 build, artifact gate, install/remove/reinstall,
+no-system-Node smoke, and visible open/edit/save/reopen plus SVG/PNG export
+round trip have passed. Debian/Ubuntu
+Linux produces a native DEB that installs the application
+menu entry and Chromium sandbox helper correctly. Build every target on its
+native host; Windows still requires release signing, while Linux still requires
+an x64 native run before publishing amd64.
+Ubuntu arm64 has passed the complete installation and visible dialog
+round trip. End users can follow [INSTALL-WINDOWS.md](INSTALL-WINDOWS.md) or
+[INSTALL-LINUX.md](INSTALL-LINUX.md); contributors should see [PLATFORMS.md](PLATFORMS.md)
+for prerequisites and the verification matrix.
 On a release host, `pnpm run release:native` runs the full source gate, packaged
 smoke, makers, and artifact verification in one sequence and writes a local
 hash manifest below `build/desktop/release-evidence/`.

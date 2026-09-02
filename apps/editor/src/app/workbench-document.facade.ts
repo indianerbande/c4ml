@@ -425,7 +425,34 @@ export class WorkbenchDocumentFacade {
     }
   }
 
-  downloadSvg(svg: string, activeViewId: string | undefined): void {
+  async downloadSvg(
+    svg: string,
+    activeViewId: string | undefined,
+  ): Promise<void> {
+    const desktop = this.#desktop;
+    if (desktop !== undefined) {
+      this.fileOperationLabel.set(this.#i18n.t("operation.exportingSvg"));
+      try {
+        const result = await desktop.exportSvg({
+          svg,
+          suggestedName: `${activeViewId ?? "architecture"}.svg`,
+        });
+        if (result.status === "exported") {
+          this.fileOperationLabel.set(
+            this.#i18n.t("operation.exportedSvg", {
+              name: result.displayName,
+            }),
+          );
+        } else if (result.status === "failed") {
+          this.fileOperationLabel.set(`${result.code}: ${result.message}`);
+        } else {
+          this.fileOperationLabel.set(undefined);
+        }
+      } catch {
+        this.fileOperationLabel.set(this.#i18n.t("operation.svgFailed"));
+      }
+      return;
+    }
     const url = URL.createObjectURL(
       new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
     );

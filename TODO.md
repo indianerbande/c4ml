@@ -2,7 +2,7 @@
 
 Status: Active roadmap
 
-Date: 2026-08-31
+Date: 2026-09-01
 
 `SPEC.md` defines product behavior and architecture. `TESTING.md` defines the
 evidence required to claim that behavior works. This file orders implementation
@@ -418,18 +418,28 @@ covered by the editor test suite and packaged-workbench evidence.
       product/version-specific artifact hashes through `check:native-release`;
 - [x] validate the current macOS arm64 packaged application, detached preview,
       native PNG path, ad-hoc signature, DMG, and ZIP under Node.js 24.15.0;
-- [ ] run the current native gate and installation round trip on Windows x64;
-- [ ] run the current native gate and portable ZIP round trip on Linux;
+- [x] run the current source gate, Squirrel maker, and native artifact check on
+      Windows x64 under Node.js 24.15.0;
+- [x] run packaged smoke, install/remove/reinstall, no-system-Node launch, and
+      the visible open/edit/Save As/restart/reopen plus SVG/PNG export round
+      trip on Windows x64;
+- [x] exercise the native Windows dirty-close-protection warning;
+- [x] build, inspect, install, remove, reinstall, and offline-smoke the current
+      DEB on Ubuntu arm64;
+- [x] complete the visible Linux native-dialog file/export and Source Control
+      round trip;
+- [ ] repeat the native DEB gate and visible installation/dialog round trip on
+      Ubuntu x64 before publishing the amd64 download;
 - [x] set the first beta product version, original cross-platform application
       icon, package metadata, and release notes;
 - [ ] configure the Apple and Windows release signing identities; and
 - [ ] perform Developer ID notarization and Windows release signing before a
       public download is described as a release artifact.
 
-The earlier standalone Windows test proved that the application can install,
-build, and run there, but it predates this exact release branch and does not
-replace fresh Squirrel evidence. macOS evidence cannot close either remaining
-native row.
+The current Windows branch now has fresh Squirrel build, installation,
+no-system-Node smoke, uninstall/reinstall, and visible file/export evidence.
+Release signing and the Linux x64 row remain; macOS or arm64 Linux evidence
+cannot close those platform-specific checks.
 
 ## Next authoring block
 

@@ -57,7 +57,28 @@ module.exports = {
     },
     {
       name: "@electron-forge/maker-zip",
-      platforms: ["darwin", "linux"],
+      platforms: ["darwin"],
+    },
+    {
+      name: "@electron-forge/maker-deb",
+      platforms: ["linux"],
+      config: {
+        options: {
+          name: "c4thedral",
+          productName: "C4thedral",
+          genericName: "Architecture Workbench",
+          description: "Local architecture workbench powered by C4ML",
+          productDescription:
+            "C4thedral is a local architecture workbench for editing C4ML source and exporting deterministic SVG and PNG diagrams.",
+          section: "devel",
+          priority: "optional",
+          maintainer: "C4thedral contributors",
+          homepage: "https://github.com/indianerbande/c4ml",
+          bin: "C4thedral",
+          icon: path.resolve(__dirname, "assets/icon.png"),
+          categories: ["Development"],
+        },
+      },
     },
   ],
   hooks: {

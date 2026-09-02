@@ -401,6 +401,16 @@ async function runGit(
         message: sanitizeGitMessage(error.message, cwd),
       }),
     );
+    child.stdin.on("error", (error: NodeJS.ErrnoException) => {
+      // Short-lived Git commands may close stdin before Node flushes it on
+      // some platforms. Their exit code and stderr remain authoritative.
+      if (error.code === "EPIPE") return;
+      finish({
+        valid: false,
+        stdout: "",
+        message: sanitizeGitMessage(error.message, cwd),
+      });
+    });
     child.on("close", (code) => {
       const output = Buffer.concat(stdout).toString("utf8");
       finish(
@@ -418,7 +428,11 @@ async function runGit(
             },
       );
     });
-    child.stdin.end(options.input ?? "");
+    if (options.input === undefined) {
+      child.stdin.end();
+    } else {
+      child.stdin.end(options.input);
+    }
   });
 }
 

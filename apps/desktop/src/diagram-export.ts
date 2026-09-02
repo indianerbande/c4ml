@@ -16,6 +16,10 @@ export function ensurePngExtension(path: string): string {
   return path.toLowerCase().endsWith(".png") ? path : `${path}.png`;
 }
 
+export function ensureSvgExtension(path: string): string {
+  return path.toLowerCase().endsWith(".svg") ? path : `${path}.svg`;
+}
+
 export function safeSuggestedPngName(value: string): string {
   const cleaned = basename(value)
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
@@ -25,6 +29,17 @@ export function safeSuggestedPngName(value: string): string {
     return "architecture.png";
   }
   return ensurePngExtension(cleaned);
+}
+
+export function safeSuggestedSvgName(value: string): string {
+  const cleaned = basename(value)
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "-")
+    .replace(/[. ]+$/g, "")
+    .trim();
+  if (cleaned.length === 0) {
+    return "architecture.svg";
+  }
+  return ensureSvgExtension(cleaned);
 }
 
 export function resolveDesktopPngFontFiles(

@@ -58,13 +58,14 @@ Implemented:
 - selection among the executable views declared in the current document;
 - locally packaged IBM Plex Sans for the interface and diagrams, IBM Plex Mono
   for source, and standalone SVG font embedding;
-- vector-preserving zoom without CSS transform scaling, fit, scroll-pan, local
-  SVG download, and native desktop PNG export at 1x, 2x, or 3x;
+- vector-preserving zoom without CSS transform scaling, fit, scroll-pan,
+  browser-harness SVG download, native desktop SVG save, and native desktop PNG
+  export at 1x, 2x, or 3x;
 - a full-size single-window preview and a detachable projection-only preview
   that synchronizes selection, zoom, Route overlay, and redocking through the
   authoritative main workbench;
-- an optional typed desktop bridge for native Open, Save, and Save As without
-  exposing filesystem paths or Node.js APIs to the renderer;
+- an optional typed desktop bridge for native Open, Save, Save As, and SVG/PNG
+  export without exposing filesystem paths or Node.js APIs to the renderer;
 - a local Source Control area for repository status, staging, unstaging,
   committing, and pushing through that opaque, validated desktop bridge;
 - a versioned local-preferences service and category-based settings panel for

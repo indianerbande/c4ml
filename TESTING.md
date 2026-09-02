@@ -1,8 +1,8 @@
 # C4thedral Testing Strategy
 
-Status: Draft 0.46
+Status: Draft 0.48
 
-Date: 2026-08-31
+Date: 2026-09-01
 
 This document defines how C4thedral product behavior and C4ML language and
 compiler behavior will be verified. It is normative for testing once
@@ -41,10 +41,11 @@ The source gate accepts the installed Node.js runtime when it satisfies the
 root `engines` range. Node.js 24.15.0 or newer within 24.x is the native desktop
 packaging baseline. A different installed runtime MUST produce a warning and
 MUST NOT trigger a managed-runtime download; the Forge packaging commands MUST
-fail early with a useful message outside the accepted 24.x line. The production boundary check also protects the
-reviewed repository-firewall pins for webpack, minimizer-webpack-plugin, and
-terser, requires Windows, macOS, and Linux maker coverage, and prevents macOS
-native maker helpers from becoming direct cross-platform dependencies.
+fail early with a useful message outside the accepted 24.x line. The production
+boundary check also protects the reviewed repository-firewall pins for webpack,
+minimizer-webpack-plugin, and terser, requires Windows, macOS, and Linux maker
+coverage, pins the Linux DEB maker and its user-facing metadata, and prevents
+platform-native maker helpers from entering the installed application.
 
 The Phase 1 semantic evidence uses the original `signal-garden` fixture in
 `packages/compiler-core/test`. The compiler-core suite currently verifies the
@@ -467,8 +468,18 @@ deep code-signature verification after ad-hoc signing. Its DMG passes
 `hdiutil verify`, and its version-specific ZIP passes archive integrity testing. The
 host-specific `check:native-release` command records the executable and
 distributable sizes and SHA-256 hashes below the ignored build tree. Native
-file-dialog interaction, the current Windows installer, and the Linux portable
-application remain manual/platform-specific evidence.
+file-dialog interaction and installers remain platform-specific evidence. The
+Ubuntu arm64 DEB has passed metadata, desktop-entry, sandbox-mode, APT
+install/remove/reinstall, installed offline smoke, visible open/edit/Save As,
+full restart and reopen, native SVG/PNG export, and read-only Source Control
+checks. The SVG test specifically proves that the packaged desktop opens its
+validated native save path instead of delegating a `blob:` URL to the operating
+system. The exact Windows x64 beta candidate has passed the complete source
+gate, Squirrel build, artifact verification, packaged smoke, Squirrel
+install/remove/reinstall, installed offline smoke with no system Node.js
+visible, and visible native open/edit/Save As/full restart/reopen, SVG/PNG
+export, and dirty-close cancellation on `brainbird`. The saved project survived
+uninstall. Linux x64 still requires its own native run.
 
 The experimental CLI suite exercises successful validation, semantic comparison
 of two valid sources, deterministic semantic impact exposure, empty comparison
@@ -797,7 +808,8 @@ retention for the experimental static zoom subsets. It also covers
 context-completion requests, exact text edits, selection of a declared view by
 stable identifier, Monaco marker translation, diagnostic-to-source navigation,
 keyboard undo/redo, source synchronization, zoom, fit, scroll-pan at enlarged
-scale, SVG download, and bidirectional source/preview node navigation through
+scale, browser-harness SVG download, native desktop SVG save, and bidirectional
+source/preview node navigation through
 stable source, scene, and SVG identities. Relationship and effective-Route
 selection, semantic and route-control source mapping, route hit testing, and a
 preview-only routing-debug overlay are covered too. Local Plex font loading,
@@ -915,19 +927,26 @@ Desktop tests MUST cover:
 - exact locally packaged activity-icon SVGs, their source notice and license,
   localized accessible button names, and visible light/dark theme states;
 - the configured production Electron fuses;
-- launch and live compilation from the packaged application; and
+- launch and live compilation from the packaged application;
+- a minimum-height packaged-window smoke proving that the document itself does
+  not scroll, the status bar remains fully inside the renderer viewport, and
+  only bounded workbench content owns overflow; and
 - signature, installer/archive integrity, installation, launch, file round
   trip, and uninstall behavior on every supported release platform.
 
 The native platform matrix is defined in `PLATFORMS.md`. Every target host MUST
 run install, the complete check, packaged smoke, and its configured makers.
 macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
-Setup EXE; Linux evidence covers the unpacked application and portable ZIP.
+Setup EXE; Debian-family Linux evidence covers the unpacked application and
+installed DEB. The Linux artifact check MUST verify package identity, version,
+architecture, desktop-menu integration, and a root-owned `chrome-sandbox` with
+mode `4755`; the installed application MUST start without `--no-sandbox`.
 No host may satisfy another host's launch or filesystem evidence.
 `pnpm run release:native` composes those automated steps and
 `check:native-release` additionally requires the current product/version
-artifacts, verifies macOS signature/DMG/ZIP integrity or Linux ZIP integrity,
-and writes a host-local hash manifest. On Windows it requires the packaged EXE,
+artifacts, verifies macOS signature/DMG/ZIP integrity or Linux DEB metadata and
+sandbox permissions, and writes a host-local hash manifest. On Windows it
+requires the packaged EXE,
 Squirrel Setup EXE, full NuGet package, and RELEASES index. A release install
 MUST be performed under Node.js 24 so optional native maker helpers do not
 retain an ABI from another Node.js line.
@@ -1319,10 +1338,11 @@ reviewed IBM Plex WOFF2 hash, packaged byte identity, and the unchanged OFL-1.1
 license.
 
 The desktop dependency check pins Electron, Forge, makers, fuses, Windows
-startup handling, and macOS maker helpers to the reviewed versions and licenses.
-It also verifies that macOS-only native helpers are reached only through the
-optional DMG-maker graph, that Linux shares the dependency-free ZIP maker, and
-that the current host receives exactly one reviewed resvg binary.
+startup handling, and platform maker helpers to the reviewed versions and
+licenses. It also verifies that macOS-only native helpers are reached only
+through the optional DMG-maker graph, that Linux uses the pinned DEB maker with
+stable metadata, and that the current host receives exactly one reviewed resvg
+binary.
 It also protects the local CSP, main/preview preload separation, the restricted
 preview channel inventory, and packaged resource inventory. A release pipeline
 MUST additionally inventory the complete installer payload and verify platform

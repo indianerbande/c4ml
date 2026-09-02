@@ -27,9 +27,18 @@ own compiler semantics. The sandboxed Angular renderer receives only a
 versioned C4ML preload bridge with opaque document handles. Native Open, Save,
 Save As, empty startup, context-sensitive File/Project closing, dirty-title
 state, and close protection are implemented. Local macOS
-`.app`, DMG, and ZIP artifacts are automatically and visually validated; the
-configured Windows Squirrel installer and Linux portable ZIP still require
-native runs.
+`.app`, DMG, and ZIP artifacts are automatically and visually validated. The
+Windows x64 source gate, Squirrel build, native artifact verification, packaged
+and installed smoke without a system Node.js, install/remove/reinstall cycle,
+and visible open/edit/Save As/restart/reopen, SVG/PNG export, and native
+dirty-close-protection round trip have passed. Windows code signing remains.
+Debian and Ubuntu use the configured native DEB
+maker so installation can preserve the
+Chromium sandbox helper's required root ownership and mode; its native
+build, package inspection, install/remove/reinstall, and offline packaged smoke
+plus visible open/edit/save/reopen, SVG/PNG export, and Source Control have
+passed on Ubuntu arm64. Linux x64 still requires native evidence before an
+amd64 artifact is published.
 Current macOS artifacts are ad-hoc signed development builds, not notarized
 releases. Node.js 24.15.0 or a newer 24.x release is the reference packaging
 runtime. pnpm warns instead of forcing a public runtime download; source checks
@@ -79,7 +88,8 @@ identifiers, strings, numbers, operators, and comments, while Monaco presents
 the exact edits, semantic-token spans, and ranges
 without owning C4ML syntax or semantics. The UI also exposes diagnostics-to-source navigation,
 bidirectional source/preview node navigation through compiler-owned stable
-identities and source ranges, zoom, fit, scroll-pan, SVG download, wizard
+identities and source ranges, zoom, fit, scroll-pan, native desktop SVG export,
+browser-harness SVG download, wizard
 preview, cancel, apply, one-step wizard undo, and selection among declared
 executable views. Preview selection styling is not included in exported SVG.
 The packaged English/German handbook is searchable and task-oriented; its
@@ -344,10 +354,11 @@ published package, and its SVG/PNG paths use the controlled local IBM Plex
 assets without system-font discovery. Keep Node.js
 filesystem, process, and environment behavior confined to this app.
 
-The desktop bridge also supports native PNG export at 1x, 2x, or 3x. The main
-process validates the canonical SVG payload, uses the accepted resvg-js adapter
-with controlled IBM Plex Sans TTF files and system fonts disabled, and owns the
-native save dialog. The packaged platform-specific native binary and its
+The desktop bridge supports canonical SVG save and PNG export at 1x, 2x, or 3x
+through native dialogs. The main process validates the canonical SVG payload,
+uses the accepted resvg-js adapter for PNG with controlled IBM Plex Sans TTF
+files and system fonts disabled, and owns both save paths. The packaged
+platform-specific native binary and its
 MPL-2.0 notice are required production resources.
 
 ## Read first

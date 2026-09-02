@@ -23,6 +23,7 @@ import {
   isDesktopDocumentState,
   isDesktopOpenPreviewRequest,
   isDesktopPngExportRequest,
+  isDesktopSvgExportRequest,
   isDesktopPreviewInteraction,
   isDesktopPreviewProjection,
   isDesktopSaveRequest,
@@ -37,6 +38,7 @@ import {
   type DesktopOpenPreviewResult,
   type DesktopOperationFailure,
   type DesktopPngExportResult,
+  type DesktopSvgExportResult,
   type DesktopPreviewProjection,
   type DesktopPreviewWindowBounds,
   type DesktopSaveResult,
@@ -64,8 +66,10 @@ import {
 } from "./document-registry.js";
 import {
   ensurePngExtension,
+  ensureSvgExtension,
   resolveDesktopPngFontFiles,
   safeSuggestedPngName,
+  safeSuggestedSvgName,
 } from "./diagram-export.js";
 import { desktopMessage } from "./desktop-localization.js";
 import {
@@ -307,6 +311,7 @@ function denyRendererPermissions(): void {
 
 function registerDesktopIpc(): void {
   ipcMain.removeHandler(desktopIpcChannels.exportPng);
+  ipcMain.removeHandler(desktopIpcChannels.exportSvg);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
   ipcMain.removeHandler(desktopIpcChannels.openProject);
   ipcMain.removeHandler(desktopIpcChannels.openPreviewWindow);
@@ -388,6 +393,58 @@ function registerDesktopIpc(): void {
       }
       if (value.type === "redock") {
         previewWindow?.close();
+      }
+    },
+  );
+  ipcMain.handle(
+    desktopIpcChannels.exportSvg,
+    async (event, value: unknown): Promise<DesktopSvgExportResult> => {
+      if (!isTrustedSender(event) || !isDesktopSvgExportRequest(value)) {
+        return invalidIpcResult();
+      }
+      if (Buffer.byteLength(value.svg, "utf8") > maxDesktopSvgBytes) {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-EXPORT-001",
+          message: desktopMessage(uiLanguage, "error.svgTooLarge"),
+        };
+      }
+
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        title: desktopMessage(uiLanguage, "dialog.exportSvg"),
+        defaultPath: safeSuggestedSvgName(value.suggestedName),
+        filters: [
+          {
+            name: desktopMessage(uiLanguage, "filter.svg"),
+            extensions: ["svg"],
+          },
+        ],
+      };
+      const selection =
+        owner === null
+          ? await dialog.showSaveDialog(options)
+          : await dialog.showSaveDialog(owner, options);
+      if (selection.canceled || selection.filePath === undefined) {
+        return { status: "canceled" };
+      }
+
+      const targetPath = ensureSvgExtension(selection.filePath);
+      try {
+        await writeFile(targetPath, value.svg, {
+          encoding: "utf8",
+          mode: 0o600,
+        });
+        return {
+          status: "exported",
+          displayName: basename(targetPath),
+        };
+      } catch {
+        return {
+          status: "failed",
+          code: "C4ML-DESKTOP-EXPORT-002",
+          message: desktopMessage(uiLanguage, "error.svgSave"),
+        };
       }
     },
   );
@@ -1066,6 +1123,7 @@ function protectUnsavedDocument(window: BrowserWindow): void {
 }
 
 async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
+  window.setSize(1100, 640);
   window.show();
   window.focus();
   window.webContents.focus();
@@ -1121,6 +1179,7 @@ view smoke-context {
       const check = () => {
         const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
           typeof window.c4mlDesktop?.exportPng === 'function' &&
+          typeof window.c4mlDesktop?.exportSvg === 'function' &&
           typeof window.c4mlDesktop?.openProject === 'function' &&
           typeof window.c4mlDesktop?.openPreviewWindow === 'function' &&
           typeof window.c4mlDesktop?.getPreviewWindowState === 'function' &&
@@ -1141,10 +1200,17 @@ view smoke-context {
         const language = document.documentElement.lang;
         const languageReady = language === 'en' || language === 'de';
         const detachButtonReady = document.querySelector('button[data-preview-action="detach"]') !== null;
-        if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady && detachButtonReady) {
-          resolve({ ok: true, title: document.title, language, detachButtonReady });
+        const statusBar = document.querySelector('.status-bar');
+        const statusBarBounds = statusBar?.getBoundingClientRect();
+        const viewportReady = document.documentElement.scrollHeight <= document.documentElement.clientHeight &&
+          document.body.scrollHeight <= document.body.clientHeight &&
+          statusBarBounds !== undefined &&
+          statusBarBounds.bottom <= window.innerHeight + 0.5 &&
+          statusBarBounds.right <= window.innerWidth + 0.5;
+        if (bridgeReady && editorReady && previewReady && pngExportReady && compilerReady && fontsReady && languageReady && detachButtonReady && viewportReady) {
+          resolve({ ok: true, title: document.title, language, detachButtonReady, viewportReady, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight });
         } else if (Date.now() >= deadline) {
-          resolve({ ok: false, bridgeReady, editorReady, editorDirty, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, detachButtonReady, language });
+          resolve({ ok: false, bridgeReady, editorReady, editorDirty, previewReady, pngExportReady, compilerReady, fontsReady, languageReady, detachButtonReady, viewportReady, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, documentScrollHeight: document.documentElement.scrollHeight, bodyScrollHeight: document.body.scrollHeight, language });
         } else {
           setTimeout(check, 100);
         }
