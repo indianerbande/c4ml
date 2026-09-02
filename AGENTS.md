@@ -2,9 +2,10 @@
 
 ## Project status
 
-C4thedral, powered by the C4ML language and compiler, has completed its initial
-Phase 0 feasibility implementation and entered
-Phase 1 semantic-core work. The local Git repository and GitHub remote exist.
+C4thedral, powered by the C4ML language and compiler, is published as the
+`0.1.0-beta.1` public source beta. `PROJECT-STATUS.md` owns the concise
+reader-facing maturity statement; this section retains the detailed engineering
+state needed by repository agents. The local Git repository and GitHub remote exist.
 An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium and ELK.js
 technical spikes are authorized. The accepted resvg-js adapter has moved from
 its historical spike into the production `packages/render-resvg` boundary.

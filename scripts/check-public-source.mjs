@@ -88,6 +88,7 @@ const requiredFiles = [
   "LICENSE",
   ".npmrc",
   "README.md",
+  "PROJECT-STATUS.md",
   "SOURCE-RELEASE.md",
   "CONTRIBUTING.md",
   "SECURITY.md",
@@ -114,6 +115,7 @@ assert.deepEqual(
 
 const readme = readRequired("README.md");
 for (const publicDocument of [
+  "PROJECT-STATUS.md",
   "SOURCE-RELEASE.md",
   "CONTRIBUTING.md",
   "SECURITY.md",
