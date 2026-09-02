@@ -1531,16 +1531,21 @@ installation preserves the Chromium sandbox helper's required mode. A plain
 Linux archive is not a supported release artifact because it cannot establish
 that ownership safely. Linux build, launch, installation, removal, offline
 smoke, native open/save/reopen, SVG/PNG export, and Source Control validation
-have passed on Ubuntu arm64. The exact Windows x64 beta candidate has passed its
+have passed on Ubuntu arm64 and x64. The x64 run also passed dirty-close
+cancellation and minimum-window-height behavior. Its restrictive
+unprivileged-user-namespace policy requires the unpacked Chromium helper to be
+`root:root`/`4755` before packaged smoke, so the release command performs that
+exact preparation through `sudo` without disabling the sandbox. The exact
+Windows x64 beta candidate has passed its
 source gate, Squirrel build, native artifact verification, packaged and
 installed no-system-Node smoke, install/remove/reinstall cycle, and visible
 open/edit/Save As/restart/reopen, SVG/PNG export, and dirty-close cancellation
-validation. Linux x64 requires its own native evidence
-before an amd64 download is published. Current macOS artifacts are ad-hoc
+validation. Current macOS artifacts are ad-hoc
 signed for local execution only. The first internal beta candidate has a
 product version and original native icon. A public release MUST still add Apple
-Developer ID signing and notarization, Windows code signing, and native
-validation on each supported platform. The installed application MUST run
+Developer ID signing and notarization and Windows code signing. Native
+validation remains required on each supported platform for every release
+candidate. The installed application MUST run
 offline; dependency and Electron binary downloads are build/install-time
 concerns only.
 

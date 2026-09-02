@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit && node scripts/copy-resvg-native.cjs && esbuild src/main.ts --bundle --platform=node --format=cjs --external:electron --loader:.node=copy --asset-names=[name] --outfile=dist/main.cjs && esbuild src/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preload.cjs && esbuild src/preview-preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/preview-preload.cjs",
-    "smoke": "node scripts/launch-packaged.cjs --smoke",
+    "smoke": "node scripts/prepare-packaged-smoke.cjs && node scripts/launch-packaged.cjs --smoke",
     "start": "node scripts/launch-development.cjs",
     "package": "node scripts/check-packaging-runtime.cjs && electron-forge package",
     "make": "node scripts/check-packaging-runtime.cjs && electron-forge make",

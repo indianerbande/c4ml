@@ -194,9 +194,8 @@ Not implemented yet:
 - the public source grammar for custom shape definitions and assignments;
 - the remaining production editor capabilities: independently selectable
   Arrowheads and complete accessibility validation;
-- public distribution work: Apple Developer ID signing/notarization, Windows
-  code signing, and Linux x64 native validation before an amd64 download is
-  published; and
+- public distribution work: Apple Developer ID signing/notarization and
+  Windows code signing; and
 - broader guided modeling flows for Visual Groups and multi-document target
   selection beyond the implemented source-preserving extension path.
 
@@ -301,10 +300,11 @@ no-system-Node smoke, and visible open/edit/save/reopen plus SVG/PNG export
 round trip have passed. Debian/Ubuntu
 Linux produces a native DEB that installs the application
 menu entry and Chromium sandbox helper correctly. Build every target on its
-native host; Windows still requires release signing, while Linux still requires
-an x64 native run before publishing amd64.
-Ubuntu arm64 has passed the complete installation and visible dialog
-round trip. End users can follow [INSTALL-WINDOWS.md](INSTALL-WINDOWS.md) or
+native host; Windows still requires release signing. Ubuntu arm64 and x64 have
+passed the complete installation and visible dialog round trip. The Linux
+packaged smoke may request `sudo` solely to prepare the disposable unpacked
+Chromium helper as `root:root`/`4755`; it never disables the sandbox. End users
+can follow [INSTALL-WINDOWS.md](INSTALL-WINDOWS.md) or
 [INSTALL-LINUX.md](INSTALL-LINUX.md); contributors should see [PLATFORMS.md](PLATFORMS.md)
 for prerequisites and the verification matrix.
 On a release host, `pnpm run release:native` runs the full source gate, packaged

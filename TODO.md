@@ -428,7 +428,7 @@ covered by the editor test suite and packaged-workbench evidence.
       DEB on Ubuntu arm64;
 - [x] complete the visible Linux native-dialog file/export and Source Control
       round trip;
-- [ ] repeat the native DEB gate and visible installation/dialog round trip on
+- [x] repeat the native DEB gate and visible installation/dialog round trip on
       Ubuntu x64 before publishing the amd64 download;
 - [x] set the first beta product version, original cross-platform application
       icon, package metadata, and release notes;
@@ -436,10 +436,11 @@ covered by the editor test suite and packaged-workbench evidence.
 - [ ] perform Developer ID notarization and Windows release signing before a
       public download is described as a release artifact.
 
-The current Windows branch now has fresh Squirrel build, installation,
-no-system-Node smoke, uninstall/reinstall, and visible file/export evidence.
-Release signing and the Linux x64 row remain; macOS or arm64 Linux evidence
-cannot close those platform-specific checks.
+The current branch now has fresh Windows x64 and Linux x64 native build,
+installation, no-system-Node smoke, uninstall/reinstall, and visible
+file/export evidence. Public release signing remains platform-specific: macOS
+Developer ID signing/notarization and Windows signing are not closed by these
+functional checks.
 
 ## Next authoring block
 

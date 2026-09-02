@@ -479,7 +479,13 @@ gate, Squirrel build, artifact verification, packaged smoke, Squirrel
 install/remove/reinstall, installed offline smoke with no system Node.js
 visible, and visible native open/edit/Save As/full restart/reopen, SVG/PNG
 export, and dirty-close cancellation on `brainbird`. The saved project survived
-uninstall. Linux x64 still requires its own native run.
+uninstall. The Ubuntu 26.04.1 x64 run of commit `9b9fbdc` then passed the same
+source, DEB, install/remove/reinstall, installed offline-smoke, visible native
+file/export, Source Control, dirty-close, and minimum-window-height evidence.
+It exposed that restrictive unprivileged-user-namespace settings also require
+the unpacked helper to be `root:root`/`4755` before packaged smoke. The release
+command now performs that narrowly scoped preparation through `sudo` and never
+disables Chromium's sandbox.
 
 The experimental CLI suite exercises successful validation, semantic comparison
 of two valid sources, deterministic semantic impact exposure, empty comparison
@@ -938,7 +944,10 @@ The native platform matrix is defined in `PLATFORMS.md`. Every target host MUST
 run install, the complete check, packaged smoke, and its configured makers.
 macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
 Setup EXE; Debian-family Linux evidence covers the unpacked application and
-installed DEB. The Linux artifact check MUST verify package identity, version,
+installed DEB. Before unpacked Linux smoke, the command MUST restrict its
+privileged change to the exact packaged `chrome-sandbox`, reject symlinks and
+paths outside the package, and verify `root:root` ownership with mode `4755`.
+The Linux artifact check MUST verify package identity, version,
 architecture, desktop-menu integration, and a root-owned `chrome-sandbox` with
 mode `4755`; the installed application MUST start without `--no-sandbox`.
 No host may satisfy another host's launch or filesystem evidence.

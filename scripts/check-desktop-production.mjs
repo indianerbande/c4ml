@@ -26,6 +26,9 @@ const desktopManifest = JSON.parse(readRequired("apps/desktop/package.json"));
 const packagingRuntimeGuard = readRequired(
   "apps/desktop/scripts/check-packaging-runtime.cjs",
 );
+const packagedSmokePreparation = readRequired(
+  "apps/desktop/scripts/prepare-packaged-smoke.cjs",
+);
 assert.equal(desktopManifest.main, "dist/main.cjs");
 assert.equal(
   desktopManifest.productName,
@@ -47,6 +50,21 @@ assert.equal(
   desktopManifest.scripts?.start,
   "node scripts/launch-development.cjs",
   "desktop development start must use the C4thedral-owned cross-platform launcher",
+);
+assert.equal(
+  desktopManifest.scripts?.smoke,
+  "node scripts/prepare-packaged-smoke.cjs && node scripts/launch-packaged.cjs --smoke",
+  "packaged smoke must prepare the Linux Chromium sandbox before launch",
+);
+assert.match(packagedSmokePreparation, /process\.platform !== "linux"/);
+assert.match(packagedSmokePreparation, /chrome-sandbox/);
+assert.match(packagedSmokePreparation, /stat\.uid === 0 && stat\.gid === 0/);
+assert.match(packagedSmokePreparation, /0o4755/);
+assert.match(packagedSmokePreparation, /\/usr\/bin\/sudo/);
+assert.doesNotMatch(
+  packagedSmokePreparation,
+  /--no-sandbox/,
+  "packaged smoke must never disable Chromium's production sandbox",
 );
 assert.equal(
   desktopManifest.scripts?.premake,

@@ -2,7 +2,7 @@
 
 Status: Accepted desktop application, editor, automatic-layout, and PNG stack with remaining candidates
 
-Date: 2026-09-01
+Date: 2026-09-02
 
 This file records why each direct dependency exists, its license and runtime
 impact, the boundary that makes it replaceable, and the evidence required to
@@ -464,6 +464,38 @@ permitted to execute
 dependency build scripts. The version-specific `allowBuilds` map in
 `pnpm-workspace.yaml` records those narrow approvals; all unreviewed dependency
 build scripts remain blocked by pnpm.
+
+## Dependency maintenance and update gate
+
+`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, this record, and the
+packaged third-party notices are the dependency ledger. A release build MUST
+use the committed lockfile and MUST NOT discover or adopt newer Monaco,
+Electron, compiler, renderer, font, or build-tool versions as a side effect.
+
+Important upstream updates are handled as explicit maintenance changes:
+
+1. review the upstream release notes, security advisories, supported operating
+   systems and runtimes, license, transitive graph, install scripts, and
+   redistribution obligations;
+2. update the exact manifest and lockfile versions in a dedicated branch or PR;
+3. update this record when version, license, impact, boundary, workaround, or
+   notice obligations change;
+4. run `pnpm install --frozen-lockfile`, `pnpm run check`, and every
+   dependency-specific production check;
+5. rebuild and inspect native artifacts on every affected platform through
+   `pnpm run release:native`; and
+6. merge only after the protecting evidence recorded for that dependency still
+   passes. Security fixes may be prioritized, but they do not bypass this gate.
+
+Monaco updates additionally require the pinned Suggest-controller integration,
+semantic-token behavior, completion edits, keyboard interaction, worker
+packaging, notices, and editor visual behavior to be revalidated. Electron or
+Forge updates additionally require the preload/IPC boundary, CSP and fuses,
+native menus and dialogs, packaged offline smoke, sandbox helper, installers,
+install/remove/reinstall, signatures, and visible file/export/dirty-close
+round trips on every affected operating system and architecture. The same rule
+applies to transitive version changes that alter packaged code or native
+binaries.
 
 ## Phase 0 results
 

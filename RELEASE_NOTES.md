@@ -41,8 +41,16 @@ diagnostics, and technical protocol boundaries.
   and passes the installed offline smoke as a normal user. Visible open, edit,
   Save As, full restart/reopen, native SVG/PNG export, and read-only Source
   Control also passed. That run exposed and fixed a packaged SVG `blob:` handoff
-  to Nautilus by routing desktop SVG saving through the validated native bridge.
-  Linux x64 still needs equivalent native evidence before an amd64 download.
+  to Nautilus by routing desktop SVG saving through the validated native bridge;
+- Linux x64: commit `9b9fbdc` passed the complete source gate with 562 tests,
+  DEB inspection, APT install/remove/reinstall, two installed network-isolated
+  smokes without a system Node.js, and the visible file/export, Source Control,
+  dirty-close, and minimum-window-height round trips on Ubuntu 26.04.1. The
+  amd64 DEB SHA-256 is
+  `ce5282e014f595f19ea7a672fadec4f11aebc294088122ca030ae59f96b238f1`.
+  Restricted user namespaces exposed an unpacked-smoke prerequisite; the
+  release command now prepares only that disposable helper as
+  `root:root`/`4755`, without disabling Chromium's sandbox.
 
 This beta candidate is not yet a public signed release. Apple Developer ID
 signing/notarization and Windows code signing are still required, and no host's

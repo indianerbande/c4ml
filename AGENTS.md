@@ -37,8 +37,10 @@ maker so installation can preserve the
 Chromium sandbox helper's required root ownership and mode; its native
 build, package inspection, install/remove/reinstall, and offline packaged smoke
 plus visible open/edit/save/reopen, SVG/PNG export, and Source Control have
-passed on Ubuntu arm64. Linux x64 still requires native evidence before an
-amd64 artifact is published.
+passed on Ubuntu arm64 and Ubuntu x64. The x64 run additionally proved window
+shrinking without document-level scrolling or loss of the status bar. Linux
+packaged smoke prepares only the disposable unpacked Chromium sandbox helper
+as `root:root` with mode `4755`; the production sandbox is never disabled.
 Current macOS artifacts are ad-hoc signed development builds, not notarized
 releases. Node.js 24.15.0 or a newer 24.x release is the reference packaging
 runtime. pnpm warns instead of forcing a public runtime download; source checks
@@ -558,7 +560,9 @@ repository:
 - `pnpm run desktop:start` builds and starts the unpackaged Electron desktop
   application without invoking the Node.js-24-only packaging path;
 - `pnpm run desktop:smoke` builds and smoke-tests the Electron bridge, editor,
-  compiler worker, preview, and controlled typography;
+  compiler worker, preview, and controlled typography; on Linux it uses `sudo`
+  to prepare only the disposable unpacked Chromium sandbox helper as
+  `root:root` with mode `4755` before launch;
 - `pnpm run desktop:package` creates the ignored unpacked current-platform
   desktop application under `build/desktop/`;
 - `pnpm run desktop:make` creates the ignored current-platform development

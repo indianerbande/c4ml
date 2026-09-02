@@ -6,7 +6,7 @@ artifact verification, packaged and installed smoke, install/remove/reinstall,
 and visible file/export round trip passed; Ubuntu arm64 DEB build, package
 metadata, sandbox permissions, install/remove/reinstall, and offline packaged
 smoke plus visible open/save/reopen, SVG/PNG export, and Source Control
-validated; Linux x64 evidence pending
+validated on arm64 and x64
 
 Date: 2026-09-02
 
@@ -40,9 +40,12 @@ C4thedral desktop application.
   installation because the desktop has no copied runtime dependencies and
   excludes `node_modules`. The installed C4thedral application itself requires no
   Node.js installation and no runtime network service.
-- Linux DEB creation additionally requires the host packages `dpkg` and
-  `fakeroot`. They are build tools only and are not dependencies of an
-  installed C4thedral application.
+- Linux packaged smoke and DEB creation additionally require `sudo`, `dpkg`,
+  and `fakeroot` on the release host. Before the unpacked application starts,
+  the smoke command uses `sudo` to give only its disposable `chrome-sandbox`
+  helper the required `root:root` ownership and mode `4755`. It never adds
+  `--no-sandbox`. These are build-host requirements only and are not
+  dependencies of an installed C4thedral application.
 - Run `pnpm run release:native` on every native release host. It executes the
   complete source gate, packaged smoke, configured makers, and host-specific
   artifact verification. The final step writes hashes and sizes to
@@ -85,7 +88,7 @@ release gate.
 | --- | --- | --- | --- |
 | macOS | `.app` | DMG and ZIP | Electron 44 requires macOS 13 or newer. DMG creation may require Xcode Command Line Tools for its optional native helpers. Development artifacts are ad-hoc signed; releases require Developer ID signing and notarization. |
 | Windows | application directory with `C4thedral.exe` | Squirrel Setup EXE | Build from native PowerShell or Command Prompt, not WSL. Releases require Windows code signing. C4thedral's first native validation target is Windows x64. |
-| Debian/Ubuntu Linux | application directory with `C4thedral` | DEB | The current resvg adapter targets GNU/glibc Linux on x64 or arm64. The DEB installs the application-menu entry and the root-owned Chromium sandbox helper with mode `4755`. RPM, Flatpak, and Snap are not yet part of the accepted distribution contract. |
+| Debian/Ubuntu Linux | application directory with `C4thedral` | DEB | The current resvg adapter targets GNU/glibc Linux on x64 or arm64. Packaged smoke prepares the disposable unpacked Chromium sandbox helper through `sudo`; the DEB installs the application-menu entry and its own root-owned helper with mode `4755`. RPM, Flatpak, and Snap are not yet part of the accepted distribution contract. |
 
 ## Current native evidence
 
@@ -93,7 +96,8 @@ release gate.
 | --- | --- | --- | --- |
 | macOS 15 arm64 | Node.js 24.15.0, pnpm 11.24.0 | The `0.1.0-beta.1` `.app` packaged smoke passed; its name, version, original icon, ad-hoc deep signature, DMG checksum, and ZIP integrity passed on 2026-08-31. | Developer ID signing and notarization before public distribution. |
 | Windows 11 x64 | Node.js 24.15.0, pnpm 11.24.0 | On 2026-09-01/02 the exact `0.1.0-beta.1` branch passed the complete source gate, native Squirrel build, `check:native-release`, packaged smoke, Squirrel install/remove/reinstall, and installed offline smoke with no system Node.js visible on `brainbird`. Visible native Open, edit, Save As, full restart/reopen, SVG export, PNG export, and dirty-close cancellation passed in the installed application; the saved project survived uninstall. The Setup EXE is 158,852,096 bytes with SHA-256 `4263b2516ac7db3d3b842000ffdc6cf32c62f804563f7b1c0dfa0d937cd2cbb1`. | Add Windows code signing before public distribution. |
-| Ubuntu 24.10 arm64 | Node.js 24.15.0, pnpm 11.24.0 | The `0.1.0-beta.1` DEB was built and inspected on 2026-09-01. APT install, remove, and reinstall passed; package and installed sandbox helper are `root:root`/`4755`; the installed app passed the network-isolated smoke plus visible open/edit/Save As, full restart/reopen, native SVG/PNG export, and read-only Source Control as a normal user. The native SVG bridge corrected a detected `blob:` handoff to Nautilus before the final pass. | Repeat the complete native gate on Ubuntu x64 before publishing an amd64 artifact. |
+| Ubuntu 24.10 arm64 | Node.js 24.15.0, pnpm 11.24.0 | The `0.1.0-beta.1` DEB was built and inspected on 2026-09-01. APT install, remove, and reinstall passed; package and installed sandbox helper are `root:root`/`4755`; the installed app passed the network-isolated smoke plus visible open/edit/Save As, full restart/reopen, native SVG/PNG export, and read-only Source Control as a normal user. The native SVG bridge corrected a detected `blob:` handoff to Nautilus before the final pass. | No Linux-arm64-specific release work remains for the beta artifact. |
+| Ubuntu 26.04.1 x64 | Node.js 24.15.0, pnpm 11.24.0 | On 2026-09-02 commit `9b9fbdc` passed the complete source gate with 562 tests, native package inspection, APT install/remove/reinstall, and two installed network-isolated smokes as a normal user without a system Node.js. Visible native Open, edit, Save As, full restart/reopen, SVG/PNG export, Source Control change detection, dirty-close cancellation, and minimum-window-height behavior passed. The DEB is 100,197,210 bytes with SHA-256 `ce5282e014f595f19ea7a672fadec4f11aebc294088122ca030ae59f96b238f1`; the unpacked executable is 227,163,464 bytes with SHA-256 `199529b21d6f5cb8bb5d3425952ffd11413df9336dafa54ae9ceb8ef3bc2cc92`. The host's restricted unprivileged-user-namespace policy exposed the unpacked helper prerequisite; the follow-up correction automates the exact manually validated `root:root`/`4755` preparation. | No Linux-x64-specific release work remains for the beta artifact. |
 
 The Linux DEB is deliberate. A portable archive cannot safely establish the
 root ownership and setuid mode required by Chromium's sandbox helper on systems
@@ -132,7 +136,9 @@ pnpm run check:native-release
 ```
 
 `pnpm run release:native` is the equivalent single release-host command after
-the Node-24 `pnpm install --frozen-lockfile` step.
+the Node-24 `pnpm install --frozen-lockfile` step. On Linux, `desktop:smoke`
+may request the release operator's sudo authorization for the exact disposable
+helper below `build/desktop/C4thedral-linux-<architecture>/chrome-sandbox`.
 
 Then inspect the generated distributable on a machine without a system Node.js
 installation:
