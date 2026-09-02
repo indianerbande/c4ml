@@ -4,6 +4,15 @@ Status: Internal beta candidate
 
 Date: 2026-09-01
 
+The source tree is prepared for a later public source release with a reproducible
+build guide, contribution and security policies, issue templates, a
+least-privilege commit-pinned Linux source gate, scheduled dependency-update
+pull requests, and an automated public-source hygiene check. Monaco's transitive
+DOMPurify dependency is constrained to reviewed version 3.4.13; the production
+audit currently reports no known vulnerabilities. Repository visibility,
+history/privacy acceptance, the public-clone test, and the source tag remain
+explicit maintainer release actions.
+
 This is the first release identity for the C4thedral desktop architecture
 workbench. C4ML remains the name of its language, compiler, CLI, file format,
 diagnostics, and technical protocol boundaries.

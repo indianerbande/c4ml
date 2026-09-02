@@ -24,6 +24,7 @@ minimumReleaseAgeExclude:
 
 overrides:
   '@electron/rebuild@3.7.2>@electron/node-gyp': '10.2.0-electron.2'
+  dompurify: '3.4.13'
   webpack: '5.109.2'
   minimizer-webpack-plugin: '5.7.0'
   terser: '5.51.1'

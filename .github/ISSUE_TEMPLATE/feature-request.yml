@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a focused C4thedral or C4ML capability
+title: "Feature: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        C4ML syntax is still provisional. Please describe the architecture-modeling problem before suggesting concrete grammar.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What architecture task is difficult or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior without copying another product's syntax or interface.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product area
+      options:
+        - Language and semantics
+        - Layout, routing, or rendering
+        - Desktop workbench
+        - CLI and automation
+        - Project resources
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints or evidence
+      description: Add examples, acceptance criteria, or relevant standards.

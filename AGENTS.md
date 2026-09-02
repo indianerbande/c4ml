@@ -545,6 +545,10 @@ repository:
   pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run check:desktop-production` verifies the pinned Electron/Forge stack,
   hardened main/preload boundary, local CSP, and required editor resources;
+- `pnpm run check:public-source` verifies public community documents, locked
+  tool versions, pinned CI actions, ignored credential files, and the absence
+  of high-confidence credentials, private build hosts, and local user paths in
+  the current source tree;
 - `pnpm run check:architecture-proof` runs the deterministic, non-mutating
   Pillar 3 policy-and-observation acceptance project;
 - `pnpm run typecheck` builds source and type-checks test code;
