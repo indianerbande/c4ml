@@ -9,10 +9,12 @@ build guide, contribution and security policies, issue templates, a
 least-privilege commit-pinned Linux source gate, scheduled dependency-update
 pull requests, and an automated public-source hygiene check. Monaco's transitive
 DOMPurify dependency is constrained to reviewed version 3.4.13; the production
-audit currently reports no known vulnerabilities. Existing maintainer commits
-use GitHub's private `noreply` address, and obsolete merged work branches have
-been removed. Repository visibility, the public-clone test, and the source tag
-remain explicit maintainer release actions.
+audit currently reports no known vulnerabilities. Retained branch commits use
+GitHub's private `noreply` address, and obsolete merged work branches have been
+removed. GitHub's read-only historical pull-request refs still require a clean
+public repository or an accepted Support purge before visibility changes.
+Repository visibility, the public-clone test, and the source tag remain explicit
+maintainer release actions.
 
 This is the first release identity for the C4thedral desktop architecture
 workbench. C4ML remains the name of its language, compiler, CLI, file format,

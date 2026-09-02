@@ -421,12 +421,14 @@ covered by the editor test suite and packaged-workbench evidence.
       requests;
 - [x] schedule explicit dependency-update pull requests without automatic merge;
 - [x] correct the currently reported production dependency vulnerabilities;
-- [x] accept the obsolete Windows host label in three historical commits as
-      non-secret evidence and rewrite the personal maintainer email address out
-      of every published commit;
+- [x] rewrite the personal maintainer email address out of `main` and every
+      retained local branch;
 - [x] configure the repository to use the maintainer's GitHub `noreply` address
       for future commits;
 - [x] delete the 25 obsolete, already merged local and remote work branches;
+- [ ] prevent the 26 read-only historical GitHub pull-request refs from becoming
+      public, either by retaining this repository as a private archive and
+      publishing a clean repository or through an accepted GitHub Support purge;
 - [ ] enable GitHub private vulnerability reporting and restore the intended
       branch/ruleset protection after changing visibility;
 - [ ] verify a clean clone through the public HTTPS URL; and

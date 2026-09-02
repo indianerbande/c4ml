@@ -91,10 +91,13 @@ Before changing repository visibility or creating the first public source tag:
 2. review every reachable branch, tag, Actions log, and Git commit for material
    that must not become public;
 3. verify that published maintainer commits use the GitHub `noreply` address;
-4. confirm the documented acceptance of any obsolete local-host evidence in
+4. verify that historical pull-request refs cannot expose superseded commit
+   metadata; GitHub's read-only `refs/pull/*` namespace requires a clean public
+   repository or an accepted GitHub Support purge;
+5. confirm the documented acceptance of any obsolete local-host evidence in
    published history;
-5. verify that no obsolete merged work branches remain on the remote;
-6. enable GitHub private vulnerability reporting and restore branch/ruleset
+6. verify that no obsolete merged work branches remain on the remote;
+7. enable GitHub private vulnerability reporting and restore branch/ruleset
    protection after the visibility change;
-7. verify a clone over the public HTTPS URL on a clean machine; and
-8. create the source tag only from the reviewed `main` commit.
+8. verify a clone over the public HTTPS URL on a clean machine; and
+9. create the source tag only from the reviewed `main` commit.
