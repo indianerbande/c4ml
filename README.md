@@ -1,5 +1,7 @@
 # C4thedral
 
+**English** | [Deutsch](README.de.md)
+
 C4thedral is a local desktop workbench for describing, reviewing, and evolving
 software architecture with the C4 model. Its language and compiler are called
 C4ML.
