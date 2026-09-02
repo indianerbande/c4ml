@@ -426,13 +426,12 @@ covered by the editor test suite and packaged-workbench evidence.
 - [x] configure the repository to use the maintainer's GitHub `noreply` address
       for future commits;
 - [x] delete the 25 obsolete, already merged local and remote work branches;
-- [ ] prevent the 26 read-only historical GitHub pull-request refs from becoming
-      public, either by retaining this repository as a private archive and
-      publishing a clean repository or through an accepted GitHub Support purge;
-- [ ] enable GitHub private vulnerability reporting and restore the intended
+- [x] retain the superseded repositories and their 26 historical pull-request
+      refs privately while publishing only the clean rewritten repository;
+- [x] enable GitHub private vulnerability reporting and restore the intended
       branch/ruleset protection after changing visibility;
-- [ ] verify a clean clone through the public HTTPS URL; and
-- [ ] create the first public source tag from the reviewed `main` commit.
+- [x] verify a clean clone through the public HTTPS URL; and
+- [x] create the first public source tag from the reviewed `main` commit.
 
 Changing repository visibility is an explicit maintainer action and is not
 performed by a source-preparation change.

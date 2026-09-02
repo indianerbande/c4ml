@@ -1,9 +1,10 @@
 # Build C4thedral from source
 
-Status: Source beta prepared; repository visibility and the public source tag
-remain maintainer release actions
+Status: Public source beta released from a clean GitHub history
 
 Version: 0.1.0-beta.1
+
+Source release: `v0.1.0-beta.1`
 
 C4thedral can be built entirely from its public source after the locked
 dependencies and Electron runtime have been downloaded. The installed desktop
