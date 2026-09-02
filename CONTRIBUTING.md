@@ -1,8 +1,9 @@
 # Contributing to C4thedral
 
-Thank you for helping improve C4thedral and C4ML. The project is in an internal
-beta phase: useful functionality is implemented, but the public language
-grammar and some frontend contracts are still deliberately provisional.
+Thank you for helping improve C4thedral and C4ML. The project is a public source
+beta: useful functionality is implemented, but the language compatibility
+promise and some frontend contracts are still deliberately provisional. See
+`PROJECT-STATUS.md` for the current maturity and release boundaries.
 
 ## Before starting
 

@@ -1,387 +1,193 @@
 # C4thedral
 
-C4thedral is an open-source local architecture workbench powered by C4ML, its
-model-and-diagram language and compiler for software architecture based on the
-C4 model. It is designed around one shared architecture model, explicit diagram
-views, useful automatic layout, and precise author control when a diagram needs
-deliberate placement or routing.
+C4thedral is a local desktop workbench for describing, reviewing, and evolving
+software architecture with the C4 model. Its language and compiler are called
+C4ML.
 
-The intended user experience has two entry points:
+You write an architecture once, select the views that different audiences need,
+and keep the source beside a live diagram. C4thedral validates the model, lays
+out the diagram, and exports deterministic SVG and PNG files. When automatic
+layout is not enough, you can adjust placement and routing without turning the
+diagram into an unrelated drawing.
 
-- a local command-line compiler for validation and SVG/PNG export; and
-- an installable desktop workbench with C4ML source on the left and a hot
-  graphical preview on the right.
+**Current release: `v0.1.0-beta.1` — public source beta.** This is working
+software rather than an early scaffold: the desktop application and CLI compile
+all seven C4 view types, and the native workflows have been exercised on macOS,
+Windows, and Ubuntu. Beta means that the author-facing C4ML syntax and CLI
+compatibility may still change, and signed public installers are not available
+yet. See [PROJECT-STATUS.md](PROJECT-STATUS.md) for the precise maturity and
+remaining release boundaries.
 
-The Electron desktop shell, its sandboxed Angular/Monaco renderer, and the
-experimental CLI use the same runtime-portable TypeScript compiler core. C4ML
-does not ship or host a standalone browser application. Neither entry point
-requires a Python service, cloud account, or network connection for the normal
-installed workflow.
+## What C4thedral does
 
-To build the current beta from a clean checkout, follow
-[SOURCE-RELEASE.md](SOURCE-RELEASE.md). Contributions are described in
-[CONTRIBUTING.md](CONTRIBUTING.md), and suspected vulnerabilities should follow
-[SECURITY.md](SECURITY.md).
+- Models People, Software Systems, Containers, Components, Code Elements,
+  deployment environments, infrastructure, instances, and directed
+  relationships in text.
+- Produces System Landscape, System Context, Container, Component, Code,
+  Dynamic, and Deployment views from the same architecture model.
+- Shows C4ML source, diagnostics, and a live graphical preview in one desktop
+  workbench.
+- Keeps source authoritative: graphical authoring proposes reviewable C4ML
+  changes and applies them as one undoable edit.
+- Combines automatic layout with relative placement, alignment, equal spacing,
+  nudges, exact pins, selectable ports, waypoints, avoidance areas, route
+  corridors, and fixed routes.
+- Navigates in both directions between source declarations and diagram objects,
+  including relationships and their effective routes.
+- Exports standalone SVG and PNG with controlled local fonts and reproducible
+  geometry.
+- Opens a single `.c4ml` file or an explicit multi-file project with
+  project-wide references and diagnostics.
+- Compares architecture revisions by stable identity, shows impact paths, and
+  creates offline migration reviews without reducing changes to text or pixel
+  diffs.
+- Evaluates architecture quality, project policies, and attributed observations
+  without modifying the authored model.
+- Provides English and German application UI, native menus, dialogs, settings,
+  and an offline handbook.
+- Works locally after installation. Normal use requires no account, cloud
+  service, Python process, or compiler server.
 
-## Project status
+## The desktop workbench
 
-The C4thedral project and its C4ML compiler are currently in Phase 1.
+The Electron application provides Files, Source Control, Diagrams, Output, and
+Help areas around an Angular and Monaco editor. It supports native open and save
+flows, several source files per project, unsaved-change protection, SVG/PNG
+export, and explicit local Git stage, unstage, commit, and push actions.
 
-Implemented and automatically validated:
+The preview can fill the main workbench or detach into a second native window.
+The detached preview receives only the rendered projection and interaction
+state; it has no source, filesystem, compiler, save, or export authority.
 
-- a parser-independent semantic model for Person, Software System, Container,
-  Component, and Code Element;
-- relationships with stable identity and directed intent;
-- Deployment Environments, nested Deployment Nodes, Infrastructure Nodes,
-  Software System Instances, and Container Instances;
-- ordered and parallel Dynamic Interactions;
-- deterministic projection of all seven C4 view types;
-- deterministic, nested, view-local Visual Groups that do not alter C4 scope;
-- source-aware diagnostics with stable codes;
-- portable version-one contracts for revision-protected source change sets,
-  canonical architecture snapshots, kind-qualified graph traversal, and
-  source-located analysis findings and query evidence;
-- explained upstream/downstream, path, containment, deployment, and View-
-  coverage queries with reference-only temporary focus Views;
-- a deterministic semantic architecture differ that matches stable identities,
-  recognizes renames, separates architecture, presentation, and layout change,
-  and ignores formatting or source-location noise;
-- implicit one-file and explicit multifile project contracts with deterministic
-  project revisions, atomic document-addressed edits, cross-file references,
-  and project-aware CLI validation and rendering;
-- one optional project-local version-one architecture-policy resource evaluated
-  identically by the compiler worker and CLI, with source-located Output
-  findings and classified `analyze --fail-on` CI exits;
-- one optional project-local version-one architecture-observation resource that
-  reports confirmed drift and unreviewed or disputed uncertainty without
-  changing authored source;
-- one optional project-local version-one glossary resource with deterministic
-  term, acronym, expansion, definition, and alias lookup;
-- safely bounded local Markdown narratives with versioned metadata, stable
-  identities, and local links only;
-- one project publication resource with ordered View captions and deterministic
-  SVG/PNG render profiles validated against compiled Views;
-- one project semantic-theme resource applied identically by CLI and desktop
-  worker rendering through the existing deep-token resolver;
-- one safe project shape catalogue with restricted normalized primitives and
-  explicit assignments applied through shared diagram preparation;
-- one licensed passive-asset manifest with local containment, SPDX metadata,
-  SHA-256 integrity, and exact project-revision participation;
-- an initial portable diagram pipeline from a resolved view through layout,
-  effective routing, a renderer-neutral scene graph, and deterministic SVG;
-- inspectable automatic, guided, and fixed route contracts with cardinal ports,
-  absolute and relative waypoints, locked segments, hard or soft avoidance,
-  named corridors and lanes, selected label segments, and label offsets;
-- an engine-neutral placement stage that combines automatic layout with hard
-  or soft semantic placement, anchored multi-element alignment, ordered
-  equal-gap distribution, relative adjustment, and exact diagram-unit pins,
-  including multi-location hard-conflict diagnostics;
-- explicit Port, Route, and Arrowhead objects through the scene graph, using
-  consistent `north`, `east`, `south`, and `west` attachment names;
-- an original built-in Person shape and a validated custom-shape contract with
-  a normalized canvas, content box, cardinal Ports, and safe vector primitives;
-- a production `@c4ml/render-resvg` Node.js PNG adapter that rasterizes the
-  canonical SVG behind a replaceable compiler-owned contract;
-- original semantic `c4ml-blue` and `c4ml-garden` color presets with deep,
-  role-specific overrides;
-- experimental Web Worker-compatible `draft-1` language slices that parse and
-  lower the original `hello-context.c4ml`, `hello-container.c4ml`, and
-  `hello-static-zoom.c4ml` examples into the shared compiler, including the
-  complete static ownership hierarchy and four static C4 views;
-- executable System Landscape and Dynamic View slices in the original
-  `hello-dynamic.c4ml`, including ordered and parallel interactions over static
-  relationships;
-- an executable Deployment View slice in the original `hello-deployment.c4ml`,
-  including environments, nested Deployment Nodes, Infrastructure Nodes,
-  static instances, and runtime relationships;
-- an experimental thin Node.js CLI for local validation, semantic and visual
-  architecture comparison with deterministic impact paths, stable geometry,
-  explained SVG/PNG overlays, one/all-view rendering, scaling, human or JSON
-  diagnostics, and classified exits;
-- portable reviewed migration stories with deterministic transition
-  provenance and a self-contained offline HTML presentation of all four
-  comparison modes;
-- shared built-in architecture-quality findings with explicit evidence,
-  deterministic source locations, CLI reporting, and workbench navigation;
-- deterministic project-selected architecture policies for dependencies,
-  protocols, ownership, direction, deployment consistency, and metadata;
-- an Angular 22 desktop workbench with simultaneous source/preview tabs,
-  C4ML-specific Files, Source Control, Diagrams, Output, and Help activity
-  areas, a Problems/Route
-  panel, status bar, command palette, local compiler Web Worker, live
-  diagnostics, stale-result rejection, and retention of the last valid SVG;
-- a full-size preview workspace plus a detachable, projection-only Electron
-  preview window with synchronized selection, zoom, Route overlay, and
-  redocking, but no compiler, source, document, filesystem, save, or export
-  authority;
-- focused workbench facades for document/export, preview, help, and command
-  state, plus independent Compile, Language, and Authoring worker contract
-  modules behind one combined transport boundary;
-- an Electron 44 desktop shell with a narrow typed preload bridge, native
-  Open/Save/Save All/Save As, normal desktop menus and shortcuts, document
-  titles, an empty startup workspace, context-sensitive File/Project closing,
-  and dirty-state close protection;
-- explicit local Git status, staging, commit, and push controls behind that
-  bridge, without exposing repository paths or Node.js to the renderer;
-- an extensible local settings area with live English/German interface copy,
-  synchronized C4thedral-owned native controls, System/Light/Dark workbench schemes,
-  eight quiet color families for sixteen light/dark combinations, and persisted
-  source-editor font family and size;
-- a bounded local workbench session that restores only presentation state and
-  never source, document handles, or filesystem paths;
-- hardened local-only application loading with renderer sandboxing, no Node.js
-  integration, denied navigation/permissions, an application-owned protocol,
-  ASAR integrity checks, and Electron production fuses;
-- local macOS `.app`, `.dmg`, and `.zip` packaging, a configured Windows
-  Squirrel installer maker, and a native Debian/Ubuntu DEB maker;
-- an accepted lazy Monaco 0.56.0 adapter that presents only the language
-  worker's context-valid completions, applies exact source edits, displays
-  inline diagnostic markers, supports keyboard undo/redo, and navigates from
-  diagnostics to source;
-- lexer-owned C4ML syntax highlighting that distinguishes declarations,
-  properties, predefined values, references, literals, operators, and comments,
-  presented through Monaco semantic tokens without a second editor grammar,
-  with five C4ML-owned light/dark syntax profiles from minimal to vivid,
-  high-contrast, and color-safe;
-- bidirectional navigation between source declarations and source-mapped
-  preview nodes, with a preview-only selection highlight that does not alter
-  exported SVG;
-- selectable Relationships and effective Routes, including navigation from a
-  view-local route-control block and an optional debug overlay for route
-  points, endpoint Ports, label anchors, and corridor lanes;
-- distinct preview selection of Ports, route labels, and corridors, resolving
-  each detail back to its owning route-control source;
-- executable, view-local `draft-1` route controls for automatic, guided, and
-  fixed policies, cardinal Ports, relative anchors, locked segments, hard and
-  soft avoidance, named corridors and exclusive lanes, complete fixed point
-  lists, and label placement;
-- executable, view-local `draft-1` placement controls for semantic relative
-  position, anchored set alignment, ordered equal-gap distribution,
-  automatic-relative adjustment, and exact `du` pinning while the remaining
-  layout stays automatic;
-- a source-backed graphical placement editor for relative placement, nudge,
-  alignment, ordered distribution, and explicit exact pinning, with candidate
-  source/SVG review and one-step apply/undo;
-- a source-backed graphical Route editor for cardinal Port choice and
-  add/move/remove guidance operations, with candidate source/SVG review,
-  explicit safe-repair and hard-conflict reporting, and one-step apply/undo;
-- a visually separate, source-backed architecture editor that offers only
-  context-valid element creation and relationship pairs in System Landscape,
-  System Context, Container, Component, and Code views, with candidate
-  source/SVG review and one-step apply/undo;
-- context-specialized authoring in Component and Code views, plus dedicated
-  Deployment-topology and ordered Dynamic-interaction forms over worker-owned
-  environment, scope, and static-relationship rules;
-- an accepted ELK.js 0.12.0 automatic-layout adapter with separate Node.js and
-  renderer Web Worker entry points behind the shared layout contract;
-- locally packaged IBM Plex Sans/Mono typography, embedded standalone-SVG
-  fonts, and controlled system-font-free PNG rendering;
-- selectable views, plus zoom, fit, scroll-pan, local SVG export, and native
-  PNG export at 1x, 2x, or 3x;
-- a bounded plain-language wizard that previews and generates a new executable
-  System Context or Container document with explicit connections, cancel, and
-  undo;
-- a local English/German handbook with searchable task-oriented chapters,
-  a dedicated Help activity, and language-worker-owned help at the cursor;
-- an original, executable Signal Garden Container View reference export; and
-- runtime-portable compiler-core contracts shared by the CLI and desktop
-  renderer.
+Editing, compilation, layout, rendering, and Git access remain separated behind
+small contracts. The desktop application uses the same portable compiler as the
+command-line interface, so a model does not acquire different semantics in the
+UI.
 
-Not implemented yet:
+## Source is the architecture
 
-- the complete public `.c4ml` parser and formatter;
-- the production CLI contract and packaging;
-- row and column membership, ordering, minimum-gap groups, preferred
-  proximity, bounded movement, constrained size, and the remaining full
-  placement/routing contract;
-- complete render validation for all seven view types;
-- a frozen author-facing theme grammar;
-- the public source grammar for custom shape definitions and assignments;
-- the remaining production editor capabilities: independently selectable
-  Arrowheads and complete accessibility validation;
-- public distribution work: Apple Developer ID signing/notarization and
-  Windows code signing; and
-- broader guided modeling flows for Visual Groups and multi-document target
-  selection beyond the implemented source-preserving extension path.
+C4ML source keeps model, views, presentation, layout, and routing distinct. A
+diagram can begin with automatic layout and then gain only the controls it
+needs. Those controls remain reviewable in source control and never become fake
+architecture relationships or hidden editor state.
 
-The syntax shown in [DOCUMENTATION.md](DOCUMENTATION.md) and under
-[`examples/draft`](examples/draft) remains a **design preview**. Bounded System
-Context, Container, Component, Code, System Landscape, Dynamic, and Deployment
-slices are executable through an internal package; the larger
-`signal-garden.c4ml` combines all seven in one runnable demonstration. These
-slices are not a public or frozen grammar. The first placement slice and the
-current relative route- and Port-control slice are executable. Visual Groups,
-themes, custom shapes, and the remaining preview syntax are not accepted by the
-source compiler yet.
-
-## C4 scope
-
-All seven official C4 diagram types are minimum product scope:
-
-- System Landscape;
-- System Context;
-- Container;
-- Component;
-- Code;
-- Dynamic; and
-- Deployment.
-
-C4ML keeps the semantic architecture model separate from view selection,
-presentation, layout, scene construction, and output rendering. A model element
-retains the same stable identity when it appears in different diagrams.
-
-Automatic layout and routing are starting points rather than irreversible
-results. The current draft source can already apply intent placement, anchored
-set alignment, ordered distribution, automatic-relative adjustment, exact pins,
-view-local Ports, relative waypoints,
-avoidance regions, locked segments, named corridors and exclusive lanes, label
-placement, or a fully fixed route. None of these controls creates a fake
-architecture relationship.
-
-## Intended compiler pipeline
+SVG is the canonical render output. PNG is derived from the same SVG geometry
+and text layout rather than from a browser screenshot.
 
 ```text
-source
-  -> syntax tree
+C4ML source
   -> validated C4 model
-  -> resolved view
-  -> engine-neutral layout request
-  -> candidate geometry
-  -> C4ML constraints and routing
-  -> renderer-neutral scene graph
+  -> selected view
+  -> automatic layout plus authored intent
+  -> routed, renderer-neutral scene
   -> SVG
   -> PNG
 ```
 
-SVG is the canonical output. PNG is derived from the same SVG geometry and
-text layout rather than from a browser screenshot.
+## Build and run the beta
 
-## Development quick start
-
-Use the pnpm version pinned in `package.json`. Node.js 24.15 or newer within the
-24.x line is the reference build runtime. pnpm warns and does not try to
-download Node.js from the public internet. Source checks also pass on the
-currently tested Node.js 26, but native Electron Forge packaging is guarded to
-the accepted Node.js 24.x line; see [`PLATFORMS.md`](PLATFORMS.md).
+Use Node.js 24.15.0 or a newer 24.x release and the pnpm version pinned in
+`package.json`:
 
 ```shell
-pnpm install
+git clone https://github.com/indianerbande/c4ml.git
+cd c4ml
+corepack enable
+corepack prepare pnpm@11.24.0 --activate
+pnpm install --frozen-lockfile
 pnpm run check
-pnpm run check:architecture-proof
-pnpm run demo:render
 pnpm run desktop:start
 ```
 
-The check builds all current packages, verifies renderer Web Worker bundles in memory,
-type-checks source and tests, and runs the semantic, view-resolution, and
-adapter suites. `demo:render` creates a real SVG and PNG under
-`apps/reference-export/build/reference/` from an in-code original model. It is
-a contributor reference path, not the future `.c4ml` command-line interface.
-`desktop:start` builds and opens the real Electron desktop workbench through a
-C4thedral-owned development launcher; on macOS that launcher uses a cached
-`C4thedral.app` wrapper so the operating system does not present the application as
-Electron. It does not create a distributable package and can use the currently
-tested Node.js 26 line. Packaging and packaged smoke tests remain guarded to
-Node.js 24.x. Angular, Monaco, and Electron are accepted production libraries;
-the language and several MVP editor capabilities remain under development.
-Contributors can start the isolated renderer harness with
-`pnpm run renderer:start`; it is a development tool, not a supported browser
-application.
+The application starts with an empty workspace. Open a `.c4ml` document or an
+explicit project from the File menu. Runnable examples are available under
+[`examples/draft`](examples/draft), including the all-seven-view
+`signal-garden.c4ml` demonstration.
 
-Create local distributable artifacts with:
+For native packages, platform prerequisites, Linux sandbox handling, and the
+complete reproducible procedure, follow
+[SOURCE-RELEASE.md](SOURCE-RELEASE.md). Self-built macOS and Windows packages
+do not carry future C4thedral publisher signatures.
+
+## Use the CLI
+
+The repository includes an experimental local CLI that uses the same language
+and compiler packages as the desktop application:
 
 ```shell
-pnpm run desktop:package
-pnpm run desktop:make
-pnpm run check:native-release
-```
+# Validate a model.
+pnpm run c4ml -- check examples/draft/hello-context.c4ml
 
-On macOS, the packaged application appears below `build/desktop/` and `make`
-adds a DMG and ZIP below `build/desktop/make/`. These development artifacts are
-ad-hoc signed so they can be tested locally; they are not notarized release
-downloads. The Windows Squirrel maker produces a Setup EXE on Windows; the
-current beta's native x64 build, artifact gate, install/remove/reinstall,
-no-system-Node smoke, and visible open/edit/save/reopen plus SVG/PNG export
-round trip have passed. Debian/Ubuntu
-Linux produces a native DEB that installs the application
-menu entry and Chromium sandbox helper correctly. Build every target on its
-native host; Windows still requires release signing. Ubuntu arm64 and x64 have
-passed the complete installation and visible dialog round trip. The Linux
-packaged smoke may request `sudo` solely to prepare the disposable unpacked
-Chromium helper as `root:root`/`4755`; it never disables the sandbox. End users
-can follow [INSTALL-WINDOWS.md](INSTALL-WINDOWS.md) or
-[INSTALL-LINUX.md](INSTALL-LINUX.md); contributors should see [PLATFORMS.md](PLATFORMS.md)
-for prerequisites and the verification matrix.
-On a release host, `pnpm run release:native` runs the full source gate, packaged
-smoke, makers, and artifact verification in one sequence and writes a local
-hash manifest below `build/desktop/release-evidence/`.
-
-The experimental local CLI builds its required workspace packages and runs
-through the same language and compiler core:
-
-```shell
-pnpm run c4ml -- check examples/draft/hello-static-zoom.c4ml
+# Render one view as SVG and PNG.
 pnpm run c4ml -- render examples/draft/hello-static-zoom.c4ml \
   --view arrangement-engine-code \
   --format svg,png \
   --output build/diagrams
 
+# Validate a multi-file project.
 pnpm run c4ml -- check examples/projects/garden-pulse-multifile
-pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
-  --diagnostics json
+
+# Compare a Git revision with the working project without checking it out.
 pnpm run c4ml -- diff path/to/project \
   --before-ref main \
   --after-ref working \
   --diagnostics json
-pnpm run c4ml -- diff path/to/before.c4ml path/to/after.c4ml \
-  --comparison overlay \
-  --view garden-pulse-context \
-  --format svg,png \
-  --output build/comparisons
-pnpm run c4ml -- render examples/projects/garden-pulse-multifile \
-  --view garden-pulse-context \
-  --format svg,png \
-  --output build/project-diagrams
 ```
 
-The desktop application can open the same directory with **File → Open
-Project…** (`Cmd/Ctrl+Alt+O`). Its Files area and source tabs retain each
-document separately while the local renderer worker compiles and completes
-against the whole project.
+The CLI also supports analysis, graph queries, semantic and visual comparison,
+one-view or all-view rendering, multiple PNG scales, and human-readable or JSON
+diagnostics. Its commands remain provisional during the beta and it is not yet
+published as a standalone package.
 
-Its command names and current static-language scope remain provisional.
+## Current beta boundaries
+
+The syntax used by the runnable examples is real and executable. What is not
+yet promised is long-term source compatibility: keywords, formatting rules, and
+some advanced presentation constructs may change before the first stable
+language release. There is not yet a general C4ML formatter.
+
+Built-in and project-file themes work today. The unfinished item is a possible
+future syntax for declaring themes directly inside `.c4ml`, not the existence
+of theming itself. Likewise, the current layout and routing controls cover the
+normal automatic-plus-manual workflow; additional constraint types are planned
+for more specialized diagrams.
+
+Signed, notarized public downloads for macOS and signed installers for Windows
+are still outstanding. The beta is therefore distributed as source. These and
+the smaller editor and language gaps are tracked in plain language in
+[PROJECT-STATUS.md](PROJECT-STATUS.md); detailed engineering work remains in
+[TODO.md](TODO.md).
 
 ## Documentation
 
-- [DOCUMENTATION.md](DOCUMENTATION.md) — first user guide, proposed syntax,
-  current contributor commands, and demo walkthroughs
-- [PROJECTS.md](PROJECTS.md) — one-file and explicit multifile project guide
-- [SPEC.md](SPEC.md) — normative product behavior and architectural boundaries
+- [SOURCE-RELEASE.md](SOURCE-RELEASE.md) — clone, verify, run, and build the
+  public source beta
+- [PROJECT-STATUS.md](PROJECT-STATUS.md) — current maturity, compatibility
+  promise, supported platforms, and open release work
+- [DOCUMENTATION.md](DOCUMENTATION.md) — user guide, executable syntax, and
+  clearly marked design previews
+- [PROJECTS.md](PROJECTS.md) — single-file and explicit multi-file projects
+- [PLATFORMS.md](PLATFORMS.md) — native build and verification matrix
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) — changes and evidence for the current
+  release
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow
+- [SECURITY.md](SECURITY.md) — private vulnerability reporting
+- [SPEC.md](SPEC.md) — normative product and architecture specification
 - [TESTING.md](TESTING.md) — required validation evidence
-- [TODO.md](TODO.md) — ordered implementation roadmap and prerequisite gates
-- [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licensing, and
+- [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licenses, and
   replacement boundaries
-- [AGENTS.md](AGENTS.md) — repository workflow and project invariants
-- [`examples/draft`](examples/draft) — original syntax previews; the bounded
-  seven-view slices are internally executable
-- [`examples/projects/garden-pulse-multifile`](examples/projects/garden-pulse-multifile)
-  — executable original project split across model, relationship, and View files
 
-## Relationship to the wider ecosystem
+## Originality and related projects
 
-C4thedral and C4ML are being developed within a mature and respected ecosystem.
-The C4 model, PlantUML, Structurizr, Mermaid, LikeC4, D2, Graphviz, ELK,
-Penrose, and other
-projects have each contributed valuable ideas and working approaches to
-architecture communication, text-based diagrams, layout, or visual constraint
-systems.
-
-C4ML treats those projects as respected sources of general capability insight,
-not as material to copy. It is an original design and does not seek syntax
-compatibility with another diagram language. Its source code, grammar,
-examples, interface, themes, and visual assets are developed independently.
+C4thedral is an original implementation in the broader C4 and architecture-as-
+code ecosystem. The C4 model, PlantUML, Structurizr, Mermaid, LikeC4, D2,
+Graphviz, ELK, Penrose, and other projects provide valuable general capability
+insight. C4ML does not seek source compatibility with another diagram language,
+and its grammar, examples, interface, themes, and visual assets are developed
+independently.
 
 ## License
 
-C4thedral and C4ML are licensed under the [Apache License 2.0](LICENSE). Third-party
-dependencies retain their own licenses and are documented separately.
+C4thedral and C4ML are licensed under the [Apache License 2.0](LICENSE).
+Third-party dependencies retain their own licenses and are documented
+separately.

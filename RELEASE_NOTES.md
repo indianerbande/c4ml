@@ -4,8 +4,8 @@ Status: Public source beta
 
 Date: 2026-09-02
 
-The source tree is prepared for a later public source release with a reproducible
-build guide, contribution and security policies, issue templates, a
+This release publishes the reviewed source tree with a reproducible build
+guide, contribution and security policies, issue templates, a
 least-privilege commit-pinned Linux source gate, scheduled dependency-update
 pull requests, and an automated public-source hygiene check. Monaco's transitive
 DOMPurify dependency is constrained to reviewed version 3.4.13; the production
@@ -15,7 +15,9 @@ removed. The public repository was created from that clean history without the
 superseded repositories' read-only pull-request refs. Anonymous HTTPS cloning,
 the locked source build, and the complete source gate have passed from the
 public repository. The source tag is `v0.1.0-beta.1`; no unsigned native artifact
-is presented as a public release download.
+is presented as a public release download. `PROJECT-STATUS.md` explains the
+current beta and compatibility boundaries without reproducing the development
+history in the product README.
 
 This is the first release identity for the C4thedral desktop architecture
 workbench. C4ML remains the name of its language, compiler, CLI, file format,
