@@ -88,6 +88,7 @@ const requiredFiles = [
   "LICENSE",
   ".npmrc",
   "README.md",
+  "README.de.md",
   "PROJECT-STATUS.md",
   "SOURCE-RELEASE.md",
   "CONTRIBUTING.md",
@@ -113,18 +114,31 @@ assert.deepEqual(
   ".npmrc may contain only the reviewed reproducibility settings",
 );
 
-const readme = readRequired("README.md");
-for (const publicDocument of [
-  "PROJECT-STATUS.md",
-  "SOURCE-RELEASE.md",
-  "CONTRIBUTING.md",
-  "SECURITY.md",
-]) {
-  assert.ok(
-    readme.includes(publicDocument),
-    `README.md must link to ${publicDocument}`,
-  );
+const readmes = [
+  ["README.md", readRequired("README.md")],
+  ["README.de.md", readRequired("README.de.md")],
+];
+for (const [readmePath, readme] of readmes) {
+  for (const publicDocument of [
+    "PROJECT-STATUS.md",
+    "SOURCE-RELEASE.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+  ]) {
+    assert.ok(
+      readme.includes(publicDocument),
+      `${readmePath} must link to ${publicDocument}`,
+    );
+  }
 }
+assert.ok(
+  readmes[0][1].includes("README.de.md"),
+  "README.md must link to README.de.md",
+);
+assert.ok(
+  readmes[1][1].includes("README.md"),
+  "README.de.md must link to README.md",
+);
 
 const ignoredNames = new Set(readRequired(".gitignore").split(/\r?\n/u));
 for (const requiredIgnore of [
