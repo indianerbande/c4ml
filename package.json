@@ -20,6 +20,7 @@
     "check:worker-bundles": "node scripts/check-worker-bundles.mjs",
     "check:architecture-proof": "node scripts/check-architecture-proof.mjs",
     "check:desktop-production": "node scripts/check-desktop-production.mjs",
+    "check:documentation": "node scripts/check-documentation.mjs",
     "check:editor-production": "node scripts/check-editor-production.mjs",
     "check:native-release": "node scripts/check-native-release.mjs",
     "check:public-source": "node scripts/check-public-source.mjs",
@@ -36,7 +37,7 @@
     "test": "pnpm --recursive --sort --if-present run test",
     "typecheck": "pnpm run build && pnpm run typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
-    "check": "pnpm run build && pnpm run check:public-source && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run check:architecture-proof && pnpm run typecheck:tests && pnpm run test"
+    "check": "pnpm run build && pnpm run check:documentation && pnpm run check:public-source && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run check:architecture-proof && pnpm run typecheck:tests && pnpm run test"
   },
   "devDependencies": {
     "@types/node": "24.13.3",

@@ -6,7 +6,7 @@ Date: 2026-09-01
 
 This document defines how C4thedral product behavior and C4ML language and
 compiler behavior will be verified. It is normative for testing once
-implementation begins. `SPEC.md` defines product behavior; this document
+implementation begins. [`specification.md`](specification.md) defines product behavior; this document
 defines the evidence required to claim that behavior works.
 
 Vitest is accepted for unit and adapter-contract tests. The verified
@@ -100,7 +100,7 @@ receives source-located `C4ML-LANG-005` guidance rather than a misleading
 missing-brace message.
 
 The current constraint-solver foundation covers the executable intent hierarchy
-in `SPEC.md`: left/right/above/below placement, anchored multi-element edge and
+in [`specification.md`](specification.md): left/right/above/below placement, anchored multi-element edge and
 center alignment, explicitly ordered equal-gap distribution, directional and
 axis adjustment relative to automatic candidate geometry, named gap presets,
 `step` and exact `du` conversion, and individual pins. It verifies coexistence
@@ -943,7 +943,7 @@ Desktop tests MUST cover:
 - signature, installer/archive integrity, installation, launch, file round
   trip, and uninstall behavior on every supported release platform.
 
-The native platform matrix is defined in `PLATFORMS.md`. Every target host MUST
+The native platform matrix is defined in [`../en/platforms.md`](../en/platforms.md). Every target host MUST
 run install, the complete check, packaged smoke, and its configured makers.
 macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
 Setup EXE; Debian-family Linux evidence covers the unpacked application and
@@ -1379,7 +1379,7 @@ Bulk acceptance of new goldens without inspection is prohibited.
 
 An implementation change is complete only when:
 
-- behavior matches `SPEC.md`;
+- behavior matches [`specification.md`](specification.md);
 - relevant unit and integration tests exist;
 - negative behavior has diagnostics tests;
 - deterministic output has been checked;
@@ -1393,7 +1393,7 @@ An implementation change is complete only when:
 
 Before the MVP may be called complete:
 
-- every acceptance criterion in `SPEC.md` has a named test or reviewed manual
+- every acceptance criterion in [`specification.md`](specification.md) has a named test or reviewed manual
   verification;
 - all original catalog fixtures render as SVG and PNG;
 - all seven official C4 view types pass their scope and element-contract tests;

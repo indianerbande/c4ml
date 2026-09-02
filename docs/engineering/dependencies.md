@@ -571,13 +571,14 @@ absolute geometry across nested compound nodes before later stages consume it.
 The reference SVG embeds IBM Plex Sans WOFF2 faces, and its PNG path explicitly
 loads the matching TTF faces with system fonts disabled. The current artifact
 has been visually inspected; promotion to a committed golden still requires
-the golden-update procedure in `TESTING.md`.
+the golden-update procedure in [`testing.md`](testing.md).
 
 Node.js 24.15.0 or newer within 24.x is the reference repository and native
 packaging runtime. The repository does not ask pnpm to download Node.js from
 the public internet. Source validation also passes with the currently tested
 Node.js 26; native Forge packaging fails early outside the accepted 24.x line.
-Native build evidence is recorded separately for each host in `PLATFORMS.md`.
+Native build evidence is recorded separately for each host in
+[`../en/platforms.md`](../en/platforms.md).
 
 ## Asset status
 

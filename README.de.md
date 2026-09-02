@@ -19,8 +19,8 @@ funktionsfähige Anwendung und kein frühes Grundgerüst: Desktop-Anwendung und 
 macOS, Windows und Ubuntu geprüft. Beta bedeutet, dass sich die
 benutzerorientierte C4ML-Syntax und die CLI-Schnittstelle noch ändern können und
 noch keine signierten öffentlichen Installationspakete bereitstehen. Den
-genauen Reifegrad und die verbleibenden Auslieferungsgrenzen beschreibt
-[PROJECT-STATUS.md](PROJECT-STATUS.md).
+genauen Reifegrad und die verbleibenden Auslieferungsgrenzen beschreibt der
+[Projektstatus](docs/de/project-status.md).
 
 ## Was C4thedral kann
 
@@ -93,6 +93,20 @@ C4ML-Quelltext
   -> PNG
 ```
 
+## Vibe Coding mit fachlicher Verantwortung
+
+**C4thedral wurde gevibed – bewusst, transparent und unter erfahrener
+menschlicher Engineering-Führung.** Dialogische KI beschleunigte Umsetzung,
+Erkundung, Refactoring, Tests und Dokumentation. Sie übernahm weder die
+Architekturhoheit noch senkte sie die Anforderungen an Nachweise.
+
+Das funktioniert nur, wenn die ausführende Person das System entwerfen,
+generierten Code verstehen und verwerfen, Folgen für Sicherheit und Wartung
+beurteilen und die Grenzen automatischer Prüfungen erkennen kann. Maßgeblich
+bleiben Spezifikationen, Quelltext, Reviews, Test-Gates und native Nachweise.
+[Vibe Coding mit fachlicher Verantwortung](docs/de/ki-gestuetzte-entwicklung.md)
+beschreibt Vorteile, Grenzen und Arbeitsregeln ausführlich.
+
 ## Beta bauen und starten
 
 Verwende Node.js 24.15.0 oder eine neuere Version der 24er-Reihe sowie die in
@@ -115,7 +129,7 @@ Demonstration `signal-garden.c4ml` mit allen sieben Ansichten.
 
 Die Betriebssystemvoraussetzungen, den Umgang mit der Linux-Sandbox und den
 vollständigen reproduzierbaren Ablauf für native Pakete beschreibt
-[SOURCE-RELEASE.md](SOURCE-RELEASE.md). Selbst erstellte macOS- und
+[C4thedral aus dem Quellcode bauen](docs/de/build-from-source.md). Selbst erstellte macOS- und
 Windows-Pakete tragen noch nicht die künftigen Herausgebersignaturen von
 C4thedral.
 
@@ -167,29 +181,25 @@ weitere Arten von Einschränkungen geplant.
 Signierte und notarisierte öffentliche Downloads für macOS sowie signierte
 Installationsprogramme für Windows stehen noch aus. Deshalb wird die Beta als
 Quelltext verteilt. Diese Punkte sowie die kleineren Lücken in Editor und
-Sprache sind in [PROJECT-STATUS.md](PROJECT-STATUS.md) verständlich aufgeführt;
-die technischen Arbeitspakete stehen in [TODO.md](TODO.md).
+Sprache sind im [Projektstatus](docs/de/project-status.md) verständlich
+aufgeführt; die technischen Arbeitspakete stehen in der
+[technischen Roadmap](docs/engineering/roadmap.md).
 
 ## Dokumentation
 
-- [SOURCE-RELEASE.md](SOURCE-RELEASE.md) — öffentliche Source-Beta klonen,
-  prüfen, starten und bauen
-- [PROJECT-STATUS.md](PROJECT-STATUS.md) — aktueller Reifegrad,
-  Kompatibilitätsversprechen, unterstützte Plattformen und offene
-  Auslieferungsarbeiten
-- [DOCUMENTATION.md](DOCUMENTATION.md) — Benutzerhandbuch, ausführbare Syntax
-  und klar gekennzeichnete Entwurfsvorschauen
-- [PROJECTS.md](PROJECTS.md) — Projekte aus einer oder ausdrücklich mehreren
-  Dateien
-- [PLATFORMS.md](PLATFORMS.md) — Matrix der nativen Builds und Prüfungen
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) — Änderungen und Nachweise der aktuellen
-  Version
-- [CONTRIBUTING.md](CONTRIBUTING.md) — Ablauf für Beiträge
-- [SECURITY.md](SECURITY.md) — vertrauliches Melden von Sicherheitsproblemen
-- [SPEC.md](SPEC.md) — maßgebliche Produkt- und Architekturspezifikation
-- [TESTING.md](TESTING.md) — erforderliche Validierungsnachweise
-- [DEPENDENCIES.md](DEPENDENCIES.md) — Zweck, Lizenzen und
-  Austauschbarkeitsgrenzen der Abhängigkeiten
+Der [deutsche Dokumentationsindex](docs/de/README.md) ist der beste Einstieg.
+
+- [Aus dem Quellcode bauen](docs/de/build-from-source.md)
+- [Projektstatus](docs/de/project-status.md)
+- [Benutzerhandbuch](docs/de/user-guide.md)
+- [Vibe Coding mit fachlicher Verantwortung](docs/de/ki-gestuetzte-entwicklung.md)
+- [C4ML-Projekte](docs/de/projects.md)
+- [Native Plattformmatrix](docs/de/platforms.md)
+- [Versionshinweise](docs/de/releases/0.1.0-beta.1.md)
+- [CONTRIBUTING.de.md](CONTRIBUTING.de.md) — Ablauf für Beiträge
+- [SECURITY.de.md](SECURITY.de.md) — vertrauliches Melden von Sicherheitsproblemen
+- [Technische Projektdokumentation](docs/engineering/README.md) — maßgebliche
+  englische Spezifikation, Tests, Einstellungen, Roadmap und Abhängigkeiten
 
 ## Eigenständigkeit und verwandte Projekte
 

@@ -64,7 +64,7 @@ require Node.js 24.15 or newer within the 24.x line and report a clear error
 before packaging starts when another major version is active. This is only a
 contributor build requirement; the packaged Electron application brings its own
 runtime. Portable side-by-side setup is documented in
-[`PLATFORMS.md`](../../PLATFORMS.md).
+[`docs/en/platforms.md`](../../docs/en/platforms.md).
 
 Generated files are ignored under `build/desktop/`. A local macOS make produces
 `C4thedral.app`, `C4thedral.dmg`, and a ZIP archive. The current beta identity is
@@ -72,4 +72,4 @@ Generated files are ignored under `build/desktop/`. A local macOS make produces
 ICNS, and ICO forms. macOS artifacts are ad-hoc signed for local testing, not
 Developer ID signed or notarized. Windows code signing and native Windows
 installer and Linux portable-app runs remain release work. Build each platform
-on its native host; see [`PLATFORMS.md`](../../PLATFORMS.md).
+on its native host; see [`docs/en/platforms.md`](../../docs/en/platforms.md).

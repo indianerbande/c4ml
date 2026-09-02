@@ -1,5 +1,7 @@
 # C4ML Projects
 
+[English](projects.md) | [Deutsch](../de/projects.md)
+
 Status: Implemented complete version-one typed project-resource foundation
 
 Date: 2026-08-31

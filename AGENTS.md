@@ -3,12 +3,14 @@
 ## Project status
 
 C4thedral, powered by the C4ML language and compiler, is published as the
-`0.1.0-beta.1` public source beta. `PROJECT-STATUS.md` owns the concise
+`0.1.0-beta.1` public source beta. `docs/en/project-status.md` owns the concise
 reader-facing maturity statement; this section retains the detailed engineering
 state needed by repository agents. The local Git repository and GitHub remote exist.
-An Apache-2.0 TypeScript/pnpm monorepo scaffold and isolated Langium and ELK.js
-technical spikes are authorized. The accepted resvg-js adapter has moved from
-its historical spike into the production `packages/render-resvg` boundary.
+The Apache-2.0 TypeScript/pnpm monorepo contains only production packages and
+applications. The completed Langium, ELK.js, and resvg-js feasibility spikes
+are preserved in Git history; their accepted results now live exclusively in
+the production `packages/language-c4ml`, `packages/layout-elk`, and
+`packages/render-resvg` boundaries.
 
 The runtime architecture is accepted: one runtime-portable TypeScript compiler
 core, a thin Node.js CLI, and a desktop renderer that runs the compiler in a
@@ -46,7 +48,7 @@ Current macOS artifacts are ad-hoc signed development builds, not notarized
 releases. Node.js 24.15.0 or a newer 24.x release is the reference packaging
 runtime. pnpm warns instead of forcing a public runtime download; source checks
 may run on a newer supported line, but Electron Forge packaging fails clearly
-outside Node.js 24.x. `PLATFORMS.md` owns the native build and verification
+outside Node.js 24.x. `docs/en/platforms.md` owns the native build and verification
 matrix.
 
 The desktop workbench also has an implemented original IDE-like shell with
@@ -76,7 +78,7 @@ family supplies their declaration accent. Language selection also synchronizes C
 and dialogs through the validated desktop bridge, but never translates
 authored or compiler-owned content. These preferences MUST remain outside
 `.c4ml`, compiler worker, diagram theme, layout, and exported SVG/PNG.
-`SETTINGS.md` defines the current catalogue and extension boundaries.
+`docs/engineering/settings-contract.md` defines the current catalogue and extension boundaries.
 
 The production-bound Angular editor foundation is implemented under
 `apps/editor`. It uses Angular standalone components, Signals, zoneless change
@@ -261,7 +263,7 @@ membership. They are an internal compiler contract, not a frozen public DSL
 grammar. Production editor work is authorized within the accepted Angular,
 Monaco, worker, and compiler boundaries. Do not represent any remaining spike
 dependency as permanent or freeze the DSL grammar until the user has reviewed
-and approved the corresponding results in `SPEC.md`.
+and approved the corresponding results in `docs/engineering/specification.md`.
 
 The first Phase 1 rendering slice is also implemented. A resolved view can be
 prepared as an engine-neutral layout request, routed through inspectable
@@ -294,7 +296,8 @@ CLI and editor pass those controls into the same compiler API. There is no
 publicly accepted `.c4ml` frontend or frozen grammar yet, the complete
 constraint/routing scope is not implemented, and the remaining candidate
 adapters are not permanently accepted. ELK.js and resvg-js are accepted
-exceptions recorded in `SPEC.md` and `DEPENDENCIES.md`.
+exceptions recorded in `docs/engineering/specification.md` and
+`docs/engineering/dependencies.md`.
 
 IBM Plex v6.4.2 is the accepted controlled font asset. Exact unmodified Sans
 and Mono files from the tagged official release are isolated in
@@ -323,7 +326,7 @@ hexadecimal color and percentage transparency. Custom shapes remain
 presentation-only and cannot create new C4
 element kinds. Their future author-facing grammar is still draft.
 
-`DOCUMENTATION.md` and `examples/draft` contain a first author-facing syntax
+`docs/en/user-guide.md` and `examples/draft` contain a first author-facing syntax
 preview. They are deliberately non-normative. Only the `hello-context.c4ml`,
 `hello-container.c4ml`, `hello-static-zoom.c4ml`, `hello-dynamic.c4ml`, and
 `hello-deployment.c4ml` slices plus the larger all-seven-view
@@ -370,13 +373,14 @@ Before making project changes:
 
 1. confirm that the working directory is the intended C4thedral/C4ML checkout;
 2. read this file completely;
-3. read `SPEC.md` completely;
-4. read `TESTING.md` completely;
+3. read `docs/engineering/specification.md` completely;
+4. read `docs/engineering/testing.md` completely;
 5. inspect the current repository state; and
 6. distinguish draft decisions from accepted decisions.
 
-Within the repository, `SPEC.md` defines product behavior and architecture.
-`TESTING.md` defines the evidence required to validate it. This file defines the
+Within the repository, `docs/engineering/specification.md` defines product
+behavior and architecture. `docs/engineering/testing.md` defines the evidence
+required to validate it. This file defines the
 working process. An explicit current user instruction can change project scope;
 record material design changes in the relevant document.
 
@@ -422,7 +426,7 @@ When researching prior art:
 1. use public primary documentation and observable behavior;
 2. record the user problem or general capability, not foreign syntax;
 3. convert the observation into a tool-independent requirement;
-4. design C4ML behavior from `SPEC.md`; and
+4. design C4ML behavior from `docs/engineering/specification.md`; and
 5. cite the source used for the capability analysis.
 
 Do not inspect another project's implementation for the purpose of recreating
@@ -445,7 +449,8 @@ Before adding a dependency, report:
 - the test that will protect that boundary.
 
 Record accepted dependencies and candidate-spike packages in
-`DEPENDENCIES.md`. Preserve the package's own license and notice obligations;
+`docs/engineering/dependencies.md`. Preserve the package's own license and
+notice obligations;
 the repository's Apache-2.0 license does not relicense third-party code.
 
 Do not add a package merely to avoid a small, well-bounded implementation.
@@ -468,7 +473,7 @@ For an approved change:
 1. identify the authoritative specification section;
 2. present scope and representative impact before a broad systematic rewrite;
 3. make the smallest coherent change;
-4. add or update the evidence required by `TESTING.md`;
+4. add or update the evidence required by `docs/engineering/testing.md`;
 5. run proportionate non-destructive validation;
 6. inspect generated visual output when rendering is affected; and
 7. report implementation, automated validation, visual validation, commit, and
@@ -524,7 +529,7 @@ replaceable adapter behind a tested compiler-core interface.
 
 ## Testing and generated artifacts
 
-Follow `TESTING.md`. In particular:
+Follow `docs/engineering/testing.md`. In particular:
 
 - assert semantic and geometric invariants before relying on snapshots;
 - use only original project fixtures;

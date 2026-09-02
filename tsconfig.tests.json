@@ -8,8 +8,7 @@
   },
   "include": [
     "packages/*/src/**/*.ts",
-    "packages/*/test/**/*.ts",
-    "spikes/*/src/**/*.ts"
+    "packages/*/test/**/*.ts"
   ],
   "exclude": [
     "**/dist/**"

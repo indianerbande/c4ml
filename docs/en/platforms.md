@@ -1,5 +1,7 @@
 # C4thedral desktop platform builds
 
+[English](platforms.md) | [Deutsch](../de/platforms.md)
+
 Status: Accepted build contract; current macOS arm64 package, smoke, DMG, and
 ZIP validated under Node.js 24.15.0; Windows x64 source gate, Squirrel build,
 artifact verification, packaged and installed smoke, install/remove/reinstall,
@@ -104,7 +106,8 @@ root ownership and setuid mode required by Chromium's sandbox helper on systems
 that restrict unprivileged user namespaces. The DEB maker records those rights
 inside the package and APT applies them during installation. C4thedral does not
 disable Chromium's sandbox and does not instruct users to repair application
-files manually. See `INSTALL-LINUX.md` for the end-user procedure.
+files manually. See the [Linux installation guide](install-linux.md) for the
+end-user procedure.
 
 ## Runtime differences owned by C4thedral
 
@@ -157,9 +160,9 @@ and archive ownership/mode of `chrome-sandbox`. The installed helper MUST be
 owned by `root:root`, have mode `4755`, and launch without `--no-sandbox`.
 
 Artifact creation on one operating system is evidence only for that operating
-system. The Windows end-user procedure is in `INSTALL-WINDOWS.md`; the
-Debian/Ubuntu procedure is in `INSTALL-LINUX.md`. No platform's validation can
-substitute for another native run.
+system. See the end-user procedures for [Windows](install-windows.md) and
+[Debian/Ubuntu](install-linux.md). No platform's validation can substitute for
+another native run.
 
 ## Upstream references
 

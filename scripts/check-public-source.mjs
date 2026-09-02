@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -74,7 +74,8 @@ function collectPublicSourceFiles() {
     return output
       .split("\0")
       .filter((path) => path !== "")
-      .map((path) => join(repositoryRoot, path));
+      .map((path) => join(repositoryRoot, path))
+      .filter((path) => existsSync(path));
   } catch {
     return collectFiles(repositoryRoot);
   }
@@ -89,10 +90,20 @@ const requiredFiles = [
   ".npmrc",
   "README.md",
   "README.de.md",
-  "PROJECT-STATUS.md",
-  "SOURCE-RELEASE.md",
   "CONTRIBUTING.md",
+  "CONTRIBUTING.de.md",
   "SECURITY.md",
+  "SECURITY.de.md",
+  "docs/en/README.md",
+  "docs/de/README.md",
+  "docs/en/project-status.md",
+  "docs/de/project-status.md",
+  "docs/en/ai-assisted-development.md",
+  "docs/de/ki-gestuetzte-entwicklung.md",
+  "docs/en/build-from-source.md",
+  "docs/de/build-from-source.md",
+  "docs/engineering/README.md",
+  "scripts/check-documentation.mjs",
   ".github/dependabot.yml",
   ".github/ISSUE_TEMPLATE/bug-report.yml",
   ".github/ISSUE_TEMPLATE/feature-request.yml",
@@ -115,16 +126,25 @@ assert.deepEqual(
 );
 
 const readmes = [
-  ["README.md", readRequired("README.md")],
-  ["README.de.md", readRequired("README.de.md")],
-];
-for (const [readmePath, readme] of readmes) {
-  for (const publicDocument of [
-    "PROJECT-STATUS.md",
-    "SOURCE-RELEASE.md",
+  ["README.md", readRequired("README.md"), [
+    "docs/en/README.md",
+    "docs/en/project-status.md",
+    "docs/en/build-from-source.md",
+    "docs/en/ai-assisted-development.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
-  ]) {
+  ]],
+  ["README.de.md", readRequired("README.de.md"), [
+    "docs/de/README.md",
+    "docs/de/project-status.md",
+    "docs/de/build-from-source.md",
+    "docs/de/ki-gestuetzte-entwicklung.md",
+    "CONTRIBUTING.de.md",
+    "SECURITY.de.md",
+  ]],
+];
+for (const [readmePath, readme, publicDocuments] of readmes) {
+  for (const publicDocument of publicDocuments) {
     assert.ok(
       readme.includes(publicDocument),
       `${readmePath} must link to ${publicDocument}`,

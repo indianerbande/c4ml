@@ -17,7 +17,7 @@ software rather than an early scaffold: the desktop application and CLI compile
 all seven C4 view types, and the native workflows have been exercised on macOS,
 Windows, and Ubuntu. Beta means that the author-facing C4ML syntax and CLI
 compatibility may still change, and signed public installers are not available
-yet. See [PROJECT-STATUS.md](PROJECT-STATUS.md) for the precise maturity and
+yet. See the [project status](docs/en/project-status.md) for the precise maturity and
 remaining release boundaries.
 
 ## What C4thedral does
@@ -86,6 +86,21 @@ C4ML source
   -> PNG
 ```
 
+## Vibe coding with engineering ownership
+
+**C4thedral was vibe-coded—deliberately, transparently, and under experienced
+human engineering direction.** Conversational AI accelerated implementation,
+exploration, refactoring, tests, and documentation. It did not own the
+architecture or lower the evidence required for a change.
+
+This approach is useful only when the person directing it can design the
+system, understand and reject generated code, judge security and maintenance
+consequences, and recognize where automated checks are insufficient. The
+project's specifications, source, reviews, test gates, and native evidence
+remain authoritative. See [Vibe coding with engineering
+ownership](docs/en/ai-assisted-development.md) for the benefits, limits, and
+working rules behind that statement.
+
 ## Build and run the beta
 
 Use Node.js 24.15.0 or a newer 24.x release and the pnpm version pinned in
@@ -108,7 +123,7 @@ explicit project from the File menu. Runnable examples are available under
 
 For native packages, platform prerequisites, Linux sandbox handling, and the
 complete reproducible procedure, follow
-[SOURCE-RELEASE.md](SOURCE-RELEASE.md). Self-built macOS and Windows packages
+[Build C4thedral from source](docs/en/build-from-source.md). Self-built macOS and Windows packages
 do not carry future C4thedral publisher signatures.
 
 ## Use the CLI
@@ -157,26 +172,25 @@ for more specialized diagrams.
 Signed, notarized public downloads for macOS and signed installers for Windows
 are still outstanding. The beta is therefore distributed as source. These and
 the smaller editor and language gaps are tracked in plain language in
-[PROJECT-STATUS.md](PROJECT-STATUS.md); detailed engineering work remains in
-[TODO.md](TODO.md).
+[the project status](docs/en/project-status.md); detailed engineering work
+remains in the [engineering roadmap](docs/engineering/roadmap.md).
 
 ## Documentation
 
-- [SOURCE-RELEASE.md](SOURCE-RELEASE.md) — clone, verify, run, and build the
-  public source beta
-- [PROJECT-STATUS.md](PROJECT-STATUS.md) — current maturity, compatibility
-  promise, supported platforms, and open release work
-- [DOCUMENTATION.md](DOCUMENTATION.md) — user guide, executable syntax, and
-  clearly marked design previews
-- [PROJECTS.md](PROJECTS.md) — single-file and explicit multi-file projects
-- [PLATFORMS.md](PLATFORMS.md) — native build and verification matrix
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) — changes and evidence for the current
-  release
+The [English documentation index](docs/en/README.md) is the best entry point.
+
+- [Build from source](docs/en/build-from-source.md)
+- [Project status](docs/en/project-status.md)
+- [User guide](docs/en/user-guide.md)
+- [Vibe coding with engineering ownership](docs/en/ai-assisted-development.md)
+- [C4ML projects](docs/en/projects.md)
+- [Native platform matrix](docs/en/platforms.md)
+- [Release notes](docs/en/releases/0.1.0-beta.1.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow
 - [SECURITY.md](SECURITY.md) — private vulnerability reporting
-- [SPEC.md](SPEC.md) — normative product and architecture specification
-- [TESTING.md](TESTING.md) — required validation evidence
-- [DEPENDENCIES.md](DEPENDENCIES.md) — dependency purpose, licenses, and
+- [Engineering documentation](docs/engineering/README.md) — specification,
+  testing, settings, roadmap, and dependency governance
+- [Dependency policy](docs/engineering/dependencies.md) — purpose, licenses, and
   replacement boundaries
 
 ## Originality and related projects

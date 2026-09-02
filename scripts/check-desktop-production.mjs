@@ -399,7 +399,8 @@ assert.deepEqual(
   },
   "the Linux DEB must have stable user-facing package metadata",
 );
-const linuxInstallGuide = readRequired("INSTALL-LINUX.md");
+const linuxInstallGuide = readRequired("docs/de/install-linux.md");
+const englishLinuxInstallGuide = readRequired("docs/en/install-linux.md");
 const debianVersion = rootManifest.version.replace(
   /(\d)[_.+-]?((?:RC|rc|pre|dev|beta|alpha)[_.+-]?\d*)$/u,
   "$1~$2",
@@ -411,6 +412,12 @@ for (const debianArchitecture of ["amd64", "arm64"]) {
     ),
     `the Linux install guide must name the current ${debianArchitecture} DEB exactly`,
   );
+  assert.ok(
+    englishLinuxInstallGuide.includes(
+      `sudo apt install ./c4thedral_${debianVersion}_${debianArchitecture}.deb`,
+    ),
+    `the English Linux install guide must name the current ${debianArchitecture} DEB exactly`,
+  );
 }
 assert.ok(
   linuxInstallGuide.includes("sudo apt remove c4thedral"),
@@ -420,11 +427,16 @@ assert.ok(
   linuxInstallGuide.includes("Starte C4thedral nicht mit `--no-sandbox`"),
   "the Linux install guide must prohibit disabling the production sandbox",
 );
-const windowsInstallGuide = readRequired("INSTALL-WINDOWS.md");
+const windowsInstallGuide = readRequired("docs/de/install-windows.md");
+const englishWindowsInstallGuide = readRequired("docs/en/install-windows.md");
 const squirrelSetupName = `C4thedral-${rootManifest.version} Setup.exe`;
 assert.ok(
   windowsInstallGuide.includes(squirrelSetupName),
   "the Windows install guide must name the current Squirrel Setup executable exactly",
+);
+assert.ok(
+  englishWindowsInstallGuide.includes(squirrelSetupName),
+  "the English Windows install guide must name the current Squirrel Setup executable exactly",
 );
 assert.ok(
   windowsInstallGuide.includes("brauchst weder Node.js noch pnpm"),

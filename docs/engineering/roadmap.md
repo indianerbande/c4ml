@@ -4,7 +4,8 @@ Status: Active roadmap
 
 Date: 2026-09-01
 
-`SPEC.md` defines product behavior and architecture. `TESTING.md` defines the
+[`specification.md`](specification.md) defines product behavior and architecture.
+[`testing.md`](testing.md) defines the
 evidence required to claim that behavior works. This file orders implementation
 work; it does not freeze public `.c4ml` syntax or replace either normative
 document.
@@ -27,7 +28,7 @@ The product direction is accepted. Its user-facing application is exclusively
 the Electron desktop workbench; the Angular renderer harness is an internal
 development and visual-testing tool, not a browser product. The detailed
 contracts and public source syntax remain draft until their individual slices
-are reviewed and accepted in `SPEC.md`.
+are reviewed and accepted in [`specification.md`](specification.md).
 
 ## Gate 0 — finish the current foundation
 

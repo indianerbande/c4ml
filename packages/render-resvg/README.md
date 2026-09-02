@@ -11,4 +11,4 @@ depend on this package; browser and compiler-core code must not.
 
 resvg-js remains an unmodified MPL-2.0 dependency. Its capability, packaging
 impact, offline behavior, replacement boundary, and license obligations are
-recorded in `DEPENDENCIES.md` at the repository root.
+recorded in [`docs/engineering/dependencies.md`](../../docs/engineering/dependencies.md).
