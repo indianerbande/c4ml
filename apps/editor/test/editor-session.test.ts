@@ -685,6 +685,46 @@ describe("editor route preview session", () => {
     await expect(second.result).resolves.toBe(current);
     expect(session.state).toMatchObject({ phase: "failed", response: current });
   });
+
+  it("accepts only integer relationship-label offsets at the worker boundary", () => {
+    const session = new EditorRoutePreviewSession();
+    const project = {
+      version: 1 as const,
+      id: "garden",
+      documents: [{ uri: "architecture.c4ml", source: "c4ml draft-1" }],
+    };
+    const route = {
+      id: "route-label-offset",
+      viewId: "context",
+      intent: {
+        id: "route:label-offset",
+        kind: "route" as const,
+        summary: "Move the relationship label.",
+      },
+      operation: {
+        kind: "label-offset" as const,
+        relationshipId: "garden-route",
+        offset: { x: 24, y: -18 },
+      },
+    };
+    const { request } = session.beginAsync(
+      project,
+      "architecture.c4ml",
+      route,
+      "context",
+    );
+
+    expect(isPreviewRouteChangeWorkerRequest(request)).toBe(true);
+    expect(
+      isPreviewRouteChangeWorkerRequest({
+        ...request,
+        route: {
+          ...request.route,
+          operation: { ...request.route.operation, offset: { x: 1.5, y: 0 } },
+        },
+      }),
+    ).toBe(false);
+  });
 });
 
 describe("editor semantic authoring sessions", () => {

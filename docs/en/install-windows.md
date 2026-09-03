@@ -10,7 +10,7 @@ pnpm, or any developer tools.
 Download this file for a normal 64-bit Windows PC:
 
 ```text
-C4thedral-0.1.0-beta.1 Setup.exe
+C4thedral-0.1.0-beta.2 Setup.exe
 ```
 
 The current beta is built for Windows x64. To check your architecture, open
@@ -23,7 +23,7 @@ Open the download folder in Explorer. Right-click an empty area and choose
 **Open in Terminal**, then run:
 
 ```powershell
-Get-FileHash ".\C4thedral-0.1.0-beta.1 Setup.exe" -Algorithm SHA256
+Get-FileHash ".\C4thedral-0.1.0-beta.2 Setup.exe" -Algorithm SHA256
 ```
 
 Compare the displayed value with the SHA-256 checksum published with the
@@ -31,7 +31,7 @@ download. Do not install the file if they differ.
 
 ## 3. Install C4thedral
 
-1. Double-click **C4thedral-0.1.0-beta.1 Setup.exe**.
+1. Double-click **C4thedral-0.1.0-beta.2 Setup.exe**.
 2. Wait for installation to finish.
 3. Open the Start menu, search for **C4thedral**, and start the application.
 
@@ -49,6 +49,10 @@ source and verified its checksum. Public builds must be signed before release.
 Start C4thedral and choose **File → Open File…**. Select a file ending in
 `.c4ml`. Save changes with `Ctrl+S`. Export SVG and PNG from the **Output**
 area.
+
+You can also right-click a `.c4ml` file, choose **Open with**, and select
+**C4thedral**. The installed app accepts the file both on first launch and when
+it is already running.
 
 C4thedral works entirely locally. Opening, editing, saving, and exporting do
 not require an internet connection. Git is needed only for the integrated
@@ -80,4 +84,3 @@ Your `.c4ml` projects are not deleted.
   `.c4ml` file inside a Git repository. Git is optional for all other features.
 - **You have a Windows ARM computer:** The current beta is validated only for
   Windows x64. Do not treat it as an approved native ARM build.
-

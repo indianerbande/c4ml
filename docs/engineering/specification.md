@@ -1,8 +1,8 @@
 # C4thedral Specification
 
-Status: Draft 0.48
+Status: Draft 0.49
 
-Date: 2026-09-01
+Date: 2026-09-03
 
 Product name: C4thedral
 
@@ -613,6 +613,15 @@ The desktop starts with an empty editor rather than an implied
 action: Close File for an implicit single document and Close Project for an
 explicit project. Closing returns to the empty editor, clears derived compiler
 and preview state, and retains the existing aggregate dirty-state confirmation.
+An installed application also accepts one `.c4ml` document selected through the
+operating system's **Open With** action. macOS delivers the path through its
+early `open-file` event; Windows and Linux deliver it as a native path or local
+file URL in the initial or second-instance command line. The main process
+normalizes and queues only `.c4ml` paths, applies the same size and file checks
+as the native Open dialog, and gives the renderer only an opaque handle plus
+bounded source. A pending external open never bypasses the existing dirty-state
+confirmation. The application remains single-instance so an already running
+workbench receives and focuses the newly selected document.
 
 The desktop loads and evaluates the optional policy resource with the complete
 project but does not expose it as an editable Monaco source tab in this first
@@ -827,10 +836,11 @@ The first release MUST support:
 - author-supplied waypoints;
 - named route corridors with independently selectable lanes;
 - partial waypoints and locked segments that leave other segments automatic;
-- avoidance of element interiors and configured boundaries; and
+- avoidance of element interiors and configured boundaries;
 - hard and soft avoidance regions;
 - independent placement of the relationship label on a selected route segment;
-  and
+- signed horizontal and vertical label offsets expressed explicitly in diagram
+  units; and
 - view-local crossing and parallel-path preferences.
 
 Relationship labels MUST NOT show a visible card, banner, or canvas-colored
@@ -1137,7 +1147,8 @@ The first executable view-local routing subset additionally recognizes:
   the padded effective bounds of a visible element;
 - explicit selection of avoidance regions by guided routes;
 - a named corridor plus a zero-based exclusive lane for guided routes; and
-- a zero-based effective label segment and an integer x/y label offset.
+- a zero-based effective label segment and independent signed
+  `label-offset-x`/`label-offset-y` values with an explicit `du` suffix.
 
 These controls lower into the compiler-owned `DiagramRoutingOptions` for their
 own view and are passed identically by the CLI and compiler worker. They do not
@@ -1370,6 +1381,13 @@ scope provider. It filters already-declared singleton properties and restricts
 cross-references by their semantic target type, including Software-System-only
 System Context and Container scopes, Container-only Component scopes, and
 Component-only Code scopes. Results are deterministically ordered.
+Within a Route policy assignment, completion MUST filter the policy values
+against the controls already present in that Route. `automatic` is offered
+only when no authored path control is present, `guided` is not offered beside
+a complete fixed point list, and `fixed` is offered only when its required
+point list is already present and no guided-only control conflicts with it.
+Selecting a suggested policy therefore MUST NOT introduce a policy-combination
+diagnostic into an otherwise compatible Route.
 At a document-level cursor, error recovery MUST retain the foundational
 `model` candidate when an invalid or incomplete header would otherwise leave
 the completion list empty. At declaration level inside a lexically intact
@@ -1525,9 +1543,11 @@ fuses disable RunAsNode, `NODE_OPTIONS`, and command-line inspection, require
 ASAR integrity and ASAR-only application loading, and enable cookie encryption.
 
 Electron Forge is the replaceable packaging adapter. macOS `.app`, DMG, and ZIP
-artifacts are configured and locally validated. The Windows Squirrel maker is
+artifacts declare the owned `org.c4ml.source` editable document type and are
+configured and locally validated. The Windows Squirrel maker is
 configured for a Setup EXE. Debian-family Linux systems use a native DEB whose
-package metadata provides the application-menu entry and whose root-owned
+package metadata provides the application-menu entry, advertises the
+`text/x-c4ml` MIME type, and whose root-owned
 installation preserves the Chromium sandbox helper's required mode. A plain
 Linux archive is not a supported release artifact because it cannot establish
 that ownership safely. Linux build, launch, installation, removal, offline
@@ -1730,7 +1750,8 @@ and dirty-state semantics; no hidden geometry is retained by the editor.
 
 The first graphical Route-authoring slice is also implemented. From a selected
 effective Route, the editor can choose cardinal or automatic source and target
-Ports, add guidance at an effective segment midpoint, move existing waypoint
+Ports, move the relationship label by independent signed x/y diagram-unit
+offsets, add guidance at an effective segment midpoint, move existing waypoint
 guidance in diagram-unit steps, remove one waypoint, or return guidance to
 automatic routing. Relative Port and element anchors retain their symbolic
 reference when moved; the authoring generator changes or adds their relative
@@ -2213,8 +2234,9 @@ in a later release.
 
 The editor allows intent-based placement, alignment, distribution, nudge, and
 explicit exact-position actions for selected elements. It also allows cardinal
-Port choice and source-backed add, move, remove, and automatic-reset operations
-for selected effective Routes. For the five static C4 views, it can create the
+Port choice, independent relationship-label x/y offsets, and source-backed add,
+move, remove, and automatic-reset operations for selected effective Routes. For
+the five static C4 views, it can create the
 context-valid architecture element type or connect a context-valid directed
 pair through source-backed semantic operations. Dynamic interactions and
 deployment topology require their own later graphical actions.

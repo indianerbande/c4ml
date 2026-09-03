@@ -1,8 +1,8 @@
 # C4thedral Testing Strategy
 
-Status: Draft 0.48
+Status: Draft 0.49
 
-Date: 2026-09-01
+Date: 2026-09-03
 
 This document defines how C4thedral product behavior and C4ML language and
 compiler behavior will be verified. It is normative for testing once
@@ -88,7 +88,8 @@ automatic-relative adjustment, named/step/du measurement, and pin lowering,
 absolute corridor and lane selection, guided cardinal Ports, fixed point lists,
 relative Port/element/canvas anchors, ordered locked segments, hard and soft
 avoidance declarations and selection, label placement, policy-combination
-diagnostics, route-context completion,
+diagnostics, route-context completion, policy-value completion filtered against
+the controls already present in the Route,
 Web Worker bundling without Node.js polyfills, and deterministic SVG through the
 shared compiler pipeline. This evidence does not claim coverage of the complete
 preview grammar.
@@ -219,7 +220,8 @@ Monaco suggestion command. In the packaged macOS application, the workbench
 displayed `⌘I` and that keystroke opened the four context-valid top-level
 suggestions on 2026-08-30;
 the current renderer ELK pass visually covers a System Context with two
-guided routes, distinct target Ports, a named corridor and label shifts, plus a
+guided routes, distinct target Ports, a named corridor and independent signed
+label offsets in diagram units, plus a
 nested Deployment View. Route-block completion was inspected with the active
 policy and existing properties. Bidirectional navigation was visually inspected:
 selecting the `garden-pulse` declaration highlighted only Garden Pulse, and
@@ -668,6 +670,8 @@ Routing tests MUST cover:
 - intentional shared segments and junctions only when explicitly authored;
 - label placement on every segment orientation and on an explicitly selected
   segment;
+- independent signed horizontal and vertical label offsets in explicit diagram
+  units, including omission and zero-reset behavior;
 - preservation of guided routes after an unrelated graph change;
 - local rerouting after one related element or relationship changes;
 - dense connection fans entering and leaving both sides of a central boundary;
@@ -937,6 +941,9 @@ Desktop tests MUST cover:
   localized accessible button names, and visible light/dark theme states;
 - the configured production Electron fuses;
 - launch and live compilation from the packaged application;
+- installed-app `.c4ml` ownership plus initial and already-running **Open With**
+  delivery without exposing native paths to the renderer or bypassing dirty
+  close protection;
 - a minimum-height packaged-window smoke proving that the document itself does
   not scroll, the status bar remains fully inside the renderer viewport, and
   only bounded workbench content owns overflow; and
@@ -945,7 +952,8 @@ Desktop tests MUST cover:
 
 The native platform matrix is defined in [`../en/platforms.md`](../en/platforms.md). Every target host MUST
 run install, the complete check, packaged smoke, and its configured makers.
-macOS evidence covers `.app`, DMG, and ZIP; Windows evidence covers the Squirrel
+macOS evidence covers `.app`, DMG, ZIP, and its editable `.c4ml` document-type
+declaration; Windows evidence covers the Squirrel
 Setup EXE; Debian-family Linux evidence covers the unpacked application and
 installed DEB. Before unpacked Linux smoke, the command MUST restrict its
 privileged change to the exact packaged `chrome-sandbox`, reject symlinks and
@@ -964,7 +972,8 @@ MUST be performed under Node.js 24 so optional native maker helpers do not
 retain an ABI from another Node.js line.
 
 Automated tests may substitute adapters for native dialogs, but at least one
-manual file round trip and close-protection check is required on each supported
+manual file round trip, **Open With** launch into both a closed and already
+running application, and close-protection check is required on each supported
 desktop platform before release. Apple Developer ID signing/notarization and
 Windows signing MUST be checked with release identities; ad-hoc signing is only
 local development evidence.
@@ -1010,7 +1019,8 @@ restoration of the original clean dirty-state marker.
 
 The first graphical Route slice is automatically validated with original
 Signal Garden fixtures. Language tests cover cardinal and automatic Port
-selection; addition, symbolic-shift movement, and removal of waypoint guidance;
+selection; independent x/y relationship-label offsets; addition,
+symbolic-shift movement, and removal of waypoint guidance;
 locked-segment preservation; automatic-reset cleanup; obsolete block removal;
 and source-comment preservation. They also require explicit repair codes when
 fixed points, an old waypoint list, a corridor lane, or a guided policy becomes

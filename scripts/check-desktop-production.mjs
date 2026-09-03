@@ -35,7 +35,7 @@ assert.equal(
   "C4thedral",
   "the visible desktop product name must be C4thedral",
 );
-assert.equal(rootManifest.version, "0.1.0-beta.1");
+assert.equal(rootManifest.version, "0.1.0-beta.2");
 assert.equal(
   desktopManifest.version,
   rootManifest.version,
@@ -377,6 +377,18 @@ assert.deepEqual(
   ],
   "desktop makers must cover native Windows, macOS, and Linux hosts",
 );
+assert.deepEqual(
+  forgeConfiguration.packagerConfig.extendInfo.CFBundleDocumentTypes[0],
+  {
+    CFBundleTypeExtensions: ["c4ml"],
+    CFBundleTypeIconFile: "icon.icns",
+    CFBundleTypeName: "C4ML Source",
+    CFBundleTypeRole: "Editor",
+    LSHandlerRank: "Owner",
+    LSItemContentTypes: ["org.c4ml.source"],
+  },
+  "the macOS application must declare editable C4ML documents",
+);
 const debMaker = forgeConfiguration.makers.find(
   ({ name }) => name === "@electron-forge/maker-deb",
 );
@@ -396,6 +408,7 @@ assert.deepEqual(
     bin: "C4thedral",
     icon: join(desktopRoot, "assets", "icon.png"),
     categories: ["Development"],
+    mimeType: ["text/x-c4ml"],
   },
   "the Linux DEB must have stable user-facing package metadata",
 );
@@ -470,6 +483,11 @@ assert.match(
 );
 assert.match(
   developmentLauncher,
+  /CFBundleDocumentTypes/,
+  "the macOS development bundle must declare editable C4ML documents",
+);
+assert.match(
+  developmentLauncher,
   /require\(["']electron["']\)/,
   "the development launcher must use the pinned local Electron runtime",
 );
@@ -497,7 +515,7 @@ assert.ok(
 );
 
 console.log(
-  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, native Squirrel/DMG/ZIP/DEB makers, separated secure preloads, local editor assets, native SVG save, controlled resvg PNG export).",
+  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, native Squirrel/DMG/ZIP/DEB makers, installed-app C4ML document opening, separated secure preloads, local editor assets, native SVG save, controlled resvg PNG export).",
 );
 
 function readRequired(relativePath) {

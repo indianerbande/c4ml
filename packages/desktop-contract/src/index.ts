@@ -1,7 +1,8 @@
-export const desktopBridgeProtocolVersion = 17 as const;
+export const desktopBridgeProtocolVersion = 18 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
+  claimPendingDocument: "c4ml:desktop:claim-pending-document",
   exportPng: "c4ml:desktop:export-png",
   exportSvg: "c4ml:desktop:export-svg",
   openDocument: "c4ml:desktop:open-document",
@@ -30,6 +31,7 @@ export type DesktopUiLanguage = "en" | "de";
 export type DesktopCommand =
   | "close-workspace"
   | "export-png"
+  | "open-pending-document"
   | "open-document"
   | "open-project"
   | "open-preview-window"
@@ -354,6 +356,7 @@ export interface C4mlDesktopApi {
   readonly platform: DesktopPlatform;
   exportPng(request: DesktopPngExportRequest): Promise<DesktopPngExportResult>;
   exportSvg(request: DesktopSvgExportRequest): Promise<DesktopSvgExportResult>;
+  claimPendingDocument(): Promise<DesktopOpenResult | undefined>;
   openDocument(): Promise<DesktopOpenResult>;
   openProject(): Promise<DesktopOpenProjectResult>;
   openPreviewWindow(
@@ -390,6 +393,7 @@ export function isDesktopCommand(value: unknown): value is DesktopCommand {
   return (
     value === "close-workspace" ||
     value === "export-png" ||
+    value === "open-pending-document" ||
     value === "open-document" ||
     value === "open-project" ||
     value === "open-preview-window" ||
@@ -612,6 +616,7 @@ export function isC4mlDesktopApi(value: unknown): value is C4mlDesktopApi {
     isDesktopPlatform(value.platform) &&
     typeof value.exportPng === "function" &&
     typeof value.exportSvg === "function" &&
+    typeof value.claimPendingDocument === "function" &&
     typeof value.openDocument === "function" &&
     typeof value.openProject === "function" &&
     typeof value.openPreviewWindow === "function" &&
@@ -636,6 +641,7 @@ export function isC4mlPreviewApi(value: unknown): value is C4mlPreviewApi {
     typeof value.sendInteraction === "function" &&
     typeof value.onProjection === "function" &&
     value.closePreviewWindow === undefined &&
+    value.claimPendingDocument === undefined &&
     value.getPreviewWindowState === undefined &&
     value.openDocument === undefined &&
     value.openPreviewWindow === undefined &&

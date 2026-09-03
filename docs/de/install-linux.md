@@ -27,13 +27,13 @@ Die Ausgabe `amd64` oder `arm64` muss zum Dateinamen passen.
 
 ```shell
 cd ~/Downloads
-sudo apt install ./c4thedral_0.1.0~beta.1_amd64.deb
+sudo apt install ./c4thedral_0.1.0~beta.2_amd64.deb
 ```
 
 Auf einem ARM64-Rechner ersetzt du `_amd64.deb` durch `_arm64.deb`:
 
 ```shell
-sudo apt install ./c4thedral_0.1.0~beta.1_arm64.deb
+sudo apt install ./c4thedral_0.1.0~beta.2_arm64.deb
 ```
 
 Das `./` vor dem Dateinamen ist wichtig. Ubuntu fragt nach deinem Passwort und
@@ -51,6 +51,10 @@ Alternativ funktioniert im Terminal:
 ```shell
 c4thedral
 ```
+
+Du kannst eine `.c4ml`-Datei im Dateimanager auch mit der rechten Maustaste
+anklicken und unter **Öffnen mit** **C4thedral** wählen. Die installierte App
+übernimmt die Datei beim ersten Start ebenso wie im bereits laufenden Zustand.
 
 C4thedral läuft danach vollständig lokal. Für das Öffnen, Bearbeiten und
 Exportieren von C4ML-Dateien ist keine Internetverbindung erforderlich. Git

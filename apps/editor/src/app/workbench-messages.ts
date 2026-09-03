@@ -189,6 +189,7 @@ const englishMessages = {
   "panel.none": "None",
   "panel.relaxed": "relaxed",
   "panel.labelSegment": "Label segment",
+  "panel.labelOffset": "Label offset",
   "panel.corridor": "Corridor",
   "panel.lane": "lane",
   "panel.noProblems": "No problems in the current source.",
@@ -260,6 +261,12 @@ const englishMessages = {
   "routeEditor.operationHint":
     "Symbolic Ports and relative shifts survive diagram growth better than raw points.",
   "routeEditor.ports": "Choose source and target Ports",
+  "routeEditor.labelOffset": "Move relationship label",
+  "routeEditor.labelOffsetX": "Horizontal offset",
+  "routeEditor.labelOffsetY": "Vertical offset",
+  "routeEditor.diagramUnits": "Diagram units (du); positive values move right or down.",
+  "routeEditor.labelOffsetHint":
+    "The offset moves only the label from its compiler-selected anchor; it does not change the Route.",
   "routeEditor.addWaypoint": "Add guidance point",
   "routeEditor.moveWaypoint": "Move guidance point",
   "routeEditor.removeWaypoint": "Remove guidance point",
@@ -877,6 +884,7 @@ const germanMessages: WorkbenchMessages = {
   "panel.none": "Keine",
   "panel.relaxed": "aufgeweicht",
   "panel.labelSegment": "Beschriftungssegment",
+  "panel.labelOffset": "Beschriftungs-Offset",
   "panel.corridor": "Korridor",
   "panel.lane": "Spur",
   "panel.noProblems": "Keine Probleme im aktuellen Quelltext.",
@@ -949,6 +957,12 @@ const germanMessages: WorkbenchMessages = {
   "routeEditor.operationHint":
     "Symbolische Ports und relative Verschiebungen überstehen Diagrammänderungen besser als rohe Punkte.",
   "routeEditor.ports": "Quell- und Ziel-Ports wählen",
+  "routeEditor.labelOffset": "Beziehungsbeschriftung verschieben",
+  "routeEditor.labelOffsetX": "Horizontaler Offset",
+  "routeEditor.labelOffsetY": "Vertikaler Offset",
+  "routeEditor.diagramUnits": "Diagrammeinheiten (du); positive Werte verschieben nach rechts oder unten.",
+  "routeEditor.labelOffsetHint":
+    "Der Offset verschiebt nur die Beschriftung relativ zum Compiler-Anker; die Route bleibt unverändert.",
   "routeEditor.addWaypoint": "Führungspunkt hinzufügen",
   "routeEditor.moveWaypoint": "Führungspunkt verschieben",
   "routeEditor.removeWaypoint": "Führungspunkt entfernen",

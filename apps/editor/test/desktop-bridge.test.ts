@@ -14,6 +14,7 @@ describe("editor desktop bridge", () => {
       platform: "win32",
       exportPng: async () => ({ status: "canceled" as const }),
       exportSvg: async () => ({ status: "canceled" as const }),
+      claimPendingDocument: async () => undefined,
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),

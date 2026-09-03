@@ -499,8 +499,8 @@ code priority-rule inside scheduler {
         "Relative guide-Anker folgen Ports oder Elementseiten nach dem automatischen Layout. Harte Meidezonen müssen eingehalten werden; weiche dürfen nur mit Compilerwarnung aufgeweicht werden.",
       ),
       text(
-        "Select a relationship line, open Route details, and choose Edit route to change Ports or add, move, and remove guidance. Preview compiles the candidate source and separates safe cleanup from hard conflicts before apply.",
-        "Wähle eine Verbindungslinie, öffne Routendetails und dann Route bearbeiten, um Ports zu ändern oder Führungspunkte hinzuzufügen, zu verschieben und zu entfernen. Die Vorschau kompiliert den Quelltextkandidaten und trennt sichere Bereinigungen von harten Konflikten, bevor du ihn übernimmst.",
+        "Select a relationship line, open Route details, and choose Edit route to change Ports, move its label by signed x/y diagram-unit offsets, or add, move, and remove guidance. Preview compiles the candidate source and separates safe cleanup from hard conflicts before apply.",
+        "Wähle eine Verbindungslinie, öffne Routendetails und dann Route bearbeiten, um Ports zu ändern, ihre Beschriftung mit vorzeichenbehafteten x/y-Diagrammeinheiten zu verschieben oder Führungspunkte hinzuzufügen, zu verschieben und zu entfernen. Die Vorschau kompiliert den Quelltextkandidaten und trennt sichere Bereinigungen von harten Konflikten, bevor du ihn übernimmst.",
       ),
     ],
     points: [
@@ -527,8 +527,10 @@ route caretaker-reviews-plan {
     via element garden-pulse west shift (-36, 0)
   ]
   avoid = [sensor-clearance]
+  label-offset-x = 24du
+  label-offset-y = -14du
 }`,
-    keywords: text("route port connector corridor lane waypoint guide lock avoidance guided fixed", "route port connector korridor spur wegpunkt guide sperren meidezone geführt fest"),
+    keywords: text("route port connector corridor lane waypoint guide lock avoidance label offset guided fixed", "route port connector korridor spur wegpunkt guide sperren meidezone beschriftung offset geführt fest"),
   },
   {
     id: "export",

@@ -98,8 +98,9 @@ import type {
   RouteAvoidProperty,
   RouteGuideProperty,
   RouteDeclaration,
+  RouteLabelOffsetXProperty,
+  RouteLabelOffsetYProperty,
   RouteLabelSegmentProperty,
-  RouteLabelShiftProperty,
   RouteLaneProperty,
   RoutePointsProperty,
   RoutePolicyProperty,
@@ -107,6 +108,7 @@ import type {
   RouteStyleProperty,
   RouteTargetPortProperty,
   RouteViaProperty,
+  SignedDiagramUnit,
   SignedInteger,
   SoftwareSystemInstanceDeclaration,
   TechnologyProperty,
@@ -1790,10 +1792,18 @@ function lowerRouteControl(
     file,
     diagnostics,
   );
-  const labelShift = optionalProperty<RouteLabelShiftProperty>(
+  const labelOffsetX = optionalProperty<RouteLabelOffsetXProperty>(
     declaration.properties,
-    "RouteLabelShiftProperty",
-    "label-shift",
+    "RouteLabelOffsetXProperty",
+    "label-offset-x",
+    declaration,
+    file,
+    diagnostics,
+  );
+  const labelOffsetY = optionalProperty<RouteLabelOffsetYProperty>(
+    declaration.properties,
+    "RouteLabelOffsetYProperty",
+    "label-offset-y",
     declaration,
     file,
     diagnostics,
@@ -1853,11 +1863,20 @@ function lowerRouteControl(
     ...(labelSegment === undefined
       ? {}
       : { labelSegment: labelSegment.value }),
-    ...(labelShift === undefined
+    ...(labelOffsetX === undefined && labelOffsetY === undefined
       ? {}
-      : { labelOffset: pointOf(labelShift.value) }),
+      : {
+          labelOffset: {
+            x: labelOffsetX === undefined ? 0 : signedDiagramUnit(labelOffsetX.value),
+            y: labelOffsetY === undefined ? 0 : signedDiagramUnit(labelOffsetY.value),
+          },
+        }),
     source: sourceReference(declaration, file),
   };
+}
+
+function signedDiagramUnit(value: SignedDiagramUnit): number {
+  return value.negative ? -value.value : value.value;
 }
 
 function lowerRouteGuidance(

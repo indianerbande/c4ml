@@ -220,6 +220,9 @@ export class AppComponent {
           case "export-png":
             void this.exportPng();
             break;
+          case "open-pending-document":
+            void this.openPendingDocument();
+            break;
           case "open-document":
             void this.openDocument();
             break;
@@ -247,6 +250,7 @@ export class AppComponent {
         }
       },
     );
+    void this.openPendingDocument();
     const unsubscribeDetachedSelection = this.preview.onDetachedSelection(
       (target) => this.#selectTarget(target, true),
     );
@@ -303,6 +307,18 @@ export class AppComponent {
 
   async openDocument(): Promise<void> {
     const opened = await this.documents.openDocument();
+    if (opened !== undefined) {
+      this.#afterDocumentSetChanged();
+      this.#compileCurrentProject(undefined);
+      this.#refreshHelpContext(opened.source);
+      if (this.activeActivity() === "source-control") {
+        void this.sourceControl.refresh();
+      }
+    }
+  }
+
+  async openPendingDocument(): Promise<void> {
+    const opened = await this.documents.openPendingDocument();
     if (opened !== undefined) {
       this.#afterDocumentSetChanged();
       this.#compileCurrentProject(undefined);

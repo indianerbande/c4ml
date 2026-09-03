@@ -86,6 +86,11 @@ Reparaturen. Siehe [Linux-Installation](install-linux.md).
 - Das Schließen aller Fenster beendet die App auf Windows/Linux; auf macOS
   bleibt sie aktiv und erzeugt beim Aktivieren wieder ein Fenster.
 - Windows erhält App-User-Model-ID und Squirrel-Startbehandlung.
+- Installierte Apps übernehmen `.c4ml`-Dateien über **Öffnen mit**. macOS nutzt
+  den deklarierten Dokumenttyp `org.c4ml.source` und das frühe `open-file`-
+  Ereignis; Windows und Linux verwenden Pfad- oder Datei-URL-Argumente der
+  ersten beziehungsweise zweiten Instanz. Der Linux-Desktop-Eintrag weist
+  `text/x-c4ml` aus.
 - macOS verwendet Command-, Windows/Linux Control-Kürzel. Monaco-Vorschläge
   verwenden `Cmd+I` beziehungsweise `Ctrl+Space`.
 - Projektmanifeste verwenden relative URIs mit `/`; native Pfade bleiben im

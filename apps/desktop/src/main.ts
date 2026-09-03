@@ -65,6 +65,10 @@ import {
   safeSuggestedSourceName,
 } from "./document-registry.js";
 import {
+  DesktopExternalDocumentQueue,
+  externalC4mlDocumentPaths,
+} from "./external-document-open.js";
+import {
   ensurePngExtension,
   ensureSvgExtension,
   resolveDesktopPngFontFiles,
@@ -91,6 +95,7 @@ const currentDirectory = __dirname;
 const preloadPath = join(currentDirectory, "preload.cjs");
 const previewPreloadPath = join(currentDirectory, "preview-preload.cjs");
 const documents = new DesktopDocumentRegistry();
+const externalDocuments = new DesktopExternalDocumentQueue();
 const documentStates = new WeakMap<BrowserWindow, DesktopDocumentState>();
 const pngRenderer = new ResvgPngRenderer();
 
@@ -114,9 +119,22 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+app.on("open-file", (event, path) => {
+  event.preventDefault();
+  enqueueExternalDocuments([path], process.cwd());
+  focusMainWindow();
+});
+
 if (electronSquirrelStartup) {
   app.quit();
+} else if (!app.requestSingleInstanceLock()) {
+  app.quit();
 } else {
+  app.on("second-instance", (_event, commandLine, workingDirectory) => {
+    enqueueExternalDocuments(commandLine, workingDirectory);
+    focusMainWindow();
+  });
+  enqueueExternalDocuments(process.argv, process.cwd());
   void startDesktopApplication();
 }
 
@@ -182,6 +200,7 @@ async function createMainWindow(): Promise<void> {
 
   try {
     await window.loadURL(editorEntryUrl);
+    notifyPendingDocument();
     if (process.argv.includes(smokeArgument)) {
       await runDesktopSmoke(window);
     }
@@ -191,6 +210,44 @@ async function createMainWindow(): Promise<void> {
       app.exit(1);
     }
   }
+}
+
+function enqueueExternalDocuments(
+  commandLine: readonly string[],
+  workingDirectory: string,
+): void {
+  const paths = externalC4mlDocumentPaths(commandLine, workingDirectory);
+  if (paths.length === 0) return;
+  externalDocuments.enqueue(paths);
+  if (app.isReady() && (mainWindow === undefined || mainWindow.isDestroyed())) {
+    void createMainWindow();
+    return;
+  }
+  notifyPendingDocument();
+}
+
+function notifyPendingDocument(): void {
+  const window = mainWindow;
+  if (
+    !externalDocuments.pending ||
+    window === undefined ||
+    window.isDestroyed() ||
+    window.webContents.isLoading()
+  ) {
+    return;
+  }
+  window.webContents.send(
+    desktopIpcChannels.command,
+    "open-pending-document" satisfies DesktopCommand,
+  );
+}
+
+function focusMainWindow(): void {
+  const window = mainWindow;
+  if (window === undefined || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
 }
 
 async function createPreviewWindow(
@@ -310,6 +367,7 @@ function denyRendererPermissions(): void {
 }
 
 function registerDesktopIpc(): void {
+  ipcMain.removeHandler(desktopIpcChannels.claimPendingDocument);
   ipcMain.removeHandler(desktopIpcChannels.exportPng);
   ipcMain.removeHandler(desktopIpcChannels.exportSvg);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
@@ -323,6 +381,17 @@ function registerDesktopIpc(): void {
   ipcMain.removeAllListeners(previewIpcChannels.interaction);
   ipcMain.removeAllListeners(previewIpcChannels.projectionChanged);
   ipcMain.removeAllListeners(desktopIpcChannels.setUiLanguage);
+  ipcMain.handle(
+    desktopIpcChannels.claimPendingDocument,
+    async (event): Promise<DesktopOpenResult | undefined> => {
+      if (!isTrustedSender(event)) {
+        return invalidIpcResult();
+      }
+      const path = externalDocuments.take();
+      if (path === undefined) return undefined;
+      return openDesktopDocument(path);
+    },
+  );
   ipcMain.handle(
     desktopIpcChannels.openPreviewWindow,
     async (event, value: unknown): Promise<DesktopOpenPreviewResult> => {
@@ -552,27 +621,7 @@ function registerDesktopIpc(): void {
       if (selection.canceled || path === undefined) {
         return { status: "canceled" };
       }
-      try {
-        const metadata = await stat(path);
-        if (!metadata.isFile() || metadata.size > maxDesktopSourceBytes) {
-          return {
-            status: "failed",
-            code: "C4ML-DESKTOP-FILE-001",
-            message: desktopMessage(uiLanguage, "error.sourceUnreadable"),
-          };
-        }
-        const source = await readFile(path, "utf8");
-        return {
-          status: "opened",
-          document: {
-            handle: documents.register(path),
-            displayName: basename(path),
-            source,
-          },
-        };
-      } catch {
-        return fileReadFailure();
-      }
+      return openDesktopDocument(path);
     },
   );
   ipcMain.handle(
@@ -872,6 +921,30 @@ function fileReadFailure(): DesktopOperationFailure {
     code: "C4ML-DESKTOP-FILE-001",
     message: desktopMessage(uiLanguage, "error.sourceRead"),
   };
+}
+
+async function openDesktopDocument(path: string): Promise<DesktopOpenResult> {
+  try {
+    const metadata = await stat(path);
+    if (!metadata.isFile() || metadata.size > maxDesktopSourceBytes) {
+      return {
+        status: "failed",
+        code: "C4ML-DESKTOP-FILE-001",
+        message: desktopMessage(uiLanguage, "error.sourceUnreadable"),
+      };
+    }
+    const source = await readFile(path, "utf8");
+    return {
+      status: "opened",
+      document: {
+        handle: documents.register(path),
+        displayName: basename(path),
+        source,
+      },
+    };
+  } catch {
+    return fileReadFailure();
+  }
 }
 
 function installApplicationMenu(): void {
@@ -1180,6 +1253,8 @@ view smoke-context {
         const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
           typeof window.c4mlDesktop?.exportPng === 'function' &&
           typeof window.c4mlDesktop?.exportSvg === 'function' &&
+          typeof window.c4mlDesktop?.claimPendingDocument === 'function' &&
+          typeof window.c4mlDesktop?.openDocument === 'function' &&
           typeof window.c4mlDesktop?.openProject === 'function' &&
           typeof window.c4mlDesktop?.openPreviewWindow === 'function' &&
           typeof window.c4mlDesktop?.getPreviewWindowState === 'function' &&

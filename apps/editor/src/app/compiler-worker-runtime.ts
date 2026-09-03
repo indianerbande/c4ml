@@ -1395,6 +1395,7 @@ function toWorkerNavigation(
           targetPort: toWorkerPort(targetPort),
           labelPoint: route.labelPoint,
           labelSegment: route.labelSegment,
+          labelOffset: control?.labelOffset ?? { x: 0, y: 0 },
           corridor:
             route.corridor === undefined
               ? undefined

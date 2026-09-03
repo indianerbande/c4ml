@@ -72,7 +72,8 @@ view garden-context {
         via target-port shift (-16, 0)
       ]
       // This route comment must survive Port edits.
-      label-shift = (0, -12)
+      label-offset-x = 8du
+      label-offset-y = -12du
     }
 
     route sensor-reports-garden {
@@ -110,13 +111,14 @@ function request(
 
 async function apply(
   operation: Parameters<typeof proposeC4mlRouteEdit>[1]["operation"],
+  targetProject = project,
 ) {
-  const baseline = await parseC4mlProjectDraft(project);
+  const baseline = await parseC4mlProjectDraft(targetProject);
   expect(baseline.diagnostics).toEqual([]);
-  const proposal = await proposeC4mlRouteEdit(project, request(operation));
+  const proposal = await proposeC4mlRouteEdit(targetProject, request(operation));
   expect(proposal).toMatchObject({ valid: true });
   if (!proposal.valid) throw new Error("Expected a valid route proposal.");
-  const application = applyProjectSourceChangeSet(project, proposal.changeSet);
+  const application = applyProjectSourceChangeSet(targetProject, proposal.changeSet);
   expect(application.valid).toBe(true);
   if (!application.valid) throw new Error("Expected an applicable route proposal.");
   const source = application.project.documents.find(
@@ -140,7 +142,8 @@ describe("syntax-aware route authoring edits", () => {
     expect(source).toContain("source-port = south");
     expect(source).toContain("target-port = north");
     expect(source).toContain("This route comment must survive Port edits.");
-    expect(source).toContain("label-shift = (0, -12)");
+    expect(source).toContain("label-offset-x = 8du");
+    expect(source).toContain("label-offset-y = -12du");
   });
 
   it("adds a canvas waypoint and reports removal of an incompatible corridor lane", async () => {
@@ -174,6 +177,102 @@ describe("syntax-aware route authoring edits", () => {
     expect(source).toContain("via target-port shift (-16, 0)");
   });
 
+  it("changes independent label offsets without changing Route geometry", async () => {
+    const { source } = await apply({
+      kind: "label-offset",
+      relationshipId: "caretaker-reviews-garden",
+      offset: { x: 24, y: -18 },
+    });
+
+    expect(source).toContain("policy = guided");
+    expect(source).toContain("source-port = east");
+    expect(source).toContain("guide = [");
+    expect(source).toContain("label-offset-x = 24du");
+    expect(source).toContain("label-offset-y = -18du");
+    expect(source).not.toContain("label-offset-x = 8du");
+    expect(source).not.toContain("label-offset-y = -12du");
+  });
+
+  it("removes zero label offsets while retaining other Route controls", async () => {
+    const { source } = await apply({
+      kind: "label-offset",
+      relationshipId: "caretaker-reviews-garden",
+      offset: { x: 0, y: 0 },
+    });
+
+    expect(source).not.toContain("label-offset-x");
+    expect(source).not.toContain("label-offset-y");
+    expect(source).toContain("policy = guided");
+    expect(source).toContain("guide = [");
+  });
+
+  it("creates an automatic label-only Route when no route controls exist", async () => {
+    const withoutSecondRoute = createArchitectureProjectInput({
+      id: project.id,
+      documents: project.documents.map((document) => ({
+        uri: document.uri,
+        text:
+          document.uri === "views/context.c4ml"
+            ? document.text.replace(
+                /\n    route sensor-reports-garden \{[\s\S]*?\n    \}/u,
+                "",
+              )
+            : document.text,
+      })),
+    });
+    const { proposal, source } = await apply(
+      {
+        kind: "label-offset",
+        relationshipId: "sensor-reports-garden",
+        offset: { x: -20, y: 12 },
+      },
+      withoutSecondRoute,
+    );
+
+    expect(source).toContain("route sensor-reports-garden {");
+    expect(source).toContain("policy = automatic");
+    expect(source).toContain("label-offset-x = -20du");
+    expect(source).toContain("label-offset-y = 12du");
+    expect(proposal.repairs).toEqual([]);
+  });
+
+  it("preserves fixed Route geometry while changing its label offset", async () => {
+    const fixedProject = createArchitectureProjectInput({
+      id: project.id,
+      documents: project.documents.map((document) => ({
+        uri: document.uri,
+        text:
+          document.uri === "views/context.c4ml"
+            ? document.text.replace(
+                /    route sensor-reports-garden \{[\s\S]*?    \}/u,
+                [
+                  "    route sensor-reports-garden {",
+                  "      policy = fixed",
+                  "      style = orthogonal",
+                  "      points = [(420, 224), (520, 224)]",
+                  "    }",
+                ].join("\n"),
+              )
+            : document.text,
+      })),
+    });
+    const { source } = await apply(
+      {
+        kind: "label-offset",
+        relationshipId: "sensor-reports-garden",
+        offset: { x: 0, y: -16 },
+      },
+      fixedProject,
+    );
+
+    expect(source).toContain("policy = fixed");
+    expect(source).toContain("points = [(420, 224), (520, 224)]");
+    expect(source).toContain("label-offset-y = -16du");
+    expect(
+      source.match(/route sensor-reports-garden \{[\s\S]*?\n    \}/u)?.[0],
+    ).not.toContain("label-offset-x");
+  });
+
   it("removes one waypoint while preserving locked guidance", async () => {
     const { source } = await apply({
       kind: "remove-waypoint",
@@ -198,7 +297,8 @@ describe("syntax-aware route authoring edits", () => {
     expect(source).toContain("source-port = east");
     expect(source).toContain("target-port = west");
     expect(source).toContain("policy = guided");
-    expect(source).toContain("label-shift = (0, -12)");
+    expect(source).toContain("label-offset-x = 8du");
+    expect(source).toContain("label-offset-y = -12du");
   });
 
   it("removes an obsolete route block when no explicit route intent remains", async () => {

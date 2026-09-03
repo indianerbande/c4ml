@@ -46,6 +46,11 @@ export type C4mlRouteEditOperation =
       readonly delta: { readonly x: number; readonly y: number };
     }
   | {
+      readonly kind: "label-offset";
+      readonly relationshipId: string;
+      readonly offset: { readonly x: number; readonly y: number };
+    }
+  | {
       readonly kind: "remove-waypoint";
       readonly relationshipId: string;
       readonly waypointIndex: number;
@@ -109,8 +114,9 @@ type RoutePropertyKey =
   | "avoid"
   | "corridor"
   | "guide"
+  | "label-offset-x"
+  | "label-offset-y"
   | "label-segment"
-  | "label-shift"
   | "lane"
   | "points"
   | "policy"
@@ -270,6 +276,11 @@ function validateOperation(
       return "A moved route waypoint requires a non-zero integer diagram-unit delta.";
     }
   }
+  if (operation.kind === "label-offset") {
+    return validPoint(operation.offset)
+      ? undefined
+      : "A relationship-label offset requires finite integer diagram-unit values.";
+  }
   if (
     operation.kind === "remove-waypoint" &&
     (!Number.isSafeInteger(operation.waypointIndex) || operation.waypointIndex < 0)
@@ -293,7 +304,8 @@ function createRouteTextEdits(
       ? undefined
       : {
           edits: [edit],
-          repairs: operation.kind === "ports" && operation.sourcePort === "automatic" && operation.targetPort === "automatic"
+          repairs: operation.kind === "label-offset" ||
+              (operation.kind === "ports" && operation.sourcePort === "automatic" && operation.targetPort === "automatic")
             ? []
             : [
                 {
@@ -370,6 +382,20 @@ function routeMutation(
       );
       break;
     }
+    case "label-offset":
+      changes.set(
+        "label-offset-x",
+        operation.offset.x === 0
+          ? undefined
+          : `label-offset-x = ${operation.offset.x}du`,
+      );
+      changes.set(
+        "label-offset-y",
+        operation.offset.y === 0
+          ? undefined
+          : `label-offset-y = ${operation.offset.y}du`,
+      );
+      break;
     case "remove-waypoint": {
       const guide = properties.get("guide") as RouteGuideProperty | undefined;
       if (guide === undefined) return undefined;
@@ -411,10 +437,12 @@ function routeMutation(
     "target-port",
     "via",
   ];
-  const desiredPolicy = manualKeys.some((key) => futureKeys.has(key))
-    ? "guided"
-    : "automatic";
   const existingPolicy = propertyValue(properties.get("policy"));
+  const desiredPolicy = operation.kind === "label-offset"
+    ? existingPolicy ?? "automatic"
+    : manualKeys.some((key) => futureKeys.has(key))
+      ? "guided"
+      : "automatic";
   if (existingPolicy !== desiredPolicy) {
     changes.set("policy", `policy = ${desiredPolicy}`);
     repairs.push({
@@ -541,6 +569,19 @@ function newRouteDeclaration(operation: C4mlRouteEditOperation): string | undefi
         `  ${renderGuide([`via canvas at ${renderPoint(operation.point)}`])}`,
         "}",
       ].join("\n");
+    case "label-offset":
+      if (operation.offset.x === 0 && operation.offset.y === 0) return undefined;
+      return [
+        `route ${operation.relationshipId} {`,
+        "  policy = automatic",
+        ...(operation.offset.x === 0
+          ? []
+          : [`  label-offset-x = ${operation.offset.x}du`]),
+        ...(operation.offset.y === 0
+          ? []
+          : [`  label-offset-y = ${operation.offset.y}du`]),
+        "}",
+      ].join("\n");
     case "clear-guidance":
     case "move-waypoint":
     case "remove-waypoint":
@@ -592,8 +633,9 @@ function propertyKey(property: RouteProperty): RoutePropertyKey | undefined {
     case "RouteAvoidProperty": return "avoid";
     case "RouteCorridorSelectionProperty": return "corridor";
     case "RouteGuideProperty": return "guide";
+    case "RouteLabelOffsetXProperty": return "label-offset-x";
+    case "RouteLabelOffsetYProperty": return "label-offset-y";
     case "RouteLabelSegmentProperty": return "label-segment";
-    case "RouteLabelShiftProperty": return "label-shift";
     case "RouteLaneProperty": return "lane";
     case "RoutePointsProperty": return "points";
     case "RoutePolicyProperty": return "policy";
@@ -607,7 +649,8 @@ function propertyKey(property: RouteProperty): RoutePropertyKey | undefined {
 function propertyRank(key: RoutePropertyKey): number {
   return [
     "policy", "style", "source-port", "target-port", "via", "guide", "avoid",
-    "corridor", "lane", "points", "label-segment", "label-shift",
+    "corridor", "lane", "points", "label-segment", "label-offset-x",
+    "label-offset-y",
   ].indexOf(key);
 }
 

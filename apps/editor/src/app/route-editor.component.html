@@ -17,6 +17,7 @@
           <span>{{ i18n.t("routeEditor.operation") }}</span>
           <select [value]="operationKind()" (change)="selectOperation($event)">
             <option value="ports">{{ i18n.t("routeEditor.ports") }}</option>
+            <option value="label-offset">{{ i18n.t("routeEditor.labelOffset") }}</option>
             <option value="add-waypoint">{{ i18n.t("routeEditor.addWaypoint") }}</option>
             <option value="move-waypoint" [disabled]="route().waypoints.length === 0">{{ i18n.t("routeEditor.moveWaypoint") }}</option>
             <option value="remove-waypoint" [disabled]="route().waypoints.length === 0">{{ i18n.t("routeEditor.removeWaypoint") }}</option>
@@ -41,6 +42,20 @@
               </fieldset>
             }
           </div>
+        } @else if (operationKind() === "label-offset") {
+          <div class="field-row">
+            <label>
+              <span>{{ i18n.t("routeEditor.labelOffsetX") }}</span>
+              <input type="number" step="1" [value]="labelOffsetX()" (input)="setLabelOffset('x', $event)" />
+              <small>{{ i18n.t("routeEditor.diagramUnits") }}</small>
+            </label>
+            <label>
+              <span>{{ i18n.t("routeEditor.labelOffsetY") }}</span>
+              <input type="number" step="1" [value]="labelOffsetY()" (input)="setLabelOffset('y', $event)" />
+              <small>{{ i18n.t("routeEditor.diagramUnits") }}</small>
+            </label>
+          </div>
+          <small>{{ i18n.t("routeEditor.labelOffsetHint") }}</small>
         } @else if (operationKind() === "add-waypoint") {
           <label>
             <span>{{ i18n.t("routeEditor.segment") }}</span>

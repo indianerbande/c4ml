@@ -92,6 +92,7 @@ const routeTarget: CompilerWorkerRouteNavigationTarget = {
   },
   labelPoint: { x: 340, y: 300 },
   labelSegment: 0,
+  labelOffset: { x: 0, y: -12 },
   corridor: {
     id: "lower-entry",
     orientation: "vertical",
