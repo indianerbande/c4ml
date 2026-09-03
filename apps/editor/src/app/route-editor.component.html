@@ -109,7 +109,9 @@
       </form>
 
       <section class="placement-result" [attr.aria-label]="i18n.t('routeEditor.result')">
-        @if (previewUrl(); as url) {
+        @if (busy()) {
+          <div class="candidate-empty"><strong>{{ i18n.t("routeEditor.previewing") }}</strong></div>
+        } @else if (previewUrl(); as url) {
           <div class="candidate-preview"><img [src]="url" [alt]="i18n.t('routeEditor.previewAlt')" /></div>
         } @else {
           <div class="candidate-empty"><strong>{{ i18n.t("routeEditor.noPreview") }}</strong><span>{{ i18n.t("routeEditor.noPreviewHint") }}</span></div>

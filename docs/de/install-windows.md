@@ -11,7 +11,7 @@ einrichten.
 Lade für einen normalen 64-Bit-Windows-PC diese Datei herunter:
 
 ```text
-C4thedral-0.1.0-beta.3 Setup.exe
+C4thedral-0.1.0-beta.4 Setup.exe
 ```
 
 Die aktuelle Beta ist für Windows x64 gebaut. Wenn du deine Windows-Architektur
@@ -24,7 +24,7 @@ muss „64-Bit-Betriebssystem, x64-basierter Prozessor“ stehen.
 eine freie Stelle und wähle **Im Terminal öffnen**. Gib dann ein:
 
 ```powershell
-Get-FileHash ".\C4thedral-0.1.0-beta.3 Setup.exe" -Algorithm SHA256
+Get-FileHash ".\C4thedral-0.1.0-beta.4 Setup.exe" -Algorithm SHA256
 ```
 
 Vergleiche die angezeigte Zeichenfolge mit der SHA-256-Prüfsumme, die zusammen
@@ -33,7 +33,7 @@ Werte verschieden sind.
 
 ## 3. C4thedral installieren
 
-1. Doppelklicke auf **C4thedral-0.1.0-beta.3 Setup.exe**.
+1. Doppelklicke auf **C4thedral-0.1.0-beta.4 Setup.exe**.
 2. Warte, bis die Installation abgeschlossen ist.
 3. Öffne das Startmenü, suche nach **C4thedral** und starte die Anwendung.
 

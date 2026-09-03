@@ -27,13 +27,13 @@ Die Ausgabe `amd64` oder `arm64` muss zum Dateinamen passen.
 
 ```shell
 cd ~/Downloads
-sudo apt install ./c4thedral_0.1.0~beta.3_amd64.deb
+sudo apt install ./c4thedral_0.1.0~beta.4_amd64.deb
 ```
 
 Auf einem ARM64-Rechner ersetzt du `_amd64.deb` durch `_arm64.deb`:
 
 ```shell
-sudo apt install ./c4thedral_0.1.0~beta.3_arm64.deb
+sudo apt install ./c4thedral_0.1.0~beta.4_arm64.deb
 ```
 
 Das `./` vor dem Dateinamen ist wichtig. Ubuntu fragt nach deinem Passwort und

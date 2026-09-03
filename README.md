@@ -12,7 +12,7 @@ out the diagram, and exports deterministic SVG and PNG files. When automatic
 layout is not enough, you can adjust placement and routing without turning the
 diagram into an unrelated drawing.
 
-**Current release: `v0.1.0-beta.3` — public source beta.** This is working
+**Current release: `v0.1.0-beta.4` — public source beta.** This is working
 software rather than an early scaffold: the desktop application and CLI compile
 all seven C4 view types, and the native workflows have been exercised on macOS,
 Windows, and Ubuntu. Beta means that the author-facing C4ML syntax and CLI
@@ -185,7 +185,7 @@ The [English documentation index](docs/en/README.md) is the best entry point.
 - [Vibe coding with engineering ownership](docs/en/ai-assisted-development.md)
 - [C4ML projects](docs/en/projects.md)
 - [Native platform matrix](docs/en/platforms.md)
-- [Release notes](docs/en/releases/0.1.0-beta.3.md)
+- [Release notes](docs/en/releases/0.1.0-beta.4.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow
 - [SECURITY.md](SECURITY.md) — private vulnerability reporting
 - [Engineering documentation](docs/engineering/README.md) — specification,

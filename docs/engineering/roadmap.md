@@ -2,7 +2,7 @@
 
 Status: Active roadmap
 
-Date: 2026-09-01
+Date: 2026-09-03
 
 [`specification.md`](specification.md) defines product behavior and architecture.
 [`testing.md`](testing.md) defines the
@@ -491,6 +491,21 @@ The bounded extension slice intentionally requires existing `model` and
 `relations` blocks. Creating missing top-level sections and choosing a target
 document in a multifile project remain later interactions rather than hidden
 heuristics.
+
+## Contextual interaction follow-up
+
+- [ ] offer frequent object-specific actions directly through right-click
+      context menus in the source editor, diagram, project explorer, and other
+      suitable workbench surfaces;
+- [ ] make the available actions depend on the clicked object and current
+      compiler-owned context; and
+- [ ] keep toolbar, command-palette, and keyboard access as equivalent paths,
+      but do not require the uncommon sequence of selecting an object and then
+      searching for a distant generic button.
+
+Context menus are presentation affordances only. They MUST invoke the existing
+validated commands and source-change contracts rather than implementing new
+syntax, semantics, layout, or hidden model state.
 
 ## Decisions deliberately deferred
 

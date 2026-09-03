@@ -1,7 +1,7 @@
 {
   "name": "@c4ml/desktop",
   "productName": "C4thedral",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "private": true,
   "type": "module",
   "description": "C4thedral local architecture workbench, powered by C4ML",

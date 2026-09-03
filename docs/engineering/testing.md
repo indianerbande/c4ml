@@ -1029,7 +1029,10 @@ candidate compilation, project-addressed changes, and route-navigation parity;
 session tests reject stale Route previews; CLI tests compile the applied source
 through the shared Node.js path. Template and architecture tests keep Route
 syntax generation outside Angular and ensure that safe repairs, blocking
-diagnostics, source preview, apply, and undo remain explicit UI states. A local
+diagnostics, source preview, apply, and undo remain explicit UI states. They
+also require the Route editor to retain its opening Route, View, document, and
+project snapshot so losing the main preview selection during an asynchronous
+candidate build cannot dismiss the dialog. A local
 renderer-harness interaction additionally verified relationship selection, dark and
 light dialog layouts, candidate SVG and source review, corridor-release repair
 copy, a valid Port change, zero diagnostics after apply, one-step undo, and

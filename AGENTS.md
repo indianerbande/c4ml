@@ -3,7 +3,7 @@
 ## Project status
 
 C4thedral, powered by the C4ML language and compiler, is published as the
-`0.1.0-beta.3` public source beta. `docs/en/project-status.md` owns the concise
+`0.1.0-beta.4` public source beta. `docs/en/project-status.md` owns the concise
 reader-facing maturity statement; this section retains the detailed engineering
 state needed by repository agents. The local Git repository and GitHub remote exist.
 The Apache-2.0 TypeScript/pnpm monorepo contains only production packages and
