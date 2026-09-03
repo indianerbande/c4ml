@@ -431,6 +431,8 @@ function isRouteOperation(value: unknown): boolean {
         Number(value["waypointIndex"]) >= 0 &&
         isIntegerPoint(value["delta"])
       );
+    case "label-offset":
+      return isIntegerPoint(value["offset"]);
     case "remove-waypoint":
       return Number.isSafeInteger(value["waypointIndex"]) && Number(value["waypointIndex"]) >= 0;
     case "clear-guidance":

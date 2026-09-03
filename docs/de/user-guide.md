@@ -84,6 +84,12 @@ Source Control zeigt das umgebende lokale Repository und erlaubt ausschließlich
 ausdrückliches Stage, Unstage, Commit und Push. Speichere Editoränderungen vor
 dem Commit. Es gibt kein verborgenes Pull, Checkout, Verwerfen oder Umschreiben.
 
+Eine installierte C4thedral-App kann eine `.c4ml`-Datei auch über **Öffnen mit**
+des Betriebssystems übernehmen. Das funktioniert sowohl bei geschlossener App
+als auch bei einer bereits laufenden Einzelinstanz. Hat der aktuelle
+Arbeitsbereich ungespeicherte Änderungen, erscheint vor dem Wechsel dieselbe
+Bestätigung zum Verwerfen wie beim normalen Öffnen.
+
 Die Vorschau kann die Workbench vollständig belegen oder in ein zweites
 Electron-Fenster wechseln. Auswahl, Zoom, Fit und Routenoverlay bleiben
 synchron. Das zweite Fenster ist reine Projektion: Es erhält weder Quelltext,
@@ -699,6 +705,11 @@ Quelle -> Quell-Port -> Route -> Ziel-Port -> Ziel
 Die Autorenrichtlinie ist `automatic`, `guided` oder `fixed`; der Stil zunächst
 `direct` oder `orthogonal`. Eine geführte Route kann so aussehen:
 
+`label-offset-x` und `label-offset-y` verschieben die Beschriftung in
+Diagrammeinheiten (`du`) relativ zu ihrem gewählten Routensegment. Eine
+weggelassene Achse bleibt bei null; positive Werte verschieben nach rechts oder
+unten.
+
 ```c4ml
 layout {
   route ui-calls-api {
@@ -708,7 +719,8 @@ layout {
     target-port = west
     via = [(520, 260), (520, 410)]
     label-segment = 2
-    label-shift = (0, -14)
+    label-offset-x = 24du
+    label-offset-y = -14du
   }
 }
 ```

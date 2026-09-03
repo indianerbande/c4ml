@@ -3,7 +3,7 @@
 ## Project status
 
 C4thedral, powered by the C4ML language and compiler, is published as the
-`0.1.0-beta.1` public source beta. `docs/en/project-status.md` owns the concise
+`0.1.0-beta.2` public source beta. `docs/en/project-status.md` owns the concise
 reader-facing maturity statement; this section retains the detailed engineering
 state needed by repository agents. The local Git repository and GitHub remote exist.
 The Apache-2.0 TypeScript/pnpm monorepo contains only production packages and
@@ -29,7 +29,8 @@ file dialogs, local source persistence, and distribution artifacts; it MUST NOT
 own compiler semantics. The sandboxed Angular renderer receives only a
 versioned C4ML preload bridge with opaque document handles. Native Open, Save,
 Save As, empty startup, context-sensitive File/Project closing, dirty-title
-state, and close protection are implemented. Local macOS
+state, close protection, and installed-app `.c4ml` **Open With** delivery into
+the single running instance are implemented. Local macOS
 `.app`, DMG, and ZIP artifacts are automatically and visually validated. The
 Windows x64 source gate, Squirrel build, native artifact verification, packaged
 and installed smoke without a system Node.js, install/remove/reinstall cycle,
@@ -167,8 +168,9 @@ runtime, repository, cloud, or monitoring scanner format is accepted. The first
 graphical placement editor also generates, previews, applies, and undoes
 project-addressed relative placement, nudge, alignment, distribution, and exact
 pin changes through those boundaries. The first graphical Route editor uses the
-same boundaries for cardinal Port choice and add/move/remove/reset guidance,
-with explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
+same boundaries for cardinal Port choice, independent signed x/y relationship-
+label offsets in diagram units, and add/move/remove/reset guidance, with
+explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
 review, and one-step apply/undo. Semantic graphical authoring creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
 source review, and one-step apply/undo. Creation and connection are separate

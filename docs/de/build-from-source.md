@@ -4,9 +4,9 @@
 
 Status: Öffentliche Source-Beta aus einer bereinigten GitHub-Historie
 
-Version: 0.1.0-beta.1
+Version: 0.1.0-beta.2
 
-Source-Release: `v0.1.0-beta.1`
+Source-Release: `v0.1.0-beta.2`
 
 C4thedral lässt sich vollständig aus dem öffentlichen Quellcode bauen, nachdem
 die gesperrten Abhängigkeiten und die Electron-Laufzeit geladen wurden. Die

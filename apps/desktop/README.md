@@ -12,6 +12,9 @@ The shell currently provides:
 - a small typed preload bridge for Open, Save, Save As, native PNG export,
   explicit local Git status/stage/unstage/commit/push operations, menu commands,
   document state, and validated English/German UI-language selection;
+- installed-app `.c4ml` opening through macOS `open-file` or bounded native
+  path/file-URL arguments, including already-running single-instance delivery,
+  the ordinary dirty-state guard, and opaque renderer handles;
 - an optional second preview window with its own projection-only preload and no
   document, source, compiler, save, export, filesystem, or Node authority;
 - full-size, detach, synchronized selection/zoom/Route-overlay, safe window
@@ -44,8 +47,9 @@ The shell currently provides:
   native adapter, controlled IBM Plex Sans TTF files, and no system fonts;
 - packaged application resources in ASAR with integrity-oriented Electron
   fuses; and
-- macOS app/DMG/ZIP makers, a configured Windows Squirrel maker, and a portable
-  Linux ZIP maker.
+- macOS app/DMG/ZIP makers with an owned editable C4ML document type, a
+  configured Windows Squirrel maker, and a native Linux DEB maker advertising
+  `text/x-c4ml`.
 
 From the repository root:
 
@@ -68,7 +72,7 @@ runtime. Portable side-by-side setup is documented in
 
 Generated files are ignored under `build/desktop/`. A local macOS make produces
 `C4thedral.app`, `C4thedral.dmg`, and a ZIP archive. The current beta identity is
-`0.1.0-beta.1` and uses the original C4thedral arch-and-C4 icon in SVG, PNG,
+`0.1.0-beta.2` and uses the original C4thedral arch-and-C4 icon in SVG, PNG,
 ICNS, and ICO forms. macOS artifacts are ad-hoc signed for local testing, not
 Developer ID signed or notarized. Windows code signing and native Windows
 installer and Linux portable-app runs remain release work. Build each platform

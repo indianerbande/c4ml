@@ -1,4 +1,5 @@
 .route-editor { width: min(1160px, 100%); }
+.route-editor input[type="number"] { min-height: 36px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--control-bg); color: var(--ink); padding: 0 9px; }
 .route-identity { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-subtle); }
 .route-identity small { color: var(--muted); }
 .route-identity code { color: var(--accent); font-family: var(--editor-font-family); }

@@ -706,6 +706,56 @@ describe("compiler worker runtime", () => {
     });
   });
 
+  it("generates and compiles an independent relationship-label offset", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-route-label-preview",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: PreviewRouteChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-route-change",
+      requestId: 48,
+      file: "architecture.c4ml",
+      project,
+      requestedViewId: "garden-pulse-context",
+      route: {
+        id: "route:caretaker-reviews-plan:label-offset",
+        viewId: "garden-pulse-context",
+        intent: {
+          id: "route:label-offset",
+          kind: "route",
+          summary: "Move the caretaker relationship label.",
+        },
+        operation: {
+          kind: "label-offset",
+          relationshipId: "caretaker-reviews-plan",
+          offset: { x: 24, y: -18 },
+        },
+      },
+    };
+
+    const result = await previewRouteChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewRouteChangeWorkerResponse(result)).toBe(true);
+    expect(result.compilation?.diagnostics).toEqual([]);
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      "label-offset-x = 24du",
+    );
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      "label-offset-y = -18du",
+    );
+    expect(project.documents[0]?.source).toBe(initialC4mlSource);
+    const route = result.compilation?.navigation?.targets.find(
+      (target) => target.kind === "route" && target.referenceId === "caretaker-reviews-plan",
+    );
+    expect(route).toMatchObject({ labelOffset: { x: 24, y: -18 } });
+  });
+
   it("derives semantic actions from the active C4 view in the worker", async () => {
     const project = {
       version: 1 as const,

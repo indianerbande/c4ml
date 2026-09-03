@@ -645,7 +645,8 @@ view garden-context {
         "      corridor = review-lane",
         "      lane = 0",
         "      label-segment = 1",
-        "      label-shift = (0, -12)",
+        "      label-offset-x = 8du",
+        "      label-offset-y = -12du",
         "    }",
         "",
         "    route sensor-publishes-observations {",
@@ -679,7 +680,7 @@ view garden-context {
           targetPort: "west",
           corridor: { corridorId: "review-lane", lane: 0 },
           labelSegment: 1,
-          labelOffset: { x: 0, y: -12 },
+          labelOffset: { x: 8, y: -12 },
         }),
         expect.objectContaining({
           relationshipId: "sensor-publishes-observations",
@@ -739,6 +740,37 @@ view garden-context {
     ]);
     expect(result.diagnostics[0]?.source.file).toBe("invalid-routes.c4ml");
     expect(result.diagnostics[1]?.related).toHaveLength(1);
+  });
+
+  it("requires independent diagram-unit label offsets and rejects the former tuple token", async () => {
+    const missingUnit = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    route caretaker-reviews-plan {",
+      "      policy = automatic",
+      "      label-offset-x = -12",
+      "    }",
+      "  }",
+    ]);
+    const formerTuple = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    route caretaker-reviews-plan {",
+      "      policy = automatic",
+      "      label-shift = (8, -12)",
+      "    }",
+      "  }",
+    ]);
+
+    const [missingUnitResult, formerTupleResult] = await Promise.all([
+      parseC4mlDraft(missingUnit, { file: "missing-label-offset-unit.c4ml" }),
+      parseC4mlDraft(formerTuple, { file: "former-label-shift.c4ml" }),
+    ]);
+
+    expect(missingUnitResult.valid).toBe(false);
+    expect(missingUnitResult.diagnostics.length).toBeGreaterThan(0);
+    expect(formerTupleResult.valid).toBe(false);
+    expect(formerTupleResult.diagnostics.length).toBeGreaterThan(0);
   });
 
   it("lowers relative guidance, locked segments, and hard or soft avoidance regions", async () => {
@@ -1135,8 +1167,9 @@ model {
       "avoid",
       "corridor",
       "guide",
+      "label-offset-x",
+      "label-offset-y",
       "label-segment",
-      "label-shift",
       "lane",
       "source-port",
       "style",
@@ -1160,6 +1193,63 @@ model {
         .filter(({ kind }) => kind === "property")
         .map(({ label }) => label),
     ).toEqual(["policy"]);
+  });
+
+  it("offers only route policies compatible with the controls already present", async () => {
+    const guidedSource = (await helloContextSource()).replace(
+      "policy = guided",
+      "policy = ",
+    );
+    const guidedOffset = guidedSource.indexOf("policy = ") + "policy = ".length;
+    const guidedCompletion = await completeC4mlDraft(guidedSource, {
+      offset: guidedOffset,
+    });
+
+    expect(
+      guidedCompletion.candidates
+        .filter(({ kind }) => kind === "value")
+        .map(({ label }) => label),
+    ).toEqual(["guided"]);
+
+    const fixedSource = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    route caretaker-reviews-plan {",
+      "      policy = ",
+      "      style = orthogonal",
+      "      points = [(700, 146), (620, 146)]",
+      "    }",
+      "  }",
+    ]);
+    const fixedOffset = fixedSource.indexOf("policy = ") + "policy = ".length;
+    const fixedCompletion = await completeC4mlDraft(fixedSource, {
+      offset: fixedOffset,
+    });
+
+    expect(
+      fixedCompletion.candidates
+        .filter(({ kind }) => kind === "value")
+        .map(({ label }) => label),
+    ).toEqual(["fixed"]);
+  });
+
+  it("does not suggest an incomplete fixed policy for an otherwise empty route", async () => {
+    const source = replaceContextLayout(await helloContextSource(), [
+      "  layout {",
+      "    flow = right",
+      "    route caretaker-reviews-plan {",
+      "      policy = ",
+      "    }",
+      "  }",
+    ]);
+    const offset = source.indexOf("policy = ") + "policy = ".length;
+    const result = await completeC4mlDraft(source, { offset });
+
+    expect(
+      result.candidates
+        .filter(({ kind }) => kind === "value")
+        .map(({ label }) => label),
+    ).toEqual(["automatic", "guided"]);
   });
 });
 

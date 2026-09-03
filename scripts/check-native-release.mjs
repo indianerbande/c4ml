@@ -53,6 +53,26 @@ if (platform === "darwin") {
   if (readPlistValue(plistPath, "CFBundleShortVersionString") !== version) {
     throw new Error("The packaged macOS application version does not match the release identity.");
   }
+  if (
+    readPlistValue(
+      plistPath,
+      "CFBundleDocumentTypes:0:CFBundleTypeExtensions:0",
+    ) !== "c4ml" ||
+    readPlistValue(
+      plistPath,
+      "CFBundleDocumentTypes:0:CFBundleTypeRole",
+    ) !== "Editor"
+  ) {
+    throw new Error("The packaged macOS application does not own editable .c4ml documents.");
+  }
+  if (
+    readPlistValue(
+      plistPath,
+      "UTExportedTypeDeclarations:0:UTTypeIdentifier",
+    ) !== "org.c4ml.source"
+  ) {
+    throw new Error("The packaged macOS application is missing its C4ML document type.");
+  }
   assertFile(packagedIcon, "packaged macOS icon");
   const sourceIcon = join(desktopRoot, "assets", "icon.icns");
   if ((await sha256(packagedIcon)) !== (await sha256(sourceIcon))) {

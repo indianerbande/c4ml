@@ -19,6 +19,9 @@ describe("graphical route editor", () => {
     expect(template).toContain("setPort($any(role), 'south')");
     expect(template).toContain("setPort($any(role), 'west')");
     expect(template).toContain('<option value="add-waypoint">');
+    expect(template).toContain('<option value="label-offset">');
+    expect(template).toContain("setLabelOffset('x', $event)");
+    expect(template).toContain("setLabelOffset('y', $event)");
     expect(template).toContain('<option value="move-waypoint"');
     expect(template).toContain('<option value="remove-waypoint"');
     expect(template).toContain('<option value="clear-guidance">');

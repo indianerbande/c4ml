@@ -97,7 +97,7 @@ view garden-pulse-context {
         via target-port shift (-36, 0)
       ]
       avoid = [sensor-clearance]
-      label-shift = (0, -14)
+      label-offset-y = -14du
     }
 
     route sensor-publishes-observations {
@@ -107,7 +107,7 @@ view garden-pulse-context {
       target-port = south
       corridor = lower-entry
       lane = 1
-      label-shift = (0, 16)
+      label-offset-y = 16du
     }
   }
 }

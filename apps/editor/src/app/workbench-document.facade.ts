@@ -1,6 +1,9 @@
 import { Injectable, computed, effect, inject, signal } from "@angular/core";
 
-import type { DesktopCommand } from "@c4ml/desktop-contract";
+import type {
+  DesktopCommand,
+  DesktopOpenResult,
+} from "@c4ml/desktop-contract";
 
 import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
@@ -260,35 +263,30 @@ export class WorkbenchDocumentFacade {
     this.fileOperationLabel.set(this.#i18n.t("operation.opening"));
     try {
       const result = await desktop.openDocument();
-      if (result.status === "opened") {
-        this.#replaceProject({
-          id: "implicit-project",
-          projectMode: false,
-          documents: [
-            {
-              uri: result.document.displayName,
-              displayName: result.document.displayName,
-              source: result.document.source,
-              handle: result.document.handle,
-              dirty: false,
-            },
-          ],
-        });
-        this.fileOperationLabel.set(
-          this.#i18n.t("operation.opened", {
-            name: result.document.displayName,
-          }),
-        );
-        return {
-          source: result.document.source,
-          displayName: result.document.displayName,
-        };
-      }
-      this.#recordOpenFailure(result);
+      return this.#acceptOpenResult(result);
     } catch {
       this.fileOperationLabel.set(this.#i18n.t("operation.openFailed"));
     }
     return undefined;
+  }
+
+  async openPendingDocument(): Promise<OpenedWorkbenchDocument | undefined> {
+    const desktop = this.#desktop;
+    if (desktop === undefined || !this.#confirmDiscard()) {
+      return undefined;
+    }
+    this.fileOperationLabel.set(this.#i18n.t("operation.opening"));
+    try {
+      const result = await desktop.claimPendingDocument();
+      if (result === undefined) {
+        this.fileOperationLabel.set(undefined);
+        return undefined;
+      }
+      return this.#acceptOpenResult(result);
+    } catch {
+      this.fileOperationLabel.set(this.#i18n.t("operation.openFailed"));
+      return undefined;
+    }
   }
 
   async openProject(): Promise<boolean> {
@@ -571,5 +569,36 @@ export class WorkbenchDocumentFacade {
     } else {
       this.fileOperationLabel.set(undefined);
     }
+  }
+
+  #acceptOpenResult(
+    result: DesktopOpenResult,
+  ): OpenedWorkbenchDocument | undefined {
+    if (result.status !== "opened") {
+      this.#recordOpenFailure(result);
+      return undefined;
+    }
+    this.#replaceProject({
+      id: "implicit-project",
+      projectMode: false,
+      documents: [
+        {
+          uri: result.document.displayName,
+          displayName: result.document.displayName,
+          source: result.document.source,
+          handle: result.document.handle,
+          dirty: false,
+        },
+      ],
+    });
+    this.fileOperationLabel.set(
+      this.#i18n.t("operation.opened", {
+        name: result.document.displayName,
+      }),
+    );
+    return {
+      source: result.document.source,
+      displayName: result.document.displayName,
+    };
   }
 }

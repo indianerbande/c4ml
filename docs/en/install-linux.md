@@ -26,13 +26,13 @@ Open a terminal and run these two commands:
 
 ```shell
 cd ~/Downloads
-sudo apt install ./c4thedral_0.1.0~beta.1_amd64.deb
+sudo apt install ./c4thedral_0.1.0~beta.2_amd64.deb
 ```
 
 On an ARM64 computer, replace `_amd64.deb` with `_arm64.deb`:
 
 ```shell
-sudo apt install ./c4thedral_0.1.0~beta.1_arm64.deb
+sudo apt install ./c4thedral_0.1.0~beta.2_arm64.deb
 ```
 
 The `./` before the file name is important. Ubuntu asks for your password and
@@ -50,6 +50,10 @@ also run this command in a terminal:
 ```shell
 c4thedral
 ```
+
+You can also right-click a `.c4ml` file in the file manager and choose
+**C4thedral** through **Open With**. The installed application accepts the file
+both on first launch and while it is already running.
 
 C4thedral then works entirely locally. Opening, editing, and exporting C4ML
 files does not require an internet connection. Git is required only when you
@@ -83,4 +87,3 @@ untouched.
 Do not start C4thedral with `--no-sandbox` and do not change the permissions of
 `chrome-sandbox` yourself. The DEB package installs the Electron sandbox with
 the correct system-managed ownership and permissions.
-

@@ -100,6 +100,12 @@ header mark unsaved changes, and closing a dirty document asks before discarding
 them. The renderer receives only an opaque document handle; native filesystem
 paths and Node.js APIs remain in the Electron main process.
 
+An installed C4thedral application can also open a `.c4ml` file through the
+operating system's **Open With** action. This works both when C4thedral is closed
+and when its single application instance is already running. If the current
+workspace has unsaved changes, the same discard confirmation appears before the
+externally selected file replaces it.
+
 The two buttons beside **Routes** change the preview workspace. **Full-size
 preview** temporarily gives the diagram the complete main workbench and returns
 to source-and-preview with the same button. **Open preview in a separate
@@ -1381,9 +1387,11 @@ path and fails if that path is invalid.
 
 The current executable `draft-1` slice accepts cardinal Ports, integer canvas
 coordinates, absolute `via` points, corridors, lanes, a zero-based label
-segment, and an x/y label shift. An ordered `guide` may also anchor waypoints
-to the source Port, target Port, a named element side, or the canvas, and may
-lock selected segments. Every non-canvas anchor can carry an x/y shift.
+segment, and independent signed x/y label offsets in diagram units. Omit either
+axis to keep its offset at zero; positive values move right or down. An ordered
+`guide` may also anchor waypoints to the source Port, target Port, a named
+element side, or the canvas, and may lock selected segments. Every non-canvas
+anchor can carry an x/y shift.
 
 ```c4ml
 layout {
@@ -1394,7 +1402,8 @@ layout {
     target-port = west
     via = [(520, 260), (520, 410)]
     label-segment = 2
-    label-shift = (0, -14)
+    label-offset-x = 24du
+    label-offset-y = -14du
   }
 }
 ```

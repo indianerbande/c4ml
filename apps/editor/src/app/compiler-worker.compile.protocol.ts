@@ -128,6 +128,7 @@ export interface CompilerWorkerRouteNavigationTarget extends CompilerWorkerNavig
   readonly targetPort: CompilerWorkerRoutePort;
   readonly labelPoint: CompilerWorkerNavigationPoint;
   readonly labelSegment: number;
+  readonly labelOffset: CompilerWorkerNavigationPoint;
   readonly corridor: CompilerWorkerRouteCorridor | undefined;
   readonly waypoints: readonly CompilerWorkerRouteWaypoint[];
   readonly lockedSegments: readonly CompilerWorkerLockedSegment[];
@@ -531,6 +532,7 @@ function isCompilerWorkerNavigationTarget(
     (route.labelSegment ?? -1) >= 0 &&
     (route.labelSegment ?? Number.POSITIVE_INFINITY) <
       route.points.length - 1 &&
+    isNavigationPoint(route.labelOffset) &&
     (route.corridor === undefined || isRouteCorridor(route.corridor)) &&
     Array.isArray(route.waypoints) &&
     route.waypoints.every(isRouteWaypoint) &&

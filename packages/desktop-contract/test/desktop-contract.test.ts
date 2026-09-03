@@ -25,6 +25,7 @@ describe("desktop bridge contract", () => {
       platform: "darwin",
       exportPng: async () => ({ status: "canceled" as const }),
       exportSvg: async () => ({ status: "canceled" as const }),
+      claimPendingDocument: async () => undefined,
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),
@@ -54,6 +55,7 @@ describe("desktop bridge contract", () => {
 
     expect(isC4mlDesktopApi(api)).toBe(true);
     expect(isC4mlDesktopApi({ ...api, protocolVersion: 999 })).toBe(false);
+    expect(isC4mlDesktopApi({ ...api, claimPendingDocument: undefined })).toBe(false);
     expect(isC4mlDesktopApi({ ...api, openDocument: undefined })).toBe(false);
   });
 
@@ -216,6 +218,7 @@ describe("desktop bridge contract", () => {
   it("accepts only the owned desktop commands", () => {
     expect(isDesktopCommand("close-workspace")).toBe(true);
     expect(isDesktopCommand("export-png")).toBe(true);
+    expect(isDesktopCommand("open-pending-document")).toBe(true);
     expect(isDesktopCommand("open-document")).toBe(true);
     expect(isDesktopCommand("open-project")).toBe(true);
     expect(isDesktopCommand("open-preview-window")).toBe(true);

@@ -450,7 +450,8 @@ RouteProperty:
     | RouteLaneProperty
     | RoutePointsProperty
     | RouteLabelSegmentProperty
-    | RouteLabelShiftProperty;
+    | RouteLabelOffsetXProperty
+    | RouteLabelOffsetYProperty;
 
 RoutePolicyProperty:
     'policy' '=' value=('automatic' | 'guided' | 'fixed');
@@ -509,8 +510,14 @@ RoutePointsProperty:
 RouteLabelSegmentProperty:
     'label-segment' '=' value=INT;
 
-RouteLabelShiftProperty:
-    'label-shift' '=' value=PointLiteral;
+RouteLabelOffsetXProperty:
+    'label-offset-x' '=' value=SignedDiagramUnit;
+
+RouteLabelOffsetYProperty:
+    'label-offset-y' '=' value=SignedDiagramUnit;
+
+SignedDiagramUnit:
+    (negative?='-')? value=INT 'du';
 
 PointList:
     '[' points+=PointLiteral (',' points+=PointLiteral)* ']';

@@ -25,6 +25,7 @@ import { WorkbenchLocalizationService } from "./workbench-localization.js";
 export type RouteEditorOperationKind =
   | "add-waypoint"
   | "clear-guidance"
+  | "label-offset"
   | "move-waypoint"
   | "ports"
   | "remove-waypoint";
@@ -60,6 +61,8 @@ export class RouteEditorComponent {
   readonly waypointIndex = signal(0);
   readonly moveDirection = signal<"down" | "left" | "right" | "up">("right");
   readonly moveSteps = signal<1 | 2 | 4>(1);
+  readonly labelOffsetX = signal(0);
+  readonly labelOffsetY = signal(0);
   readonly preview = signal<PreviewRouteChangeWorkerResponse | undefined>(undefined);
   readonly previewUrl = signal<string | undefined>(undefined);
   readonly busy = computed(() => this.compiler.route().phase === "loading");
@@ -82,6 +85,13 @@ export class RouteEditorComponent {
       case "add-waypoint":
       case "clear-guidance":
         return true;
+      case "label-offset":
+        return (
+          Number.isSafeInteger(this.labelOffsetX()) &&
+          Number.isSafeInteger(this.labelOffsetY()) &&
+          (this.labelOffsetX() !== this.route().labelOffset.x ||
+            this.labelOffsetY() !== this.route().labelOffset.y)
+        );
       case "move-waypoint":
       case "remove-waypoint":
         return this.route().waypoints[this.waypointIndex()] !== undefined;
@@ -133,6 +143,8 @@ export class RouteEditorComponent {
       this.#initialized = true;
       this.sourcePort.set(route.sourcePortSelection);
       this.targetPort.set(route.targetPortSelection);
+      this.labelOffsetX.set(route.labelOffset.x);
+      this.labelOffsetY.set(route.labelOffset.y);
     });
     effect((onCleanup) => {
       const svg = this.preview()?.compilation?.svg;
@@ -152,6 +164,7 @@ export class RouteEditorComponent {
     const value = selectValue(event);
     if (
       value !== "ports" &&
+      value !== "label-offset" &&
       value !== "add-waypoint" &&
       value !== "move-waypoint" &&
       value !== "remove-waypoint" &&
@@ -196,6 +209,14 @@ export class RouteEditorComponent {
       this.moveSteps.set(value);
       this.preview.set(undefined);
     }
+  }
+
+  setLabelOffset(axis: "x" | "y", event: Event): void {
+    const value = inputNumber(event);
+    (axis === "x" ? this.labelOffsetX : this.labelOffsetY).set(
+      value ?? Number.NaN,
+    );
+    this.preview.set(undefined);
   }
 
   async buildPreview(): Promise<void> {
@@ -274,6 +295,12 @@ export class RouteEditorComponent {
           relationshipId,
           waypointIndex: this.waypointIndex(),
         };
+      case "label-offset":
+        return {
+          kind: "label-offset",
+          relationshipId,
+          offset: { x: this.labelOffsetX(), y: this.labelOffsetY() },
+        };
       case "clear-guidance":
         return { kind: "clear-guidance", relationshipId };
     }
@@ -282,4 +309,10 @@ export class RouteEditorComponent {
 
 function selectValue(event: Event): string | undefined {
   return event.target instanceof HTMLSelectElement ? event.target.value : undefined;
+}
+
+function inputNumber(event: Event): number | undefined {
+  if (!(event.target instanceof HTMLInputElement)) return undefined;
+  const value = event.target.valueAsNumber;
+  return Number.isFinite(value) ? value : undefined;
 }

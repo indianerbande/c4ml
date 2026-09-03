@@ -39,6 +39,10 @@ const api: C4mlDesktopApi = Object.freeze({
       desktopIpcChannels.exportSvg,
       request,
     ) as Promise<DesktopSvgExportResult>,
+  claimPendingDocument: () =>
+    ipcRenderer.invoke(
+      desktopIpcChannels.claimPendingDocument,
+    ) as Promise<DesktopOpenResult | undefined>,
   openDocument: () =>
     ipcRenderer.invoke(desktopIpcChannels.openDocument) as Promise<DesktopOpenResult>,
   openProject: () =>

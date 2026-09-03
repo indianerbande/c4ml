@@ -108,7 +108,8 @@ const propertyLabels = new Set([
   "legend",
   "language",
   "label-segment",
-  "label-shift",
+  "label-offset-x",
+  "label-offset-y",
   "lane",
   "lane-gap",
   "lanes",
@@ -212,7 +213,8 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   legend: ["ViewLegendProperty"],
   language: ["LanguageProperty"],
   "label-segment": ["RouteLabelSegmentProperty"],
-  "label-shift": ["RouteLabelShiftProperty"],
+  "label-offset-x": ["RouteLabelOffsetXProperty"],
+  "label-offset-y": ["RouteLabelOffsetYProperty"],
   lane: ["RouteLaneProperty"],
   "lane-gap": ["CorridorLaneGapProperty"],
   lanes: ["CorridorLanesProperty"],
@@ -305,7 +307,8 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   language: "Declares the implementation language of a Code Element.",
   lock: "Keeps the declared route segment unchanged while surrounding geometry is completed.",
   "label-segment": "Selects the zero-based effective route segment that carries the label.",
-  "label-shift": "Moves the relationship label by an explicit x/y offset.",
+  "label-offset-x": "Moves the relationship label horizontally by signed diagram units.",
+  "label-offset-y": "Moves the relationship label vertically by signed diagram units.",
   lane: "Selects the zero-based lane within the named corridor.",
   "lane-gap": "Sets the distance between adjacent corridor lanes.",
   lanes: "Declares how many exclusive lanes this corridor provides.",
@@ -443,12 +446,14 @@ async function completeProjectDocuments(
   });
   const root = document.parseResult.value as C4mlDocument;
   const owner = completionOwner(root, offset);
+  const source = sources.find(({ uri }) => uri === file)?.source ?? "";
   const candidates = (completion?.items ?? [])
     .map((item) => toCandidate(item, document, owner, offset))
     .filter((candidate): candidate is C4mlCompletionCandidate =>
-      candidate !== undefined && !isAlreadyDeclared(candidate, owner, offset),
+      candidate !== undefined &&
+      !isAlreadyDeclared(candidate, owner, offset) &&
+      isRoutePolicyValueAllowed(candidate, owner, source, offset),
     );
-  const source = sources.find(({ uri }) => uri === file)?.source ?? "";
   const recoveredCandidates = recoverTopLevelModelCompletion(
     source,
     document,
@@ -932,13 +937,19 @@ function isRoutePropertyAllowed(
   }
 
   const allowedByPolicy: Readonly<Record<typeof policy, ReadonlySet<string>>> = {
-    automatic: new Set(["label-segment", "label-shift", "policy"]),
+    automatic: new Set([
+      "label-offset-x",
+      "label-offset-y",
+      "label-segment",
+      "policy",
+    ]),
     guided: new Set([
       "avoid",
       "corridor",
       "guide",
       "label-segment",
-      "label-shift",
+      "label-offset-x",
+      "label-offset-y",
       "lane",
       "policy",
       "source-port",
@@ -948,7 +959,8 @@ function isRoutePropertyAllowed(
     ]),
     fixed: new Set([
       "label-segment",
-      "label-shift",
+      "label-offset-x",
+      "label-offset-y",
       "points",
       "policy",
       "style",
@@ -974,6 +986,59 @@ function isRoutePropertyAllowed(
     (hasCorridorSelection && (label === "guide" || label === "via")) ||
     (hasGuide && (label === "corridor" || label === "lane" || label === "via"))
   );
+}
+
+function isRoutePolicyValueAllowed(
+  candidate: C4mlCompletionCandidate,
+  owner: CompletionOwner,
+  source: string,
+  offset: number,
+): boolean {
+  if (
+    !isRouteDeclaration(owner) ||
+    candidate.kind !== "value" ||
+    !isRoutePolicyValue(candidate.label) ||
+    !isCompletingRoutePolicy(source, offset)
+  ) {
+    return true;
+  }
+
+  const propertyTypes = new Set<string>(
+    owner.properties
+      .filter(({ $type }) => $type !== "RoutePolicyProperty")
+      .map(({ $type }) => $type),
+  );
+  const hasPoints = propertyTypes.has("RoutePointsProperty");
+  const hasStyle = propertyTypes.has("RouteStyleProperty");
+  const hasGuidedControl = [
+    "RouteAvoidProperty",
+    "RouteCorridorSelectionProperty",
+    "RouteGuideProperty",
+    "RouteLaneProperty",
+    "RouteSourcePortProperty",
+    "RouteTargetPortProperty",
+    "RouteViaProperty",
+  ].some((type) => propertyTypes.has(type));
+
+  switch (candidate.label) {
+    case "automatic":
+      return !hasPoints && !hasStyle && !hasGuidedControl;
+    case "guided":
+      return !hasPoints;
+    case "fixed":
+      return hasPoints && !hasGuidedControl;
+  }
+}
+
+function isCompletingRoutePolicy(source: string, offset: number): boolean {
+  const lineStart = source.lastIndexOf("\n", Math.max(0, offset - 1)) + 1;
+  return /^\s*policy\s*=\s*[A-Za-z-]*$/u.test(source.slice(lineStart, offset));
+}
+
+function isRoutePolicyValue(
+  label: string,
+): label is RoutePolicyProperty["value"] {
+  return label === "automatic" || label === "guided" || label === "fixed";
 }
 
 function deduplicateAndSort(

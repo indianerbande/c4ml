@@ -1107,6 +1107,10 @@
                     <dt>{{ i18n.t("panel.labelSegment") }}</dt>
                     <dd>{{ route.labelSegment + 1 }}</dd>
                   </div>
+                  <div>
+                    <dt>{{ i18n.t("panel.labelOffset") }}</dt>
+                    <dd>x {{ route.labelOffset.x }}du · y {{ route.labelOffset.y }}du</dd>
+                  </div>
                   @if (route.corridor; as corridor) {
                     <div>
                       <dt>{{ i18n.t("panel.corridor") }}</dt>

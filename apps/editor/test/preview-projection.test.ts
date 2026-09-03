@@ -56,6 +56,7 @@ describe("detached preview projection", () => {
           },
           labelPoint: { x: 390, y: 105 },
           labelSegment: 0,
+          labelOffset: { x: 0, y: -15 },
           corridor: undefined,
           waypoints: [],
           lockedSegments: [],

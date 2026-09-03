@@ -115,6 +115,11 @@ end-user procedure.
   application remains active and recreates a window when activated.
 - Windows receives an application user-model identifier and Squirrel startup
   handling. Those paths are inactive on macOS and Linux.
+- Installed applications accept `.c4ml` files from the operating system's
+  **Open With** action. macOS uses the declared `org.c4ml.source` document type
+  and early `open-file` delivery; Windows and Linux use the initial or
+  second-instance path/file-URL arguments. The Linux desktop entry advertises
+  `text/x-c4ml`.
 - macOS uses Command-oriented menu shortcuts; Windows and Linux use Control.
   Monaco suggestions use `Cmd+I` on macOS and `Ctrl+Space` elsewhere.
 - Project manifests always use normalized forward-slash relative URIs. Native

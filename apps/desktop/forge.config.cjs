@@ -18,6 +18,29 @@ module.exports = {
       unpack: "dist/*.node",
     },
     executableName: "C4thedral",
+    extendInfo: {
+      CFBundleDocumentTypes: [
+        {
+          CFBundleTypeExtensions: ["c4ml"],
+          CFBundleTypeIconFile: "icon.icns",
+          CFBundleTypeName: "C4ML Source",
+          CFBundleTypeRole: "Editor",
+          LSHandlerRank: "Owner",
+          LSItemContentTypes: ["org.c4ml.source"],
+        },
+      ],
+      UTExportedTypeDeclarations: [
+        {
+          UTTypeConformsTo: ["public.plain-text"],
+          UTTypeDescription: "C4ML Source",
+          UTTypeIdentifier: "org.c4ml.source",
+          UTTypeTagSpecification: {
+            "public.filename-extension": ["c4ml"],
+            "public.mime-type": ["text/x-c4ml"],
+          },
+        },
+      ],
+    },
     icon: path.resolve(__dirname, "assets/icon"),
     extraResource: [
       path.resolve(__dirname, "../../build/editor/browser"),
@@ -77,6 +100,7 @@ module.exports = {
           bin: "C4thedral",
           icon: path.resolve(__dirname, "assets/icon.png"),
           categories: ["Development"],
+          mimeType: ["text/x-c4ml"],
         },
       },
     },
