@@ -35,7 +35,7 @@ assert.equal(
   "C4thedral",
   "the visible desktop product name must be C4thedral",
 );
-assert.equal(rootManifest.version, "0.1.0-beta.3");
+assert.equal(rootManifest.version, "0.1.0-beta.4");
 assert.equal(
   desktopManifest.version,
   rootManifest.version,

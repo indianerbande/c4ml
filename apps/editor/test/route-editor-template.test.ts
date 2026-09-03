@@ -34,6 +34,11 @@ describe("graphical route editor", () => {
     expect(template).toContain('i18n.t("routeEditor.authority")');
   });
 
+  it("keeps a visible preview state while the candidate is compiling", () => {
+    expect(template).toContain("@if (busy())");
+    expect(template).toContain('i18n.t("routeEditor.previewing")');
+  });
+
   it("opens from the selected Route and exposes one-step undo", () => {
     expect(rootTemplate).toContain('(click)="openRouteEditor()"');
     expect(rootTemplate).toContain("<c4ml-route-editor");

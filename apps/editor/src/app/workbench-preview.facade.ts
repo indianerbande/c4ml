@@ -105,6 +105,7 @@ export class WorkbenchPreviewFacade {
         .views.find(({ id }) => id === this.#compiler.state().activeViewId)
         ?.title ?? this.#i18n.t("view.none"),
   );
+  readonly activeViewId = computed(() => this.#compiler.state().activeViewId);
   readonly displaySvg = computed(() => {
     const svg = this.lastValidSvg();
     const navigation = this.navigation();

@@ -1332,17 +1332,15 @@
   }
 }
 
-@if (routeEditor.open() && selectedRoute(); as route) {
-  @if (compiler.state().activeViewId; as activeViewId) {
-    <c4ml-route-editor
-      [project]="routeEditor.project()"
-      [activeFile]="activeDocumentUri()"
-      [viewId]="activeViewId"
-      [route]="route"
-      (applied)="applyRoute($event)"
-      (cancelled)="closeRouteEditor()"
-    />
-  }
+@if (routeEditor.session(); as session) {
+  <c4ml-route-editor
+    [project]="session.project"
+    [activeFile]="session.activeFile"
+    [viewId]="session.viewId"
+    [route]="session.route"
+    (applied)="applyRoute($event)"
+    (cancelled)="closeRouteEditor()"
+  />
 }
 
 @if (semanticEditor.open()) {

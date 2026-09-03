@@ -13,7 +13,7 @@ deterministische SVG- und PNG-Dateien. Wenn die automatische Anordnung nicht
 ausreicht, kannst du Positionen und Verbindungswege gezielt beeinflussen, ohne
 das Diagramm in eine losgelöste Zeichnung zu verwandeln.
 
-**Aktuelle Version: `v0.1.0-beta.3` — öffentliche Source-Beta.** Das ist eine
+**Aktuelle Version: `v0.1.0-beta.4` — öffentliche Source-Beta.** Das ist eine
 funktionsfähige Anwendung und kein frühes Grundgerüst: Desktop-Anwendung und CLI
 übersetzen alle sieben C4-Ansichtstypen, und die nativen Abläufe wurden unter
 macOS, Windows und Ubuntu geprüft. Beta bedeutet, dass sich die
@@ -195,7 +195,7 @@ Der [deutsche Dokumentationsindex](docs/de/README.md) ist der beste Einstieg.
 - [Vibe Coding mit fachlicher Verantwortung](docs/de/ki-gestuetzte-entwicklung.md)
 - [C4ML-Projekte](docs/de/projects.md)
 - [Native Plattformmatrix](docs/de/platforms.md)
-- [Versionshinweise](docs/de/releases/0.1.0-beta.3.md)
+- [Versionshinweise](docs/de/releases/0.1.0-beta.4.md)
 - [CONTRIBUTING.de.md](CONTRIBUTING.de.md) — Ablauf für Beiträge
 - [SECURITY.de.md](SECURITY.de.md) — vertrauliches Melden von Sicherheitsproblemen
 - [Technische Projektdokumentation](docs/engineering/README.md) — maßgebliche

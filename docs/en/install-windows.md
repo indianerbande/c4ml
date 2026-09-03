@@ -10,7 +10,7 @@ pnpm, or any developer tools.
 Download this file for a normal 64-bit Windows PC:
 
 ```text
-C4thedral-0.1.0-beta.3 Setup.exe
+C4thedral-0.1.0-beta.4 Setup.exe
 ```
 
 The current beta is built for Windows x64. To check your architecture, open
@@ -23,7 +23,7 @@ Open the download folder in Explorer. Right-click an empty area and choose
 **Open in Terminal**, then run:
 
 ```powershell
-Get-FileHash ".\C4thedral-0.1.0-beta.3 Setup.exe" -Algorithm SHA256
+Get-FileHash ".\C4thedral-0.1.0-beta.4 Setup.exe" -Algorithm SHA256
 ```
 
 Compare the displayed value with the SHA-256 checksum published with the
@@ -31,7 +31,7 @@ download. Do not install the file if they differ.
 
 ## 3. Install C4thedral
 
-1. Double-click **C4thedral-0.1.0-beta.3 Setup.exe**.
+1. Double-click **C4thedral-0.1.0-beta.4 Setup.exe**.
 2. Wait for installation to finish.
 3. Open the Start menu, search for **C4thedral**, and start the application.
 

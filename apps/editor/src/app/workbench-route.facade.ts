@@ -1,16 +1,26 @@
-import { Injectable, computed, inject, signal } from "@angular/core";
+import { Injectable, inject, signal } from "@angular/core";
 
-import type { PreviewRouteChangeWorkerResponse } from "./compiler-worker.protocol.js";
+import type {
+  CompilerWorkerProject,
+  CompilerWorkerRouteNavigationTarget,
+  PreviewRouteChangeWorkerResponse,
+} from "./compiler-worker.protocol.js";
 import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
 import { projectChangeToSourceChange } from "./project-change-to-source.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 
+export interface RouteEditorSession {
+  readonly project: CompilerWorkerProject;
+  readonly activeFile: string;
+  readonly viewId: string;
+  readonly route: CompilerWorkerRouteNavigationTarget;
+}
+
 @Injectable({ providedIn: "root" })
 export class WorkbenchRouteFacade {
-  readonly open = signal(false);
+  readonly session = signal<RouteEditorSession | undefined>(undefined);
   readonly canUndo = signal(false);
-  readonly project = computed(() => this.#documents.projectSnapshot());
 
   readonly #documents = inject(WorkbenchDocumentFacade);
   readonly #preview = inject(WorkbenchPreviewFacade);
@@ -18,11 +28,19 @@ export class WorkbenchRouteFacade {
   #documentWasDirty = false;
 
   show(): void {
-    if (this.#preview.selectedRoute() !== undefined) this.open.set(true);
+    const route = this.#preview.selectedRoute();
+    const viewId = this.#preview.activeViewId();
+    if (route === undefined || viewId === undefined) return;
+    this.session.set({
+      project: this.#documents.projectSnapshot(),
+      activeFile: this.#documents.activeDocumentUri(),
+      viewId,
+      route,
+    });
   }
 
   close(): void {
-    this.open.set(false);
+    this.session.set(undefined);
   }
 
   apply(
@@ -48,7 +66,7 @@ export class WorkbenchRouteFacade {
       this.#applyingChange = false;
       if (!application.applied) return;
       this.#documentWasDirty = document.dirty;
-      this.open.set(false);
+      this.session.set(undefined);
       this.canUndo.set(true);
     });
   }
@@ -73,7 +91,7 @@ export class WorkbenchRouteFacade {
   }
 
   reset(): void {
-    this.open.set(false);
+    this.session.set(undefined);
     this.canUndo.set(false);
     this.#documentWasDirty = false;
     this.#applyingChange = false;

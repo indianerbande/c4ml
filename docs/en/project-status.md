@@ -4,7 +4,7 @@
 
 Status: Public source beta
 
-Current release: `v0.1.0-beta.3`
+Current release: `v0.1.0-beta.4`
 
 Updated: 2026-09-03
 
@@ -12,7 +12,7 @@ This document states the current product maturity and the boundaries of the
 beta. It is not a development diary. Detailed product requirements live in
 the [engineering specification](../engineering/specification.md), validation
 evidence in [testing](../engineering/testing.md), completed changes in the
-[release notes](releases/0.1.0-beta.3.md), and engineering work items in the
+[release notes](releases/0.1.0-beta.4.md), and engineering work items in the
 [roadmap](../engineering/roadmap.md).
 
 ## What beta means here
@@ -172,7 +172,7 @@ source beta:
 
 ## Status sources
 
-- [Release notes](releases/0.1.0-beta.3.md) record what is included in the
+- [Release notes](releases/0.1.0-beta.4.md) record what is included in the
   current tagged release.
 - The [platform matrix](platforms.md) records current native platform evidence.
 - [Testing](../engineering/testing.md) defines the evidence required for

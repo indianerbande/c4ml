@@ -1691,6 +1691,14 @@ tab both toggle the panel; the panel MUST NOT add a separate unlabeled close
 glyph. A status-bar action that opens the Diagrams area is labelled by that
 destination rather than repeating the authored title of the current View.
 
+Frequently used object-specific actions SHOULD be available from a right-click
+context menu on the relevant source, diagram, explorer, and workbench objects.
+The menu MUST be derived from the clicked object and current validated context.
+Toolbar, command-palette, and keyboard access remain equivalent alternatives;
+selecting an object and then locating a distant generic button MUST NOT be the
+only path to a contextual action. Context menus invoke existing command and
+source-change boundaries and MUST NOT create hidden semantic or layout state.
+
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
 **Status: Accepted; portable version-one contracts and all three product
@@ -1762,6 +1770,13 @@ reported as safe compiler-proposed repairs. The worker compiles the complete
 candidate project and reports hard diagnostics separately before Angular can
 enable apply. Monaco applies an accepted transaction as one undo unit, and the
 editor retains no hidden Route geometry.
+
+Opening the Route editor creates a bounded authoring session from the selected
+Route, active View, active document, and current project revision. A candidate
+preview MUST NOT depend on the main preview retaining its live selection. The
+dialog remains open while a preview is generated and after a valid, invalid, or
+failed response; it closes only through an explicit cancel action or after a
+successfully applied source change.
 
 Semantic graphical authoring is implemented for all seven C4 view types. For
 the five static views, the language package inspects the active resolved view and
