@@ -22,8 +22,13 @@ minimumReleaseAgeExclude:
   - '@angular/platform-browser@22.1.4'
 
 overrides:
+  '@electron/node-gyp>tar': '7.5.22'
   '@electron/rebuild@3.7.2>@electron/node-gyp': '10.2.0-electron.2'
+  '@electron/rebuild>tar': '7.5.22'
+  'cacache>tar': '7.5.22'
   dompurify: '3.4.13'
+  'external-editor>tmp': '0.2.7'
+  qs: '6.16.0'
   webpack: '5.109.2'
   minimizer-webpack-plugin: '5.7.0'
   terser: '5.51.1'

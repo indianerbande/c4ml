@@ -35,7 +35,7 @@ assert.equal(
   "C4thedral",
   "the visible desktop product name must be C4thedral",
 );
-assert.equal(rootManifest.version, "0.1.0-beta.2");
+assert.equal(rootManifest.version, "0.1.0-beta.3");
 assert.equal(
   desktopManifest.version,
   rootManifest.version,
@@ -97,6 +97,29 @@ for (const [packageName, version] of [
     `${packageName}@${version} must be present in the locked graph`,
   );
 }
+for (const [override, version] of [
+  ["'@electron/node-gyp>tar'", "7.5.22"],
+  ["'@electron/rebuild>tar'", "7.5.22"],
+  ["'cacache>tar'", "7.5.22"],
+  ["'external-editor>tmp'", "0.2.7"],
+]) {
+  assert.ok(
+    workspaceConfiguration.includes(`${override}: '${version}'`),
+    `${override} must remain pinned to the reviewed build-tool security version`,
+  );
+}
+assert.match(lockfile, /  tar@7\.5\.22:/u);
+assert.doesNotMatch(
+  lockfile,
+  /  tar@6\.2\.1:/u,
+  "the locked Forge build graph must not retain vulnerable tar 6.2.1",
+);
+assert.match(lockfile, /  tmp@0\.2\.7:/u);
+assert.doesNotMatch(
+  lockfile,
+  /  tmp@0\.0\.33:/u,
+  "the locked Forge CLI graph must not retain vulnerable tmp 0.0.33",
+);
 assert.equal(
   desktopManifest.dependencies,
   undefined,

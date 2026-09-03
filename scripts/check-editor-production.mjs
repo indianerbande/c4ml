@@ -74,6 +74,17 @@ if (!lockfile.includes(`dompurify@${acceptedDomPurifyVersion}:`)) {
 if (/dompurify@3\.4\.(?:[0-9]|1[0-2]):/u.test(lockfile)) {
   throw new Error("pnpm-lock.yaml contains a reviewed-vulnerable DOMPurify version.");
 }
+if (!workspaceConfiguration.includes("qs: '6.16.0'")) {
+  throw new Error(
+    "pnpm-workspace.yaml must override Angular CLI's transitive qs dependency to 6.16.0.",
+  );
+}
+if (!lockfile.includes("  qs@6.16.0:")) {
+  throw new Error("pnpm-lock.yaml must resolve qs 6.16.0.");
+}
+if (lockfile.includes("  qs@6.15.3:")) {
+  throw new Error("pnpm-lock.yaml contains reviewed-vulnerable qs 6.15.3.");
+}
 assertEqual(
   editorManifest.dependencies?.["elkjs"],
   acceptedElkVersion,

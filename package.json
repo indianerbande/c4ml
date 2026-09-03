@@ -1,6 +1,6 @@
 {
   "name": "c4ml-monorepo",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -34,6 +34,7 @@
     "renderer:build": "pnpm --filter @c4ml/editor run build",
     "renderer:start": "pnpm --filter @c4ml/editor run start",
     "release:native": "pnpm run check && pnpm run desktop:smoke && pnpm run desktop:make && pnpm run check:native-release",
+    "security:audit-production": "pnpm audit --prod --audit-level=low",
     "test": "pnpm --recursive --sort --if-present run test",
     "typecheck": "pnpm run build && pnpm run typecheck:tests",
     "typecheck:tests": "tsc -p tsconfig.tests.json",
