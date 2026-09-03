@@ -1365,6 +1365,12 @@ licenses. It also verifies that macOS-only native helpers are reached only
 through the optional DMG-maker graph, that Linux uses the pinned DEB maker with
 stable metadata, and that the current host receives exactly one reviewed resvg
 binary.
+The editor and desktop checks also require the reviewed `qs`, `tar`, and `tmp`
+security overrides and reject their superseded vulnerable lockfile versions.
+The source workflow runs `pnpm audit --prod --audit-level=low` after installing
+the committed lockfile. The full development graph is still monitored by
+Dependabot; any unpatched build-only exception and its containment must be
+recorded in `dependencies.md` rather than hidden from the audit.
 It also protects the local CSP, main/preview preload separation, the restricted
 preview channel inventory, and packaged resource inventory. A release pipeline
 MUST additionally inventory the complete installer payload and verify platform

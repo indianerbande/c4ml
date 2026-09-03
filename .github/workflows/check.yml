@@ -33,5 +33,7 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Audit production dependencies
+        run: pnpm run security:audit-production
       - name: Build and test
         run: pnpm run check

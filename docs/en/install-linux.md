@@ -26,13 +26,13 @@ Open a terminal and run these two commands:
 
 ```shell
 cd ~/Downloads
-sudo apt install ./c4thedral_0.1.0~beta.2_amd64.deb
+sudo apt install ./c4thedral_0.1.0~beta.3_amd64.deb
 ```
 
 On an ARM64 computer, replace `_amd64.deb` with `_arm64.deb`:
 
 ```shell
-sudo apt install ./c4thedral_0.1.0~beta.2_arm64.deb
+sudo apt install ./c4thedral_0.1.0~beta.3_arm64.deb
 ```
 
 The `./` before the file name is important. Ubuntu asks for your password and

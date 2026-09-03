@@ -437,6 +437,46 @@ runtime requirement for installed C4ML.
 
 Source: [pnpm managed runtime (`devEngines.runtime`)](https://pnpm.io/package_json#devenginesruntime).
 
+### Transitive build-tool security pins
+
+- **Packages:** `tar` 7.5.22 (Blue Oak Model License 1.0.0), `tmp` 0.2.7
+  (MIT), and `qs` 6.16.0 (BSD-3-Clause).
+- **Capability:** archive handling for Electron rebuild and cache tools,
+  temporary-file handling for Forge's optional interactive editor prompt, and
+  query-string parsing inside Angular CLI's development-tool graph.
+- **Why external:** these are implementation details of the accepted Forge and
+  Angular build adapters. None belongs in C4ML's portable compiler or installed
+  desktop runtime.
+- **Impact:** narrow pnpm overrides replace vulnerable transitive versions on
+  the three reviewed `tar` edges, the `external-editor` to `tmp` edge, and the
+  workspace `qs` resolution. The `tar` override crosses a package major and is
+  therefore protected by the complete source check and native packaging gate.
+  The packages are not copied into the application ASAR and add no end-user
+  runtime requirement.
+- **Offline behavior:** dependency installation and vulnerability lookup need
+  registry access. Once the locked graph and Electron archive are cached,
+  building and the installed application remain local and offline.
+- **Boundary:** `pnpm-workspace.yaml` owns these replaceable build-graph pins;
+  Electron Forge and Angular CLI remain their only consumers.
+- **Protecting evidence:** editor and desktop production checks require the
+  exact overrides and reject the superseded vulnerable resolutions. CI runs a
+  production-only registry audit. The Node.js 24 native gate rebuilds and
+  verifies the unpacked application, DMG, and ZIP.
+
+The 2026-09-03 complete development audit still reports three high-severity
+build-only findings for `extract-zip` 2.0.1
+(`GHSA-jmr9-qjv8-65gv`) and `image-size` 0.7.5
+(`GHSA-w3rx-r6r6-pgpr`, `GHSA-5p2g-fcmc-qvqq`). Upstream publishes no patched
+version for either package. Forge 7.11.2 constrains `@electron/packager` to its
+18.x line; the 20.x packager that replaces `extract-zip` is not a safe isolated
+override. The affected `image-size` copy is optional and used only by the macOS
+DMG maker with repository-controlled artwork. The `extract-zip` edge is used
+only while packaging the checksum-validated Electron distribution. Neither
+package is present in the application ASAR or production dependency audit.
+These are temporary accepted build-chain risks, not dismissed vulnerabilities:
+Dependabot remains enabled, and every Forge or maker maintenance change must
+re-evaluate whether upstream has removed or patched them.
+
 ## Experimental CLI application
 
 `apps/cli` adds no external dependency. It depends only on the C4ML compiler and
