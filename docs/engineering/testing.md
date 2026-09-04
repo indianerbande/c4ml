@@ -970,7 +970,15 @@ Desktop tests MUST cover:
   close protection;
 - a minimum-height packaged-window smoke proving that the document itself does
   not scroll, the status bar remains fully inside the renderer viewport, and
-  only bounded workbench content owns overflow; and
+  only bounded workbench content owns overflow;
+- a packaged multi-document authoring smoke on a disposable copy of the
+  multifile example: Open Project through the bridge, element selection from
+  the source editor, a placement change whose edit belongs to another project
+  document than the active one, verification that only that document became
+  dirty and was presented, undo issued from a different tab that returns to
+  and cleans the edited document, and cross-document reveal of an Output
+  finding — this is the only place where Angular's change-detection timing,
+  Monaco's model switch, and the compiler worker are exercised together; and
 - signature, installer/archive integrity, installation, launch, file round
   trip, and uninstall behavior on every supported release platform.
 
