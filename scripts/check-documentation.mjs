@@ -37,6 +37,10 @@ const languagePairs = [
     "docs/en/releases/0.1.0-beta.4.md",
     "docs/de/releases/0.1.0-beta.4.md",
   ],
+  [
+    "docs/en/releases/0.1.0-beta.5.md",
+    "docs/de/releases/0.1.0-beta.5.md",
+  ],
 ];
 
 function repositoryPath(path) {
