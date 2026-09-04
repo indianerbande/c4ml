@@ -87,13 +87,31 @@ export interface PngRenderer {
   render(svg: string, options?: PngRenderOptions): Promise<PngRenderResult>;
 }
 
+/**
+ * A compiler object a stage failure is about. Frontends map subjects to
+ * source locations; the message is for people and is never parsed.
+ */
+export interface ContractSubject {
+  readonly kind:
+    | "avoidance-region"
+    | "corridor"
+    | "node"
+    | "placement-constraint"
+    | "relationship";
+  readonly id: string;
+}
+
 export class ContractError extends Error {
+  readonly subjects: readonly ContractSubject[];
+
   constructor(
     readonly code: string,
     message: string,
+    subjects: readonly ContractSubject[] = [],
   ) {
     super(message);
     this.name = "ContractError";
+    this.subjects = subjects;
   }
 }
 

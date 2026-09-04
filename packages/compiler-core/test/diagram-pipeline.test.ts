@@ -609,6 +609,60 @@ describe("diagram compiler pipeline", () => {
     );
   });
 
+  it("locates a route failure at its own declaration, not at one whose identifier the message happens to contain", async () => {
+    const controlSource = (line: number) => ({
+      file: "routes.c4ml",
+      range: {
+        start: { line, column: 0, offset: line * 100 },
+        end: { line, column: 20, offset: line * 100 + 20 },
+      },
+    });
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+      routing: {
+        corridors: [
+          {
+            id: "api",
+            orientation: "vertical",
+            coordinate: 790,
+            lanes: 2,
+            laneSpacing: 18,
+            source: controlSource(1),
+          },
+        ],
+        controls: [
+          // "api-enqueues-notice" contains "api"; a message about it also
+          // contains this control's identifier when the identifiers nest.
+          {
+            relationshipId: "api-enqueues-notice",
+            policy: "automatic",
+            source: controlSource(5),
+          },
+          {
+            relationshipId: "api-writes-ledger",
+            policy: "guided",
+            corridor: { corridorId: "api", lane: 7 },
+            source: controlSource(9),
+          },
+        ],
+      },
+    });
+
+    expect(result.valid).toBe(false);
+    const diagnostic = result.diagnostics.find(({ code }) => code === "C4ML-ROUTE-008")!;
+    expect(diagnostic.message).toContain("api-writes-ledger");
+    // Primary location is the failing control; the corridor it selects is
+    // related; the unrelated control whose identifier is a substring of the
+    // message is not mentioned at all.
+    expect(diagnostic.source).toEqual(controlSource(9));
+    expect(diagnostic.related).toEqual([
+      expect.objectContaining({ message: "Corridor api is declared here.", source: controlSource(1) }),
+    ]);
+    expect(JSON.stringify(diagnostic)).not.toContain(`"line":5`);
+  });
+
   it("resolves relative waypoints and preserves ordered locked segments", async () => {
     const result = await compileArchitectureDiagram({
       model: signalGardenModel,

@@ -115,7 +115,11 @@ export class PlacementConflictError extends ContractError {
     message: string,
     readonly constraintIds: readonly string[],
   ) {
-    super(code, message);
+    super(
+      code,
+      message,
+      constraintIds.map((id) => ({ kind: "placement-constraint" as const, id })),
+    );
     this.name = "PlacementConflictError";
   }
 }

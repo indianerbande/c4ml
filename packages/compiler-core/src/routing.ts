@@ -1,6 +1,7 @@
 import type { DiagramEdge, PreparedDiagram } from "./diagram-preparation.js";
 import {
   ContractError,
+  type ContractSubject,
   type LayoutEdgeResult,
   type LayoutNodeResult,
   type LayoutResult,
@@ -134,6 +135,22 @@ export interface DiagramRoutingOptions {
 
 const GUIDED_PORT_STUB_LENGTH = 18;
 
+function relationshipSubject(id: string): ContractSubject {
+  return { kind: "relationship", id };
+}
+
+function corridorSubject(id: string): ContractSubject {
+  return { kind: "corridor", id };
+}
+
+function regionSubject(id: string): ContractSubject {
+  return { kind: "avoidance-region", id };
+}
+
+function nodeSubject(id: string): ContractSubject {
+  return { kind: "node", id };
+}
+
 export interface EffectiveRoute {
   readonly edgeId: string;
   readonly relationshipId: string;
@@ -248,6 +265,7 @@ function automaticRoute(
     throw new ContractError(
       "C4ML-ROUTE-002",
       `Automatic route ${edge.referenceId} cannot contain hard route controls.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
   const adapterPoints = pointsFromLayoutEdge(layoutEdge);
@@ -507,6 +525,7 @@ function controlledRoute(
       throw new ContractError(
         "C4ML-ROUTE-003",
         `Fixed route ${edge.referenceId} requires at least two complete points.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
     if (
@@ -520,6 +539,7 @@ function controlledRoute(
       throw new ContractError(
         "C4ML-ROUTE-004",
         `Fixed route ${edge.referenceId} must use only its complete point list.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
     points = deduplicatePoints(control.points);
@@ -532,6 +552,7 @@ function controlledRoute(
       throw new ContractError(
         "C4ML-ROUTE-005",
         `Guided route ${edge.referenceId} uses waypoints instead of fixed points.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
     const start = portPoint(source, sourceShape, sourcePort);
@@ -615,6 +636,7 @@ function guidedAnchors(
     throw new ContractError(
       "C4ML-ROUTE-024",
       `Guided route ${edge.referenceId} cannot combine ordered guidance with absolute waypoints or a corridor.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
   if (guidancePoints.length > 0) {
@@ -627,6 +649,7 @@ function guidedAnchors(
     throw new ContractError(
       "C4ML-ROUTE-006",
       `Guided route ${edge.referenceId} cannot combine a corridor and free waypoints yet.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
   return corridor.orientation === "vertical"
@@ -654,6 +677,7 @@ function resolveCorridor(
     throw new ContractError(
       "C4ML-ROUTE-007",
       `Guided route ${edge.referenceId} references unknown corridor ${selection.corridorId}.`,
+      [relationshipSubject(edge.referenceId), corridorSubject(selection.corridorId)],
     );
   }
   if (
@@ -664,6 +688,7 @@ function resolveCorridor(
     throw new ContractError(
       "C4ML-ROUTE-008",
       `Guided route ${edge.referenceId} selects invalid lane ${selection.lane}.`,
+      [relationshipSubject(edge.referenceId), corridorSubject(selection.corridorId)],
     );
   }
   const laneOffset =
@@ -691,12 +716,14 @@ function indexControls(
       throw new ContractError(
         "C4ML-ROUTE-009",
         `Route control references unknown visible relationship ${control.relationshipId}.`,
+        [relationshipSubject(control.relationshipId)],
       );
     }
     if (result.has(control.relationshipId)) {
       throw new ContractError(
         "C4ML-ROUTE-010",
         `Relationship ${control.relationshipId} has more than one route control.`,
+        [relationshipSubject(control.relationshipId)],
       );
     }
     result.set(control.relationshipId, control);
@@ -713,6 +740,7 @@ function indexCorridors(
       throw new ContractError(
         "C4ML-ROUTE-011",
         `Route corridor identifier ${corridor.id || "<empty>"} is invalid or duplicated.`,
+        [corridorSubject(corridor.id)],
       );
     }
     if (
@@ -725,6 +753,7 @@ function indexCorridors(
       throw new ContractError(
         "C4ML-ROUTE-012",
         `Route corridor ${corridor.id} has invalid geometry or lane settings.`,
+        [corridorSubject(corridor.id)],
       );
     }
     result.set(corridor.id, corridor);
@@ -741,6 +770,7 @@ function indexAvoidanceRegions(
       throw new ContractError(
         "C4ML-ROUTE-025",
         `Route avoidance region identifier ${region.id || "<empty>"} is invalid or duplicated.`,
+        [regionSubject(region.id)],
       );
     }
     if (region.geometry.kind === "absolute") {
@@ -753,6 +783,7 @@ function indexAvoidanceRegions(
       throw new ContractError(
         "C4ML-ROUTE-026",
         `Route avoidance region ${region.id} has invalid node-relative geometry.`,
+        [regionSubject(region.id)],
       );
     }
     result.set(region.id, region);
@@ -772,6 +803,7 @@ function validateRouteBounds(id: string, bounds: RouteBounds): void {
     throw new ContractError(
       "C4ML-ROUTE-026",
       `Route avoidance region ${id} has invalid absolute bounds.`,
+      [regionSubject(id)],
     );
   }
 }
@@ -828,6 +860,7 @@ function resolveGuidance(
       throw new ContractError(
         "C4ML-ROUTE-031",
         `Locked segment for route ${edge.referenceId} has identical endpoints.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
     points.push(start, end);
@@ -859,6 +892,7 @@ function resolveRouteAnchor(
       throw new ContractError(
         "C4ML-ROUTE-028",
         `Route ${edge.referenceId} references unknown visible anchor ${anchor.referenceId}.`,
+        [relationshipSubject(edge.referenceId), nodeSubject(anchor.referenceId)],
       );
     }
     const shape =
@@ -875,6 +909,7 @@ function resolveRouteAnchor(
     throw new ContractError(
       "C4ML-ROUTE-028",
       `Route ${edge.referenceId} contains a non-finite relative anchor.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
   return point;
@@ -915,6 +950,7 @@ function resolveAvoidanceRegions(
       throw new ContractError(
         "C4ML-ROUTE-027",
         `Route ${edge.referenceId} selects avoidance region ${id} more than once.`,
+        [relationshipSubject(edge.referenceId), regionSubject(id)],
       );
     }
     seen.add(id);
@@ -923,6 +959,7 @@ function resolveAvoidanceRegions(
       throw new ContractError(
         "C4ML-ROUTE-027",
         `Route ${edge.referenceId} references unknown avoidance region ${id}.`,
+        [relationshipSubject(edge.referenceId), regionSubject(id)],
       );
     }
     let bounds: RouteBounds;
@@ -938,6 +975,7 @@ function resolveAvoidanceRegions(
         throw new ContractError(
           "C4ML-ROUTE-027",
           `Avoidance region ${id} references unknown visible node ${geometry.referenceId}.`,
+          [regionSubject(id), nodeSubject(geometry.referenceId)],
         );
       }
       const padding = geometry.padding;
@@ -986,6 +1024,7 @@ function applyAvoidanceRegions(
         throw new ContractError(
           "C4ML-ROUTE-029",
           `Route ${edge.referenceId} cannot satisfy hard avoidance region ${region.id} without changing a locked or non-orthogonal segment.`,
+          [relationshipSubject(edge.referenceId), regionSubject(region.id)],
         );
       }
       effectiveRegions.push({ ...region, relaxed: true });
@@ -997,6 +1036,7 @@ function applyAvoidanceRegions(
         throw new ContractError(
           "C4ML-ROUTE-029",
           `Route ${edge.referenceId} cannot satisfy hard avoidance region ${region.id}.`,
+          [relationshipSubject(edge.referenceId), regionSubject(region.id)],
         );
       }
       points = pointsBeforeRegion;
@@ -1126,6 +1166,7 @@ function effectiveLockedSegments(
       throw new ContractError(
         "C4ML-ROUTE-031",
         `Route ${edge.referenceId} cannot preserve a declared locked segment.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
     return { ...locked, segmentIndex };
@@ -1170,6 +1211,7 @@ function validateExclusiveCorridorLanes(
       throw new ContractError(
         "C4ML-ROUTE-023",
         `Relationships ${firstRelationshipId} and ${control.relationshipId} select the same exclusive lane ${control.corridor.lane} in corridor ${control.corridor.corridorId}.`,
+        [relationshipSubject(firstRelationshipId), relationshipSubject(control.relationshipId), corridorSubject(control.corridor.corridorId)],
       );
     }
     relationshipByLane.set(key, control.relationshipId);
@@ -1311,6 +1353,7 @@ function validateFinitePoints(edge: DiagramEdge, points: readonly Point[]): void
     throw new ContractError(
       "C4ML-ROUTE-014",
       `Route ${edge.referenceId} contains missing or non-finite points.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
 }
@@ -1325,6 +1368,7 @@ function validateFixedEndpoints(
     throw new ContractError(
       "C4ML-ROUTE-015",
       `Fixed route ${edge.referenceId} does not attach to both endpoint boundaries.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
 }
@@ -1369,6 +1413,7 @@ function validateOrthogonal(edge: DiagramEdge, points: readonly Point[]): void {
       throw new ContractError(
         "C4ML-ROUTE-016",
         `Orthogonal route ${edge.referenceId} contains a diagonal segment.`,
+        [relationshipSubject(edge.referenceId)],
       );
     }
   }
@@ -1393,6 +1438,7 @@ function validateNoInteriorCrossings(
         throw new ContractError(
           "C4ML-ROUTE-017",
           `Controlled route ${edge.referenceId} crosses node ${node.id}.`,
+          [relationshipSubject(edge.referenceId), nodeSubject(node.id)],
         );
       }
     }
@@ -1486,6 +1532,7 @@ function routeResult(
     throw new ContractError(
       "C4ML-ROUTE-019",
       `Route ${edge.referenceId} has a non-finite label offset.`,
+      [relationshipSubject(edge.referenceId)],
     );
   }
   const baseLabelPoint = baseLabelAnchor ?? labelPoint(points, labelSegment);
