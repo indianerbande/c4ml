@@ -72,7 +72,7 @@ runtime. Portable side-by-side setup is documented in
 
 Generated files are ignored under `build/desktop/`. A local macOS make produces
 `C4thedral.app`, `C4thedral.dmg`, and a ZIP archive. The current beta identity is
-`0.1.0-beta.4` and uses the original C4thedral arch-and-C4 icon in SVG, PNG,
+`0.1.0-beta.5` and uses the original C4thedral arch-and-C4 icon in SVG, PNG,
 ICNS, and ICO forms. macOS artifacts are ad-hoc signed for local testing, not
 Developer ID signed or notarized. Windows code signing and native Windows
 installer and Linux portable-app runs remain release work. Build each platform
