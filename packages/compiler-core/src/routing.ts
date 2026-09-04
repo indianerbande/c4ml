@@ -10,9 +10,10 @@ import { compareText } from "./ordering.js";
 import {
   type CardinalPortSide,
   type EffectivePort,
+  type PortRole,
   type PortSelection,
 } from "./ports.js";
-import type { ShapeDefinition } from "./shapes.js";
+import { shapeFillsBoundary, type ShapeDefinition } from "./shapes.js";
 import type { SourceBacked } from "./source.js";
 
 export type RoutePolicy = "automatic" | "fixed" | "guided";
@@ -250,15 +251,67 @@ function automaticRoute(
     );
   }
   const adapterPoints = pointsFromLayoutEdge(layoutEdge);
-  const sourcePort = choosePort(source, target, "automatic");
-  const targetPort = choosePort(target, source, "automatic");
-  const sourcePoint = portPoint(source, sourceShape, sourcePort);
-  const targetPoint = portPoint(target, targetShape, targetPort);
-  const points =
-    adapterPoints.length >= 2
-      ? attachAdapterRoute(adapterPoints, sourcePoint, targetPoint)
-      : [sourcePoint, targetPoint];
-  const labelSegment = selectedLabelSegment(points, control?.labelSegment);
+  const adapterAttachment = adapterBoundaryAttachment(
+    adapterPoints,
+    source,
+    target,
+  );
+  let sourcePort: CardinalPortSide;
+  let targetPort: CardinalPortSide;
+  let points: readonly Point[];
+  if (adapterAttachment !== undefined) {
+    // The layout engine attached the edge to both node boundaries and chose
+    // the sides. A shape whose surface fills its canvas may keep the engine's
+    // attachment point, which preserves the spreading of several edges along
+    // one side. Snapping such points to the shape's single side anchor would
+    // add a segment running along the boundary and let every arrowhead on
+    // that side collide at one point. A shape with an open outline (diamond,
+    // ellipse) must still use its declared Port anchor, entered perpendicular
+    // to the side.
+    sourcePort = adapterAttachment.sourceSide;
+    targetPort = adapterAttachment.targetSide;
+    let attached = adapterAttachment.points;
+    if (!shapeFillsBoundary(sourceShape)) {
+      attached = attachToAnchor(
+        attached,
+        portPoint(source, sourceShape, sourcePort),
+        sourcePort,
+        "source",
+      );
+    }
+    if (!shapeFillsBoundary(targetShape)) {
+      attached = attachToAnchor(
+        attached,
+        portPoint(target, targetShape, targetPort),
+        targetPort,
+        "target",
+      );
+    }
+    points = attached;
+  } else {
+    sourcePort = choosePort(source, target, "automatic");
+    targetPort = choosePort(target, source, "automatic");
+    const sourcePoint = portPoint(source, sourceShape, sourcePort);
+    const targetPoint = portPoint(target, targetShape, targetPort);
+    points =
+      adapterPoints.length >= 2
+        ? attachAdapterRoute(adapterPoints, sourcePoint, targetPoint)
+        : [sourcePoint, targetPoint];
+  }
+  // When the engine reserved room for the label, place the label there; it
+  // is the one spot guaranteed to be clear of the connected elements.
+  const engineLabel =
+    adapterAttachment !== undefined && control?.labelSegment === undefined
+      ? layoutEdge?.labelCenter
+      : undefined;
+  const labelSegment =
+    engineLabel === undefined
+      ? selectedLabelSegment(points, control?.labelSegment)
+      : nearestSegment(points, engineLabel);
+  // Keep the engine's label position as it is. The engine spreads the labels
+  // of parallel edges to opposite sides of their lines so they cannot
+  // overlap; pulling every label back onto its line would undo that.
+  const labelAnchor = engineLabel;
   return routeResult(
     edge,
     "automatic",
@@ -269,7 +322,139 @@ function automaticRoute(
     labelSegment,
     undefined,
     control?.labelOffset,
+    [],
+    [],
+    [],
+    labelAnchor,
   );
+}
+
+function nearestSegment(points: readonly Point[], point: Point): number {
+  let selected = 0;
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const distance = distanceToSegment(point, points[index]!, points[index + 1]!);
+    if (distance < nearest) {
+      nearest = distance;
+      selected = index;
+    }
+  }
+  return selected;
+}
+
+function projectOntoSegment(point: Point, start: Point, end: Point): Point {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t =
+    lengthSquared === 0
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            1,
+            ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared,
+          ),
+        );
+  return { x: start.x + t * dx, y: start.y + t * dy };
+}
+
+function distanceToSegment(point: Point, start: Point, end: Point): number {
+  const projected = projectOntoSegment(point, start, end);
+  return Math.hypot(projected.x - point.x, projected.y - point.y);
+}
+
+const boundaryAttachmentTolerance = 0.5;
+
+/**
+ * Accepts an adapter polyline whose first and last points lie on the source
+ * and target boundaries (within a small numeric tolerance) and reports the
+ * cardinal sides they attach to. Returns `undefined` when the adapter did not
+ * attach the edge to both boundaries, so the caller can fall back to the
+ * shape's side anchors.
+ */
+function adapterBoundaryAttachment(
+  adapterPoints: readonly Point[],
+  source: LayoutNodeResult,
+  target: LayoutNodeResult,
+):
+  | {
+      readonly points: readonly Point[];
+      readonly sourceSide: CardinalPortSide;
+      readonly targetSide: CardinalPortSide;
+    }
+  | undefined {
+  if (adapterPoints.length < 2) {
+    return undefined;
+  }
+  const start = snapToBoundary(adapterPoints[0]!, source);
+  const end = snapToBoundary(adapterPoints.at(-1)!, target);
+  if (start === undefined || end === undefined) {
+    return undefined;
+  }
+  const points = deduplicatePoints([
+    start.point,
+    ...adapterPoints.slice(1, -1),
+    end.point,
+  ]);
+  return points.length < 2
+    ? undefined
+    : { points, sourceSide: start.side, targetSide: end.side };
+}
+
+/**
+ * Moves one end of an orthogonal polyline onto the shape's Port anchor for
+ * the attached side so the terminal segment enters the anchor perpendicular
+ * to that side instead of sliding along the boundary.
+ */
+function attachToAnchor(
+  points: readonly Point[],
+  anchor: Point,
+  side: CardinalPortSide,
+  role: PortRole,
+): readonly Point[] {
+  const ordered = role === "source" ? [...points].reverse() : [...points];
+  const neighbour = ordered.at(-2);
+  if (neighbour === undefined) {
+    return points;
+  }
+  const horizontalEntry = side === "east" || side === "west";
+  const adjustedNeighbour = horizontalEntry
+    ? { x: neighbour.x, y: anchor.y }
+    : { x: anchor.x, y: neighbour.y };
+  const attached = orthogonalize([
+    ...ordered.slice(0, -2),
+    adjustedNeighbour,
+    anchor,
+  ]);
+  return role === "source" ? attached.reverse() : attached;
+}
+
+function snapToBoundary(
+  point: Point,
+  node: LayoutNodeResult,
+): { readonly point: Point; readonly side: CardinalPortSide } | undefined {
+  const right = node.x + node.width;
+  const bottom = node.y + node.height;
+  const withinX =
+    point.x >= node.x - boundaryAttachmentTolerance &&
+    point.x <= right + boundaryAttachmentTolerance;
+  const withinY =
+    point.y >= node.y - boundaryAttachmentTolerance &&
+    point.y <= bottom + boundaryAttachmentTolerance;
+  if (withinY && Math.abs(point.x - node.x) <= boundaryAttachmentTolerance) {
+    return { point: { x: node.x, y: point.y }, side: "west" };
+  }
+  if (withinY && Math.abs(point.x - right) <= boundaryAttachmentTolerance) {
+    return { point: { x: right, y: point.y }, side: "east" };
+  }
+  if (withinX && Math.abs(point.y - node.y) <= boundaryAttachmentTolerance) {
+    return { point: { x: point.x, y: node.y }, side: "north" };
+  }
+  if (withinX && Math.abs(point.y - bottom) <= boundaryAttachmentTolerance) {
+    return { point: { x: point.x, y: bottom }, side: "south" };
+  }
+  return undefined;
 }
 
 function attachAdapterRoute(
@@ -1292,6 +1477,7 @@ function routeResult(
   waypoints: readonly EffectiveRouteWaypoint[] = [],
   lockedSegments: readonly EffectiveLockedSegment[] = [],
   avoidanceRegions: readonly EffectiveAvoidanceRegion[] = [],
+  baseLabelAnchor?: Point,
 ): EffectiveRoute {
   if (
     labelOffset !== undefined &&
@@ -1302,7 +1488,7 @@ function routeResult(
       `Route ${edge.referenceId} has a non-finite label offset.`,
     );
   }
-  const baseLabelPoint = labelPoint(points, labelSegment);
+  const baseLabelPoint = baseLabelAnchor ?? labelPoint(points, labelSegment);
   const sourcePort: EffectivePort = {
     id: `${edge.id}:source-port`,
     relationshipId: edge.referenceId,

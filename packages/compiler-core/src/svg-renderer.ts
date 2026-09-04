@@ -516,6 +516,20 @@ function routePath(route: SceneRoute): string {
     const labelCenter =
       (route.labelPoint.x - start.x) * unitX +
       (route.labelPoint.y - start.y) * unitY;
+    // A label that sits beside the line (the engine keeps labels of parallel
+    // edges on opposite sides) leaves the line intact; only a label on the
+    // line opens a gap.
+    const distanceFromLine = Math.abs(
+      (route.labelPoint.x - start.x) * unitY -
+        (route.labelPoint.y - start.y) * unitX,
+    );
+    const halfHeight =
+      Math.abs(unitX) * (route.labelBounds.height / 2) +
+      Math.abs(unitY) * (route.labelBounds.width / 2);
+    if (distanceFromLine >= halfHeight) {
+      commands.push(`L ${number(end.x)} ${number(end.y)}`);
+      continue;
+    }
     const clearance =
       Math.abs(unitX) * (route.labelBounds.width / 2) +
       Math.abs(unitY) * (route.labelBounds.height / 2) +

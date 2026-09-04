@@ -734,6 +734,34 @@ describe("experimental C4ML CLI", () => {
     expect(stderr).toEqual([]);
   });
 
+  it("renders a populated generated legend from authored source", async () => {
+    // Regression: `legend = generated` in source used to render only the
+    // legend title without any notation entries.
+    const directory = await mkdtemp(join(tmpdir(), "c4ml-cli-legend-"));
+    const output = join(directory, "diagrams");
+
+    const exitCode = await runCli(
+      [
+        "render",
+        fileURLToPath(contextUrl),
+        "--view",
+        "garden-pulse-context",
+        "--format",
+        "svg",
+        "--output",
+        output,
+      ],
+      io(directory),
+    );
+    const svg = await readFile(join(output, "garden-pulse-context.svg"), "utf8");
+    const legend = svg.slice(svg.indexOf('<g id="diagram-legend">'));
+
+    expect(exitCode).toBe(cliExitCode.success);
+    expect(legend).toContain('data-c4ml-legend="Person"');
+    expect(legend).toContain('data-c4ml-legend="Software System"');
+    expect(stderr).toEqual([]);
+  });
+
   it("renders every declared view to SVG and PNG at a requested scale", async () => {
     const directory = await mkdtemp(join(tmpdir(), "c4ml cli ü-"));
     const sourcePath = join(directory, "architecture copy.c4ml");

@@ -1525,10 +1525,11 @@ function toWorkerNodeGeometry(
   const finalLayoutNode = placement?.layout.nodes.find(
     ({ id }) => id === candidate.id,
   );
-  const sceneOffset = {
-    x: finalLayoutNode === undefined ? 0 : node.x - finalLayoutNode.x,
-    y: finalLayoutNode === undefined ? 0 : node.y - finalLayoutNode.y,
-  };
+  // Geometry is reported in layout coordinates (diagram units), the space
+  // that pins and adjustments are authored in. The scene adds a
+  // content-dependent offset for the title, padding, and any geometry moved
+  // to negative coordinates; a pin generated from scene coordinates would
+  // drift by that offset on every apply.
   const fallbackSource = viewSource ?? nodeSource;
   const effective =
     placement?.constraints.filter(({ nodeIds }) =>
@@ -1561,22 +1562,22 @@ function toWorkerNodeGeometry(
     }),
   ];
   const final = {
-    x: node.x,
-    y: node.y,
+    x: finalLayoutNode?.x ?? candidate.x,
+    y: finalLayoutNode?.y ?? candidate.y,
     width: node.width,
     height: node.height,
   };
   return {
     candidate: {
-      x: candidate.x + sceneOffset.x,
-      y: candidate.y + sceneOffset.y,
+      x: candidate.x,
+      y: candidate.y,
       width: candidate.width,
       height: candidate.height,
     },
     final,
     delta: {
-      x: final.x - candidate.x - sceneOffset.x,
-      y: final.y - candidate.y - sceneOffset.y,
+      x: final.x - candidate.x,
+      y: final.y - candidate.y,
     },
     explanations,
   };

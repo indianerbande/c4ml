@@ -43,6 +43,48 @@ describe("resolveArchitectureViews", () => {
     }
   });
 
+  it("generates legend entries when a view declares legend mode generated", () => {
+    // The source language lowers `legend = generated` to a legend object
+    // without entries; the resolver must still derive the entries.
+    const contextView = signalGardenViews.find(
+      (view) => view.kind === "system-context",
+    )!;
+    const declared: ArchitectureView = {
+      ...contextView,
+      legend: { mode: "generated" },
+    };
+
+    const result = resolveArchitectureView(signalGardenModel, declared);
+    const legend = result.views[0]?.legend;
+
+    expect(result.valid).toBe(true);
+    expect(legend?.mode).toBe("generated");
+    expect(legend?.title).toBe("Notation");
+    expect(legend?.entries?.map(({ label }) => label)).toEqual([
+      "Person",
+      "Software System",
+    ]);
+  });
+
+  it("keeps an authored legend and its entries untouched", () => {
+    const contextView = signalGardenViews.find(
+      (view) => view.kind === "system-context",
+    )!;
+    const declared: ArchitectureView = {
+      ...contextView,
+      legend: {
+        mode: "authored",
+        title: "Reading guide",
+        entries: [{ label: "Actor", description: "A person using the garden." }],
+      },
+    };
+
+    const result = resolveArchitectureView(signalGardenModel, declared);
+
+    expect(result.valid).toBe(true);
+    expect(result.views[0]?.legend).toEqual(declared.legend);
+  });
+
   it("enforces the primary and supporting element contracts of static views", () => {
     const views = resolvedByKind();
 

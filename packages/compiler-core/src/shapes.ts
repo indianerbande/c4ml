@@ -201,6 +201,24 @@ export function defaultShapeId(role: string | undefined): string {
   return role === "person" ? personShape.id : boxShape.id;
 }
 
+/**
+ * Whether the shape's visible surface covers its whole normalized canvas, so
+ * a route may attach anywhere along a side rather than only at the side's
+ * declared Port anchor. The built-in box and Person shapes qualify; a diamond
+ * or ellipse does not, because its outline leaves the canvas corners empty.
+ */
+export function shapeFillsBoundary(definition: ShapeDefinition): boolean {
+  return definition.primitives.some(
+    (primitive) =>
+      primitive.kind === "rectangle" &&
+      primitive.paint === "surface" &&
+      primitive.x <= 0 &&
+      primitive.y <= 0 &&
+      primitive.x + primitive.width >= definition.canvas.width &&
+      primitive.y + primitive.height >= definition.canvas.height,
+  );
+}
+
 export function validateShapeDefinition(definition: ShapeDefinition): void {
   if (definition.id.trim().length === 0) {
     throw new ContractError("C4ML-SHAPE-001", "Shape identifier is empty.");

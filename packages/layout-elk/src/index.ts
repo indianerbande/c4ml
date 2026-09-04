@@ -44,8 +44,18 @@ export class ElkLayoutAdapter implements LayoutAdapter {
   }
 }
 
+// Layer spacing when edge labels take part in the layout. ELK adds the
+// spacing on both sides of the reserved label footprint, so the effective
+// gap becomes spacing + label + spacing.
+const labelledLayerSpacing = { root: "60", compound: "40" } as const;
+// Layer spacing for label-free graphs, where the gap itself must hold the
+// visual distance between elements.
+const unlabelledLayerSpacing = { root: "260", compound: "140" } as const;
+
 function createElkGraph(request: LayoutRequest): ElkNode {
   const elkNodes = new Map<string, ElkNode>();
+  const labelled = request.edges.some((edge) => edge.label !== undefined);
+  const layerSpacing = labelled ? labelledLayerSpacing : unlabelledLayerSpacing;
   const parentIds = new Set(
     request.nodes.flatMap((node) =>
       node.parentId === undefined ? [] : [node.parentId],
@@ -57,7 +67,7 @@ function createElkGraph(request: LayoutRequest): ElkNode {
           "elk.algorithm": "layered",
           "elk.direction": directionMap[request.direction],
           "elk.edgeRouting": "ORTHOGONAL",
-          "elk.layered.spacing.nodeNodeBetweenLayers": "140",
+          "elk.layered.spacing.nodeNodeBetweenLayers": layerSpacing.compound,
           "elk.spacing.nodeNode": "70",
         }
       : {};
@@ -95,6 +105,18 @@ function createElkGraph(request: LayoutRequest): ElkNode {
     id: edge.id,
     sources: [edge.sourceId],
     targets: [edge.targetId],
+    ...(edge.label === undefined
+      ? {}
+      : {
+          labels: [
+            {
+              id: `${edge.id}:label`,
+              text: edge.id,
+              width: edge.label.width,
+              height: edge.label.height,
+            },
+          ],
+        }),
   }));
 
   return {
@@ -108,8 +130,13 @@ function createElkGraph(request: LayoutRequest): ElkNode {
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
       "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
       "elk.layered.crossingMinimization.forceNodeModelOrder": "true",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "260",
-      "elk.randomSeed": "0",
+      "elk.layered.spacing.nodeNodeBetweenLayers": layerSpacing.root,
+      // Inline labels sit on their edge inside the reserved gap instead of
+      // beside it, which keeps the layer distance predictable.
+      "elk.edgeLabels.inline": "true",
+      // ELK treats seed 0 as "choose a seed", which made the same request
+      // alternate between layouts across calls on one engine instance.
+      "elk.randomSeed": "1",
       "elk.spacing.nodeNode": "60",
     },
   };
@@ -203,11 +230,23 @@ function visitEdges(
       commonAncestor === undefined
         ? { x: 0, y: 0 }
         : { x: commonAncestor.x, y: commonAncestor.y };
+    const label = edge.labels?.[0];
+    const labelCenter =
+      label?.x === undefined ||
+      label.y === undefined ||
+      label.width === undefined ||
+      label.height === undefined
+        ? undefined
+        : {
+            x: offset.x + requiredFinite(label.x, `${edge.id}.label.x`) + label.width / 2,
+            y: offset.y + requiredFinite(label.y, `${edge.id}.label.y`) + label.height / 2,
+          };
     edges.push({
       id: edge.id,
       sections: stableById(edge.sections ?? []).map((section) =>
         normalizeSection(section, offset),
       ),
+      ...(labelCenter === undefined ? {} : { labelCenter }),
     });
   }
   for (const child of graph.children ?? []) {
