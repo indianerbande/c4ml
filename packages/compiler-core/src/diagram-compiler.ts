@@ -9,13 +9,13 @@ import {
 } from "./diagram-preparation.js";
 import {
   ContractError,
+  type ContractSubject,
   type LayoutAdapter,
   type LayoutResult,
 } from "./layout.js";
 import type { ArchitectureModel } from "./model.js";
 import {
   applyPlacementConstraints,
-  PlacementConflictError,
   type DiagramPlacementOptions,
   type PlacementResult,
 } from "./placement.js";
@@ -30,7 +30,7 @@ import {
   type SceneOptions,
 } from "./scene.js";
 import type { DiagramShapeOptions } from "./shapes.js";
-import { sourceOf } from "./source.js";
+import { sourceOf, type SourceReference } from "./source.js";
 import {
   renderDiagramSvg,
   type SvgRenderOptions,
@@ -142,60 +142,68 @@ function compilerStageDiagnostic(
           "C4ML-COMPILE-001",
           error instanceof Error ? error.message : "Unknown compiler-stage failure.",
         );
-  const routeControl = request.routing?.controls?.find(
-    (control) =>
-      contractError.message.includes(control.relationshipId) &&
-      control.source !== undefined,
-  );
-  const routeRegion = request.routing?.avoidanceRegions?.find(
-    (region) =>
-      contractError.message.includes(region.id) && region.source !== undefined,
-  );
-  const routeSource =
-    routeControl?.source ??
-    routeRegion?.source ??
-    request.routing?.corridors?.find(
-      (corridor) =>
-        contractError.message.includes(corridor.id) &&
-        corridor.source !== undefined,
-    )?.source;
-  const placementSources =
-    error instanceof PlacementConflictError
-      ? error.constraintIds.flatMap((id) => {
-          const constraint = request.placement?.constraints.find(
-            (candidate) => candidate.id === id,
-          );
-          return constraint?.source === undefined ? [] : [constraint.source];
-        })
-      : [];
-  const placementControl = request.placement?.constraints.find((constraint) =>
-    contractError.message.includes(constraint.id),
-  );
-  const placementSource = placementSources[0] ?? placementControl?.source;
+  // Stage errors name the objects they are about; each subject is mapped to
+  // the source that declared it. The message is never searched for
+  // identifiers, so a short identifier cannot match unrelated text.
+  const sources = contractError.subjects.flatMap((subject) => {
+    const source = subjectSource(subject, request);
+    return source === undefined ? [] : [{ subject, source }];
+  });
+  const primary = sources[0];
+  const related = sources
+    .slice(1)
+    .filter(({ source }) => source !== primary?.source)
+    .map(({ subject, source }) => ({
+      message: `${subjectLabel(subject)} is declared here.`,
+      source,
+    }));
   return createDiagnostic({
     code: contractError.code,
     severity: "error",
     message: contractError.message,
-    source: placementSource ?? routeSource ?? sourceOf(request.view),
-    related:
-      placementSources.length > 1
-        ? placementSources.slice(1).map((source) => ({
-            message: "Conflicting placement constraint is declared here.",
-            source,
-          }))
-        : routeControl?.source !== undefined &&
-            routeRegion?.source !== undefined &&
-            routeControl.source !== routeRegion.source
-          ? [
-              {
-                message: `Avoidance region ${routeRegion.id} is declared here.`,
-                source: routeRegion.source,
-              },
-            ]
-          : [],
+    source: primary?.source ?? sourceOf(request.view),
+    related,
     correction:
       "Review the effective placement, layout, and route controls reported before rendering.",
   });
+}
+
+function subjectSource(
+  subject: ContractSubject,
+  request: DiagramCompileRequest,
+): SourceReference | undefined {
+  switch (subject.kind) {
+    case "relationship":
+      return request.routing?.controls?.find(
+        ({ relationshipId }) => relationshipId === subject.id,
+      )?.source;
+    case "avoidance-region":
+      return request.routing?.avoidanceRegions?.find(({ id }) => id === subject.id)
+        ?.source;
+    case "corridor":
+      return request.routing?.corridors?.find(({ id }) => id === subject.id)
+        ?.source;
+    case "placement-constraint":
+      return request.placement?.constraints.find(({ id }) => id === subject.id)
+        ?.source;
+    case "node":
+      return request.model.elements.find(({ id }) => id === subject.id)?.source;
+  }
+}
+
+function subjectLabel(subject: ContractSubject): string {
+  switch (subject.kind) {
+    case "relationship":
+      return `Route control for ${subject.id}`;
+    case "avoidance-region":
+      return `Avoidance region ${subject.id}`;
+    case "corridor":
+      return `Corridor ${subject.id}`;
+    case "placement-constraint":
+      return "Conflicting placement constraint";
+    case "node":
+      return `Element ${subject.id}`;
+  }
 }
 
 function relaxedPlacementDiagnostics(
