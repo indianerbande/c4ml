@@ -6,7 +6,7 @@ import type {
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import type { PreviewSemanticChangeWorkerResponse } from "./compiler-worker.protocol.js";
 import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
-import { projectChangeToSourceChange } from "./project-change-to-source.js";
+import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 
 export type SemanticEditorMode = "element" | "relationship";
@@ -27,7 +27,6 @@ export class WorkbenchSemanticFacade {
   readonly pickerIssue = signal<"invalid-source" | "invalid-target" | undefined>(
     undefined,
   );
-  readonly canUndo = signal(false);
   readonly project = computed(() => this.#documents.projectSnapshot());
   readonly pickerSourceLabel = computed(() => {
     const id = this.pickerSourceId();
@@ -42,9 +41,9 @@ export class WorkbenchSemanticFacade {
   readonly #connectionContext = signal<C4mlSemanticAuthoringContext | undefined>(
     undefined,
   );
+  readonly #transaction = new SourceAuthoringTransaction(this.#documents);
+  readonly canUndo = this.#transaction.canUndo;
   #activeViewId: string | undefined;
-  #applyingChange = false;
-  #documentWasDirty = false;
 
   showElement(activeViewId: string | undefined): void {
     this.#show(activeViewId, "element");
@@ -133,7 +132,7 @@ export class WorkbenchSemanticFacade {
   apply(
     response: PreviewSemanticChangeWorkerResponse,
     editor: C4mlMonacoSourceEditorComponent | undefined,
-  ): void {
+  ): Promise<void> {
     const changeSet = response.changeSet;
     const documentUri = response.documentUri;
     if (
@@ -141,43 +140,30 @@ export class WorkbenchSemanticFacade {
       changeSet === undefined ||
       documentUri === undefined ||
       editor === undefined
-    ) return;
-    const document = this.#documents.projectDocuments().find(({ uri }) => uri === documentUri);
-    if (document === undefined) return;
-    const localChange = projectChangeToSourceChange(changeSet, documentUri, document.source);
-    if (!localChange.valid || !this.#documents.selectDocument(documentUri)) return;
-
-    queueMicrotask(() => {
-      this.#applyingChange = true;
-      const application = editor.applyChangeSet(localChange.changeSet);
-      this.#applyingChange = false;
-      if (!application.applied) return;
-      this.#documentWasDirty = document.dirty;
-      this.open.set(false);
-      this.initialSourceId.set(undefined);
-      this.initialTargetId.set(undefined);
-      this.canUndo.set(true);
-    });
+    ) {
+      return Promise.resolve();
+    }
+    return this.#transaction
+      .apply(changeSet, documentUri, editor)
+      .then((outcome) => {
+        if (outcome === "applied") {
+          this.open.set(false);
+          this.initialSourceId.set(undefined);
+          this.initialTargetId.set(undefined);
+        }
+      });
   }
 
-  undo(editor: C4mlMonacoSourceEditorComponent | undefined): void {
-    if (editor === undefined || !this.canUndo()) return;
-    const wasDirty = this.#documentWasDirty;
-    this.#applyingChange = true;
-    editor.undoAuthoringChange();
-    this.#applyingChange = false;
-    this.canUndo.set(false);
-    queueMicrotask(() => {
-      this.#documents.replaceSource(this.#documents.source(), wasDirty);
-      this.#documentWasDirty = false;
-    });
+  undo(editor: C4mlMonacoSourceEditorComponent | undefined): Promise<void> {
+    if (editor === undefined) return Promise.resolve();
+    return this.#transaction.undo(editor).then(() => undefined);
   }
 
   sourceChanged(): void {
-    if (this.#applyingChange) return;
+    // Connection picking is bound to the compiled diagram; any edit ends it.
+    // Only the undo step must survive the facade's own apply/undo edits.
     this.cancelConnectionPicking();
-    this.canUndo.set(false);
-    this.#documentWasDirty = false;
+    this.#transaction.sourceChanged();
   }
 
   reset(): void {
@@ -186,9 +172,7 @@ export class WorkbenchSemanticFacade {
     this.initialSourceId.set(undefined);
     this.initialTargetId.set(undefined);
     this.cancelConnectionPicking();
-    this.canUndo.set(false);
-    this.#documentWasDirty = false;
-    this.#applyingChange = false;
+    this.#transaction.reset();
   }
 
   #show(

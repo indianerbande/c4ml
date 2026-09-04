@@ -22,6 +22,7 @@ import type {
   WorkbenchColorPalette,
 } from "./workbench-preferences.js";
 import type { C4mlSyntaxThemePreset } from "./syntax-theme.js";
+import { SourceEditorActivationGate } from "./source-editor-activation-gate.js";
 import {
   SourceEditorDocumentSession,
   type SourceEditorDocumentHost,
@@ -101,6 +102,7 @@ export class C4mlMonacoSourceEditorComponent
   #synchronizeExternalValue = false;
   #destroyed = false;
   #runtime: MonacoRuntime | undefined;
+  readonly #activation = new SourceEditorActivationGate();
 
   constructor() {
     effect(() => {
@@ -173,6 +175,18 @@ export class C4mlMonacoSourceEditorComponent
     }
     this.#editor?.dispose();
     this.#model = undefined;
+    this.#activation.close();
+  }
+
+  /**
+   * Resolves with `true` once the editor presents `uri`, or with `false` when
+   * a different document becomes active first or the editor goes away. The
+   * document switch itself is driven by the `documentUri` input, which the
+   * workbench updates through signals and Angular applies in the next
+   * change-detection tick.
+   */
+  whenDocumentActive(uri: string): Promise<boolean> {
+    return this.#activation.whenActive(uri);
   }
 
   revealDiagnostic(diagnostic: CompilerWorkerDiagnostic): void {
@@ -183,12 +197,28 @@ export class C4mlMonacoSourceEditorComponent
     this.revealSource(source);
   }
 
+  /** Reveals `source` in its own document once that document is presented. */
+  async revealSourceInDocument(
+    source: NonNullable<CompilerWorkerDiagnostic["source"]>,
+  ): Promise<boolean> {
+    if (!(await this.whenDocumentActive(source.file))) {
+      return false;
+    }
+    this.revealSource(source);
+    return true;
+  }
+
   applyChangeSet(
     changeSet: ProposedSourceChangeSet,
+    documentUri?: string,
   ): SourceEditorChangeSetApplication {
     const editor = this.#editor;
     const model = editor?.getModel();
     if (editor === undefined || model === null || model === undefined) {
+      return { applied: false, reason: "editor-rejected", issues: [] };
+    }
+    if (documentUri !== undefined && documentUri !== this.#activation.activeUri) {
+      // Never let a change addressed to one document land in another model.
       return { applied: false, reason: "editor-rejected", issues: [] };
     }
     return applySourceChangeSetAsSingleUndo(changeSet, {
@@ -382,6 +412,7 @@ export class C4mlMonacoSourceEditorComponent
     this.#model = model;
     this.#emitCurrentSelection();
     this.#updateMarkers();
+    this.#activation.activated(uri);
     return model;
   }
 

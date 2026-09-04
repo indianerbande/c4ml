@@ -22,7 +22,9 @@ describe("workbench semantic authoring architecture", () => {
     expect(root).toContain("this.semanticEditor.apply(response, this.sourceEditor())");
     expect(root).toContain("this.semanticEditor.undo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("projectChangeToSourceChange");
+    expect(facade).not.toContain("projectChangeToSourceChange");
+    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("inspectSemanticAuthoring(");
     expect(facade).toContain("connectionOptions");

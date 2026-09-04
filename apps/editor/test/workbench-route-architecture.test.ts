@@ -16,7 +16,9 @@ describe("workbench route architecture", () => {
     expect(root).toContain("this.routeEditor.apply(response, this.sourceEditor())");
     expect(root).toContain("this.routeEditor.undo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("projectChangeToSourceChange");
+    expect(facade).not.toContain("projectChangeToSourceChange");
+    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("WorkbenchPreviewFacade");
     expect(facade).toContain("readonly session = signal<RouteEditorSession | undefined>");

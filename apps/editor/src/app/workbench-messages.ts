@@ -308,6 +308,8 @@ const englishMessages = {
     "Discard unsaved changes to {name} and open another source?",
   "operation.discardProject":
     "Discard unsaved changes in {name} and open something else?",
+  "operation.discardForWizard":
+    "Replace {name} with the new document from the wizard and discard its unsaved changes?",
   "operation.opening": "Opening source…",
   "operation.opened": "Opened {name}",
   "operation.openFailed": "The desktop file dialog failed unexpectedly.",
@@ -1004,6 +1006,8 @@ const germanMessages: WorkbenchMessages = {
     "Ungespeicherte Änderungen an {name} verwerfen und anderen Quelltext öffnen?",
   "operation.discardProject":
     "Ungespeicherte Änderungen in {name} verwerfen und etwas anderes öffnen?",
+  "operation.discardForWizard":
+    "{name} durch das neue Dokument aus dem Assistenten ersetzen und ungespeicherte Änderungen verwerfen?",
   "operation.opening": "Quelltext wird geöffnet…",
   "operation.opened": "{name} geöffnet",
   "operation.openFailed":
