@@ -24,7 +24,7 @@ C4ML.
 - [Linux installation](install-linux.md)
 - [Windows installation](install-windows.md)
 - [Native platform matrix](platforms.md)
-- [Release notes for 0.1.0-beta.4](releases/0.1.0-beta.4.md)
+- [Release notes for 0.1.0-beta.5](releases/0.1.0-beta.5.md)
 
 ## Project participation
 
