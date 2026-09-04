@@ -99,6 +99,7 @@ export interface SceneRoute {
   readonly labelPoint: Point;
   readonly labelBounds: SceneBounds;
   readonly labelSegment: number;
+  readonly implied: boolean;
   readonly corridor?: EffectiveCorridor;
   readonly waypoints: readonly EffectiveRouteWaypoint[];
   readonly lockedSegments: readonly EffectiveLockedSegment[];
@@ -184,7 +185,12 @@ export function createDiagramScene(
   const nodes = diagram.nodes.map((node) =>
     sceneNode(node, requiredLayoutNode(layoutNodeById, node.id), offset),
   );
-  const sceneRoutes = routes.map((route) => sceneRoute(route, offset));
+  const impliedEdgeIds = new Set(
+    diagram.edges.filter(({ implied }) => implied === true).map(({ id }) => id),
+  );
+  const sceneRoutes = routes.map((route) =>
+    sceneRoute(route, offset, impliedEdgeIds.has(route.edgeId)),
+  );
   const ports = routes.flatMap((route) => [
     scenePort(route.sourcePort, offset),
     scenePort(route.targetPort, offset),
@@ -301,7 +307,11 @@ function sceneNode(
   };
 }
 
-function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
+function sceneRoute(
+  route: EffectiveRoute,
+  offset: Point,
+  implied = false,
+): SceneRoute {
   const labelPoint = {
     x: route.labelPoint.x + offset.x,
     y: route.labelPoint.y + offset.y,
@@ -330,6 +340,7 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
     labelPoint,
     labelBounds: routeLabelBounds(labelLines, technologyLines, labelPoint),
     labelSegment: route.labelSegment,
+    implied,
     ...(route.corridor === undefined
       ? {}
       : { corridor: sceneCorridor(route.corridor, offset) }),

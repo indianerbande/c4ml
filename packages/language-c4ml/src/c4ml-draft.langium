@@ -191,6 +191,7 @@ ViewProperty:
     | ViewPurposeProperty
     | ViewAudienceProperty
     | ViewLegendProperty
+    | ViewRelationshipsProperty
     | ViewDisplayProperty
     | ViewAllowMixedLevelsProperty
     | ViewEnvironmentProperty
@@ -221,6 +222,9 @@ ViewAudienceProperty:
 
 ViewLegendProperty:
     'legend' '=' value='generated';
+
+ViewRelationshipsProperty:
+    'relationships' '=' value=('declared' | 'implied');
 
 ViewDisplayProperty:
     'display' '=' value=('collaboration' | 'sequence');

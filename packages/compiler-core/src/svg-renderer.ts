@@ -116,6 +116,7 @@ ${renderElementThemeStyles(theme)}
       .route { fill: none; stroke: ${theme.routes.guided}; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
       .route-automatic { stroke: ${theme.routes.automatic}; }
       .route-fixed { stroke: ${theme.routes.fixed}; stroke-width: 2.5; }
+      .route-implied { stroke-dasharray: 7 5; }
       .route-arrow { fill: ${theme.routes.guided}; }
       .route-arrow-automatic { fill: ${theme.routes.automatic}; }
       .route-arrow-fixed { fill: ${theme.routes.fixed}; }
@@ -369,7 +370,9 @@ function requiredShape(
 }
 
 function renderRoutePath(route: SceneRoute): string {
-  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}${comparisonClass(route.comparison)}"${comparisonPaintStyle(route.comparison, "stroke")} data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}" data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}"${comparisonAttributes(route.comparison)} d="${routePath(route)}"/>`;
+  const implied = route.implied ? " route-implied" : "";
+  const impliedAttribute = route.implied ? ' data-c4ml-implied="true"' : "";
+  return `    <path id="${svgSceneObjectId(route.id)}" class="route${routePolicyClass(route.policy, "route")}${implied}${comparisonClass(route.comparison)}"${comparisonPaintStyle(route.comparison, "stroke")} data-c4ml-id="${escapeXml(route.relationshipId)}" data-c4ml-route-policy="${route.policy}" data-c4ml-route-style="${route.style}"${impliedAttribute} data-c4ml-source-port="${svgSceneObjectId(route.sourcePortId)}" data-c4ml-target-port="${svgSceneObjectId(route.targetPortId)}"${comparisonAttributes(route.comparison)} d="${routePath(route)}"/>`;
 }
 
 function renderPort(port: ScenePort): string {
@@ -469,6 +472,12 @@ function renderLegendEntry(
       (candidate.kind === "visual-group" && entry.label === "Visual Group") ||
       (candidate.kind === "deployment-node" && entry.label === "Deployment Node"),
   );
+  if (entry.label === "Implied Relationship") {
+    return `<g class="legend-entry legend-implied-relationship" data-c4ml-legend="${escapeXml(entry.label)}">
+      <path class="route route-automatic route-implied" d="M ${number(x)} ${number(y - 5)} L ${number(x + 18)} ${number(y - 5)}"/>
+      <text class="legend-text" x="${number(x + 24)}" y="${y}">${escapeXml(entry.label)}</text>
+    </g>`;
+  }
   if (node === undefined) {
     return `<text class="legend-text" x="${number(x)}" y="${y}">${escapeXml(entry.label)}</text>`;
   }

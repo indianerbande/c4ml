@@ -61,6 +61,8 @@ export interface DiagramEdge {
   readonly label: string;
   readonly technology?: string;
   readonly sourceId?: string;
+  /** The edge projects more detailed Relationships onto this View's level. */
+  readonly implied?: true;
 }
 
 export interface PreparedDiagram {
@@ -506,6 +508,7 @@ function createDiagramEdges(
       ...(relationship.source === undefined
         ? {}
         : { sourceId: relationship.source.file }),
+      ...(relationship.implied ? { implied: true as const } : {}),
     })),
   );
 }

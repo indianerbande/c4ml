@@ -395,8 +395,17 @@ view signal-context {
 }
 ```
 
-Der Fokus ist ein Softwaresystem; unmittelbar verbundene Personen und Systeme
-sind zulässig, tiefere C4-Ebenen nicht.
+Der Fokus ist ein Softwaresystem; verbundene Personen und Systeme erscheinen,
+tiefere C4-Ebenen nicht.
+
+Beziehungen werden einmal deklariert, dort, wo sie tatsächlich stattfinden.
+Eine Beziehung zwischen zwei Containern verschiedener Systeme erscheint hier
+zwischen den beiden Softwaresystemen, gestrichelt gezeichnet und in der
+Legende als „Implied Relationship" geführt; ein Klick darauf in der Workbench
+führt zur Container-Deklaration. Mehrere Detailbeziehungen zwischen demselben
+Paar verschmelzen zu einer Linie, deren Beschriftung ihre Absichten verbindet.
+Mit `relationships = declared` zeigt eine View nur Beziehungen, die direkt
+zwischen den sichtbaren Elementen deklariert sind.
 
 ### 6.3 Container
 

@@ -367,6 +367,41 @@ include a title and a generated or authored legend.
 A view MUST NOT duplicate semantic element definitions. A model element MAY
 appear differently in different views without changing its identity.
 
+#### Relationship projection in static views
+
+**Status: Accepted; implemented in the portable compiler core and the
+experimental `draft-1` language slice.**
+
+A Relationship is declared once, at the most detailed level where it exists
+(for example Container → Container). Every static view projects such
+Relationships onto its own abstraction level: each endpoint is replaced by its
+nearest ancestor that the view shows. A Container → Container Relationship
+between two Software Systems therefore appears as a Software System → Software
+System Relationship in a System Context or System Landscape View, and a Person
+→ Component Relationship appears as Person → Container in a Container View.
+Relationships whose endpoints project onto the same visible element disappear
+from that view. Relationships that touch no primary element of the view stay
+out of it.
+
+An implied Relationship is presentation, not model: it carries a view-scoped
+identity (`implied:<source>:<target>`) that no source declaration can collide
+with, lists the authored Relationships it stands for, uses their descriptions
+(several are joined), keeps a shared technology or protocol only when all
+represented Relationships agree, and points to the first represented
+declaration as its source. Several detailed Relationships that project onto
+the same pair merge into one implied Relationship; a Relationship declared
+directly on that pair keeps its own identity and absorbs them. Rendered
+diagrams distinguish implied Relationships (dashed) and list them in the
+generated legend. Canonical snapshots, coverage analysis, comparison, and
+queries reason about the represented authored identities, never about implied
+identities.
+
+Authors MAY switch a view to `relationships = declared`, which shows only
+Relationships whose own endpoints are visible. `implied` is the default
+because a System Context View that hides its people and neighbouring systems
+merely because the author modelled the connections between Containers is
+wrong for every reader.
+
 ### 6.1 System Landscape View
 
 The scope is an enterprise, organization, department, portfolio, or another
@@ -377,14 +412,16 @@ system.
 ### 6.2 System Context View
 
 The scope is exactly one focal Software System. The primary element is that
-Software System. Supporting elements are directly connected People and Software
-Systems. Container, Component, Code, and deployment detail MUST NOT appear.
+Software System. Supporting elements are People and Software Systems connected
+to it directly or through projected Relationships (see the projection rule
+above). Container, Component, Code, and deployment detail MUST NOT appear.
 
 ### 6.3 Container View
 
 The scope is exactly one Software System. Primary elements are its Containers.
-Supporting elements are directly connected People and Software Systems.
-Components, Code Elements, and deployment detail MUST NOT appear.
+Supporting elements are People and Software Systems connected to them directly
+or through projected Relationships. Components, Code Elements, and deployment
+detail MUST NOT appear.
 
 ### 6.4 Component View
 
