@@ -240,7 +240,21 @@ export class WorkbenchDocumentFacade {
     return true;
   }
 
-  resetAsGeneratedDocument(source: string): void {
+  /**
+   * Replaces the whole workspace with one generated document. Returns false
+   * without touching anything when the user keeps unsaved work instead.
+   */
+  resetAsGeneratedDocument(source: string): boolean {
+    if (
+      this.projectDirty() &&
+      !window.confirm(
+        this.#i18n.t("operation.discardForWizard", {
+          name: this.workspaceName(),
+        }),
+      )
+    ) {
+      return false;
+    }
     this.#replaceProject({
       id: "implicit-project",
       projectMode: false,
@@ -253,6 +267,7 @@ export class WorkbenchDocumentFacade {
         },
       ],
     });
+    return true;
   }
 
   async openDocument(): Promise<OpenedWorkbenchDocument | undefined> {

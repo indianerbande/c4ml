@@ -14,7 +14,9 @@ describe("workbench placement architecture", () => {
     expect(root).toContain("this.placement.apply(response, this.sourceEditor())");
     expect(root).toContain("this.placement.undo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("projectChangeToSourceChange");
+    expect(facade).not.toContain("projectChangeToSourceChange");
+    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("WorkbenchPreviewFacade");
   });

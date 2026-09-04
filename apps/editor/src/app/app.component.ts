@@ -378,33 +378,22 @@ export class AppComponent {
 
   onDiagnosticSelected(diagnostic: CompilerWorkerDiagnostic): void {
     const source = diagnostic.source;
-    if (source !== undefined && source.file !== this.activeDocumentUri()) {
-      this.documents.selectDocument(source.file);
-      this.#compileCurrentProject(this.compiler.state().activeViewId);
-    }
-    queueMicrotask(() => this.sourceEditor()?.revealDiagnostic(diagnostic));
+    if (source === undefined) return;
+    this.#revealInOwningDocument(source);
   }
 
   onAnalysisFindingSelected(finding: AnalysisFinding): void {
     const source = finding.sourceLocations[0];
     if (source === undefined) return;
-    if (source.file !== this.activeDocumentUri()) {
-      this.documents.selectDocument(source.file);
-      this.#compileCurrentProject(this.compiler.state().activeViewId);
-    }
-    queueMicrotask(() => this.sourceEditor()?.revealSource({
+    this.#revealInOwningDocument({
       file: source.file,
       start: source.range.start,
       end: source.range.end,
-    }));
+    });
   }
 
   onInspectorSourceSelected(source: CompilerWorkerSource): void {
-    if (source.file !== this.activeDocumentUri()) {
-      this.documents.selectDocument(source.file);
-      this.#compileCurrentProject(this.compiler.state().activeViewId);
-    }
-    queueMicrotask(() => this.sourceEditor()?.revealSource(source));
+    this.#revealInOwningDocument(source);
   }
 
   onSourceSelection(selection: SourceEditorSelection): void {
@@ -491,11 +480,11 @@ export class AppComponent {
   }
 
   applyPlacement(response: PreviewPlacementChangeWorkerResponse): void {
-    this.placement.apply(response, this.sourceEditor());
+    void this.placement.apply(response, this.sourceEditor());
   }
 
   undoPlacement(): void {
-    this.placement.undo(this.sourceEditor());
+    void this.placement.undo(this.sourceEditor());
   }
 
   openRouteEditor(): void {
@@ -507,11 +496,11 @@ export class AppComponent {
   }
 
   applyRoute(response: PreviewRouteChangeWorkerResponse): void {
-    this.routeEditor.apply(response, this.sourceEditor());
+    void this.routeEditor.apply(response, this.sourceEditor());
   }
 
   undoRoute(): void {
-    this.routeEditor.undo(this.sourceEditor());
+    void this.routeEditor.undo(this.sourceEditor());
   }
 
   openSemanticEditor(): void {
@@ -552,11 +541,11 @@ export class AppComponent {
   }
 
   applySemantic(response: PreviewSemanticChangeWorkerResponse): void {
-    this.semanticEditor.apply(response, this.sourceEditor());
+    void this.semanticEditor.apply(response, this.sourceEditor());
   }
 
   undoSemantic(): void {
-    this.semanticEditor.undo(this.sourceEditor());
+    void this.semanticEditor.undo(this.sourceEditor());
   }
 
   exportSvg(): void {
@@ -744,12 +733,19 @@ export class AppComponent {
   }
 
   applyWizard(result: { readonly mode: "extend" | "new"; readonly source: string }): void {
-    const next = this.#wizardSourceSession.apply(result.source);
-    if (result.mode === "extend") {
-      this.documents.replaceSource(next, true);
+    if (result.mode === "new") {
+      // A new document replaces the whole workspace, so unsaved work gets
+      // the same confirmation Open and Close ask for. Declining keeps the
+      // wizard open with its answers intact.
+      if (!this.documents.resetAsGeneratedDocument(result.source)) return;
+      this.#wizardSourceSession.apply(result.source);
     } else {
-      this.documents.resetAsGeneratedDocument(next);
+      this.documents.replaceSource(
+        this.#wizardSourceSession.apply(result.source),
+        true,
+      );
     }
+    const next = this.source();
     this.preview.clearSelection();
     this.canUndoWizard.set(this.#wizardSourceSession.canUndo);
     this.wizardUndoConfirmationOpen.set(false);
@@ -831,12 +827,22 @@ export class AppComponent {
   ): void {
     this.preview.select(target);
     if (revealSource && target !== undefined) {
-      if (target.source.file !== this.activeDocumentUri()) {
-        this.documents.selectDocument(target.source.file);
-        this.#compileCurrentProject(this.compiler.state().activeViewId);
-      }
-      queueMicrotask(() => this.sourceEditor()?.revealSource(target.source));
+      this.#revealInOwningDocument(target.source);
     }
+  }
+
+  /**
+   * Switches to the document that owns `source` (if needed) and reveals the
+   * range once the editor actually presents that document. The switch is
+   * signal-driven and lands in the next change-detection tick, so the reveal
+   * must not run before the editor confirms the active document.
+   */
+  #revealInOwningDocument(source: CompilerWorkerSource): void {
+    if (source.file !== this.activeDocumentUri()) {
+      if (!this.documents.selectDocument(source.file)) return;
+      this.#compileCurrentProject(this.compiler.state().activeViewId);
+    }
+    void this.sourceEditor()?.revealSourceInDocument(source);
   }
 
   #pickConnectionTarget(
