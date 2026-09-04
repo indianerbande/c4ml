@@ -29,6 +29,7 @@ import {
   type LayoutResult,
   type PlacementResult,
   type PlacementConstraint,
+  type ResolvedView,
   type SceneNode,
   type ScenePort,
   type SceneRoute,
@@ -508,6 +509,7 @@ export async function compileWorkerRequest(
         compiled.candidateLayout,
         compiled.placement,
         parsed.placementByViewId?.[view.id],
+        compiled.resolvedView,
       ),
       views,
       view.id,
@@ -1313,6 +1315,7 @@ function toWorkerNavigation(
   candidateLayout: LayoutResult | undefined,
   placement: PlacementResult | undefined,
   placementOptions: DiagramPlacementOptions | undefined,
+  resolvedView?: ResolvedView,
 ): CompilerWorkerNavigation {
   const portById = new Map(scene.ports.map((port) => [port.id, port]));
   return {
@@ -1355,7 +1358,8 @@ function toWorkerNavigation(
             ];
       }),
       ...scene.routes.flatMap((route) => {
-        const source = sourceForSceneRoute(model, view, route);
+        const source = sourceForSceneRoute(model, view, route, resolvedView);
+        const impliedSources = impliedRouteSources(model, route, resolvedView);
         const sourcePort = portById.get(route.sourcePortId);
         const targetPort = portById.get(route.targetPortId);
         if (
@@ -1384,8 +1388,10 @@ function toWorkerNavigation(
           referenceId: route.relationshipId,
           label: route.label,
           source: relationshipSource,
-          relatedSources:
-            controlSource === undefined ? [] : [toWorkerSource(controlSource)],
+          relatedSources: [
+            ...(controlSource === undefined ? [] : [toWorkerSource(controlSource)]),
+            ...impliedSources.map(toWorkerSource),
+          ],
           policy: route.policy,
           style: route.style,
           sourcePortSelection: control?.sourcePort ?? "automatic",
@@ -1635,11 +1641,38 @@ function sourceForSceneNode(
   }
 }
 
+/**
+ * The declarations behind an implied route beyond the first one, so the
+ * inspector can reveal every Container-level Relationship a lifted
+ * System-level connection stands for.
+ */
+function impliedRouteSources(
+  model: ArchitectureModel,
+  route: SceneRoute,
+  resolvedView: ResolvedView | undefined,
+): SourceReference[] {
+  const resolved = resolvedView?.relationships.find(
+    ({ id }) => id === route.relationshipId,
+  );
+  if (resolved === undefined || !resolved.implied) return [];
+  return resolved.represents.slice(1).flatMap((id) => {
+    const source = model.relationships.find((candidate) => candidate.id === id)
+      ?.source;
+    return source === undefined ? [] : [source];
+  });
+}
+
 function sourceForSceneRoute(
   model: ArchitectureModel,
   view: ArchitectureView,
   route: SceneRoute,
+  resolvedView?: ResolvedView,
 ): SourceReference | undefined {
+  if (route.implied) {
+    return resolvedView?.relationships.find(
+      ({ id }) => id === route.relationshipId,
+    )?.source;
+  }
   if (view.kind === "dynamic") {
     return view.interactions.find(({ id }) => id === route.relationshipId)
       ?.source;

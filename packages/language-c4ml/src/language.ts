@@ -118,6 +118,7 @@ import type {
   ViewDisplayProperty,
   ViewEnvironmentProperty,
   ViewLegendProperty,
+  ViewRelationshipsProperty,
   ViewPurposeProperty,
   ViewScopeProperty,
   ViewSystemsProperty,
@@ -1014,6 +1015,14 @@ function lowerView(
     file,
     diagnostics,
   );
+  const relationships = optionalProperty<ViewRelationshipsProperty>(
+    declaration.properties,
+    "ViewRelationshipsProperty",
+    "relationships",
+    declaration,
+    file,
+    diagnostics,
+  );
   const flow =
     declaration.layout === undefined
       ? undefined
@@ -1042,6 +1051,9 @@ function lowerView(
     title: title.value,
     purpose: purpose.value,
     legend: { mode: legend.value },
+    ...(relationships === undefined
+      ? {}
+      : { relationshipProjection: relationships.value }),
     ...(flow === undefined ? {} : { layout: { direction: flow.value } }),
     source: sourceReference(declaration, file),
   };

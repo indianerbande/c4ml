@@ -112,6 +112,111 @@ describe("resolveArchitectureViews", () => {
     ]);
   });
 
+  it("lifts detailed relationships to the nearest visible element by default", () => {
+    const views = resolvedByKind();
+    const containerView = views.get("container")!;
+    const contextView = views.get("system-context")!;
+
+    // grower → plan-controller (a Component) appears as grower → Cultivation
+    // API in the Container View, dashed and traceable to its declaration.
+    const lifted = containerView.relationships.find(
+      ({ id }) => id === "implied:grower:cultivation-api",
+    );
+    expect(lifted).toMatchObject({
+      implied: true,
+      sourceId: "grower",
+      targetId: "cultivation-api",
+      description: "Provides a revised cultivation plan",
+      represents: ["grower-revises-plan"],
+      source: signalGardenModel.relationships.find(
+        ({ id }) => id === "grower-revises-plan",
+      )!.source,
+    });
+    expect(containerView.legend.entries?.map(({ label }) => label)).toContain(
+      "Implied Relationship",
+    );
+    // Declared relationships keep their identity and absorb the detailed
+    // ones that project onto the same pair.
+    const declared = contextView.relationships.find(
+      ({ id }) => id === "grower-plans-system",
+    );
+    expect(declared?.implied).toBe(false);
+    expect(declared?.represents).toEqual([
+      "grower-plans-system",
+      "grower-edits-ui",
+      "grower-revises-plan",
+    ]);
+    expect(contextView.relationships.every(({ implied }) => !implied)).toBe(true);
+    expect(contextView.legend.entries?.map(({ label }) => label)).not.toContain(
+      "Implied Relationship",
+    );
+  });
+
+  it("shows only declared relationships when a view asks for them", () => {
+    const declaredOnly: ArchitectureView = {
+      ...signalGardenViews.find((view) => view.kind === "container")!,
+      relationshipProjection: "declared",
+    };
+    const result = resolveArchitectureView(signalGardenModel, declaredOnly);
+
+    expect(result.valid).toBe(true);
+    const relationships = result.views[0]!.relationships;
+    expect(relationships.every(({ implied }) => !implied)).toBe(true);
+    expect(relationships.map(({ id }) => id)).not.toContain(
+      "implied:grower:cultivation-api",
+    );
+    expect(relationships.every(({ id, represents }) => represents.length === 1 && represents[0] === id)).toBe(true);
+  });
+
+  it("brings people and external systems into the context through their containers", () => {
+    const model: ArchitectureModel = {
+      elements: [
+        { kind: "person", id: "user", name: "User", description: "Shops.", classification: "external" },
+        { kind: "software-system", id: "shop", name: "Shop", description: "Sells things.", classification: "internal" },
+        { kind: "software-system", id: "payments", name: "Payments", description: "Charges cards.", classification: "external" },
+        { kind: "container", id: "web", name: "Web", description: "UI.", technology: "Angular", softwareSystemId: "shop" },
+        { kind: "container", id: "api", name: "API", description: "API.", technology: "Node", softwareSystemId: "shop" },
+        { kind: "container", id: "gateway", name: "Gateway", description: "Card API.", technology: "HTTPS", softwareSystemId: "payments" },
+      ],
+      relationships: [
+        { id: "user-web", sourceId: "user", targetId: "web", description: "Browses" },
+        { id: "web-api", sourceId: "web", targetId: "api", description: "Calls", technology: "HTTPS/JSON" },
+        { id: "api-pay", sourceId: "api", targetId: "gateway", description: "Charges cards", technology: "HTTPS" },
+        { id: "api-refund", sourceId: "api", targetId: "gateway", description: "Refunds orders", technology: "HTTPS" },
+      ],
+    };
+    const context: ArchitectureView = {
+      id: "ctx",
+      kind: "system-context",
+      softwareSystemId: "shop",
+      title: "Context",
+      purpose: "Shows the shop context.",
+    };
+
+    const result = resolveArchitectureView(model, context);
+
+    expect(result.valid).toBe(true);
+    const view = result.views[0]!;
+    expect(view.elements.map(({ id }) => id)).toEqual(["payments", "shop", "user"]);
+    expect(view.relationships).toEqual([
+      expect.objectContaining({
+        id: "implied:shop:payments",
+        implied: true,
+        description: "Charges cards; Refunds orders",
+        technology: "HTTPS",
+        represents: ["api-pay", "api-refund"],
+      }),
+      expect.objectContaining({
+        id: "implied:user:shop",
+        implied: true,
+        description: "Browses",
+        represents: ["user-web"],
+      }),
+    ]);
+    // web → api collapses onto the scope itself and therefore disappears.
+    expect(view.relationships.some(({ represents }) => represents.includes("web-api"))).toBe(false);
+  });
+
   it("preserves object identity when one model element appears in several views", () => {
     const views = resolvedByKind();
     const modelElement = signalGardenModel.elements.find(

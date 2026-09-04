@@ -27,6 +27,7 @@ import {
   type ViewBase,
   type ViewGuidance,
   type ViewKind,
+  type ResolvedRelationship,
   type ViewLegend,
   type ViewSelection,
 } from "./views.js";
@@ -44,7 +45,7 @@ interface ModelIndex {
 
 interface StaticScope {
   readonly elements: readonly StaticElement[];
-  readonly relationships: readonly Relationship[];
+  readonly relationships: readonly ResolvedRelationship[];
   readonly requiredElementIds: ReadonlySet<string>;
 }
 
@@ -287,12 +288,10 @@ function resolveStaticScope(
       (element) =>
         element.kind === "person" || element.kind === "software-system",
     );
-    const elementIds = idsOf(elements);
-    return {
-      elements: stableById(elements),
-      relationships: relationshipsInside(model.relationships, elementIds),
+    return projectedStaticScope(model, index, view, elements, () => false, {
       requiredElementIds: new Set(),
-    };
+      alwaysVisiblePrimary: true,
+    });
   }
 
   const scopeId =
@@ -320,30 +319,15 @@ function resolveStaticScope(
   }
 
   if (view.kind === "system-context") {
-    const allowed = new Set<string>([scopeElement.id]);
-    for (const relationship of model.relationships) {
-      const otherId = otherEndpoint(relationship, scopeElement.id);
-      const other = otherId === undefined ? undefined : index.elementById.get(otherId);
-      if (
-        other !== undefined &&
-        (other.kind === "person" || other.kind === "software-system")
-      ) {
-        allowed.add(other.id);
-      }
-    }
-    return {
-      elements: elementsForIds(index, allowed),
-      relationships: stableById(
-        model.relationships.filter(
-          (relationship) =>
-            (relationship.sourceId === scopeElement.id ||
-              relationship.targetId === scopeElement.id) &&
-            allowed.has(relationship.sourceId) &&
-            allowed.has(relationship.targetId),
-        ),
-      ),
-      requiredElementIds: new Set([scopeElement.id]),
-    };
+    return projectedStaticScope(
+      model,
+      index,
+      view,
+      [scopeElement],
+      (element) =>
+        element.kind === "person" || element.kind === "software-system",
+      { requiredElementIds: new Set([scopeElement.id]) },
+    );
   }
 
   if (view.kind === "container") {
@@ -352,7 +336,7 @@ function resolveStaticScope(
         element.kind === "container" &&
         element.softwareSystemId === scopeElement.id,
     );
-    return connectedStaticScope(model, index, primary, (element) => {
+    return projectedStaticScope(model, index, view, primary, (element) => {
       return element.kind === "person" || element.kind === "software-system";
     });
   }
@@ -366,7 +350,7 @@ function resolveStaticScope(
         element.kind === "component" && element.containerId === scopeElement.id,
     );
     const owningSystemId = scopeElement.softwareSystemId;
-    return connectedStaticScope(model, index, primary, (element) => {
+    return projectedStaticScope(model, index, view, primary, (element) => {
       return (
         element.kind === "person" ||
         element.kind === "software-system" ||
@@ -383,45 +367,163 @@ function resolveStaticScope(
   const primaryIds = idsOf(primary);
   return {
     elements: stableById(primary),
-    relationships: relationshipsInside(model.relationships, primaryIds),
+    relationships: relationshipsInside(model.relationships, primaryIds).map(
+      declaredRelationship,
+    ),
     requiredElementIds: new Set(),
   };
 }
 
-function connectedStaticScope(
+function declaredRelationship(relationship: Relationship): ResolvedRelationship {
+  return { ...relationship, implied: false, represents: [relationship.id] };
+}
+
+function parentElementId(element: StaticElement): string | undefined {
+  switch (element.kind) {
+    case "container":
+      return element.softwareSystemId;
+    case "component":
+      return element.containerId;
+    case "code-element":
+      return element.componentId;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Resolves the elements and Relationships of a static View from its primary
+ * elements and a predicate for supporting elements.
+ *
+ * With the default `implied` projection every model Relationship is lifted
+ * to the nearest visible ancestor of each endpoint, so a Relationship
+ * declared between Containers appears between their Software Systems in a
+ * System Context View. Relationships whose endpoints collapse onto the same
+ * visible element disappear; Relationships that never touch a primary
+ * element stay out of the View. With `declared`, only Relationships whose
+ * own endpoints are visible appear, as before.
+ */
+function projectedStaticScope(
   model: ArchitectureModel,
   index: ModelIndex,
+  view: ArchitectureView,
   primary: readonly StaticElement[],
   supports: (element: StaticElement) => boolean,
+  options: {
+    readonly requiredElementIds?: ReadonlySet<string>;
+    /** Show every primary element even without a Relationship (landscape). */
+    readonly alwaysVisiblePrimary?: boolean;
+  } = {},
 ): StaticScope {
+  const projection = view.relationshipProjection ?? "implied";
   const primaryIds = idsOf(primary);
+  const visibleLevelOf = (id: string): string | undefined => {
+    let current = index.elementById.get(id);
+    while (current !== undefined) {
+      if (primaryIds.has(current.id) || supports(current)) {
+        return current.id;
+      }
+      if (projection === "declared") {
+        return undefined;
+      }
+      const parentId = parentElementId(current);
+      current = parentId === undefined ? undefined : index.elementById.get(parentId);
+    }
+    return undefined;
+  };
+
   const allowed = new Set(primaryIds);
-  for (const relationship of model.relationships) {
-    const sourcePrimary = primaryIds.has(relationship.sourceId);
-    const targetPrimary = primaryIds.has(relationship.targetId);
-    if (!sourcePrimary && !targetPrimary) {
+  const direct: ResolvedRelationship[] = [];
+  const impliedByPair = new Map<
+    string,
+    { readonly sourceId: string; readonly targetId: string; readonly originals: Relationship[] }
+  >();
+  for (const relationship of stableById(model.relationships)) {
+    const sourceId = visibleLevelOf(relationship.sourceId);
+    const targetId = visibleLevelOf(relationship.targetId);
+    if (
+      sourceId === undefined ||
+      targetId === undefined ||
+      sourceId === targetId ||
+      (!primaryIds.has(sourceId) && !primaryIds.has(targetId))
+    ) {
       continue;
     }
-    const otherId = sourcePrimary
-      ? relationship.targetId
-      : relationship.sourceId;
-    const other = index.elementById.get(otherId);
-    if (other !== undefined && supports(other)) {
-      allowed.add(other.id);
+    allowed.add(sourceId);
+    allowed.add(targetId);
+    if (
+      sourceId === relationship.sourceId &&
+      targetId === relationship.targetId
+    ) {
+      direct.push(declaredRelationship(relationship));
+      continue;
     }
+    const key = `${sourceId}\u0000${targetId}`;
+    const entry = impliedByPair.get(key) ?? { sourceId, targetId, originals: [] };
+    entry.originals.push(relationship);
+    impliedByPair.set(key, entry);
   }
+
+  const relationships = [...direct];
+  for (const { sourceId, targetId, originals } of impliedByPair.values()) {
+    const declaredForPair = relationships.find(
+      (candidate) =>
+        !candidate.implied &&
+        candidate.sourceId === sourceId &&
+        candidate.targetId === targetId,
+    );
+    if (declaredForPair !== undefined) {
+      // A declared Relationship already shows this pair; the more detailed
+      // ones it stands for stay attached for coverage and navigation.
+      const merged: ResolvedRelationship = {
+        ...declaredForPair,
+        represents: [
+          ...declaredForPair.represents,
+          ...originals.map(({ id }) => id),
+        ],
+      };
+      relationships[relationships.indexOf(declaredForPair)] = merged;
+      continue;
+    }
+    relationships.push(impliedRelationship(sourceId, targetId, originals));
+  }
+
   return {
-    elements: elementsForIds(index, allowed),
-    relationships: stableById(
-      model.relationships.filter(
-        (relationship) =>
-          (primaryIds.has(relationship.sourceId) ||
-            primaryIds.has(relationship.targetId)) &&
-          allowed.has(relationship.sourceId) &&
-          allowed.has(relationship.targetId),
-      ),
+    elements: elementsForIds(
+      index,
+      options.alwaysVisiblePrimary === true
+        ? new Set([...primaryIds, ...allowed])
+        : allowed,
     ),
-    requiredElementIds: new Set(),
+    relationships: stableById(relationships),
+    requiredElementIds: options.requiredElementIds ?? new Set(),
+  };
+}
+
+function impliedRelationship(
+  sourceId: string,
+  targetId: string,
+  originals: readonly Relationship[],
+): ResolvedRelationship {
+  const first = originals[0]!;
+  const descriptions = [
+    ...new Set(originals.map(({ description }) => description.trim())),
+  ].filter((description) => description.length > 0);
+  const technologies = new Set(originals.map(({ technology }) => technology));
+  const protocols = new Set(originals.map(({ protocol }) => protocol));
+  const technology =
+    technologies.size === 1 ? [...technologies][0] : undefined;
+  const protocol = protocols.size === 1 ? [...protocols][0] : undefined;
+  return {
+    id: `implied:${sourceId}:${targetId}`,
+    sourceId,
+    targetId,
+    description: descriptions.join("; "),
+    ...(technology === undefined ? {} : { technology }),
+    ...(protocol === undefined ? {} : { protocol }),
+    ...(first.source === undefined ? {} : { source: first.source }),
+    implied: true,
+    represents: originals.map(({ id }) => id),
   };
 }
 
@@ -440,9 +542,16 @@ function selectStaticScope(
     index.elementById,
     diagnostics,
   );
-  const allowedRelationships = new Map(
-    scope.relationships.map((relationship) => [relationship.id, relationship]),
-  );
+  // Selections address authored Relationship identities. An implied
+  // Relationship is therefore reachable through every identity it
+  // represents; excluding one of them removes the whole projection.
+  const allowedRelationships = new Map<string, ResolvedRelationship>();
+  for (const relationship of scope.relationships) {
+    allowedRelationships.set(relationship.id, relationship);
+    for (const id of relationship.represents) {
+      allowedRelationships.set(id, relationship);
+    }
+  }
   const selectedRelationships = selectRelationships(
     view,
     view.selection,
@@ -507,14 +616,14 @@ function selectIds(
   return result;
 }
 
-function selectRelationships(
+function selectRelationships<T extends Relationship>(
   view: ArchitectureView,
   selection: ViewSelection | undefined,
-  allowed: ReadonlyMap<string, Relationship>,
+  allowed: ReadonlyMap<string, T>,
   selectedElementIds: ReadonlySet<string>,
   known: ReadonlyMap<string, Relationship>,
   diagnostics: Diagnostic[],
-): Relationship[] {
+): T[] {
   const included = selection?.includeRelationshipIds;
   const excluded = new Set(selection?.excludeRelationshipIds ?? []);
   const selectedIds = new Set(included === undefined ? allowed.keys() : []);
@@ -549,15 +658,24 @@ function selectRelationships(
     }
   }
 
+  // Several selection identities may address one resolved Relationship;
+  // an exclusion of any of them wins over an inclusion of another.
+  const excludedResolved = new Set(
+    [...excluded].map((id) => allowed.get(id)).filter((item) => item !== undefined),
+  );
+  const unique = new Map<string, T>();
+  for (const id of selectedIds) {
+    const relationship = allowed.get(id);
+    if (relationship !== undefined && !excludedResolved.has(relationship)) {
+      unique.set(relationship.id, relationship);
+    }
+  }
   return stableById(
-    [...selectedIds]
-      .map((id) => allowed.get(id))
-      .filter((item): item is Relationship => item !== undefined)
-      .filter(
-        (relationship) =>
-          selectedElementIds.has(relationship.sourceId) &&
-          selectedElementIds.has(relationship.targetId),
-      ),
+    [...unique.values()].filter(
+      (relationship) =>
+        selectedElementIds.has(relationship.sourceId) &&
+        selectedElementIds.has(relationship.targetId),
+    ),
   );
 }
 
@@ -674,7 +792,7 @@ function resolveDynamicView(
     view,
     view.scenario,
     elementsForIds(index, selectedEndpointIds),
-    selectedRelationships,
+    selectedRelationships.map(declaredRelationship),
     resolvedInteractions,
   );
 }
@@ -1103,7 +1221,7 @@ function resolvedView(
   view: ArchitectureView,
   scope: string,
   elements: readonly StaticElement[],
-  relationships: readonly Relationship[],
+  relationships: readonly ResolvedRelationship[],
   interactions: readonly ResolvedDynamicInteraction[] = [],
   deployment?: {
     readonly environment: NonNullable<ResolvedView["deploymentEnvironment"]>;
@@ -1130,6 +1248,7 @@ function resolvedView(
             deployment?.nodes ?? [],
             deployment?.infrastructure ?? [],
             deployment?.instances ?? [],
+            relationships.some(({ implied }) => implied),
           ),
           ...(view.legend?.title === undefined ? {} : { title: view.legend.title }),
         };
@@ -1166,8 +1285,12 @@ function generatedLegend(
   nodes: ResolvedView["deploymentNodes"],
   infrastructure: ResolvedView["infrastructureNodes"],
   instances: ResolvedView["deploymentInstances"],
+  hasImpliedRelationships = false,
 ): ViewLegend {
   const kinds = new Set<string>(elements.map((element) => element.kind));
+  if (hasImpliedRelationships) {
+    kinds.add("implied-relationship");
+  }
   if (nodes.length > 0) {
     kinds.add("deployment-node");
   }

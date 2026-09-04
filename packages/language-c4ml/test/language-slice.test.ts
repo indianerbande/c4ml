@@ -197,6 +197,25 @@ describe("C4ML draft-1 language slice", () => {
     );
   });
 
+  it("lowers the optional relationship projection of a view", async () => {
+    const source = (await helloContextSource()).replace(
+      "  legend = generated\n",
+      "  legend = generated\n  relationships = declared\n",
+    );
+    const result = await parseC4mlDraft(source, { file: "context.c4ml" });
+
+    expect(result.valid).toBe(true);
+    expect(result.views?.[0]).toMatchObject({
+      id: "garden-pulse-context",
+      relationshipProjection: "declared",
+    });
+    // Without the property the view keeps the compiler default (implied).
+    const implicit = await parseC4mlDraft(await helloContextSource(), {
+      file: "context.c4ml",
+    });
+    expect(implicit.views?.[0]).not.toHaveProperty("relationshipProjection");
+  });
+
   it("parses and lowers the original hello-context source", async () => {
     const source = await helloContextSource();
     const result = await parseC4mlDraft(source, {
@@ -929,6 +948,7 @@ view {
       { kind: "property", label: "environment" },
       { kind: "property", label: "legend" },
       { kind: "property", label: "purpose" },
+      { kind: "property", label: "relationships" },
       { kind: "property", label: "scope" },
       { kind: "property", label: "systems" },
       { kind: "property", label: "title" },

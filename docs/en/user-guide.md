@@ -806,9 +806,17 @@ view signal-context {
 }
 ```
 
-The focal Software System is required. Directly connected People and Software
-Systems may appear; Containers, Components, Code Elements, and deployment
-details cannot appear.
+The focal Software System is required. Connected People and Software Systems
+appear; Containers, Components, Code Elements, and deployment details cannot
+appear.
+
+Relationships are declared once, where they really happen. A relationship
+between two Containers of different systems shows up here between the two
+Software Systems, drawn dashed and listed as "Implied Relationship" in the
+legend; clicking it in the workbench reveals the Container-level declaration.
+Several detailed relationships between the same pair merge into one line whose
+label joins their intents. Add `relationships = declared` to a view to show
+only relationships declared directly between the visible elements.
 
 ### 6.3 Container
 

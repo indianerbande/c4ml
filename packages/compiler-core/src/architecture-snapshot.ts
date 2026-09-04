@@ -375,7 +375,11 @@ function snapshotView(
     recommendation: view.recommendation,
     legend: canonicalObject(view.legend),
     elementIds: stableIds(view.elements),
-    relationshipIds: stableIds(view.relationships),
+    // Authored identities, including those an implied projection stands
+    // for, so coverage and comparison reason about declared Relationships.
+    relationshipIds: [
+      ...new Set(view.relationships.flatMap(({ represents }) => represents)),
+    ].sort(compareText),
     interactions: [...view.interactions]
       .map((interaction) => ({
         id: interaction.id,

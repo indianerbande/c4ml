@@ -73,6 +73,32 @@ export interface VisualGroup extends SourceBacked {
   readonly layout?: VisualGroupLayoutSettings;
 }
 
+/**
+ * How a static View shows Relationships whose endpoints are more detailed
+ * than the View's own abstraction level.
+ *
+ * - `implied` (default): a Relationship between two elements appears between
+ *   the nearest visible ancestors of those elements, as the C4 model intends
+ *   (a Container → Container Relationship implies a Software System →
+ *   Software System Relationship in a System Context View). Several
+ *   Relationships that project onto the same pair merge into one.
+ * - `declared`: only Relationships declared directly between visible
+ *   elements appear.
+ */
+export type ViewRelationshipProjection = "declared" | "implied";
+
+/**
+ * A Relationship as one View shows it. A declared Relationship keeps its
+ * model identity; an implied one carries a View-scoped identity that no
+ * source declaration can collide with (`implied:<source>:<target>`) and
+ * lists the authored Relationships it stands for.
+ */
+export interface ResolvedRelationship extends Relationship {
+  readonly implied: boolean;
+  /** Authored Relationship identities this View-level Relationship represents. */
+  readonly represents: readonly string[];
+}
+
 export interface ViewBase extends SourceBacked {
   readonly id: string;
   readonly kind: ViewKind;
@@ -80,6 +106,7 @@ export interface ViewBase extends SourceBacked {
   readonly purpose: string;
   readonly audience?: readonly string[];
   readonly legend?: ViewLegend;
+  readonly relationshipProjection?: ViewRelationshipProjection;
   readonly selection?: ViewSelection;
   readonly groups?: readonly VisualGroup[];
   readonly presentation?: ViewPresentationSettings;
@@ -194,7 +221,7 @@ export interface ResolvedView {
   readonly recommendation: string;
   readonly legend: ViewLegend;
   readonly elements: readonly StaticElement[];
-  readonly relationships: readonly Relationship[];
+  readonly relationships: readonly ResolvedRelationship[];
   readonly interactions: readonly ResolvedDynamicInteraction[];
   readonly groups: readonly ResolvedVisualGroup[];
   readonly dynamicDisplay?: DynamicView["display"];
