@@ -6,7 +6,7 @@ Status: Public source beta
 
 Current release: `v0.1.0-beta.4`
 
-Updated: 2026-09-03
+Updated: 2026-09-04
 
 This document states the current product maturity and the boundaries of the
 beta. It is not a development diary. Detailed product requirements live in
@@ -40,7 +40,9 @@ contract or an officially signed binary distribution.
 ### Modeling and diagrams
 
 - One semantic architecture model with stable identities and directed
-  relationships.
+  relationships, declared once at their most detailed level and projected
+  onto each static view's abstraction level (dashed implied connections with
+  a legend entry; `relationships = declared` opts out per view).
 - People, Software Systems, Containers, Components, and Code Elements.
 - Deployment environments, nested deployment nodes, infrastructure, and
   Software System or Container instances.
@@ -49,11 +51,13 @@ contract or an officially signed binary distribution.
 - Single-file models and explicit multi-file projects with cross-document
   references, diagnostics, navigation, and save behavior.
 - Deterministic standalone SVG and derived PNG output with controlled IBM Plex
-  fonts.
+  fonts and a generated legend of every drawn notation kind.
 
 ### Layout and routing
 
-- Automatic compound layout through the replaceable ELK.js adapter.
+- Automatic compound layout through the replaceable ELK.js adapter with a
+  fixed seed, reserved room for relationship labels, and boundary attachments
+  that keep several connections on one side apart.
 - Relative placement, alignment, equal spacing, movement from the automatic
   result, and exact pinning for selected elements.
 - Automatic, guided, and fixed routes with cardinal ports, relative or absolute

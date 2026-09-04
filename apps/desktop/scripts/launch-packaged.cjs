@@ -38,13 +38,32 @@ if (smokeProject !== undefined) {
 const result = spawnSync(
   executable,
   smoke ? ["--c4ml-smoke", `--c4ml-smoke-project=${smokeProject}`] : [],
-  { stdio: "inherit" },
+  // The smoke's verdict travels on stdout; capture it so a run that reports
+  // nothing cannot pass by accident, and echo it for the person watching.
+  { stdio: smoke ? ["inherit", "pipe", "inherit"] : "inherit", encoding: "utf8" },
 );
 if (smokeProject !== undefined) {
   rmSync(smokeProject, { recursive: true, force: true });
 }
 if (result.error !== undefined) {
   throw result.error;
+}
+if (smoke) {
+  process.stdout.write(result.stdout ?? "");
+  const verdict = (result.stdout ?? "")
+    .split(/\r?\n/u)
+    .find((line) => line.startsWith("C4ML_DESKTOP_SMOKE "));
+  if (verdict === undefined) {
+    console.error(
+      "C4thedral smoke produced no C4ML_DESKTOP_SMOKE verdict; treating the run as failed.",
+    );
+    process.exit(1);
+  }
+  const parsed = JSON.parse(verdict.slice("C4ML_DESKTOP_SMOKE ".length));
+  if (parsed.ok !== true || (parsed.authoring !== undefined && parsed.authoring.ok !== true)) {
+    console.error("C4thedral smoke reported a failure; see the verdict above.");
+    process.exit(1);
+  }
 }
 if (result.status !== 0) {
   process.exit(result.status ?? 1);

@@ -6,7 +6,7 @@ Status: Öffentliche Source-Beta
 
 Aktuelle Version: `v0.1.0-beta.4`
 
-Aktualisiert: 2026-09-03
+Aktualisiert: 2026-09-04
 
 Dieses Dokument beschreibt den aktuellen Reifegrad und die Grenzen der Beta.
 Es ist kein Entwicklungstagebuch. Detaillierte Produktanforderungen stehen in
@@ -42,7 +42,10 @@ Kompatibilitätsvertrag und keine offiziell signierte Binärdistribution.
 ### Modellierung und Diagramme
 
 - Ein semantisches Architekturmodell mit stabilen Identitäten und gerichteten
-  Beziehungen.
+  Beziehungen, die einmal auf ihrer detailliertesten Ebene deklariert und auf
+  die Abstraktionsebene jeder statischen View projiziert werden (gestrichelte
+  implizierte Verbindungen mit Legendeneintrag; `relationships = declared`
+  schaltet das je View ab).
 - Personen, Softwaresysteme, Container, Components und Code-Elemente.
 - Deployment-Umgebungen, verschachtelte Deployment Nodes, Infrastruktur sowie
   Instanzen von Softwaresystemen und Containern.
@@ -51,11 +54,14 @@ Kompatibilitätsvertrag und keine offiziell signierte Binärdistribution.
 - Ein-Datei-Modelle und ausdrückliche Mehrdatei-Projekte mit dokumentübergreifenden
   Referenzen, Diagnosen, Navigation und Speichern.
 - Deterministisches eigenständiges SVG und daraus abgeleitetes PNG mit
-  kontrollierten IBM-Plex-Schriften.
+  kontrollierten IBM-Plex-Schriften und einer generierten Legende aller
+  gezeichneten Notationsarten.
 
 ### Layout und Routing
 
-- Automatisches zusammengesetztes Layout über den austauschbaren ELK.js-Adapter.
+- Automatisches zusammengesetztes Layout über den austauschbaren ELK.js-Adapter
+  mit festem Seed, reserviertem Platz für Beziehungslabels und Randanbindungen,
+  die mehrere Verbindungen an einer Seite auseinanderhalten.
 - Relative Platzierung, Ausrichtung, gleiche Abstände, Verschiebung gegenüber
   dem automatischen Ergebnis und exaktes Fixieren ausgewählter Elemente.
 - Automatische, geführte und feste Routen mit Himmelsrichtungs-Ports, relativen

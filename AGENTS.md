@@ -52,6 +52,10 @@ may run on a newer supported line, but Electron Forge packaging fails clearly
 outside Node.js 24.x. `docs/en/platforms.md` owns the native build and verification
 matrix.
 
+Graphical placement, route, and semantic authoring share one source
+authoring transaction that waits for the editor to present the target
+document before applying an edit, binds its one-step undo to that document,
+and is exercised in the packaged multi-document smoke.
 The desktop workbench also has an implemented original IDE-like shell with
 C4ML-specific Files, Source Control, Diagrams, Output, and Help activity areas, simultaneous
 source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
@@ -280,7 +284,19 @@ ordered equal-gap distribution, adjustment from automatic geometry, and
 individual exact pins to the candidate geometry before routing. Named gaps,
 layout steps, and diagram units resolve deterministically. It preserves candidate and final geometry,
 reports relaxed soft rules, and fails hard conflicts with all involved source
-locations. The original Signal Garden Container View reference
+locations. The layout request carries every relationship label's footprint;
+the ELK adapter reserves that room between layers with a fixed random seed
+and reports the reserved label position, and automatic routes keep the
+engine's boundary attachment points for box-filling shapes so several edges
+on one side stay apart and arrowheads enter perpendicularly. The scene grows
+around geometry that placement moved to negative coordinates instead of
+clipping it. Static views project relationships declared between detailed
+elements onto their nearest visible ancestors (`implied:` identities that
+represent the authored ones; `relationships = declared` opts out per view),
+and generated legends list every drawn notation kind. Every executable example
+is rendered through the production pipeline in `apps/cli/test/rendered-examples.test.ts`
+and must satisfy the geometric invariants recorded in `docs/engineering/testing.md`.
+The original Signal Garden Container View reference
 export exercises Visual Groups, cardinal ports, a named corridor, label
 placement, ELK compound geometry, SVG, and PNG. The separate experimental
 language package can parse and lower the original `hello-context.c4ml`,
@@ -317,7 +333,9 @@ contract. The future source grammar for theme declarations and
 geometry-affecting style tokens remains draft.
 
 The rendering pipeline now also keeps Relationship semantics, effective Ports,
-Routes, and Arrowheads as distinct inspectable objects. Port sides use the
+Routes, and Arrowheads as distinct inspectable objects. Compiler-stage errors
+name the objects they are about as structured subjects; frontends map those
+to source locations and never search the message text. Port sides use the
 consistent compass vocabulary `north`, `east`, `south`, and `west`. A
 renderer-neutral custom-shape contract is implemented with a normalized 100 x
 100 canvas, content box, cardinal Port anchors, semantic paint roles, and a

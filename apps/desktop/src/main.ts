@@ -137,7 +137,16 @@ app.on("open-file", (event, path) => {
 if (electronSquirrelStartup) {
   app.quit();
 } else if (!app.requestSingleInstanceLock()) {
-  app.quit();
+  if (process.argv.includes(smokeArgument)) {
+    // A smoke that silently hands its arguments to an already running
+    // instance would report nothing and exit 0; make that a visible failure.
+    console.log(
+      `C4ML_DESKTOP_SMOKE ${JSON.stringify({ ok: false, reason: "another C4thedral instance is running; quit it and rerun the smoke" })}`,
+    );
+    app.exit(1);
+  } else {
+    app.quit();
+  }
 } else {
   app.on("second-instance", (_event, commandLine, workingDirectory) => {
     enqueueExternalDocuments(commandLine, workingDirectory);
@@ -1441,7 +1450,12 @@ async function runMultiDocumentAuthoringSmoke(
 
   // The scratch document typed earlier is dirty; opening a project would wait
   // for a person to confirm discarding it.
-  await window.webContents.executeJavaScript(`window.confirm = () => true;`, true);
+  // The expression's value travels back over IPC and must be cloneable, so
+  // the assignment (whose value would be the function) ends in a boolean.
+  await window.webContents.executeJavaScript(
+    `(window.confirm = () => true, true);`,
+    true,
+  );
   window.webContents.send(
     desktopIpcChannels.command,
     "open-project" satisfies DesktopCommand,
@@ -1459,9 +1473,13 @@ async function runMultiDocumentAuthoringSmoke(
   await pause(300);
   await key("Escape");
   Object.assign(steps, await run(`
-    steps.elementSelectedFromSource = (await wait(() => editorText().includes('sensor-post') && document.querySelector('.status-bar button') !== null)) !== undefined;
+    // The find match moves the cursor onto the declaration; the workbench
+    // answers by selecting the preview node, which makes the geometry tab
+    // appear. That tab is the observable proof of the selection.
     document.querySelector('.status-bar button[aria-pressed]')?.click();
     const geometryTab = await wait(() => [...document.querySelectorAll('.bottom-panel .panel-tabs button')][1]);
+    steps.elementSelectedFromSource = geometryTab !== undefined;
+    steps.selectedElementLabel = document.querySelector('.geometry-inspector strong')?.textContent?.trim() ?? document.querySelector('.selection-note')?.textContent?.trim() ?? '';
     geometryTab?.click();
     steps.geometryInspectorOpen = (await wait(() => document.querySelector('.geometry-inspector .inspector-source'))) !== undefined;
     document.querySelector('.geometry-inspector .inspector-source')?.click();
@@ -1509,7 +1527,10 @@ async function runMultiDocumentAuthoringSmoke(
       activeDocument() === 'model/systems.c4ml' && editorText().includes('garden-pulse'),
     )) !== undefined;
   `));
-  const ok = Object.values(steps).every((value) => value === true);
+  // Strings are diagnostics for the reader; only boolean steps decide.
+  const ok = Object.values(steps).every(
+    (value) => typeof value !== "boolean" || value,
+  );
   return { ...steps, ok };
 }
 
