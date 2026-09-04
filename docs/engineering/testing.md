@@ -782,6 +782,30 @@ CLI tests MUST cover:
 - paths containing spaces and non-ASCII characters; and
 - fully offline operation.
 
+#### Rendered-example invariants
+
+**Status: Implemented and automatically validated
+(`apps/cli/test/rendered-examples.test.ts`).**
+
+Stage-level unit tests validate each compiler stage against fixtures that
+bypass the other stages, which is how empty legends, clipped elements, labels
+on top of elements, and arrowheads sliding along node boundaries all passed
+the gate at once. Every executable example under `examples/` is therefore
+rendered through the production pipeline (project loader, language package,
+bundled ELK adapter, compiler core) and the resulting scenes MUST satisfy
+invariants that hold for every diagram:
+
+- every diagram has a populated legend;
+- every node, route point, and label box lies inside the canvas;
+- no automatic route label overlaps an element or another automatic label;
+- every orthogonal route ends perpendicular to the side it attaches to, on
+  that side;
+- no two routes share a boundary endpoint; and
+- rendering the same example twice on one engine yields identical SVG.
+
+Add an invariant here when a rendering defect is found that a stage test
+could not have caught; never weaken one to make an example pass.
+
 ### 2.10 Editor and compiler parity
 
 Editor tests MUST cover:
