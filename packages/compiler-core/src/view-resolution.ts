@@ -1115,14 +1115,24 @@ function resolvedView(
 ): ResolvedView {
   const guidance = viewGuidance(view.kind);
   const audience = view.audience ?? guidance.audience;
+  // A generated legend is derived from the resolved content; an authored one
+  // keeps its own entries. The source language lowers `legend = generated`
+  // to `{ mode: "generated" }` without entries, so the mode decides here, not
+  // the mere presence of the legend object.
   const legend =
-    view.legend ??
-    generatedLegend(
-      elements,
-      deployment?.nodes ?? [],
-      deployment?.infrastructure ?? [],
-      deployment?.instances ?? [],
-    );
+    view.legend !== undefined && view.legend.mode === "authored"
+      ? view.legend
+      : {
+          ...generatedLegend(
+            // A Deployment View draws instances and nodes; its static
+            // elements are references only and have no notation of their own.
+            deployment === undefined ? elements : [],
+            deployment?.nodes ?? [],
+            deployment?.infrastructure ?? [],
+            deployment?.instances ?? [],
+          ),
+          ...(view.legend?.title === undefined ? {} : { title: view.legend.title }),
+        };
   return {
     id: view.id,
     kind: view.kind,

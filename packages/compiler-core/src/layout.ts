@@ -8,10 +8,17 @@ export interface LayoutNodeRequest {
   readonly padding?: number;
 }
 
+/** Space a layout engine should keep free for an edge's label, in diagram units. */
+export interface LayoutEdgeLabelRequest {
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface LayoutEdgeRequest {
   readonly id: string;
   readonly sourceId: string;
   readonly targetId: string;
+  readonly label?: LayoutEdgeLabelRequest;
 }
 
 export interface LayoutRequest {
@@ -40,6 +47,12 @@ export interface LayoutEdgeSection {
 export interface LayoutEdgeResult {
   readonly id: string;
   readonly sections: readonly LayoutEdgeSection[];
+  /**
+   * Centre of the space the engine reserved for the requested label, in the
+   * same absolute coordinates as the sections. Absent when the request had
+   * no label or the engine does not place labels.
+   */
+  readonly labelCenter?: Point;
 }
 
 export interface LayoutResult {
@@ -145,6 +158,16 @@ export function validateLayoutRequest(request: LayoutRequest): void {
       throw new ContractError(
         "C4ML-P0-LAYOUT-007",
         `Edge ${edge.id} has an unknown endpoint.`,
+      );
+    }
+    if (
+      edge.label !== undefined &&
+      (!isPositiveFinite(edge.label.width) ||
+        !isPositiveFinite(edge.label.height))
+    ) {
+      throw new ContractError(
+        "C4ML-P0-LAYOUT-009",
+        `Edge ${edge.id} label must have finite positive dimensions.`,
       );
     }
     edgeIds.add(edge.id);

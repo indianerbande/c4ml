@@ -438,7 +438,9 @@ describe("compiler worker runtime", () => {
               x: expect.any(Number),
               y: expect.any(Number),
             }),
-            final: expect.objectContaining({ x: 560, y: 246 }),
+            // Layout coordinates, identical to the authored pin, so a pin
+            // generated from this geometry does not drift by the scene offset.
+            final: expect.objectContaining({ x: 520, y: 120 }),
             delta: expect.objectContaining({
               x: expect.any(Number),
               y: expect.any(Number),
@@ -517,8 +519,11 @@ describe("compiler worker runtime", () => {
             orientation: "vertical",
             lane: 1,
             lanes: 3,
-            coordinate: 687,
-            laneCoordinate: 687,
+            // Scene coordinates: the authored 647du plus 40du padding and
+            // the 20du the scene grows because Sensor Post is adjusted to
+            // x = -20du.
+            coordinate: 707,
+            laneCoordinate: 707,
             source: expect.objectContaining({
               start: expect.objectContaining({ line: 82 }),
             }),

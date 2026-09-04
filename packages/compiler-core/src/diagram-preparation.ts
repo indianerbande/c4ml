@@ -11,6 +11,7 @@ import type {
   StaticElement,
 } from "./model.js";
 import { compareText } from "./ordering.js";
+import { estimateRouteLabelSize } from "./route-labels.js";
 import {
   createShapeCatalog,
   defaultShapeId,
@@ -543,6 +544,9 @@ function toLayoutEdge(edge: DiagramEdge): LayoutEdgeRequest {
     id: edge.id,
     sourceId: edge.sourceNodeId,
     targetId: edge.targetNodeId,
+    // Ask the engine to keep the label's footprint free between the layers
+    // it separates, so labels do not land on the elements they connect.
+    label: estimateRouteLabelSize(edge.label, edge.technology),
   };
 }
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   compileArchitectureDiagram,
   builtInShapes,
+  estimateRouteLabelSize,
   prepareDiagram,
   resolveArchitectureView,
   type ArchitectureView,
@@ -38,7 +39,7 @@ const groupedContainerView: ArchitectureView = {
 };
 
 class ControlledLayoutAdapter implements LayoutAdapter {
-  readonly adapterId = "test.controlled-layout";
+  readonly adapterId: string = "test.controlled-layout";
 
   async layout(request: LayoutRequest): Promise<LayoutResult> {
     const positions: Readonly<Record<string, readonly [number, number, number, number]>> = {
@@ -91,6 +92,65 @@ class ControlledLayoutAdapter implements LayoutAdapter {
   }
 }
 
+/**
+ * Behaves like ControlledLayoutAdapter but spreads the two edges entering
+ * Cultivation API along its west side, as a real engine does.
+ */
+class SpreadingLayoutAdapter extends ControlledLayoutAdapter {
+  override readonly adapterId: string = "test.spreading-layout";
+
+  override async layout(request: LayoutRequest): Promise<LayoutResult> {
+    const base = await super.layout(request);
+    return {
+      ...base,
+      edges: base.edges.map((edge) => {
+        if (edge.id === "relationship:ui-calls-api") {
+          return {
+            id: edge.id,
+            sections: [
+              { start: { x: 440, y: 200 }, bends: [], end: { x: 450, y: 200 } },
+            ],
+          };
+        }
+        if (edge.id === "relationship:weather-feeds-api") {
+          return {
+            id: edge.id,
+            sections: [
+              {
+                start: { x: 900, y: 250 },
+                bends: [
+                  { x: 900, y: 310 },
+                  { x: 445, y: 310 },
+                  { x: 445, y: 250 },
+                ],
+                end: { x: 450, y: 250 },
+              },
+            ],
+          };
+        }
+        return edge;
+      }),
+    };
+  }
+}
+
+/** Reports where the engine reserved room for the ui-calls-api label. */
+class LabelAwareLayoutAdapter extends SpreadingLayoutAdapter {
+  override readonly adapterId: string = "test.label-aware-layout";
+
+  override async layout(request: LayoutRequest): Promise<LayoutResult> {
+    const base = await super.layout(request);
+    return {
+      ...base,
+      edges: base.edges.map((edge) =>
+        edge.id === "relationship:ui-calls-api"
+          ? { ...edge, labelCenter: { x: 445, y: 180 } }
+          : edge,
+      ),
+    };
+  }
+}
+
 describe("diagram compiler pipeline", () => {
   it("prepares semantic scope and view-local groups without changing the model", () => {
     const resolved = resolveArchitectureView(
@@ -115,6 +175,99 @@ describe("diagram compiler pipeline", () => {
       resolveArchitectureView(signalGardenModel, containerView).views[0]
         ?.elements,
     );
+  });
+
+  it("asks the layout engine to reserve each relationship label's footprint", () => {
+    const resolved = resolveArchitectureView(
+      signalGardenModel,
+      groupedContainerView,
+    );
+    const diagram = prepareDiagram(groupedContainerView, resolved.views[0]!);
+    const edge = diagram.edges.find(
+      ({ referenceId }) => referenceId === "ui-calls-api",
+    )!;
+    const layoutEdge = diagram.layoutRequest.edges.find(
+      ({ id }) => id === edge.id,
+    );
+
+    expect(layoutEdge?.label).toEqual(
+      estimateRouteLabelSize(edge.label, edge.technology),
+    );
+    expect(layoutEdge?.label?.width).toBeGreaterThan(48);
+    expect(layoutEdge?.label?.height).toBeGreaterThan(13);
+    for (const candidate of diagram.layoutRequest.edges) {
+      expect(candidate.label).toBeDefined();
+    }
+  });
+
+  it("places an automatic route's label where the engine reserved room", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new LabelAwareLayoutAdapter(),
+    });
+
+    expect(result.valid).toBe(true);
+    const route = result.routes?.find(
+      ({ relationshipId }) => relationshipId === "ui-calls-api",
+    )!;
+    // The engine reported the label centre beside the edge (ELK keeps the
+    // labels of parallel edges on opposite sides); the route adopts that
+    // position and only records which segment the label belongs to.
+    expect(route.labelSegment).toBe(0);
+    expect(route.labelPoint).toEqual({ x: 445, y: 180 });
+    const scene = result.scene?.routes.find(
+      ({ relationshipId }) => relationshipId === "ui-calls-api",
+    );
+    expect(scene?.labelPoint.x).toBe(445 + 40);
+  });
+
+  it("grows the scene instead of clipping geometry placed at negative coordinates", async () => {
+    class ShiftedLayoutAdapter extends ControlledLayoutAdapter {
+      override readonly adapterId: string = "test.shifted-layout";
+
+      override async layout(request: LayoutRequest): Promise<LayoutResult> {
+        const base = await super.layout(request);
+        return {
+          ...base,
+          nodes: base.nodes.map((node) =>
+            node.id === "element:grower"
+              ? { ...node, x: -120, y: -30 }
+              : node,
+          ),
+        };
+      }
+    }
+    const reference = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ControlledLayoutAdapter(),
+    });
+    const shifted = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new ShiftedLayoutAdapter(),
+    });
+
+    expect(shifted.valid).toBe(true);
+    const scene = shifted.scene!;
+    const grower = scene.nodes.find(({ referenceId }) => referenceId === "grower")!;
+    // The moved node starts at the padding, everything else keeps its
+    // relative position, and the canvas covers the whole content.
+    expect(grower.x).toBe(40);
+    for (const node of scene.nodes) {
+      expect(node.x).toBeGreaterThanOrEqual(40);
+      expect(node.x + node.width).toBeLessThanOrEqual(scene.width - 40);
+      expect(node.y + node.height).toBeLessThanOrEqual(scene.height);
+    }
+    for (const route of scene.routes) {
+      for (const point of route.points) {
+        expect(point.x).toBeGreaterThanOrEqual(0);
+        expect(point.x).toBeLessThanOrEqual(scene.width);
+      }
+    }
+    expect(scene.width).toBe(reference.scene!.width + 120);
+    expect(shifted.svg).toContain(`viewBox="0 0 ${scene.width} ${scene.height}"`);
   });
 
   it("renders deterministic SVG with automatic, guided, and fixed routes", async () => {
@@ -684,11 +837,50 @@ describe("diagram compiler pipeline", () => {
     });
     expect(result.svg).toContain('data-c4ml-shape="signal-diamond"');
     expect(result.svg).toContain('<polygon class="element-surface"');
-    expect(
-      result.routes?.find(
-        ({ relationshipId }) => relationshipId === "weather-feeds-api",
-      )?.sourcePort.point.y,
-    ).toBe(213);
+    // The test adapter attaches the edge to the diamond's east side; an open
+    // outline must still leave from its declared east Port anchor (50 %), not
+    // from wherever the adapter touched the bounding box.
+    const route = result.routes?.find(
+      ({ relationshipId }) => relationshipId === "weather-feeds-api",
+    );
+    expect(route?.sourcePort.side).toBe("east");
+    expect(route?.sourcePort.point).toEqual({ x: 1080, y: 246 });
+    expect(route?.points[0]).toEqual({ x: 1080, y: 246 });
+    expect(route?.points[1]?.y).toBe(246);
+  });
+
+  it("keeps the layout adapter's boundary attachment for box shapes", async () => {
+    const result = await compileArchitectureDiagram({
+      model: signalGardenModel,
+      view: groupedContainerView,
+      layoutAdapter: new SpreadingLayoutAdapter(),
+    });
+
+    expect(result.valid).toBe(true);
+    const routes = new Map(
+      result.routes?.map((route) => [route.relationshipId, route]),
+    );
+    const uiCallsApi = routes.get("ui-calls-api")!;
+    const weatherFeedsApi = routes.get("weather-feeds-api")!;
+
+    // Two edges entering the same side keep the adapter's distinct points
+    // instead of collapsing onto the side's centre anchor.
+    expect(uiCallsApi.targetPort.side).toBe("west");
+    expect(weatherFeedsApi.targetPort.side).toBe("west");
+    expect(uiCallsApi.targetPort.point).toEqual({ x: 450, y: 200 });
+    expect(weatherFeedsApi.targetPort.point).toEqual({ x: 450, y: 250 });
+    // No terminal segment runs along the boundary: the last segment of each
+    // route enters the west side horizontally.
+    for (const route of [uiCallsApi, weatherFeedsApi]) {
+      const [previous, last] = route.points.slice(-2);
+      expect(last).toEqual(route.targetPort.point);
+      expect(previous?.y).toBe(last?.y);
+      expect(previous?.x).toBeLessThan(last!.x);
+    }
+    const arrowheads = result.scene?.arrowheads.filter(({ relationshipId }) =>
+      ["ui-calls-api", "weather-feeds-api"].includes(relationshipId),
+    );
+    expect(new Set(arrowheads?.map(({ points }) => JSON.stringify(points))).size).toBe(2);
   });
 
   it("rejects a custom shape whose named port is not on its matching side", async () => {

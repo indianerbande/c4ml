@@ -10,6 +10,7 @@ import {
   type Point,
 } from "./layout.js";
 import { compareText } from "./ordering.js";
+import { routeLabelSize, wrapRouteLabel, wrapText } from "./route-labels.js";
 import type { CardinalPortSide, PortRole } from "./ports.js";
 import type {
   EffectiveAvoidanceRegion,
@@ -170,7 +171,15 @@ export function createDiagramScene(
   const titleHeight = 86;
   const legend = diagram.view.legend.entries ?? [];
   const legendHeight = legend.length === 0 ? 34 : 70;
-  const offset = { x: padding, y: padding + titleHeight };
+  // Placement (pins, adjustments) and route guidance may move geometry
+  // outside the engine's own bounds, including into negative coordinates.
+  // The scene keeps the layout origin where it is for the common case but
+  // grows the canvas so nothing is clipped.
+  const extent = layoutExtent(layout, routes);
+  const offset = {
+    x: padding + Math.max(0, -extent.minX),
+    y: padding + titleHeight + Math.max(0, -extent.minY),
+  };
   const layoutNodeById = new Map(layout.nodes.map((node) => [node.id, node]));
   const nodes = diagram.nodes.map((node) =>
     sceneNode(node, requiredLayoutNode(layoutNodeById, node.id), offset),
@@ -181,19 +190,13 @@ export function createDiagramScene(
     scenePort(route.targetPort, offset),
   ]);
   const arrowheads = sceneRoutes.map(sceneArrowhead);
-  const maxX = Math.max(
-    layout.width,
-    ...layout.nodes.map((node) => node.x + node.width),
-  );
-  const maxY = Math.max(
-    layout.height,
-    ...layout.nodes.map((node) => node.y + node.height),
-  );
+  const contentWidth = extent.maxX + Math.max(0, -extent.minX);
+  const contentHeight = extent.maxY + Math.max(0, -extent.minY);
 
   return {
     id: `scene:${diagram.view.id}`,
-    width: Math.ceil(maxX + padding * 2),
-    height: Math.ceil(maxY + padding * 2 + titleHeight + legendHeight),
+    width: Math.ceil(contentWidth + padding * 2),
+    height: Math.ceil(contentHeight + padding * 2 + titleHeight + legendHeight),
     title: diagram.view.title,
     description: diagram.view.purpose,
     scope: diagram.view.scope,
@@ -213,6 +216,50 @@ export function createDiagramScene(
     ),
     legend: [...legend],
   };
+}
+
+interface LayoutExtent {
+  readonly minX: number;
+  readonly minY: number;
+  readonly maxX: number;
+  readonly maxY: number;
+}
+
+/**
+ * The rectangle that holds every node, route point, and label box in layout
+ * coordinates. The engine's reported size is only a lower bound because
+ * placement and routing stages run after the engine.
+ */
+function layoutExtent(
+  layout: LayoutResult,
+  routes: readonly EffectiveRoute[],
+): LayoutExtent {
+  let minX = 0;
+  let minY = 0;
+  let maxX = layout.width;
+  let maxY = layout.height;
+  const include = (x: number, y: number, width = 0, height = 0): void => {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+    maxY = Math.max(maxY, y + height);
+  };
+  for (const node of layout.nodes) {
+    include(node.x, node.y, node.width, node.height);
+  }
+  for (const route of routes) {
+    for (const point of route.points) {
+      include(point.x, point.y);
+    }
+    const label = routeLabelSize(wrapRouteLabel(route.label, route.technology));
+    include(
+      route.labelPoint.x - label.width / 2,
+      route.labelPoint.y - label.height / 2,
+      label.width,
+      label.height,
+    );
+  }
+  return { minX, minY, maxX, maxY };
 }
 
 function sceneNode(
@@ -259,9 +306,10 @@ function sceneRoute(route: EffectiveRoute, offset: Point): SceneRoute {
     x: route.labelPoint.x + offset.x,
     y: route.labelPoint.y + offset.y,
   };
-  const labelLines = wrapText(route.label, 24, 3);
-  const technologyLines =
-    route.technology === undefined ? [] : wrapText(route.technology, 28, 2);
+  const { labelLines, technologyLines } = wrapRouteLabel(
+    route.label,
+    route.technology,
+  );
   return {
     id: `scene-route:${route.edgeId}`,
     relationshipId: route.relationshipId,
@@ -314,19 +362,7 @@ function routeLabelBounds(
   technologyLines: readonly string[],
   point: Point,
 ): SceneBounds {
-  const widestLabel = Math.max(0, ...labelLines.map((line) => line.length));
-  const widestTechnology = Math.max(
-    0,
-    ...technologyLines.map((line) => line.length),
-  );
-  const textWidth = Math.max(
-    48,
-    widestLabel * 6.4,
-    widestTechnology * 5.8,
-  );
-  const width = textWidth + 12;
-  const height =
-    Math.max(1, labelLines.length) * 13 + technologyLines.length * 12 + 8;
+  const { width, height } = routeLabelSize({ labelLines, technologyLines });
   return {
     x: point.x - width / 2,
     y: point.y - height / 2,
@@ -442,37 +478,3 @@ function stableSceneNodes(nodes: readonly SceneNode[]): SceneNode[] {
   );
 }
 
-function wrapText(
-  text: string,
-  maximumCharacters: number,
-  maximumLines: number,
-): string[] {
-  const words = text.trim().split(/\s+/u).filter(Boolean);
-  if (words.length === 0) {
-    return [];
-  }
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const candidate = current.length === 0 ? word : `${current} ${word}`;
-    if (candidate.length <= maximumCharacters || current.length === 0) {
-      current = candidate;
-      continue;
-    }
-    lines.push(current);
-    current = word;
-    if (lines.length === maximumLines - 1) {
-      break;
-    }
-  }
-  if (lines.length < maximumLines && current.length > 0) {
-    const consumed = lines.join(" ").split(/\s+/u).filter(Boolean).length;
-    const remaining = words.slice(consumed).join(" ");
-    lines.push(
-      remaining.length <= maximumCharacters
-        ? remaining
-        : `${remaining.slice(0, Math.max(1, maximumCharacters - 1)).trimEnd()}…`,
-    );
-  }
-  return lines.slice(0, maximumLines);
-}
