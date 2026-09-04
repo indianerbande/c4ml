@@ -91,6 +91,15 @@ const applicationId = "org.c4ml.desktop";
 const productName = "C4thedral";
 const legacyUserDataDirectoryName = "C4ML";
 const smokeArgument = "--c4ml-smoke";
+// The packaged smoke may name a project directory; Open Project then uses it
+// instead of the native dialog so the multi-document authoring path can be
+// exercised without a person at the keyboard.
+const smokeProjectArgumentPrefix = "--c4ml-smoke-project=";
+const smokeProjectPath = process.argv.includes(smokeArgument)
+  ? process.argv
+      .find((argument) => argument.startsWith(smokeProjectArgumentPrefix))
+      ?.slice(smokeProjectArgumentPrefix.length)
+  : undefined;
 const currentDirectory = __dirname;
 const preloadPath = join(currentDirectory, "preload.cjs");
 const previewPreloadPath = join(currentDirectory, "preview-preload.cjs");
@@ -636,9 +645,11 @@ function registerDesktopIpc(): void {
         properties: ["openDirectory" as const],
       };
       const selection =
-        owner === null
-          ? await dialog.showOpenDialog(options)
-          : await dialog.showOpenDialog(owner, options);
+        smokeProjectPath !== undefined
+          ? { canceled: false, filePaths: [smokeProjectPath] }
+          : owner === null
+            ? await dialog.showOpenDialog(options)
+            : await dialog.showOpenDialog(owner, options);
       const path = selection.filePaths[0];
       if (selection.canceled || path === undefined) {
         return { status: "canceled" };
@@ -1358,9 +1369,148 @@ view smoke-context {
       pngReady = false;
     }
   }
-  const smokeResult = { ...result, detachedPreviewReady, pngReady };
+  let authoring: DesktopAuthoringSmokeResult | undefined;
+  if (result.ok === true && smokeProjectPath !== undefined) {
+    authoring = await runMultiDocumentAuthoringSmoke(window);
+  }
+  const smokeResult = { ...result, detachedPreviewReady, pngReady, authoring };
   console.log(`C4ML_DESKTOP_SMOKE ${JSON.stringify(smokeResult)}`);
-  app.exit(result.ok === true && detachedPreviewReady && pngReady ? 0 : 1);
+  app.exit(
+    result.ok === true &&
+      detachedPreviewReady &&
+      pngReady &&
+      (authoring === undefined || authoring.ok)
+      ? 0
+      : 1,
+  );
+}
+
+interface DesktopAuthoringSmokeResult {
+  readonly ok: boolean;
+  readonly [step: string]: boolean | string | undefined;
+}
+
+const smokeStepHelpers = `
+  const wait = (predicate, timeout = 15000) => new Promise((settle) => {
+    const deadline = Date.now() + timeout;
+    const check = () => {
+      let value;
+      try { value = predicate(); } catch { value = undefined; }
+      if (value) settle(value);
+      else if (Date.now() >= deadline) settle(undefined);
+      else setTimeout(check, 100);
+    };
+    check();
+  });
+  const documentTabs = () => [...document.querySelectorAll('.editor-tab[title]')];
+  const activeDocument = () => documentTabs().find((tab) => tab.classList.contains('is-active'))?.title;
+  const dirtyDocuments = () => documentTabs().filter((tab) => tab.querySelector('.dirty-indicator') !== null).map((tab) => tab.title);
+  const compiled = () => document.querySelector('.worker-state[data-phase="valid"]') !== null;
+  const undoButton = () => document.querySelector('.title-actions .title-action:not(.architecture-action):not(.connection-action)');
+  const editorText = () => document.querySelector('.monaco-editor .view-lines')?.textContent ?? '';
+`;
+
+/**
+ * Drives the real workbench through the multi-document authoring path that
+ * unit tests cannot reach: the Monaco model swap happens in Angular's next
+ * change-detection tick, and the compiler runs in a Web Worker.
+ *
+ * Opens the smoke project, selects an element through the source editor,
+ * applies a placement change whose edit belongs to a document other than
+ * the active one, checks that only that document became dirty and was
+ * presented, switches back, undoes from the other tab, and finally reveals
+ * a finding declared in another document from the Output area.
+ */
+async function runMultiDocumentAuthoringSmoke(
+  window: BrowserWindow,
+): Promise<DesktopAuthoringSmokeResult> {
+  const steps: Record<string, boolean | string | undefined> = {};
+  const run = async (script: string): Promise<Record<string, boolean | string | undefined>> =>
+    (await window.webContents.executeJavaScript(
+      `new Promise(async (resolve) => { const steps = {}; ${smokeStepHelpers} ${script} resolve(steps); })`,
+      true,
+    )) as Record<string, boolean | string | undefined>;
+  const pause = (milliseconds: number): Promise<void> =>
+    new Promise((settle) => setTimeout(settle, milliseconds));
+  const key = async (keyCode: string, modifiers: string[] = []): Promise<void> => {
+    window.webContents.sendInputEvent({ type: "keyDown", keyCode, modifiers } as never);
+    window.webContents.sendInputEvent({ type: "keyUp", keyCode, modifiers } as never);
+    await pause(150);
+  };
+  const findModifier = process.platform === "darwin" ? "meta" : "control";
+
+  // The scratch document typed earlier is dirty; opening a project would wait
+  // for a person to confirm discarding it.
+  await window.webContents.executeJavaScript(`window.confirm = () => true;`, true);
+  window.webContents.send(
+    desktopIpcChannels.command,
+    "open-project" satisfies DesktopCommand,
+  );
+  Object.assign(steps, await run(`
+    steps.projectOpened = (await wait(() => documentTabs().length === 3 && activeDocument() === 'model/systems.c4ml')) !== undefined;
+    steps.projectCompiled = (await wait(() => compiled() && document.querySelector('img.diagram') !== null, 30000)) !== undefined;
+    document.querySelector('.monaco-editor textarea.inputarea')?.focus();
+  `));
+
+  // Select the element through Monaco's find widget: the cursor lands on the
+  // declaration, and the workbench selects the matching preview node.
+  await key("F", [findModifier]);
+  await window.webContents.insertText("system sensor-post");
+  await pause(300);
+  await key("Escape");
+  Object.assign(steps, await run(`
+    steps.elementSelectedFromSource = (await wait(() => editorText().includes('sensor-post') && document.querySelector('.status-bar button') !== null)) !== undefined;
+    document.querySelector('.status-bar button[aria-pressed]')?.click();
+    const geometryTab = await wait(() => [...document.querySelectorAll('.bottom-panel .panel-tabs button')][1]);
+    geometryTab?.click();
+    steps.geometryInspectorOpen = (await wait(() => document.querySelector('.geometry-inspector .inspector-source'))) !== undefined;
+    document.querySelector('.geometry-inspector .inspector-source')?.click();
+    steps.placementEditorOpen = (await wait(() => document.querySelector('.placement-editor select'))) !== undefined;
+    const operation = document.querySelector('.placement-editor select');
+    if (operation instanceof HTMLSelectElement) {
+      operation.value = 'nudge';
+      operation.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const previewButton = await wait(() => {
+      const button = document.querySelector('.placement-editor .preview-button');
+      return button instanceof HTMLButtonElement && !button.disabled ? button : undefined;
+    });
+    previewButton?.click();
+    const applyButton = await wait(() => {
+      const button = document.querySelector('.placement-editor .apply-button');
+      return button instanceof HTMLButtonElement && !button.disabled ? button : undefined;
+    }, 30000);
+    steps.placementPreviewed = applyButton !== undefined;
+    steps.modelActiveBeforeApply = activeDocument() === 'model/systems.c4ml';
+    applyButton?.click();
+    steps.editLandedInViewDocument = (await wait(() =>
+      document.querySelector('.placement-editor') === null &&
+      activeDocument() === 'views/context.c4ml' &&
+      undoButton() !== null,
+    )) !== undefined;
+    steps.onlyViewDocumentDirty = JSON.stringify(dirtyDocuments()) === JSON.stringify(['views/context.c4ml']);
+    steps.recompiledAfterEdit = (await wait(() => compiled(), 30000)) !== undefined;
+    documentTabs().find((tab) => tab.title === 'model/systems.c4ml')?.click();
+    steps.switchedAwayBeforeUndo = (await wait(() => activeDocument() === 'model/systems.c4ml')) !== undefined;
+    undoButton()?.click();
+    steps.undoRestoredViewDocument = (await wait(() =>
+      activeDocument() === 'views/context.c4ml' &&
+      dirtyDocuments().length === 0 &&
+      undoButton() === null,
+    )) !== undefined;
+    steps.recompiledAfterUndo = (await wait(() => compiled(), 30000)) !== undefined;
+    // Cross-document reveal: the Output area lists a policy finding located in
+    // the model document while the view document is active.
+    document.querySelector('button[data-activity="export"]')?.click();
+    const finding = await wait(() => [...document.querySelectorAll('.quality-findings button')].find((button) => !button.disabled));
+    steps.findingListed = finding !== undefined;
+    finding?.click();
+    steps.crossDocumentRevealed = (await wait(() =>
+      activeDocument() === 'model/systems.c4ml' && editorText().includes('garden-pulse'),
+    )) !== undefined;
+  `));
+  const ok = Object.values(steps).every((value) => value === true);
+  return { ...steps, ok };
 }
 
 async function waitForDetachedPreviewWindow(): Promise<BrowserWindow | undefined> {

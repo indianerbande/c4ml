@@ -1,5 +1,6 @@
-const { existsSync } = require("node:fs");
-const { resolve } = require("node:path");
+const { cpSync, existsSync, mkdtempSync, rmSync } = require("node:fs");
+const { tmpdir } = require("node:os");
+const { join, resolve } = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const packageRoot = resolve(
@@ -20,11 +21,28 @@ if (!existsSync(executable)) {
   );
 }
 
+const smoke = process.argv.includes("--smoke");
+// The smoke edits the multifile example through the workbench; it works on a
+// disposable copy so the repository stays untouched even if a step fails.
+const smokeProject = smoke
+  ? mkdtempSync(join(tmpdir(), "c4thedral-smoke-project-"))
+  : undefined;
+if (smokeProject !== undefined) {
+  cpSync(
+    resolve(__dirname, "../../../examples/projects/garden-pulse-multifile"),
+    smokeProject,
+    { recursive: true },
+  );
+}
+
 const result = spawnSync(
   executable,
-  process.argv.includes("--smoke") ? ["--c4ml-smoke"] : [],
+  smoke ? ["--c4ml-smoke", `--c4ml-smoke-project=${smokeProject}`] : [],
   { stdio: "inherit" },
 );
+if (smokeProject !== undefined) {
+  rmSync(smokeProject, { recursive: true, force: true });
+}
 if (result.error !== undefined) {
   throw result.error;
 }

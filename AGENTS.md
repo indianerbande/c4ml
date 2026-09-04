@@ -572,7 +572,8 @@ repository:
 - `pnpm run desktop:start` builds and starts the unpackaged Electron desktop
   application without invoking the Node.js-24-only packaging path;
 - `pnpm run desktop:smoke` builds and smoke-tests the Electron bridge, editor,
-  compiler worker, preview, and controlled typography; on Linux it uses `sudo`
+  compiler worker, preview, controlled typography, and the multi-document
+  authoring round trip on a disposable copy of the multifile example; on Linux it uses `sudo`
   to prepare only the disposable unpacked Chromium sandbox helper as
   `root:root` with mode `4755` before launch;
 - `pnpm run desktop:package` creates the ignored unpacked current-platform
