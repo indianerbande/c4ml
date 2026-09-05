@@ -5,6 +5,12 @@
 Diese Anleitung ist für das fertige C4thedral-Installationspaket. Du brauchst
 weder Node.js noch pnpm und musst keine Entwicklerwerkzeuge einrichten.
 
+> **Stand von `v0.1.0-beta.5`:** Diese Version wird als Source-Beta
+> veröffentlicht; es werden dafür noch keine freigegebenen nativen
+> Installationspakete angeboten. Die Anleitung gilt, sobald ein auf dem
+> Zielsystem geprüftes DEB ausdrücklich bereitgestellt wurde. Bis dahin nutze
+> [C4thedral aus dem Quellcode bauen](build-from-source.md).
+
 ## 1. Das richtige Paket herunterladen
 
 Lade die DEB-Datei für deinen Rechner herunter:
@@ -27,14 +33,17 @@ Die Ausgabe `amd64` oder `arm64` muss zum Dateinamen passen.
 
 ```shell
 cd ~/Downloads
-sudo apt install ./c4thedral_0.1.0~beta.5_amd64.deb
+sudo apt install ./c4thedral_VERSION_amd64.deb
 ```
 
 Auf einem ARM64-Rechner ersetzt du `_amd64.deb` durch `_arm64.deb`:
 
 ```shell
-sudo apt install ./c4thedral_0.1.0~beta.5_arm64.deb
+sudo apt install ./c4thedral_VERSION_arm64.deb
 ```
+
+Ersetze `VERSION` durch den Bestandteil des tatsächlich bereitgestellten
+Dateinamens.
 
 Das `./` vor dem Dateinamen ist wichtig. Ubuntu fragt nach deinem Passwort und
 installiert benötigte Systembibliotheken automatisch. Die Eingabe des

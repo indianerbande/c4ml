@@ -15,14 +15,11 @@ system Node.js, or a compiler service.
 
 ## 1. Install the build tools
 
-Install:
-
-- Git;
-- Node.js 24.15.0 or a newer 24.x release; and
-- the native tools listed for your operating system in [the platform
-  matrix](platforms.md).
-
-Then enable the repository's pinned pnpm version:
+Install Node.js 24.15.0 or a newer 24.x release and the native tools listed for
+your operating system in [the platform matrix](platforms.md). Git is needed
+only for cloning, revision comparisons, and the Source Control area; a GitHub
+source ZIP is explicitly buildable without Git and without a `.git` directory.
+Then enable the project's pinned pnpm version:
 
 ```shell
 corepack enable
@@ -34,17 +31,35 @@ pnpm --version
 The expected major versions are Node.js 24 and pnpm 11. Native packaging fails
 early on a different Node.js major version.
 
-## 2. Clone and verify the source
+## 2. Obtain and verify the source
+
+### With Git
 
 ```shell
 git clone https://github.com/indianerbande/c4ml.git
 cd c4ml
+```
+
+### As a GitHub ZIP without Git
+
+On GitHub, choose **Code → Download ZIP**, extract the archive, and open a
+terminal in the extracted directory. It is the directory containing
+`package.json`, `README.md`, `apps`, and `packages`.
+
+### Dependencies and complete gate
+
+Run the following commands regardless of how you obtained the source:
+
+```shell
 pnpm install --frozen-lockfile
 pnpm run check
 ```
 
 `--frozen-lockfile` is intentional: a source build must use the dependency graph
 reviewed for that commit instead of silently selecting newer packages.
+Without Git, the documentation and public-source checks automatically fall
+back to inspecting the local files. Only Git-based product features are
+unavailable in a ZIP checkout, as expected.
 
 ## 3. Start the workbench
 

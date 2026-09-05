@@ -143,13 +143,17 @@ nutzbar sind.
 ## Status der nativen Plattformen
 
 Native Builds müssen auf ihrem Zielbetriebssystem entstehen und geprüft
-werden. Die aktuelle Beta hat Source-, Paket-, Installations-, Offline-Start-
-und native Datei-/Exportabläufe bestanden auf:
+werden. Die nativen Auslieferungswege früherer Beta-Artefakte haben Source-,
+Paket-, Installations-, Offline-Start- und native Datei-/Exportabläufe bestanden
+auf:
 
 - macOS arm64;
 - Windows x64;
 - Ubuntu arm64; und
 - Ubuntu x64.
+
+Diese Nachweise gelten nicht als erneute Hostfreigabe für Beta 5. Beta 5 wird
+als Source-Release ohne freigegebene native Downloads veröffentlicht.
 
 macOS-Entwicklungsartefakte sind nur ad hoc signiert. Die öffentliche
 Apple-Verteilung verlangt Developer ID und Notarisierung. Windows-Verhalten und

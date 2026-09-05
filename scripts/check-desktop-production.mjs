@@ -437,22 +437,35 @@ assert.deepEqual(
 );
 const linuxInstallGuide = readRequired("docs/de/install-linux.md");
 const englishLinuxInstallGuide = readRequired("docs/en/install-linux.md");
+const releaseNotes = readRequired(
+  `docs/en/releases/${rootManifest.version}.md`,
+);
+const sourceOnlyRelease = /No native installers are offered as\s+approved downloads/u.test(
+  releaseNotes,
+);
+const releaseArtifactLabel = sourceOnlyRelease ? "generic" : "current";
 const debianVersion = rootManifest.version.replace(
   /(\d)[_.+-]?((?:RC|rc|pre|dev|beta|alpha)[_.+-]?\d*)$/u,
   "$1~$2",
 );
 for (const debianArchitecture of ["amd64", "arm64"]) {
+  const expectedDeb = sourceOnlyRelease
+    ? `sudo apt install ./c4thedral_VERSION_${debianArchitecture}.deb`
+    : `sudo apt install ./c4thedral_${debianVersion}_${debianArchitecture}.deb`;
   assert.ok(
-    linuxInstallGuide.includes(
-      `sudo apt install ./c4thedral_${debianVersion}_${debianArchitecture}.deb`,
-    ),
-    `the Linux install guide must name the current ${debianArchitecture} DEB exactly`,
+    linuxInstallGuide.includes(expectedDeb),
+    `the Linux install guide must name the ${releaseArtifactLabel} ${debianArchitecture} DEB exactly`,
   );
   assert.ok(
-    englishLinuxInstallGuide.includes(
-      `sudo apt install ./c4thedral_${debianVersion}_${debianArchitecture}.deb`,
-    ),
-    `the English Linux install guide must name the current ${debianArchitecture} DEB exactly`,
+    englishLinuxInstallGuide.includes(expectedDeb),
+    `the English Linux install guide must name the ${releaseArtifactLabel} ${debianArchitecture} DEB exactly`,
+  );
+}
+if (sourceOnlyRelease) {
+  assert.ok(
+    linuxInstallGuide.includes("keine freigegebenen nativen") &&
+      englishLinuxInstallGuide.includes("no approved native"),
+    "source-only Linux installation guides must not imply an approved download",
   );
 }
 assert.ok(
@@ -465,15 +478,24 @@ assert.ok(
 );
 const windowsInstallGuide = readRequired("docs/de/install-windows.md");
 const englishWindowsInstallGuide = readRequired("docs/en/install-windows.md");
-const squirrelSetupName = `C4thedral-${rootManifest.version} Setup.exe`;
+const squirrelSetupName = sourceOnlyRelease
+  ? "C4thedral-VERSION Setup.exe"
+  : `C4thedral-${rootManifest.version} Setup.exe`;
 assert.ok(
   windowsInstallGuide.includes(squirrelSetupName),
-  "the Windows install guide must name the current Squirrel Setup executable exactly",
+  `the Windows install guide must name the ${releaseArtifactLabel} Squirrel Setup executable exactly`,
 );
 assert.ok(
   englishWindowsInstallGuide.includes(squirrelSetupName),
-  "the English Windows install guide must name the current Squirrel Setup executable exactly",
+  `the English Windows install guide must name the ${releaseArtifactLabel} Squirrel Setup executable exactly`,
 );
+if (sourceOnlyRelease) {
+  assert.ok(
+    windowsInstallGuide.includes("kein freigegebenes natives") &&
+      englishWindowsInstallGuide.includes("no approved native"),
+    "source-only Windows installation guides must not imply an approved download",
+  );
+}
 assert.ok(
   windowsInstallGuide.includes("brauchst weder Node.js noch pnpm"),
   "the Windows install guide must distinguish end-user installation from the build toolchain",

@@ -132,6 +132,8 @@ vollständigen reproduzierbaren Ablauf für native Pakete beschreibt
 [C4thedral aus dem Quellcode bauen](docs/de/build-from-source.md). Selbst erstellte macOS- und
 Windows-Pakete tragen noch nicht die künftigen Herausgebersignaturen von
 C4thedral.
+Ein von GitHub heruntergeladenes Source-ZIP wird ausdrücklich unterstützt; der
+Build und das vollständige Prüf-Gate benötigen kein `.git`-Verzeichnis.
 
 ## CLI verwenden
 

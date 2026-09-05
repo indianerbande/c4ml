@@ -1,10 +1,19 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ignoredDirectories = new Set([
+  ".angular",
+  ".git",
+  ".pnpm-store",
+  "build",
+  "coverage",
+  "dist",
+  "node_modules",
+]);
 const languagePairs = [
   ["README.md", "README.de.md"],
   ["CONTRIBUTING.md", "CONTRIBUTING.de.md"],
@@ -47,15 +56,42 @@ function repositoryPath(path) {
   return join(repositoryRoot, path);
 }
 
+function collectMarkdownFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) {
+      return [];
+    }
+    const absolutePath = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      return collectMarkdownFiles(absolutePath);
+    }
+    if (!entry.isFile() || extname(entry.name).toLowerCase() !== ".md") {
+      return [];
+    }
+    return [relative(repositoryRoot, absolutePath).split(sep).join("/")];
+  });
+}
+
 function markdownFiles() {
-  return execFileSync(
-    "git",
-    ["ls-files", "--cached", "--others", "--exclude-standard", "*.md"],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  )
-    .trim()
-    .split(/\r?\n/u)
-    .filter(Boolean);
+  if (!process.argv.includes("--filesystem")) {
+    try {
+      return execFileSync(
+        "git",
+        ["ls-files", "--cached", "--others", "--exclude-standard", "*.md"],
+        {
+          cwd: repositoryRoot,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        },
+      )
+        .trim()
+        .split(/\r?\n/u)
+        .filter(Boolean);
+    } catch {
+      // A GitHub source archive intentionally has no .git directory.
+    }
+  }
+  return collectMarkdownFiles(repositoryRoot).sort();
 }
 
 function relativeLink(from, to) {
@@ -89,7 +125,8 @@ for (const [englishPath, germanPath] of languagePairs) {
 
 const linkPattern = /\[[^\]]*\]\(([^)]+)\)/gu;
 const failures = [];
-for (const markdownPath of markdownFiles()) {
+const checkedMarkdownFiles = markdownFiles();
+for (const markdownPath of checkedMarkdownFiles) {
   if (markdownPath.endsWith(".c4ml-narrative.md")) {
     continue;
   }
@@ -121,5 +158,5 @@ for (const markdownPath of markdownFiles()) {
 
 assert.deepEqual(failures, [], failures.join("\n"));
 console.log(
-  `Documentation check passed (${languagePairs.length} language pairs, ${markdownFiles().length} Markdown files).`,
+  `Documentation check passed (${languagePairs.length} language pairs, ${checkedMarkdownFiles.length} Markdown files).`,
 );

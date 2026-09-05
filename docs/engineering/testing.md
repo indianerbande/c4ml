@@ -23,6 +23,9 @@ commands are:
   worker, reviewed IBM Plex assets, and packaged license notices;
 - `pnpm run check:desktop-production` for pinned desktop dependencies, secure
   main/preload boundaries, CSP, and required packaged editor resources;
+- `pnpm run check:documentation` for bilingual documentation and local-link
+  validation through both the repository inventory and the `.git`-free source-
+  archive fallback;
 - `pnpm run check:architecture-proof` for the deterministic, non-mutating
   Pillar 3 policy-and-observation acceptance project;
 - `pnpm run check` for the complete current gate;
@@ -38,7 +41,11 @@ commands are:
 - `pnpm run c4ml -- version` for the built experimental CLI entry point.
 
 All commands run locally after dependency installation and require no compiler
-service or runtime network access.
+service or runtime network access. The complete source gate also runs the
+documentation check in a child process with Git removed from `PATH`; this
+proves that a GitHub source ZIP without a `.git` directory follows the local
+filesystem inventory instead of failing at `git ls-files`. The public-source
+check uses the same class of filesystem fallback.
 
 The source gate accepts the installed Node.js runtime when it satisfies the
 root `engines` range. Node.js 24.15.0 or newer within 24.x is the native desktop

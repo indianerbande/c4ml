@@ -136,13 +136,16 @@ tested and useful.
 ## Native platform status
 
 Native builds must be created and verified on their target operating system.
-The current beta has passed source, package, installation, offline launch, and
-native file/export workflows on:
+The native delivery paths of earlier beta artifacts passed source, package,
+installation, offline launch, and native file/export workflows on:
 
 - macOS arm64;
 - Windows x64;
 - Ubuntu arm64; and
 - Ubuntu x64.
+
+That evidence is not a renewed host approval for beta 5. Beta 5 is published as
+a source release without approved native downloads.
 
 macOS development artifacts are ad-hoc signed only. Public Apple distribution
 still requires Developer ID signing and notarization. Windows native behavior
