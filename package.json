@@ -20,7 +20,7 @@
     "check:worker-bundles": "node scripts/check-worker-bundles.mjs",
     "check:architecture-proof": "node scripts/check-architecture-proof.mjs",
     "check:desktop-production": "node scripts/check-desktop-production.mjs",
-    "check:documentation": "node scripts/check-documentation.mjs",
+    "check:documentation": "node scripts/check-documentation.mjs && node scripts/check-documentation-without-git.mjs",
     "check:editor-production": "node scripts/check-editor-production.mjs",
     "check:native-release": "node scripts/check-native-release.mjs",
     "check:public-source": "node scripts/check-public-source.mjs",

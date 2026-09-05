@@ -125,6 +125,8 @@ For native packages, platform prerequisites, Linux sandbox handling, and the
 complete reproducible procedure, follow
 [Build C4thedral from source](docs/en/build-from-source.md). Self-built macOS and Windows packages
 do not carry future C4thedral publisher signatures.
+A GitHub source ZIP is explicitly supported; the build and complete source gate
+do not require a `.git` directory.
 
 ## Use the CLI
 

@@ -6,17 +6,24 @@ Diese Anleitung ist für das fertige C4thedral-Installationsprogramm. Du
 brauchst weder Node.js noch pnpm und musst keine Entwicklerwerkzeuge
 einrichten.
 
+> **Stand von `v0.1.0-beta.5`:** Diese Version wird als Source-Beta
+> veröffentlicht; es wird dafür noch kein freigegebenes natives
+> Installationsprogramm angeboten. Die Anleitung gilt, sobald ein auf Windows
+> x64 geprüftes Setup ausdrücklich bereitgestellt wurde. Bis dahin nutze
+> [C4thedral aus dem Quellcode bauen](build-from-source.md).
+
 ## 1. Das richtige Installationsprogramm herunterladen
 
 Lade für einen normalen 64-Bit-Windows-PC diese Datei herunter:
 
 ```text
-C4thedral-0.1.0-beta.5 Setup.exe
+C4thedral-VERSION Setup.exe
 ```
 
-Die aktuelle Beta ist für Windows x64 gebaut. Wenn du deine Windows-Architektur
-prüfen möchtest, öffne **Einstellungen → System → Info**. Unter **Systemtyp**
-muss „64-Bit-Betriebssystem, x64-basierter Prozessor“ stehen.
+Der bisher validierte native Windows-Pfad ist Windows x64. Wenn du deine
+Windows-Architektur prüfen möchtest, öffne **Einstellungen → System → Info**.
+Unter **Systemtyp** muss „64-Bit-Betriebssystem, x64-basierter Prozessor“
+stehen.
 
 ## 2. Optional: Prüfsumme kontrollieren
 
@@ -24,7 +31,7 @@ muss „64-Bit-Betriebssystem, x64-basierter Prozessor“ stehen.
 eine freie Stelle und wähle **Im Terminal öffnen**. Gib dann ein:
 
 ```powershell
-Get-FileHash ".\C4thedral-0.1.0-beta.5 Setup.exe" -Algorithm SHA256
+Get-FileHash ".\C4thedral-VERSION Setup.exe" -Algorithm SHA256
 ```
 
 Vergleiche die angezeigte Zeichenfolge mit der SHA-256-Prüfsumme, die zusammen
@@ -33,7 +40,8 @@ Werte verschieden sind.
 
 ## 3. C4thedral installieren
 
-1. Doppelklicke auf **C4thedral-0.1.0-beta.5 Setup.exe**.
+1. Ersetze `VERSION` durch die Version im bereitgestellten Dateinamen und
+   doppelklicke auf das Setup.
 2. Warte, bis die Installation abgeschlossen ist.
 3. Öffne das Startmenü, suche nach **C4thedral** und starte die Anwendung.
 

@@ -15,10 +15,12 @@ Cloud-Konto noch Python, systemweites Node.js oder einen Compiler-Dienst.
 
 ## 1. Build-Werkzeuge installieren
 
-Installiere Git, Node.js 24.15.0 oder eine neuere 24.x-Version sowie die in der
+Installiere Node.js 24.15.0 oder eine neuere 24.x-Version sowie die in der
 [Plattformmatrix](platforms.md) genannten nativen Werkzeuge für dein
-Betriebssystem. Aktiviere anschließend die im Repository festgelegte
-pnpm-Version:
+Betriebssystem. Git brauchst du nur zum Klonen, für Versionsvergleiche und für
+die Source-Control-Ansicht; ein von GitHub heruntergeladenes Source-ZIP lässt
+sich ausdrücklich ohne Git und ohne `.git`-Verzeichnis bauen. Aktiviere
+anschließend die im Projekt festgelegte pnpm-Version:
 
 ```shell
 corepack enable
@@ -30,11 +32,26 @@ pnpm --version
 Erwartet werden Node.js 24 und pnpm 11. Native Paketierung bricht bei einer
 anderen Node.js-Hauptversion früh und verständlich ab.
 
-## 2. Quellcode klonen und prüfen
+## 2. Quellcode beziehen und prüfen
+
+### Mit Git
 
 ```shell
 git clone https://github.com/indianerbande/c4ml.git
 cd c4ml
+```
+
+### Als GitHub-ZIP ohne Git
+
+Öffne auf GitHub **Code → Download ZIP**, entpacke die Datei und öffne ein
+Terminal im entpackten Ordner. Das ist der Ordner, der `package.json`,
+`README.md`, `apps` und `packages` enthält.
+
+### Abhängigkeiten und vollständiges Gate
+
+Führe danach unabhängig von der Bezugsart aus:
+
+```shell
 pnpm install --frozen-lockfile
 pnpm run check
 ```
@@ -42,6 +59,9 @@ pnpm run check
 `--frozen-lockfile` ist Absicht: Ein Source-Build muss genau den für diesen
 Commit geprüften Abhängigkeitsgraphen verwenden und darf nicht stillschweigend
 neuere Pakete auswählen.
+Der Dokumentations- und Public-Source-Check fällt ohne Git automatisch auf eine
+lokale Dateiprüfung zurück. Lediglich Git-bezogene Programmfunktionen stehen in
+einem ZIP-Checkout erwartungsgemäß nicht zur Verfügung.
 
 ## 3. Workbench starten
 

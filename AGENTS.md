@@ -571,6 +571,9 @@ repository:
   pinned Suggest integration point, and the editor artifact's license notices;
 - `pnpm run check:desktop-production` verifies the pinned Electron/Forge stack,
   hardened main/preload boundary, local CSP, and required editor resources;
+- `pnpm run check:documentation` verifies the bilingual documentation and local
+  links both through the repository file list and through the `.git`-free
+  filesystem fallback required by GitHub source archives;
 - `pnpm run check:public-source` verifies public community documents, locked
   tool versions, pinned CI actions, ignored credential files, and the absence
   of high-confidence credentials, private build hosts, and local user paths in
