@@ -287,16 +287,23 @@ export class WorkbenchDocumentFacade {
 
   async openPendingDocument(): Promise<OpenedWorkbenchDocument | undefined> {
     const desktop = this.#desktop;
-    if (desktop === undefined || !this.#confirmDiscard()) {
+    if (desktop === undefined) {
       return undefined;
     }
-    this.fileOperationLabel.set(this.#i18n.t("operation.opening"));
     try {
+      // Claim first, ask second: the question "discard unsaved work?" only
+      // makes sense once a document is actually waiting, and a declined
+      // request must be consumed rather than resurface on a later, unrelated
+      // external open.
       const result = await desktop.claimPendingDocument();
       if (result === undefined) {
+        return undefined;
+      }
+      if (!this.#confirmDiscard()) {
         this.fileOperationLabel.set(undefined);
         return undefined;
       }
+      this.fileOperationLabel.set(this.#i18n.t("operation.opening"));
       return this.#acceptOpenResult(result);
     } catch {
       this.fileOperationLabel.set(this.#i18n.t("operation.openFailed"));

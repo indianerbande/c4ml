@@ -407,6 +407,13 @@ function registerDesktopIpc(): void {
       }
       const path = externalDocuments.take();
       if (path === undefined) return undefined;
+      // Several documents may arrive in one Open With gesture. The renderer
+      // claims one at a time, so announce the next one once this claim has
+      // been delivered instead of leaving it in the queue until some later,
+      // unrelated external open happens to flush it.
+      if (externalDocuments.pending) {
+        setImmediate(notifyPendingDocument);
+      }
       return openDesktopDocument(path);
     },
   );
