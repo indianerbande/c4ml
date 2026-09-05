@@ -38,12 +38,18 @@ separately; passing a Phase 0 spike alone is not permanent acceptance.
   scope-derived completion candidates with exact text edits, and bundle the
   language package for a Web Worker without Node.js polyfills.
 
-The completion spike activates Langium's LSP completion services inside the
-existing compiler worker. This adds no new direct dependency, but it increases
-the production worker bundle and produces Angular optimization warnings for
-Langium's CommonJS `vscode-languageserver` and
-`vscode-languageserver-protocol` transitive packages. Production language
-integration must account for that bundle and module-format cost.
+Completion uses Langium's grammar-driven `DefaultCompletionProvider` inside
+the existing compiler worker. The worker composes only that provider with the
+two shared services it needs (`NodeKindProvider`, `FuzzyMatcher`) on top of the
+core services; the full Langium LSP module (language server, document update
+handling, symbols, hover, rename, folding) is not instantiated and is
+tree-shaken from the worker bundle. The provider itself imports completion
+item types from the CommonJS `vscode-languageserver` package, and Angular
+reports every CommonJS module reachable through Langium's `langium/lsp` entry
+as an optimization bailout, including the unused language-server module. Those
+packages are listed under `allowedCommonJsDependencies` in `apps/editor/angular.json`
+together with ELK's API entry so the accepted state stops producing warnings
+on every build; the note here is the record of why they are accepted.
 
 `langium-cli` 4.3.0 is a build-time MIT-licensed companion used only to generate
 the disposable probe artifacts.

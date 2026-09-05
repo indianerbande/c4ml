@@ -12,6 +12,11 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "allowedCommonJsDependencies": [
+              "elkjs/lib/elk-api.js",
+              "vscode-languageserver",
+              "vscode-languageserver-protocol"
+            ],
             "outputPath": "../../build/editor",
             "index": "src/index.html",
             "browser": "src/main.ts",
