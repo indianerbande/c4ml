@@ -41,7 +41,14 @@ import {
 } from "./placement-editor.component.js";
 import { RouteEditorComponent } from "./route-editor.component.js";
 import { SemanticEditorComponent } from "./semantic-editor.component.js";
+import { DiagramContextMenuComponent } from "./diagram-context-menu.component.js";
+import {
+  diagramContextMenuPosition,
+  type DiagramContextMenuAction,
+  type DiagramContextMenuPosition,
+} from "./diagram-context-menu.js";
 import { SettingsPanelComponent } from "./settings-panel.component.js";
+import { ModalInteractionDirective, ModalInteractionService } from "./modal-interaction.directive.js";
 import { HelpArticleComponent } from "./help-article.component.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
@@ -67,7 +74,9 @@ import { WorkbenchSourceControlFacade } from "./workbench-source-control.facade.
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
   imports: [
+    ModalInteractionDirective,
     C4mlMonacoSourceEditorComponent,
+    DiagramContextMenuComponent,
     HelpArticleComponent,
     PlacementEditorComponent,
     RouteEditorComponent,
@@ -77,6 +86,7 @@ import { WorkbenchSourceControlFacade } from "./workbench-source-control.facade.
   ],
 })
 export class AppComponent {
+  readonly modals = inject(ModalInteractionService);
   readonly suggestionShortcut = sourceEditorSuggestionShortcut(
     globalThis.navigator.userAgent,
   );
@@ -140,20 +150,23 @@ export class AppComponent {
   readonly wizardOpen = signal(false);
   readonly wizardUndoConfirmationOpen = signal(false);
   readonly settingsOpen = signal(false);
+  readonly diagramContextMenu = signal<{
+    readonly target: CompilerWorkerNavigationTarget | undefined;
+    readonly position: DiagramContextMenuPosition;
+  } | undefined>(undefined);
   readonly sourceCursorOffset = signal(0);
   readonly canUndoWizard = signal(false);
   readonly canEditArchitecture = computed(() => {
     const state = this.compiler.state();
-    const activeView = state.views.find(({ id }) => id === state.activeViewId);
     return (
-      state.phase === "valid" &&
-      activeView !== undefined
+      state.phase === "valid" && this.hasOpenDocument()
     );
   });
   readonly canConnectArchitecture = computed(() => {
     const state = this.compiler.state();
     const activeView = state.views.find(({ id }) => id === state.activeViewId);
     return this.canEditArchitecture() &&
+      activeView !== undefined &&
       activeView?.kind !== "dynamic" &&
       activeView?.kind !== "deployment" &&
       !this.semanticEditor.picking();
@@ -199,7 +212,7 @@ export class AppComponent {
       case "invalid":
         return this.i18n.t("status.invalid");
       case "valid":
-        return this.i18n.t("status.valid");
+        return this.i18n.t(this.compiler.state().views.length === 0 ? "starter.valid" : "status.valid");
       default:
         return this.i18n.t("status.waiting");
     }
@@ -213,6 +226,11 @@ export class AppComponent {
     const destroyRef = inject(DestroyRef);
     const unsubscribeDesktopCommands = this.documents.onDesktopCommand(
       (command) => {
+        if (this.modals.controller.active) {
+          if (command === "open-pending-document") this.modals.afterClose(() => { void this.openPendingDocument(); });
+          else this.modals.attention();
+          return;
+        }
         switch (command) {
           case "close-workspace":
             this.closeWorkspace();
@@ -267,19 +285,14 @@ export class AppComponent {
 
   @HostListener("document:keydown", ["$event"])
   onWorkbenchKeydown(event: KeyboardEvent): void {
+    if (this.modals.controller.active) return;
     const modifier = event.metaKey || event.ctrlKey;
     if (modifier && event.shiftKey && event.key.toLocaleLowerCase() === "p") {
       event.preventDefault();
       this.openCommandPalette();
-    } else if (event.key === "Escape" && this.wizardUndoConfirmationOpen()) {
-      event.preventDefault();
-      this.cancelUndoWizard();
     } else if (event.key === "Escape" && this.semanticEditor.picking()) {
       event.preventDefault();
       this.semanticEditor.cancelConnectionPicking();
-    } else if (event.key === "Escape" && this.commandPaletteOpen()) {
-      event.preventDefault();
-      this.closeCommandPalette();
     } else if (
       event.key === "F1" &&
       !this.commandPaletteOpen() &&
@@ -292,6 +305,7 @@ export class AppComponent {
   }
 
   onSourceChange(source: string): void {
+    this.closeDiagramContextMenu();
     this.documents.replaceSource(source, true);
     this.preview.clearSelection();
     this.#wizardSourceSession.invalidateUndo();
@@ -408,29 +422,57 @@ export class AppComponent {
   }
 
   onPreviewClick(event: MouseEvent): void {
-    const navigation = this.navigation();
-    const image = event.target as HTMLImageElement | null;
-    if (
-      navigation === undefined ||
-      this.compiler.state().phase !== "valid" ||
-      image?.tagName !== "IMG"
-    ) {
-      return;
-    }
-    const point = clientPointToScene(
-      { x: event.clientX, y: event.clientY },
-      image.getBoundingClientRect(),
-      navigation,
-    );
-    const target =
-      point === undefined
-        ? undefined
-        : navigationTargetAtPoint(navigation.targets, point);
+    this.closeDiagramContextMenu();
+    const target = this.#previewTargetAt(event);
     if (this.semanticEditor.picking()) {
       this.#pickConnectionTarget(target);
       return;
     }
     this.#selectTarget(target, true);
+  }
+
+  onPreviewContextMenu(event: MouseEvent): void {
+    if (this.semanticEditor.picking() || this.compiler.state().phase !== "valid") return;
+    const target = this.#previewTargetAt(event);
+    event.preventDefault();
+    this.preview.select(target, false);
+    this.diagramContextMenu.set({
+      target,
+      position: diagramContextMenuPosition(
+        { x: event.clientX, y: event.clientY },
+        { width: globalThis.innerWidth, height: globalThis.innerHeight },
+      ),
+    });
+  }
+
+  closeDiagramContextMenu(): void {
+    this.diagramContextMenu.set(undefined);
+  }
+
+  onDiagramContextAction(action: DiagramContextMenuAction): void {
+    const context = this.diagramContextMenu();
+    if (context === undefined) return;
+    this.closeDiagramContextMenu();
+    switch (action.kind) {
+      case "show-element":
+        this.semanticEditor.showExisting(this.compiler.state().activeViewId);
+        break;
+      case "connect":
+        this.semanticEditor.showRelationship(this.compiler.state().activeViewId, context.target?.referenceId);
+        break;
+      case "placement":
+        this.placement.show({
+          operation: action.operation,
+          ...(action.direction === undefined ? {} : { direction: action.direction }),
+        });
+        break;
+      case "route":
+        this.routeEditor.show(action.operation);
+        break;
+      case "reveal-source":
+        if (context.target !== undefined) this.onInspectorSourceSelected(context.target.source);
+        break;
+    }
   }
 
   triggerSuggestions(): void {
@@ -518,6 +560,12 @@ export class AppComponent {
     );
   }
 
+  openDiagramEditor(): void {
+    if (!this.canEditArchitecture()) return;
+    this.help.showDiagram();
+    this.semanticEditor.showDiagram();
+  }
+
   async startConnectionPicking(request: { readonly sourceId?: string }): Promise<void> {
     if (!this.canEditArchitecture()) return;
     this.preview.redock();
@@ -541,11 +589,40 @@ export class AppComponent {
   }
 
   applySemantic(response: PreviewSemanticChangeWorkerResponse): void {
-    void this.semanticEditor.apply(response, this.sourceEditor());
+    void this.semanticEditor.apply(response, this.sourceEditor()).then(() => {
+      if (this.semanticEditor.open()) return;
+      this.placement.sourceChanged();
+      this.routeEditor.sourceChanged();
+      this.#wizardSourceSession.invalidateUndo();
+      this.canUndoWizard.set(false);
+      this.preview.clearSelection();
+      if (this.semanticEditor.mode() === "diagram") this.#compileCurrentProject(response.compilation?.activeViewId);
+      else this.#scheduleCompile();
+    });
   }
 
   undoSemantic(): void {
-    void this.semanticEditor.undo(this.sourceEditor());
+    void this.semanticEditor.undo(this.sourceEditor()).then(() => this.#scheduleCompile());
+  }
+
+  #previewTargetAt(event: MouseEvent): CompilerWorkerNavigationTarget | undefined {
+    const navigation = this.navigation();
+    const image = event.target as HTMLImageElement | null;
+    if (
+      navigation === undefined ||
+      this.compiler.state().phase !== "valid" ||
+      image?.tagName !== "IMG"
+    ) {
+      return undefined;
+    }
+    const point = clientPointToScene(
+      { x: event.clientX, y: event.clientY },
+      image.getBoundingClientRect(),
+      navigation,
+    );
+    return point === undefined
+      ? undefined
+      : navigationTargetAtPoint(navigation.targets, point);
   }
 
   exportSvg(): void {
@@ -593,10 +670,12 @@ export class AppComponent {
   }
 
   selectActivity(activity: WorkbenchActivity): void {
-    this.session.setActivity(activity);
     if (activity === "help") {
-      this.help.pane.set("help");
-    } else if (activity === "source-control") {
+      this.help.toggle();
+      return;
+    }
+    this.session.setActivity(activity);
+    if (activity === "source-control") {
       void this.sourceControl.refresh();
     }
   }
@@ -696,7 +775,7 @@ export class AppComponent {
         break;
       case "help.open":
         this.session.setActivity("help");
-        this.help.pane.set("help");
+        this.help.openTopic(this.activeHelpTopicId());
         break;
       case "help.context":
         this.openContextHelp();

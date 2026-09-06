@@ -1,0 +1,79 @@
+:host {
+  display: contents;
+}
+
+.diagram-context-menu,
+.context-submenu-panel {
+  position: fixed;
+  z-index: 90;
+  width: 248px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--dialog-shadow);
+  color: var(--ink);
+}
+
+.context-menu-heading {
+  margin: 2px 8px 6px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button:hover,
+button:focus-visible {
+  outline: none;
+  background: var(--control-hover);
+}
+
+button:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.context-menu-separator {
+  height: 1px;
+  margin: 5px 3px;
+  background: var(--line);
+}
+
+.context-submenu {
+  position: relative;
+}
+
+.context-submenu-panel {
+  position: absolute;
+  top: -7px;
+  left: calc(100% - 1px);
+  display: none;
+  width: 190px;
+}
+
+.submenu-left .context-submenu-panel {
+  right: calc(100% - 1px);
+  left: auto;
+}
+
+.context-submenu:hover .context-submenu-panel,
+.context-submenu:focus-within .context-submenu-panel {
+  display: block;
+}

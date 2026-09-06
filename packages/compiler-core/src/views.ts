@@ -19,6 +19,8 @@ export type ViewKind =
   | "system-landscape";
 
 export interface ViewSelection {
+  /** Add eligible static elements to the automatic projection without inventing relationships. */
+  readonly additionalElementIds?: readonly string[];
   readonly includeElementIds?: readonly string[];
   readonly excludeElementIds?: readonly string[];
   readonly includeRelationshipIds?: readonly string[];

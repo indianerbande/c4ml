@@ -343,7 +343,7 @@ model {
     ]);
   });
 
-  it("accepts fragments only as part of a complete project", async () => {
+  it("accepts a model before its views and composes project fragments", async () => {
     const modelFragment = `c4ml draft-1
 
 model {
@@ -379,10 +379,8 @@ view garden-context {
       }),
     );
 
-    expect(single.valid).toBe(false);
-    expect(single.diagnostics.map(({ code }) => code)).toContain(
-      "C4ML-LANG-202",
-    );
+    expect(single.valid).toBe(true);
+    expect(single.views).toHaveLength(0);
     expect(project.valid).toBe(true);
   });
 
@@ -950,6 +948,7 @@ view {
       { kind: "property", label: "purpose" },
       { kind: "property", label: "relationships" },
       { kind: "property", label: "scope" },
+      { kind: "property", label: "show" },
       { kind: "property", label: "systems" },
       { kind: "property", label: "title" },
       { kind: "property", label: "type" },

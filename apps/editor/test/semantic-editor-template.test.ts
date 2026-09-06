@@ -28,7 +28,7 @@ describe("semantic graphical authoring", () => {
     expect(messages).toContain("Dies ändert die Bedeutung der Architektur");
     expect(rootTemplate).toContain('(click)="openSemanticEditor()"');
     expect(rootTemplate).toContain('(click)="openConnectionEditor()"');
-    expect(template).toContain('@if (mode() === "element")');
+    expect(template).toContain('if (mode() === "element")');
     expect(template).not.toContain('selectOperation($event)');
     expect(template).not.toContain('<option value="pin"');
     expect(template).not.toContain("source-port");
@@ -42,7 +42,7 @@ describe("semantic graphical authoring", () => {
     expect(template).toContain('i18n.t("semanticEditor.connectionIntent")');
     expect(template).toContain('i18n.t("semanticEditor.stableId")');
     expect(template).toContain("selectedCreateAction()?.ownerLabel");
-    expect(template).toContain('i18n.t("semanticEditor.contextVisibilityHint")');
+    expect(template).toContain("i18n.t('viewEditor.showInView')");
     expect(template).toContain('i18n.t("semanticEditor.componentContextHint")');
     expect(template).toContain('i18n.t("semanticEditor.codeContextHint")');
   });

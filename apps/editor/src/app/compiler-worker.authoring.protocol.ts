@@ -565,6 +565,7 @@ function isWizardAnswers(
   }
   const answers = value as Partial<C4mlSystemContextWizardAnswers>;
   return (
+    (answers.emptyName === undefined || typeof answers.emptyName === "string") &&
     (answers.viewKind === "system-context" ||
       answers.viewKind === "container") &&
     typeof answers.personId === "string" &&
@@ -610,6 +611,7 @@ function isWizardIssue(value: unknown): value is C4mlWizardIssue {
 
 function isWizardField(value: unknown): value is C4mlWizardIssue["field"] {
   return (
+    value === "emptyName" ||
     value === "viewKind" ||
     value === "personId" ||
     value === "personName" ||

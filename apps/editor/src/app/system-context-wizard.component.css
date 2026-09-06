@@ -10,8 +10,8 @@
 }
 
 .wizard {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   width: min(980px, 100%);
   max-height: min(880px, calc(100vh - 44px));
   overflow: hidden;
@@ -21,6 +21,12 @@
   color: var(--ink);
   box-shadow: var(--dialog-shadow);
 }
+
+.wizard > header, .wizard > footer, .wizard > nav, .wizard > .goal-options { flex-shrink: 0; }
+.wizard > .goal-options { margin: 0 22px; }
+.wizard > .goal-options > button { min-height: 100px; grid-template-rows: auto 1fr; }
+.goal-options button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.wizard-body { flex: 1 1 auto; }
 
 header,
 footer,

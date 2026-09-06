@@ -12,10 +12,17 @@ export class WorkbenchHelpFacade {
   readonly query = signal("");
   readonly activeTopicId = signal<C4mlHelpTopicId>("getting-started");
   readonly pane = signal<"diagram" | "help">("diagram");
+  readonly opened = signal(false);
 
   readonly #compiler = inject(CompilerWorkerClient);
   readonly #i18n = inject(WorkbenchLocalizationService);
   readonly #session = inject(WorkbenchSessionService);
+
+  constructor() {
+    if (this.#session.state().activeActivity === "help") {
+      this.openTopic(this.activeTopicId());
+    }
+  }
 
   readonly categories = computed(() =>
     helpCategories(this.#i18n.language(), this.query()),
@@ -32,6 +39,7 @@ export class WorkbenchHelpFacade {
   }
 
   openTopic(topicId: C4mlHelpTopicId): void {
+    this.opened.set(true);
     this.activeTopicId.set(topicId);
     this.pane.set("help");
   }
@@ -43,5 +51,16 @@ export class WorkbenchHelpFacade {
 
   showDiagram(): void {
     this.pane.set("diagram");
+  }
+
+  toggle(): void {
+    if (this.opened()) {
+      this.opened.set(false);
+      this.showDiagram();
+      if (this.#session.state().activeActivity === "help") this.#session.setActivity("files");
+    } else {
+      this.#session.setActivity("help");
+      this.openTopic(this.activeTopicId());
+    }
   }
 }

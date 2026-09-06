@@ -1,5 +1,5 @@
-<div class="placement-backdrop semantic-backdrop" (click)="cancel()">
-  <section class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(titleKey())" (click)="$event.stopPropagation()">
+<div class="placement-backdrop semantic-backdrop">
+  <section c4mlModal class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" [class.is-diagram-editor]="mode() === 'diagram'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(titleKey())" (click)="$event.stopPropagation()">
     <header>
       <div>
         <p>{{ i18n.t(eyebrowKey()) }}</p>
@@ -11,10 +11,12 @@
 
     <div class="placement-body">
       <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
+        @if (mode() !== "show-element" && mode() !== "diagram") {
         <aside class="semantic-authority">
           <strong>{{ i18n.t(mode() === "relationship" ? "connectionEditor.architectureWarning" : "semanticEditor.architectureWarning") }}</strong>
           <span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.architectureWarningText" : "semanticEditor.architectureWarningText") }}</span>
         </aside>
+        }
 
         @if (loadingContext()) {
           <div class="semantic-loading">{{ i18n.t("semanticEditor.loadingContext") }}</div>
@@ -24,7 +26,39 @@
             <span>{{ i18n.t("semanticEditor.unsupportedText") }}</span>
           </div>
         } @else if (context()) {
-          @if (mode() === "element") {
+          @if (mode() === "diagram") {
+            <label><span>{{ i18n.t('starter.diagramType') }}</span>
+              <select [value]="diagramOptionId()" (change)="selectDiagramOption($event)">
+                @for (option of diagramOptions(); track option.id) {
+                  <option [value]="option.id">{{ diagramKindLabel(option.kind) }}{{ option.scopeLabel ? ' · ' + option.scopeLabel : '' }}</option>
+                }
+              </select>
+            </label>
+            @if (!diagramOption()?.scopeId) {
+              <label><span>{{ i18n.t('starter.scope') }}</span><input [value]="diagramScope()" (input)="update(diagramScope, $event)" /></label>
+            }
+            <label><span>{{ i18n.t('starter.title') }}</span><input [value]="diagramTitle()" (input)="update(diagramTitle, $event)" /></label>
+            <label><span>{{ i18n.t('starter.purpose') }}</span><textarea [value]="diagramPurpose()" (input)="update(diagramPurpose, $event)"></textarea></label>
+            <label><span>{{ i18n.t('starter.diagramId') }}</span><input [value]="diagramId()" (input)="update(diagramId, $event)" /><small>{{ i18n.t('semanticEditor.stableIdHint') }}</small></label>
+          } @else if (mode() === "show-element") {
+            <label>
+              <span>{{ i18n.t('viewEditor.element') }}</span>
+              <select [value]="existingElementId()" (change)="selectExisting($event)">
+                <option value="">{{ i18n.t('viewEditor.choose') }}</option>
+                @for (element of viewElements(); track element.id) {
+                  <option [value]="element.id" [selected]="element.id === existingElementId()" [disabled]="!element.canShow || element.visible">
+                    {{ element.label }} · {{ element.id }}{{ element.visible ? ' · ' + i18n.t('viewEditor.visible') : '' }}{{ !element.canShow ? ' · ' + i18n.t('viewEditor.scopeRestriction') : '' }}
+                  </option>
+                }
+              </select>
+            </label>
+            <p>{{ i18n.t('viewEditor.description') }}</p>
+            @for (element of viewElements(); track element.id) {
+              @if (!element.canShow) {
+                <p class="semantic-visibility-hint">{{ element.label }}: {{ unavailableReason(element.id) }}</p>
+              }
+            }
+          } @else if (mode() === "element") {
             @if (editorKind() === "deployment") {
               <aside class="semantic-context-card">
                 <strong>{{ i18n.t("deploymentEditor.environment") }}</strong>
@@ -136,9 +170,6 @@
               @if (selectedCreateAction()?.ownerLabel; as ownerLabel) {
                 <small>{{ i18n.t("semanticEditor.owner", { owner: ownerLabel }) }}</small>
               }
-              @if (context()?.viewKind === "system-context") {
-                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.contextVisibilityHint") }}</small>
-              }
               @if (context()?.viewKind === "component") {
                 <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.componentContextHint") }}</small>
               }
@@ -196,7 +227,7 @@
                 <span>{{ i18n.t("semanticEditor.from") }}</span>
                 <select [value]="sourceId()" (change)="selectSource($event)">
                   @for (element of sourceOptions(); track element.id) {
-                    <option [value]="element.id" [selected]="element.id === sourceId()">{{ element.label }} · {{ element.id }}</option>
+                    <option [value]="element.id" [selected]="element.id === sourceId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
                   }
                 </select>
               </label>
@@ -204,7 +235,10 @@
                 <span>{{ i18n.t("semanticEditor.to") }}</span>
                 <select [value]="targetId()" (change)="selectTarget($event)">
                   @for (element of targetOptions(); track element.id) {
-                    <option [value]="element.id" [selected]="element.id === targetId()">{{ element.label }} · {{ element.id }}</option>
+                    <option [value]="element.id" [selected]="element.id === targetId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
+                  }
+                  @for (element of unavailableTargets(); track element.id) {
+                    <option [value]="element.id" disabled>{{ element.label }} · {{ unavailableReason(element.id) }}</option>
                   }
                 </select>
               </label>
@@ -213,6 +247,14 @@
                 {{ i18n.t("connectionEditor.swap") }}
               </button>
             </div>
+            @if (unavailableTargets().length > 0) {
+            <details class="semantic-visibility-hint">
+              <summary>{{ i18n.t('viewEditor.unavailableTargets') }}</summary>
+              @for (element of unavailableTargets(); track element.id) {
+                <p>{{ element.label }}: {{ unavailableReason(element.id) }}</p>
+              }
+            </details>
+            }
             <label>
               <span>{{ i18n.t("semanticEditor.connectionIntent") }}</span>
               <input [value]="relationshipIntent()" (input)="update(relationshipIntent, $event)" [placeholder]="i18n.t('semanticEditor.connectionIntentPlaceholder')" />
@@ -233,6 +275,13 @@
             </div>
           }
 
+          @if (viewId() !== undefined && (mode() === "relationship" || (mode() === "element" && editorKind() === "static"))) {
+            <label class="show-in-view-control">
+              <input type="checkbox" [checked]="showInView()" (change)="toggleShowInView($event)" />
+              <span>{{ i18n.t('viewEditor.showInView') }}</span>
+            </label>
+            @if (!showInView()) { <small>{{ i18n.t('viewEditor.modelOnly') }}</small> }
+          }
           <button type="submit" class="preview-button semantic-preview-button" [disabled]="!canPreview() || busy()">
             {{ busy() ? i18n.t(mode() === "relationship" ? "connectionEditor.previewing" : "semanticEditor.previewing") : i18n.t(mode() === "relationship" ? "connectionEditor.preview" : "semanticEditor.preview") }}
           </button>
@@ -242,6 +291,8 @@
       <section class="placement-result" [attr.aria-label]="i18n.t(mode() === 'relationship' ? 'connectionEditor.result' : 'semanticEditor.result')">
         @if (previewUrl(); as url) {
           <div class="candidate-preview"><img [src]="url" [alt]="i18n.t(mode() === 'relationship' ? 'connectionEditor.previewAlt' : 'semanticEditor.previewAlt')" /></div>
+        } @else if (viewId() === undefined && mode() === 'element') {
+          <div class="candidate-empty"><strong>{{ i18n.t('starter.modelOnly') }}</strong><span>{{ i18n.t('starter.modelHint') }}</span></div>
         } @else {
           <div class="candidate-empty"><strong>{{ i18n.t(mode() === "relationship" ? "connectionEditor.noPreview" : "semanticEditor.noPreview") }}</strong><span>{{ i18n.t(mode() === "relationship" ? "connectionEditor.noPreviewHint" : "semanticEditor.noPreviewHint") }}</span></div>
         }

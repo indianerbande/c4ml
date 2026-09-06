@@ -333,16 +333,16 @@ export class EditorCompilationSession {
       activeRequestId: response.requestId,
       diagnostics: response.diagnostics,
       lastValidSvg:
-        response.status === "valid" && response.svg !== undefined
+        response.status === "valid"
           ? response.svg
           : this.#state.lastValidSvg,
       lastValidNavigation:
-        response.status === "valid" && response.navigation !== undefined
+        response.status === "valid"
           ? response.navigation
           : this.#state.lastValidNavigation,
       views:
-        response.views.length > 0 ? response.views : this.#state.views,
-      activeViewId: response.activeViewId ?? this.#state.activeViewId,
+        response.status === "valid" || response.views.length > 0 ? response.views : this.#state.views,
+      activeViewId: response.status === "valid" ? response.activeViewId : response.activeViewId ?? this.#state.activeViewId,
     };
     return true;
   }

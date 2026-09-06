@@ -1,0 +1,90 @@
+<nav
+  class="diagram-context-menu"
+  role="menu"
+  [class.submenu-left]="position().submenuSide === 'left'"
+  [style.left.px]="position().x"
+  [style.top.px]="position().y"
+  [attr.aria-label]="i18n.t('contextMenu.diagramObject')"
+  (contextmenu)="$event.preventDefault()"
+  (keydown)="onMenuKeydown($event)"
+>
+  <p class="context-menu-heading">{{ target()?.label ?? i18n.t('viewEditor.canvas') }}</p>
+
+  @if (capabilities().kind === "canvas") {
+    <button type="button" role="menuitem" (click)="choose({ kind: 'show-element' })">{{ i18n.t('viewEditor.open') }}</button>
+  }
+
+  @if (capabilities().kind === "element") {
+    @if (capabilities().canConnect) {
+      <button type="button" role="menuitem" autofocus (click)="choose({ kind: 'connect' })">
+        {{ i18n.t("contextMenu.connect") }}
+      </button>
+    }
+
+    <div class="context-submenu">
+      <button type="button" role="menuitem" aria-haspopup="menu">
+        <span>{{ i18n.t("contextMenu.moveDirection") }}</span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <div class="context-submenu-panel" role="menu" [attr.aria-label]="i18n.t('contextMenu.moveDirection')">
+        <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'nudge', direction: 'up' })">
+          {{ i18n.t("placement.up") }}
+        </button>
+        <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'nudge', direction: 'left' })">
+          {{ i18n.t("placement.left") }}
+        </button>
+        <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'nudge', direction: 'right' })">
+          {{ i18n.t("placement.right") }}
+        </button>
+        <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'nudge', direction: 'down' })">
+          {{ i18n.t("placement.down") }}
+        </button>
+      </div>
+    </div>
+
+    <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'align' })">
+      {{ i18n.t("contextMenu.align") }}
+    </button>
+    <button type="button" role="menuitem" (click)="choose({ kind: 'placement', operation: 'pin' })">
+      {{ i18n.t("contextMenu.pin") }}
+    </button>
+  } @else if (capabilities().kind === "route") {
+    @if (target()?.kind === "route-label") {
+      <button type="button" role="menuitem" autofocus (click)="choose({ kind: 'route', operation: 'label-offset' })">
+        {{ i18n.t("contextMenu.moveLabel") }}
+      </button>
+    } @else if (target()?.kind === "port") {
+      <button type="button" role="menuitem" autofocus (click)="choose({ kind: 'route', operation: 'ports' })">
+        {{ i18n.t("contextMenu.changePorts") }}
+      </button>
+    } @else {
+      <button type="button" role="menuitem" autofocus (click)="choose({ kind: 'route', operation: 'ports' })">
+        {{ i18n.t("contextMenu.editRoute") }}
+      </button>
+    }
+
+    @if (target()?.kind !== "route-label") {
+      <button type="button" role="menuitem" (click)="choose({ kind: 'route', operation: 'label-offset' })">
+        {{ i18n.t("contextMenu.moveLabel") }}
+      </button>
+    }
+    @if (target()?.kind !== "port") {
+      <button type="button" role="menuitem" (click)="choose({ kind: 'route', operation: 'ports' })">
+        {{ i18n.t("contextMenu.changePorts") }}
+      </button>
+    }
+    <button type="button" role="menuitem" (click)="choose({ kind: 'route', operation: 'add-waypoint' })">
+      {{ i18n.t("contextMenu.addWaypoint") }}
+    </button>
+    <button type="button" role="menuitem" (click)="choose({ kind: 'route', operation: 'clear-guidance' })">
+      {{ i18n.t("contextMenu.resetRoute") }}
+    </button>
+  }
+
+  @if (target() !== undefined) {
+  <div class="context-menu-separator" role="separator"></div>
+  <button type="button" role="menuitem" (click)="choose({ kind: 'reveal-source' })">
+    {{ i18n.t("contextMenu.revealSource") }}
+  </button>
+  }
+</nav>

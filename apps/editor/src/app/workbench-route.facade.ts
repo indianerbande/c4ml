@@ -6,6 +6,7 @@ import type {
   PreviewRouteChangeWorkerResponse,
 } from "./compiler-worker.protocol.js";
 import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
+import type { RouteEditorOperationKind } from "./route-editor.component.js";
 import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
@@ -15,6 +16,7 @@ export interface RouteEditorSession {
   readonly activeFile: string;
   readonly viewId: string;
   readonly route: CompilerWorkerRouteNavigationTarget;
+  readonly initialOperation: RouteEditorOperationKind;
 }
 
 @Injectable({ providedIn: "root" })
@@ -26,7 +28,7 @@ export class WorkbenchRouteFacade {
   readonly #transaction = new SourceAuthoringTransaction(this.#documents);
   readonly canUndo = this.#transaction.canUndo;
 
-  show(): void {
+  show(initialOperation: RouteEditorOperationKind = "ports"): void {
     const route = this.#preview.selectedRoute();
     const viewId = this.#preview.activeViewId();
     if (route === undefined || viewId === undefined) return;
@@ -35,6 +37,7 @@ export class WorkbenchRouteFacade {
       activeFile: this.#documents.activeDocumentUri(),
       viewId,
       route,
+      initialOperation,
     });
   }
 

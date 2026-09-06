@@ -27,7 +27,7 @@ export interface InspectSemanticAuthoringWorkerRequest {
   readonly requestId: number;
   readonly file: string;
   readonly project: CompilerWorkerProject;
-  readonly viewId: string;
+  readonly viewId: string | undefined;
 }
 
 export interface InspectSemanticAuthoringWorkerResponse {
@@ -76,7 +76,7 @@ export function isInspectSemanticAuthoringWorkerRequest(
     typeof value["file"] === "string" &&
     isCompilerWorkerProject(value["project"]) &&
     value["project"].documents.some(({ uri }) => uri === value["file"]) &&
-    isId(value["viewId"])
+    (value["viewId"] === undefined || isId(value["viewId"]))
   );
 }
 
@@ -171,7 +171,7 @@ function isSemanticEditRequest(value: unknown): value is C4mlSemanticEditRequest
   if (!isRecord(value) || !isRecord(value["intent"]) || !isRecord(value["operation"])) return false;
   return (
     isId(value["id"]) &&
-    isId(value["viewId"]) &&
+    (value["viewId"] === undefined || isId(value["viewId"])) &&
     isId(value["intent"]["id"]) &&
     value["intent"]["kind"] === "architecture" &&
     typeof value["intent"]["summary"] === "string" &&
@@ -180,6 +180,10 @@ function isSemanticEditRequest(value: unknown): value is C4mlSemanticEditRequest
 }
 
 function isSemanticOperation(value: Record<string, unknown>): boolean {
+  if (value["kind"] === "create-view") return isId(value["optionId"]) && isId(value["viewId"]) &&
+    typeof value["title"] === "string" && typeof value["purpose"] === "string" && typeof value["scopeName"] === "string";
+  if (value["showInView"] !== undefined && typeof value["showInView"] !== "boolean") return false;
+  if (value["kind"] === "show-element") return isId(value["elementId"]);
   if (value["kind"] === "create-element") {
     return (
       isSemanticKind(value["elementKind"]) &&
@@ -214,11 +218,16 @@ function isSemanticOperation(value: Record<string, unknown>): boolean {
 
 function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthoringContext {
   if (!isRecord(value)) return false;
-  return isId(value["viewId"]) && isViewKind(value["viewKind"]) &&
+  return (value["viewId"] === undefined ? value["viewKind"] === undefined : isId(value["viewId"]) && isViewKind(value["viewKind"])) &&
+    (value["diagramOptions"] === undefined || (Array.isArray(value["diagramOptions"]) && value["diagramOptions"].every((option) =>
+      isRecord(option) && isId(option["id"]) && ["system-landscape", "system-context", "container", "component", "code"].includes(String(option["kind"])) && optionalString(option["scopeId"]) && optionalString(option["scopeLabel"])))) &&
     optionalString(value["scopeId"]) && Array.isArray(value["createActions"]) &&
     value["createActions"].every((action) => isRecord(action) && isSemanticKind(action["kind"]) && optionalString(action["ownerId"]) && optionalString(action["ownerLabel"])) &&
     Array.isArray(value["elements"]) && value["elements"].every((element) => isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" && isSemanticKind(element["kind"]) && optionalString(element["ownerId"])) &&
     Array.isArray(value["connectionOptions"]) && value["connectionOptions"].every((option) => isRecord(option) && isId(option["sourceId"]) && Array.isArray(option["targetIds"]) && option["targetIds"].every(isId)) &&
+    (value["viewElements"] === undefined || (Array.isArray(value["viewElements"]) && value["viewElements"].every((element) =>
+      isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" && isSemanticKind(element["kind"]) && optionalString(element["ownerId"]) &&
+      typeof element["visible"] === "boolean" && typeof element["canShow"] === "boolean" && Array.isArray(element["suitableViews"]) && element["suitableViews"].every(isId)))) &&
     (value["deployment"] === undefined || isDeploymentContext(value["deployment"])) &&
     (value["dynamic"] === undefined || isDynamicContext(value["dynamic"]));
 }

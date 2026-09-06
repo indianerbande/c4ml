@@ -45,7 +45,7 @@ export class EditorSemanticContextSession {
     return this.#state;
   }
 
-  beginAsync(project: CompilerWorkerProject, file: string, viewId: string) {
+  beginAsync(project: CompilerWorkerProject, file: string, viewId: string | undefined) {
     this.#finish(undefined);
     const requestId = this.sequence.next();
     this.#state = { phase: "loading", activeRequestId: requestId, response: undefined };

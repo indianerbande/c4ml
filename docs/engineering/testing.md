@@ -409,7 +409,7 @@ document root language attribute, interface typography changes at minimum,
 default, and maximum size without changing Monaco or canonical SVG, every
 packaged Monaco font choice, font remeasurement after loading, persistence across
 relaunch, reset, unavailable storage, modal focus containment and return,
-Escape dismissal, native `Cmd/Ctrl+,` opening, and the invariant that preference
+explicit dismissal with Escape/outside-click retention, native `Cmd/Ctrl+,` opening, and the invariant that preference
 changes neither dirty source nor change canonical SVG output.
 
 Editor-font tests MUST additionally verify the default-enabled ligature
@@ -815,6 +815,51 @@ could not have caught; never weaken one to make an example pass.
 
 ### 2.10 Editor and compiler parity
 
+Model-first onboarding tests MUST cover deterministic minimal source containing
+only the header, escaped passive label, and empty model; empty-name rejection;
+label text that cannot inject declarations; valid viewless CLI/worker parsing;
+and clearing obsolete SVG/navigation/View selection after a successful viewless
+compile while retaining the last valid preview on errors. Worker protocol guards
+must accept the explicit no-View context and valid no-SVG response, but reject
+inconsistent combinations. Element creation without a View must preserve source
+and create no View or Relationship. Explicit diagram creation must retain model
+identity, show compatible existing elements, reject unknown scopes/duplicate IDs,
+and remain non-mutating until a revision-checked apply. Cancel, undo, and the
+retained detailed wizard require regression and interactive evidence.
+
+Model-first validation on 2026-09-06: `pnpm run check` passed, including
+CLI acceptance of an unchanged minimal document, worker protocol and stale-preview
+regressions, and source-generation tests for all five static diagram types.
+An isolated browser harness created the minimal model, added a Person and a
+Software System without a View, previewed and applied an explicit System Context
+diagram containing both unconnected elements, then undid the diagram creation.
+The source retained both elements and the obsolete diagram disappeared. The
+minimal form, diagram preview, and separately selectable guided wizard were
+visually inspected; the guided wizard advanced to its application step.
+This is renderer evidence, not a new packaged-app or installer acceptance.
+
+All seven C4thedral-owned modal surfaces MUST use the shared explicit-dismissal
+boundary. Regression tests MUST prove that a press inside the Route label-offset
+input followed by a drag/release outside leaves the modal, value, and focus
+intact; a genuine outside click is blocked and requests attention; Escape does
+not dismiss; and explicit action buttons retain pointer and keyboard behavior.
+Tests MUST cover focus wrapping, return focus, nested-modal precedence, listener
+cleanup, and template coverage of every dialog. Interactive renderer validation
+must exercise the original drag sequence, outside clicks, Escape, continued
+editing/preview, and explicit closing. The local tone is best-effort and must
+not create an unhandled rejection when audio is unavailable. Historical Escape
+dismissal evidence below predates this policy and is superseded.
+
+Validation on 2026-09-06: the full `pnpm run check` passed with 623 tests,
+including the shared interaction regressions and all seven modal templates.
+An isolated browser harness reproduced the Route offset selection drag from
+the input to the backdrop: the dialog and the entered `200` remained intact.
+Outside clicks and Escape also left the Route editor, Settings, and command
+palette open; their explicit Cancel, Done, and Close buttons worked. Settings
+and command-palette focus returned to their invoking controls, and the new
+palette Close button was visually inspected. This is renderer evidence, not
+a new packaged-app acceptance or an acoustic verification of the tone.
+
 Editor tests MUST cover:
 
 - compilation in a local Web Worker rather than on the renderer UI thread;
@@ -1076,6 +1121,27 @@ renderer-harness interaction additionally verified relationship selection, dark 
 light dialog layouts, candidate SVG and source review, corridor-release repair
 copy, a valid Port change, zero diagnostics after apply, one-step undo, and
 restoration of the original clean dirty-state marker.
+
+The first diagram-object context-menu slice has focused editor tests that prove
+the menu role is derived from the clicked compiler navigation target, element
+connection availability remains limited by the validated active View, Route
+labels prioritize label movement, other Route objects enter the existing Port
+or Route flow, and the menu/submenu choose a side that remains inside the
+viewport. Architecture evidence requires every source-changing menu action to
+delegate to the existing semantic, placement, or Route facade; Angular MUST
+NOT generate C4ML edits from a context-menu action. Template evidence covers
+right-click hit testing, localized menu roles, object-specific entries,
+directional movement, source navigation, Escape dismissal, and preselection in
+the unchanged candidate-preview dialogs.
+
+Visibility authoring evidence additionally covers an unconnected Person added
+to a static View without changing model/Relationships or automatic neighbours;
+wrong-level rejection; comment/CRLF-preserving show-list edits; hidden endpoint
+availability; and one creation/show proposal spanning model and View documents.
+Project-authoring tests require complete batch apply/undo, per-document dirty
+state restoration, and rejection of a stale project before any write. Interactive
+checks cover Handbook open/background/close, the canvas action, visibility
+labels, and candidate source/SVG review before apply.
 
 ### 2.13 Semantic architecture evolution
 

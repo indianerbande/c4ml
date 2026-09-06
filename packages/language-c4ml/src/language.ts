@@ -119,6 +119,7 @@ import type {
   ViewEnvironmentProperty,
   ViewLegendProperty,
   ViewRelationshipsProperty,
+  ViewShowProperty,
   ViewPurposeProperty,
   ViewScopeProperty,
   ViewSystemsProperty,
@@ -351,6 +352,8 @@ function validateProjectComposition(
   project: LoweredDocument,
   sourceFile: string,
 ): Diagnostic[] {
+  // A model can be authored and checked before any output View is requested.
+  if (project.views.length === 0) return [];
   const diagnostics: Diagnostic[] = [];
   if (project.model.elements.length === 0) {
     diagnostics.push(
@@ -358,16 +361,6 @@ function validateProjectComposition(
         severity: "error",
         code: "C4ML-LANG-201",
         message: "A complete C4ML project requires at least one architecture element.",
-        source: projectSource(sourceFile),
-      }),
-    );
-  }
-  if (project.views.length === 0) {
-    diagnostics.push(
-      createDiagnostic({
-        severity: "error",
-        code: "C4ML-LANG-202",
-        message: "A complete C4ML project requires at least one diagram view.",
         source: projectSource(sourceFile),
       }),
     );
@@ -1046,11 +1039,21 @@ function lowerView(
     return undefined;
   }
 
+  const show = optionalProperty<ViewShowProperty>(
+    declaration.properties, "ViewShowProperty", "show", declaration, file, diagnostics,
+  );
+  if (show !== undefined && (type.value === "dynamic" || type.value === "deployment")) {
+    diagnostics.push(createDiagnostic({ code: "C4ML-LANG-103", severity: "error",
+      message: "Explicit show lists apply to static Views. Use interactions or deployment instances in this View.",
+      source: sourceReference(show, file) }));
+    return undefined;
+  }
   const base = {
     id: declaration.name,
     title: title.value,
     purpose: purpose.value,
     legend: { mode: legend.value },
+    ...(show === undefined ? {} : { selection: { additionalElementIds: show.values.map((value) => value.$refText) } }),
     ...(relationships === undefined
       ? {}
       : { relationshipProjection: relationships.value }),

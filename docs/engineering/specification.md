@@ -367,6 +367,13 @@ include a title and a generated or authored legend.
 A view MUST NOT duplicate semantic element definitions. A model element MAY
 appear differently in different views without changing its identity.
 
+Explicit static-View visibility (accepted 2026-09-06): `show = [element-id, ...]`
+adds existing, level- and owner-compatible elements to the automatic projection,
+including unconnected supporting elements. It neither replaces the automatic
+selection nor creates a Relationship. Illegal abstraction levels or owners fail
+visibly. Dynamic and Deployment Views retain interaction and instance authoring
+instead of accepting static `show` lists.
+
 #### Relationship projection in static views
 
 **Status: Accepted; implemented in the portable compiler core and the
@@ -414,20 +421,22 @@ system.
 The scope is exactly one focal Software System. The primary element is that
 Software System. Supporting elements are People and Software Systems connected
 to it directly or through projected Relationships (see the projection rule
-above). Container, Component, Code, and deployment detail MUST NOT appear.
+above), plus compatible People and Software Systems explicitly selected with
+`show`. Container, Component, Code, and deployment detail MUST NOT appear.
 
 ### 6.3 Container View
 
 The scope is exactly one Software System. Primary elements are its Containers.
 Supporting elements are People and Software Systems connected to them directly
-or through projected Relationships. Components, Code Elements, and deployment
+or through projected Relationships, or explicitly selected with `show`.
+Components, Code Elements, and deployment
 detail MUST NOT appear.
 
 ### 6.4 Component View
 
 The scope is exactly one Container. Primary elements are its Components.
 Supporting elements may include other Containers in the same Software System
-and directly connected People and Software Systems. Code and deployment detail
+and connected or explicitly shown People and Software Systems. Code and deployment detail
 MUST NOT appear.
 
 ### 6.5 Code View
@@ -1049,7 +1058,8 @@ View resolution MUST:
 
 Authored include and exclude selections may narrow a valid projection, but MUST
 NOT admit elements or relationships from an illegal C4 level or remove a
-required focal element. Layout and presentation settings remain view-local and
+required focal element. Additive `show` selections may admit unconnected
+compatible elements without suppressing automatic neighbours. Layout and presentation settings remain view-local and
 MUST NOT mutate the semantic model.
 
 ### 9.3 Phase 1 rendering slice
@@ -1410,6 +1420,40 @@ Source:
 
 ### 9.6 Experimental authoring assistance
 
+Model-first onboarding (accepted 2026-09-06): the assistant initially offers
+**Start empty** alongside the retained guided Context/Container interview.
+The empty path asks only for a model label and generates the language header,
+an escaped passive comment containing that label, and an empty `model` block.
+It creates no element, Relationship, View, layout, manifest, or hidden metadata.
+The label is not a new grammar property. Source review, explicit new-document
+replacement protection, cancel, and confirmed one-step undo remain unchanged.
+
+A syntactically and semantically valid model without Views is a valid source
+authoring state in both CLI and worker, including an empty model. No SVG is
+produced; a successful viewless compilation clears obsolete View selection,
+navigation, and SVG. Invalid current source still retains the last valid preview.
+An authored View continues to require the normal complete notation and scope.
+
+The **Add element…** action replaces the ambiguous **Architecture** toolbar
+label. Without an active View it offers Person and Software System creation
+through the existing worker-owned, revision-checked semantic authoring contract,
+with source review and apply/undo but no invented diagram. Existing View-scoped
+Container, Component, Code, Dynamic, and Deployment authoring remains intact.
+The empty preview explains the next steps and offers Add element and the
+separate **Create diagram…** action. Diagram creation is also available in the
+Diagrams activity after the first diagram exists.
+
+This first diagram-creation form offers an organizational System Landscape
+overview and the four static scoped views whose required owners already exist.
+The language worker owns those choices. The user explicitly selects the option,
+title, purpose, stable View ID, and (for the overview) organizational scope.
+The generated View references compatible existing elements with `show`, uses
+the generated legend/default audience and an explicit automatic flow, and never
+duplicates elements or creates Relationships. Candidate source/SVG review and
+one-step apply/undo use the shared transaction. Dynamic/Deployment creation is
+not part of this starter form; their existing source and authoring paths remain.
+Earlier statements requiring a View before any model authoring are superseded.
+
 The language package exposes an editor-independent completion contract for the
 `draft-1` subset. It accepts source text and a cursor offset and returns stable
 candidate identities, a C4ML-owned candidate kind, documentation, and one exact
@@ -1482,6 +1526,12 @@ German. Its primary navigation is a Help activity with local search and
 expandable task-oriented chapters. A Handbook tab in the right editor group
 MUST provide enough width for explanations and source examples without hiding
 the source editor. The diagram remains available as a sibling tab.
+
+The Help activity button toggles Handbook availability. Opening selects its
+article and highlights the activity icon. A second click closes the article
+and removes its tab even when it was in the background, clears the highlight,
+and returns to the diagram. F1 and explicit topic commands open rather than
+toggle. Merely switching back to the diagram keeps an opened Handbook available.
 
 The handbook MUST lead with recognizable authoring tasks before introducing C4
 vocabulary. It MUST distinguish executable `draft-1` syntax from proposed or
@@ -1687,7 +1737,7 @@ fall back safely when storage is unavailable, malformed, or from an unsupported
 version. A version-one record created before the language field existed MUST
 retain its other valid values and use English. Components MUST consume the
 preferences service rather than read local storage directly. The panel MUST
-support keyboard operation, contained modal focus, Escape dismissal, and return
+support keyboard operation, contained modal focus, explicit dismissal, and return
 focus to its invoking toolbar control. The same panel is opened by the native
 `Cmd/Ctrl+,` application-menu command. The renderer-to-main language update MUST
 use the narrow validated desktop bridge and MUST NOT expose locale or filesystem
@@ -1699,6 +1749,24 @@ catalogue and extension rules.
 
 **Status: Accepted, implemented, automatically validated, and visually
 validated foundation.**
+
+Modal interaction (accepted 2026-09-06) supersedes earlier Escape/backdrop
+dismissal. Every C4thedral-owned modal, including authoring dialogs, the wizard,
+settings, command palette, and undo confirmation, remains open on outside clicks,
+text-selection drags beyond its boundary, focus loss, and Escape. Only an
+explicit dialog action (Close, Cancel, Apply/OK, command execution, or an
+intentional workflow hand-off) may finish that interaction; keyboard activation
+of those controls remains supported. Tab focus stays in the topmost modal and
+returns to its invoker after closing. Global workbench/native-menu commands
+must not change the background document while a modal is active; pending Open
+With delivery waits until it closes. Native file pickers and system warnings
+retain operating-system-managed modality.
+
+A genuine outside click may produce a quiet, rate-limited, locally synthesized
+attention tone. A drag beginning inside an input must neither dismiss the
+dialog nor sound an attention tone. Muted or unavailable audio must never
+affect the dialog or its input. No audio asset, network access, compiler change,
+or privileged desktop capability is required.
 
 The editor uses the original C4thedral workbench with C4ML-specific Files, Source
 Control, Diagrams, Output, and Help activity areas, simultaneous source,
@@ -1735,6 +1803,33 @@ Toolbar, command-palette, and keyboard access remain equivalent alternatives;
 selecting an object and then locating a distant generic button MUST NOT be the
 only path to a contextual action. Context menus invoke existing command and
 source-change boundaries and MUST NOT create hidden semantic or layout state.
+
+The first diagram-object context-menu slice is implemented in the main
+workbench preview. Right-clicking selects the object under the pointer and
+derives actions from its compiler-owned navigation target. An architecture
+element can start directed connection picking, open placement authoring with a
+chosen nudge direction, open alignment or exact-position authoring, or reveal
+its declaration. A Relationship, Route label, Port, or corridor can open the
+same Route editor with Ports, label movement, waypoint guidance, or automatic
+reset preselected and can reveal its owning source. A boundary offers only its
+valid source-navigation action. Parameter-rich and source-changing operations
+remain in their existing candidate-preview dialogs; choosing a context action
+does not apply a source edit. The menu is localized, keyboard-dismissable,
+bounded to the visible window, and closed when focus moves to another task.
+Source-editor and project-explorer context menus remain a later presentation
+slice.
+
+Right-clicking empty main-preview canvas offers **Show existing element**.
+It lists existing project elements, distinguishes already visible and hidden
+elements, and explains incompatible levels/owners with suitable existing View
+identities. Element creation offers **Show in the current view**, enabled by
+default. Connection lists retain valid hidden endpoints, label their visibility,
+and explain excluded pairs rather than silently omitting them. A connection may
+also show its endpoints. These operations generate ordinary source edits; they
+never duplicate model definitions or invent relationships to force visibility.
+Model and View edits in separate documents are one revision-checked project
+proposal, applied synchronously after validating every affected editor model,
+with one explicit authoring undo restoring all affected sources and dirty states.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
@@ -1824,7 +1919,9 @@ only the element type owned by their active Software System, Container, or
 Component scope. Angular asks in familiar architecture language and does not
 own those C4 rules. A requested action becomes a deterministic project-
 addressed source change, the worker compiles the complete candidate project,
-and Monaco applies an accepted single-document transaction as one undo unit.
+and Monaco applies an accepted transaction with one-step authoring undo. A
+creation with View inclusion may update separate model and View documents;
+the complete project revision is validated before either is changed.
 The dialog is visibly identified as an architecture-model change and remains a
 separate tool from placement and Route editing. Every operation form remains
 contained in its dialog column regardless of intrinsic control content;

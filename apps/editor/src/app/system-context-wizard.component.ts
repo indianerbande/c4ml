@@ -21,10 +21,12 @@ import {
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import type { CompilerWorkerProject } from "./compiler-worker.compile.protocol.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import { ModalInteractionDirective } from "./modal-interaction.directive.js";
 import type { WorkbenchUiLanguage } from "./workbench-preferences.js";
 
 @Component({
   selector: "c4ml-system-context-wizard",
+  imports: [ModalInteractionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./system-context-wizard.component.html",
   styleUrl: "./system-context-wizard.component.css",
@@ -37,6 +39,8 @@ export class SystemContextWizardComponent {
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
   readonly step = signal(0);
+  readonly minimal = signal(true);
+  readonly emptyName = signal("");
   readonly mode = signal<"extend" | "new">("new");
   readonly extensionAvailable = computed(
     () => this.extensionProject() !== undefined && this.extensionFile() !== undefined,
@@ -46,7 +50,7 @@ export class SystemContextWizardComponent {
   );
   readonly openHelp = signal<string | undefined>(undefined);
   readonly lastStep = computed(() =>
-    this.answers().viewKind === "container" ? 4 : 3,
+    this.minimal() ? 0 : this.answers().viewKind === "container" ? 4 : 3,
   );
   readonly progress = computed(() => {
     const labels = [
@@ -75,6 +79,20 @@ export class SystemContextWizardComponent {
   selectMode(mode: "extend" | "new"): void {
     if (mode === "extend" && !this.extensionAvailable()) return;
     this.mode.set(mode);
+    this.#generate();
+  }
+
+  selectMinimal(minimal: boolean): void {
+    this.minimal.set(minimal);
+    this.step.set(0);
+    if (minimal) this.mode.set("new");
+    this.#generate();
+  }
+
+  updateEmptyName(event: Event): void {
+    const value = inputValue(event);
+    if (value === undefined) return;
+    this.emptyName.set(value);
     this.#generate();
   }
 
@@ -367,7 +385,7 @@ export class SystemContextWizardComponent {
     const project = this.extensionProject();
     const file = this.extensionFile();
     this.compiler.generateSystemContext(
-      this.answers(),
+      this.minimal() ? { ...this.answers(), emptyName: this.emptyName() } : this.answers(),
       this.mode() === "extend" && project !== undefined && file !== undefined
         ? { project, file }
         : undefined,

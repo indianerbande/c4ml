@@ -6,7 +6,10 @@ import type {
 import type {
   C4mlMonacoSourceEditorComponent,
 } from "./monaco-source-editor.component.js";
-import type { PlacementEditorNode } from "./placement-editor.component.js";
+import type {
+  PlacementEditorNode,
+  PlacementEditorOperationKind,
+} from "./placement-editor.component.js";
 import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
@@ -14,6 +17,8 @@ import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 @Injectable({ providedIn: "root" })
 export class WorkbenchPlacementFacade {
   readonly open = signal(false);
+  readonly initialOperation = signal<PlacementEditorOperationKind>("relative");
+  readonly initialDirection = signal<"down" | "left" | "right" | "up">("right");
   readonly project = computed(() => this.#documents.projectSnapshot());
   readonly nodes = computed<readonly PlacementEditorNode[]>(() =>
     (this.#preview.navigation()?.targets ?? []).flatMap((target) =>
@@ -35,9 +40,14 @@ export class WorkbenchPlacementFacade {
   readonly #transaction = new SourceAuthoringTransaction(this.#documents);
   readonly canUndo = this.#transaction.canUndo;
 
-  show(): void {
+  show(options: {
+    readonly operation?: PlacementEditorOperationKind;
+    readonly direction?: "down" | "left" | "right" | "up";
+  } = {}): void {
     const selected = this.#preview.selectedNode();
     if (selected?.nodeRole === "element" && this.nodes().length > 0) {
+      this.initialOperation.set(options.operation ?? "relative");
+      this.initialDirection.set(options.direction ?? "right");
       this.open.set(true);
     }
   }
@@ -80,6 +90,8 @@ export class WorkbenchPlacementFacade {
 
   reset(): void {
     this.open.set(false);
+    this.initialOperation.set("relative");
+    this.initialDirection.set("right");
     this.#transaction.reset();
   }
 }

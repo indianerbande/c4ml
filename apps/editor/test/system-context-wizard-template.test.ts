@@ -25,6 +25,13 @@ const styles = readFileSync(
 );
 
 describe("system context wizard template", () => {
+  it("defaults to a minimal model while keeping the guided flow explicitly selectable", () => {
+    expect(component).toContain("readonly minimal = signal(true)");
+    expect(template).toContain("selectMinimal(true)");
+    expect(template).toContain("selectMinimal(false)");
+    expect(template).toContain("@if (minimal())");
+    expect(component).toContain("emptyName: this.emptyName()");
+  });
   it("keeps an edited part row mounted while its generated identifier changes", () => {
     expect(template).toContain(
       "@for (part of answers().parts; track $index; let index = $index)",
@@ -38,7 +45,7 @@ describe("system context wizard template", () => {
     const controls = template.match(/<(?:input|select|textarea)\b/gu) ?? [];
     const helpButtons = template.match(/class="field-help-button"/gu) ?? [];
 
-    expect(controls).toHaveLength(22);
+    expect(controls).toHaveLength(23);
     expect(helpButtons).toHaveLength(controls.length);
     expect(template).toContain("[attr.aria-expanded]");
     expect(template).toContain("aria-controls");

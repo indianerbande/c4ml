@@ -396,8 +396,7 @@ export async function compileWorkerRequest(
     if (
       !parsed.valid ||
       parsed.model === undefined ||
-      parsed.views === undefined ||
-      parsed.views[0] === undefined
+      parsed.views === undefined
     ) {
       return response(
         request,
@@ -419,10 +418,11 @@ export async function compileWorkerRequest(
         undefined,
         undefined,
         parsed.views.map(toWorkerView),
-        parsed.views[0].id,
+        parsed.views[0]?.id,
       );
     }
 
+    if (parsed.views[0] === undefined) return response(request, "valid", parsed.diagnostics, undefined, undefined, [], undefined);
     const themeResource = request.project?.theme;
     const parsedTheme = themeResource === undefined
       ? undefined
@@ -1086,7 +1086,7 @@ export async function previewSemanticChangeWorkerRequest(
   try {
     const proposal = await proposeC4mlSemanticEdit(
       toArchitectureProject(request.project),
-      request.semantic,
+      { ...request.semantic, documentUri: request.file },
     );
     if (!proposal.valid) {
       return {

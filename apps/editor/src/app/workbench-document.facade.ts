@@ -224,6 +224,13 @@ export class WorkbenchDocumentFacade {
     });
   }
 
+  replaceDocumentSources(updates: readonly { uri: string; source: string; dirty: boolean }[]): void {
+    this.projectDocuments.update((documents) => documents.map((document) => {
+      const update = updates.find(({ uri }) => uri === document.uri);
+      return update === undefined ? document : { ...document, source: update.source, dirty: update.dirty };
+    }));
+  }
+
   closeWorkspace(): boolean {
     if (!this.hasOpenDocument()) {
       return false;

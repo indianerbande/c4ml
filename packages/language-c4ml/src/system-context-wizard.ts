@@ -30,6 +30,8 @@ export interface C4mlArchitectureConnectionAnswer {
 }
 
 export interface C4mlSystemContextWizardAnswers {
+  /** Minimal new-document path; the label is retained as a passive source comment. */
+  readonly emptyName?: string;
   readonly viewKind: C4mlArchitectureWizardViewKind;
   readonly personId: string;
   readonly personName: string;
@@ -218,6 +220,12 @@ const topLevelTextFields: readonly C4mlTopLevelWizardField[] = [
 export function generateSystemContextDraft(
   answers: C4mlSystemContextWizardAnswers,
 ): C4mlSystemContextWizardResult {
+  if (answers.emptyName !== undefined) {
+    const name = answers.emptyName.trim();
+    return { languageVersion: c4mlDraftLanguageVersion, valid: name.length > 0,
+      source: name ? `c4ml draft-1\n\n// ${JSON.stringify(name)}\nmodel {\n}\n` : undefined,
+      issues: name ? [] : [{ field: "emptyName", code: "C4ML-WIZARD-001", message: "A name is required." }] };
+  }
   const issues = validateAnswers(answers);
   if (issues.length > 0) {
     return {
@@ -256,6 +264,7 @@ export async function proposeC4mlWizardExtension(
   documentUri: string,
   answers: C4mlSystemContextWizardAnswers,
 ): Promise<C4mlWizardExtensionProposal> {
+  if (answers.emptyName !== undefined) return extensionInvalid("C4ML-WIZARD-101", "An empty starter creates a new document; it cannot extend an existing one.");
   const generated = generateSystemContextDraft(answers);
   if (!generated.valid) {
     return extensionInvalid(

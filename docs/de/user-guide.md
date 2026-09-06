@@ -58,6 +58,29 @@ Theme oder Legende verändern das semantische Modell nicht.
 
 ## 2. Aktuelle und geplante Verwendung
 
+### Klein anfangen
+
+1. Öffne **Assistent → Leer beginnen** und gib eine Bezeichnung ein.
+2. Prüfe den kurzen Quelltext und klicke auf **Leeres Modell anlegen**.
+   Es entstehen nur Header, Bezeichnung als Kommentar und ein leeres `model`.
+3. Mit **Element hinzufügen…** legst du zunächst Personen oder Systeme an.
+   Prüfe den Quelltextvorschlag und übernimm ihn. Ein Diagramm ist dafür nicht nötig.
+4. Wähle **Diagramm erstellen…** auf der leeren Zeichenfläche oder im Bereich
+   **Diagramme**. Wähle den gewünschten Ausschnitt, Titel, Zweck und eine stabile
+   Diagramm-ID. Die Vorschau zeigt passende vorhandene Elemente, ohne sie zu kopieren.
+5. Nach dem Übernehmen kannst du mit **Verbinden** Beziehungen hinzufügen.
+
+Modell und Diagramm sind getrennt: Das Modell enthält die Architektur, das
+Diagramm zeigt einen Ausschnitt davon. Es entstehen keine versteckten Ansichten
+oder Beispielbeziehungen. Modelländerungen und Diagrammerstellung bleiben
+prüfbare, rückgängig machbare Quelltextänderungen. Der ausführliche Assistent
+steht unter **Schrittweise mit Anleitung** weiterhin zur Verfügung.
+
+Ohne Diagramm bietet der Einstieg Personen und Systeme an. Die erste
+Diagrammerstellung unterstützt den Überblick sowie Systemkontext, Container,
+Component und Code, sofern der jeweilige Besitzer bereits existiert.
+Dynamic und Deployment werden weiterhin über die bestehenden Wege angelegt.
+
 ### Heute für Mitwirkende verfügbar
 
 Baue und prüfe den gemeinsamen TypeScript-Compiler mit:
@@ -79,6 +102,13 @@ Speichern verwenden die nativen Menüs und `Cmd/Ctrl+O`, `Cmd/Ctrl+S` sowie
 `Cmd/Ctrl+Shift+S`. Ungespeicherte Änderungen sind sichtbar und beim Schließen
 geschützt. Der Renderer erhält nur einen undurchsichtigen Dokument-Handle;
 native Pfade und Node.js bleiben im Electron-Hauptprozess.
+
+C4thedral-Dialoge bleiben bei Außenklicks, beim Markieren über den Dialogrand
+hinaus und bei Escape geöffnet. Beende sie über **Schließen**, **Abbrechen**
+oder die ausdrückliche Aktionsschaltfläche; diese sind auch per Tastatur
+bedienbar. Ein echter Außenklick gibt bei verfügbarer Audioausgabe einen kurzen
+lokalen Signalton. Tab bleibt innerhalb des Dialogs. Native Dateidialoge folgen
+dem Verhalten des Betriebssystems.
 
 Source Control zeigt das umgebende lokale Repository und erlaubt ausschließlich
 ausdrückliches Stage, Unstage, Commit und Push. Speichere Editoränderungen vor
@@ -104,7 +134,9 @@ und Editor-Typografie sofort und lokal. Sie übersetzen niemals verfasste Namen,
 Diagnosen oder Diagramme und ändern keine `.c4ml`-Datei. Der technische Vertrag
 steht in [Settings](../engineering/settings-contract.md).
 
-Help öffnet ein lokales deutsch/englisches Handbuch. `F1` zeigt den vom
+**Hilfe** schaltet das lokale deutsch/englische Handbuch ein und aus. Ein Klick
+öffnet es sichtbar und unterlegt das Icon. Ein weiterer Klick schließt es samt
+Tab, auch aus dem Hintergrund, und entfernt die Unterlegung. `F1` zeigt den vom
 Sprach-Worker erkannten Kontext am Cursor. Suche und Navigation ändern weder
 Quelle noch Diagramm.
 
@@ -629,11 +661,46 @@ Kandidatendiagramm. **Apply to source** ist ein normaler Monaco-Edit; **Undo
 arrangement** nimmt ihn einmal zurück. **Fix exact current position** ist
 bewusst die letzte Option.
 
+Für häufige Aktionen kann das Element direkt mit der rechten Maustaste
+angeklickt werden. **Verbinden mit…** öffnet den Verbindungsdialog mit diesem
+Element als Quelle; dort steht auch die Diagrammauswahl bereit.
+**Verschieben in Richtung** öffnet dieselbe
+Platzierungsbearbeitung mit Oben, Links, Rechts oder Unten vorausgewählt;
+**Mit anderen Elementen ausrichten…** und **Exakte Position festlegen…** öffnen
+das passende Formular. **Im Quelltext anzeigen** springt zur Deklaration. Die
+Kurzbefehle wenden nie sofort eine Änderung an: Quelltextänderungen benötigen
+weiterhin die kompilierte Kandidatenvorschau und **Auf Quelltext anwenden**.
+
+Ein Element kann im Architekturmodell existieren, ohne im aktuellen Diagramm
+sichtbar zu sein. Rechtsklick auf eine freie Stelle der Zeichenfläche und
+**Vorhandenes Element anzeigen …** nimmt es in diese Ansicht auf, ohne es zu
+duplizieren oder eine Beziehung zu erfinden. Bereits sichtbare und ungeeignete
+Elemente sind gekennzeichnet; ungeeignete bleiben deaktiviert. Falls vorhanden,
+werden passende deklarierte Ansichten genannt. Die Vorschau ergänzt
+`show = [element-id]` in diesem View. Die zusätzliche Auswahl erhält automatisch
+angezeigte Nachbarn und ändert weder andere Views noch Modelldefinitionen.
+Sie gilt für die fünf statischen View-Typen; Dynamic und Deployment verwenden
+stattdessen ihre Interaktions- und Instanzbearbeitung.
+
+Beim Anlegen eines Elements oder einer Verbindung ist **In aktueller Ansicht
+anzeigen** standardmäßig eingeschaltet. Ohne Häkchen wird nur das Modell
+geändert; die normale View-Projektion kann das Ergebnis dennoch anzeigen.
+Der Verbindungsdialog bietet auch zulässige, **nicht in dieser Ansicht**
+sichtbare Ziele an und erklärt ungeeignete Ziele. Vor dem Anwenden stehen
+Quelltext- und Diagrammvorschau; die Rückgängig-Aktion der Bearbeitung stellt
+alle betroffenen Quelldokumente gemeinsam wieder her.
+
 **Edit route…** bearbeitet Ports und Führungspunkte einer ausgewählten
 Verbindung. Vor dem Anwenden kompiliert **Preview route change** das gesamte
 Projekt, zeigt sichere Aufräumvorschläge und blockierende Konflikte getrennt.
 Zurücksetzen auf automatische Route entfernt überflüssige Führung, bewahrt aber
 weiterhin sinnvolle Ports oder Labelpositionen.
+
+Ein Rechtsklick auf eine Beziehung, ihre Beschriftung, einen Port oder einen
+Korridor zeigt passende Abkürzungen. Bei einer Beschriftung steht
+**Beziehungsbeschriftung verschieben…** zuerst, bei einem Port **Anschlüsse
+ändern…**. Routenbearbeitung, neue Routenführung, Zurücksetzen und
+Quelltextnavigation verwenden weiterhin denselben Routen- und Prüfablauf.
 
 ### 9.1 Flussrichtung
 

@@ -9,7 +9,7 @@ import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.com
 import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 
-export type SemanticEditorMode = "element" | "relationship";
+export type SemanticEditorMode = "element" | "relationship" | "show-element" | "diagram";
 
 export type ConnectionPickResult =
   | { readonly status: "ignored" }
@@ -48,6 +48,12 @@ export class WorkbenchSemanticFacade {
   showElement(activeViewId: string | undefined): void {
     this.#show(activeViewId, "element");
   }
+
+  showExisting(activeViewId: string | undefined): void {
+    this.#show(activeViewId, "show-element");
+  }
+
+  showDiagram(): void { this.#show(undefined, "diagram"); }
 
   showRelationship(
     activeViewId: string | undefined,
@@ -181,7 +187,7 @@ export class WorkbenchSemanticFacade {
     sourceId?: string,
     targetId?: string,
   ): void {
-    if (activeViewId === undefined) return;
+    if (activeViewId === undefined && mode !== "element" && mode !== "diagram") return;
     this.#activeViewId = activeViewId;
     this.cancelConnectionPicking();
     this.mode.set(mode);

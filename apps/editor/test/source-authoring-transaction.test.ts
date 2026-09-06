@@ -149,6 +149,41 @@ async function settle(): Promise<void> {
 }
 
 describe("source authoring transaction", () => {
+  it("applies and undoes a complete model/view batch, preserving each dirty state and rejecting stale projects", async () => {
+    const base = workbench();
+    base.documents[1]!.dirty = true;
+    let editorSources = new Map(base.documents.map(({ uri, source }) => [uri, source]));
+    const host = Object.assign(base, {
+      projectSnapshot: () => ({ version: 1 as const, id: "garden", documents: base.projectDocuments().map(({ uri, source }) => ({ uri, source })) }),
+      replaceDocumentSources: (updates: readonly FakeDocument[]) => {
+        for (const update of updates) Object.assign(base.documents.find(({ uri }) => uri === update.uri)!, update);
+      },
+      applyDocumentBatch: (changes: readonly { uri: string; before: string; after: string }[]) => {
+        if (changes.some(({ uri, before }) => editorSources.get(uri) !== before)) return undefined;
+        const prior = new Map(editorSources);
+        editorSources = new Map(changes.map(({ uri, after }) => [uri, after]));
+        return () => { editorSources = prior; return true; };
+      },
+    });
+    const original = base.projectDocuments();
+    const project = createArchitectureProjectInput({ id: "garden", documents: original.map(({ uri, source }) => ({ uri, text: source })) });
+    const change = createProposedProjectSourceChangeSet(project, {
+      id: "both", intent: { id: "both", kind: "architecture", summary: "Create and show" }, affectedIds: ["new"],
+      edits: original.map(({ uri, source }) => ({ documentUri: uri, startOffset: source.length, endOffset: source.length, text: "\n// new" })),
+    });
+    const transaction = new SourceAuthoringTransaction(host);
+    expect(await transaction.apply(change, original[0]!.uri, host)).toBe("applied");
+    expect(base.documents.every(({ dirty, source }) => dirty && source.endsWith("// new"))).toBe(true);
+    expect(await transaction.undo(host)).toBe(true);
+    expect(base.projectDocuments()).toEqual(original);
+    expect(editorSources).toEqual(new Map(original.map(({ uri, source }) => [uri, source])));
+    base.documents[1]!.source += "\n// later edit";
+    const edited = base.projectDocuments();
+    expect(await transaction.apply(change, original[0]!.uri, host)).toBe("invalid");
+    expect(base.projectDocuments()).toEqual(edited);
+    expect(transaction.canUndo()).toBe(false);
+  });
+
   it("applies a change to another document only after the editor presents it", async () => {
     const host = workbench();
     const transaction = new SourceAuthoringTransaction(host);

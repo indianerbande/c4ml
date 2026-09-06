@@ -93,7 +93,9 @@ the rendering adapter for that contract.
   back safely without blocking the editor.
 - The settings dialog is available from the toolbar and the native
   `Cmd/Ctrl+,` application menu shortcut.
-- Escape and an explicit close action dismiss the dialog. Keyboard focus stays
+- Only an explicit close action dismisses the dialog; outside clicks and Escape
+  leave it open (the earlier Escape behavior was superseded on 2026-09-06).
+  Keyboard focus stays
   inside the modal while it is open and returns to the toolbar action after it
   closes.
 

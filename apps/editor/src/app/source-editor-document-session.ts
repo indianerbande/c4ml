@@ -23,6 +23,15 @@ export class SourceEditorDocumentSession<
   #activeUri: string | undefined;
   #documentSetRevision: number | undefined;
 
+  ensure(uri: string, source: string, host: SourceEditorDocumentHost<Model, ViewState>): Model {
+    let model = this.#models.get(uri);
+    if (model === undefined) {
+      model = host.createModel(uri, source);
+      this.#models.set(uri, model);
+    }
+    return model;
+  }
+
   activate(
     documentSetRevision: number,
     uri: string,
