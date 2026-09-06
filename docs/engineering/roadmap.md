@@ -2,13 +2,59 @@
 
 Status: Active roadmap
 
-Date: 2026-09-03
+Date: 2026-09-06
 
 [`specification.md`](specification.md) defines product behavior and architecture.
 [`testing.md`](testing.md) defines the
 evidence required to claim that behavior works. This file orders implementation
 work; it does not freeze public `.c4ml` syntax or replace either normative
 document.
+
+## Prioritized review follow-up
+
+Remaining findings from the 2026-09-04 architecture review, checked against
+the current code on 2026-09-06. Work through these in the order below:
+recovery first, integration evidence second, measured performance improvements
+last. These are open tasks, not implemented capabilities or approval of a
+particular technical design. P1 = high, P2 = medium, P3 = low.
+
+- [ ] **1. P1 — Recover after a compiler-worker failure (B3, resilience).**
+      The client currently marks sessions as failed but does not recreate the
+      worker. Provide bounded recovery with visible failure/retry feedback;
+      preserve unsaved project source, invalidate interrupted authoring
+      previews, and reject responses from an obsolete worker generation.
+      Acceptance: a simulated worker failure and repeated recovery failure do
+      not lose source or trigger a restart loop; successful recovery restores
+      compilation, analysis, and language services for the current project.
+- [ ] **2. P2 — Add Angular integration tests for real signal timing (B1,
+      remaining coverage).** Exercise facades and components with actual
+      zoneless Angular scheduling and a controlled editor host, including
+      document switching, source reveal, apply/undo, and dirty-state handling.
+      Existing pure behavior tests, rendered-example invariants, and packaged
+      desktop smoke remain in place. Acceptance: the tests reproduce the old
+      wrong-document/timing failures and fail when the activation guard is
+      deliberately broken; text/template assertions alone do not count.
+- [ ] **3. P3 — Avoid duplicate parsing for compilation and analysis (B3,
+      performance).** Both requests currently parse the same project
+      independently. Measure representative larger projects, then share
+      revision-bound parse results inside the worker without introducing
+      renderer-owned semantics or an unbounded cache. Acceptance: reduced
+      parse work is measured, stale revisions cannot be reused, and diagnostics,
+      analysis findings, and deterministic compiler output remain unchanged.
+- [ ] **4. P3 — Reduce preview SVG/font copying (B4).** Measure allocation and
+      update costs when compilation, selection, or routing overlays change.
+      Explore a preview-only optimization; standalone SVG exports must retain
+      their controlled embedded fonts and PNG must retain identical geometry.
+      Acceptance: measurable lower preview cost, no retained obsolete Blob
+      URLs, offline font availability, and visually identical preview/export
+      typography. This is an optimization candidate, not a confirmed memory leak.
+
+The original A1–A10 fixes, B2 structured diagnostic subjects, and B5 Open With /
+worker-service cleanup are already committed. B1's rendered-example and packaged
+multi-document smoke work is complete; only the integration coverage above
+remains. The review's old "not committed" notes and patch-application steps
+are historical and must not be treated as current tasks. Context-menu expansion
+is tracked separately under [Contextual interaction follow-up](#contextual-interaction-follow-up).
 
 ## Strategic direction
 
