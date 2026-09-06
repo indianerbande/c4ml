@@ -362,7 +362,13 @@ commitment.
 The completion and wizard source-generation APIs are experimental authoring
 contracts over those same subsets. They MUST stay outside Angular components and
 MUST produce ordinary source edits or complete source documents. The wizard
-currently creates a new System Context or Container document or extends the
+defaults to a minimal start that creates only the header, a safely quoted
+display-label comment, and an empty model. Model-only sources are valid in CLI
+and worker without a diagram. Users can add Persons and Software Systems,
+then explicitly create a compatible static diagram through the shared
+source-preview/apply/undo transaction. No View or Relationship is invented
+behind the scenes. The guided path remains separately selectable and
+creates a new System Context or Container document or extends the
 active valid document through bounded project edits. Existing-document
 extension requires model and relations blocks, rejects project-wide stable-ID
 collisions, preserves unrelated source, and remains explicitly selectable. It

@@ -494,14 +494,28 @@ heuristics.
 
 ## Contextual interaction follow-up
 
-- [ ] offer frequent object-specific actions directly through right-click
-      context menus in the source editor, diagram, project explorer, and other
-      suitable workbench surfaces;
-- [ ] make the available actions depend on the clicked object and current
-      compiler-owned context; and
-- [ ] keep toolbar, command-palette, and keyboard access as equivalent paths,
-      but do not require the uncommon sequence of selecting an object and then
-      searching for a distant generic button.
+- [x] add a minimal named, model-only assistant path beside the detailed wizard;
+- [x] allow Person/System source authoring without an active View and provide
+      an explicit first-static-diagram creation flow over existing elements;
+- [x] replace the generic Architecture action with Add element and explain the
+      model-first progression in both interface languages and handbooks;
+
+- [x] show existing compatible static-model elements through the canvas menu,
+      using additive View source selection and reviewed candidate compilation;
+- [x] offer View inclusion when creating elements/connections, label hidden
+      connection targets, and explain incompatible targets;
+- [x] apply creation/View changes across project documents with one-step
+      authoring undo and per-document dirty-state restoration;
+- [x] toggle the Handbook tab and its activity highlight together, including
+      closing a background Handbook tab;
+- [x] offer frequent object-specific actions directly through a right-click
+      context menu in the main diagram preview;
+- [x] make its available actions depend on the clicked compiler navigation
+      object and the current validated View;
+- [x] keep the existing toolbar, panel, and keyboard paths as equivalent ways
+      into the same commands and candidate-preview dialogs; and
+- [ ] extend the same contextual approach to the source editor, project
+      explorer, detached preview, and other suitable workbench surfaces.
 
 Context menus are presentation affordances only. They MUST invoke the existing
 validated commands and source-change contracts rather than implementing new

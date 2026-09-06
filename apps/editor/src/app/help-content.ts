@@ -70,6 +70,10 @@ const topics: readonly HelpTopicDefinition[] = [
     ),
     paragraphs: [
       text(
+        "New here? Open Assistant, choose Start empty, and enter a model name. This creates only a header, a label comment, and an empty model. Add element lets you add a person or a system without a diagram. Then choose Create diagram to show your existing elements; Connect adds their relationships. The detailed guided interview remains available.",
+        "Neu hier? Öffne den Assistenten, wähle Leer beginnen und gib eine Modellbezeichnung ein. Es entstehen nur Header, Bezeichnung als Kommentar und ein leeres Model. Mit Element hinzufügen legst du eine Person oder ein System an, auch ohne Diagramm. Wähle anschließend Diagramm erstellen, um vorhandene Elemente anzuzeigen; Verbinden ergänzt ihre Beziehungen. Der ausführliche geführte Assistent bleibt verfügbar.",
+      ),
+      text(
         "A C4ML document separates the architecture model from the diagrams that show it. Names and responsibilities belong to the model; titles, scope, and layout belong to a view.",
         "Ein C4ML-Dokument trennt das Architekturmodell von den Diagrammen, die es zeigen. Namen und Verantwortungen gehören ins Modell; Titel, Ausschnitt und Layout gehören in eine Ansicht.",
       ),
@@ -78,11 +82,14 @@ const topics: readonly HelpTopicDefinition[] = [
         "Die aktuelle Sprache heißt draft-1. Dieses Handbuch zeigt nur Syntax, die Editor und Compiler heute tatsächlich ausführen können.",
       ),
       text(
-        "Use Change architecture to add or connect elements in a static view without recalling C4 vocabulary. The language worker offers only operations valid for that view, then shows the proposed source and compiled candidate before apply.",
-        "Mit Architektur ändern kannst du Elemente in einer statischen Ansicht hinzufügen oder verbinden, ohne das C4-Vokabular parat zu haben. Der Sprach-Worker bietet nur für diese Ansicht gültige Operationen an und zeigt vor dem Übernehmen Quelltextvorschlag und kompilierten Kandidaten.",
+        "Use Add element or Connect in a static view without recalling C4 vocabulary. The language worker offers only operations valid for that view, then shows the proposed source and compiled candidate before apply.",
+        "Mit Element hinzufügen oder Verbinden bearbeitest du eine statische Ansicht, ohne das C4-Vokabular parat zu haben. Der Sprach-Worker bietet nur für diese Ansicht gültige Operationen an und zeigt vor dem Übernehmen Quelltextvorschlag und kompilierten Kandidaten.",
       ),
     ],
     points: [
+      text("Right-click empty canvas space and choose Show existing element to include a model element in this static view. The generated show = [element-id] selection preserves automatic neighbours and creates no relationship.", "Rechtsklick auf eine freie Stelle der Zeichenfläche und Vorhandenes Element anzeigen nimmt ein Modellelement in diese statische Ansicht auf. Die erzeugte Auswahl show = [element-id] erhält automatische Nachbarn und erzeugt keine Beziehung."),
+      text("Show in the current view is enabled when creating elements or connections. Eligible hidden connection targets are labelled; incompatible targets include an explanation.", "In aktueller Ansicht anzeigen ist beim Anlegen von Elementen oder Verbindungen eingeschaltet. Zulässige unsichtbare Verbindungsziele sind markiert; ungeeignete Ziele werden erklärt."),
+      text("Click Help to open the Handbook; click again to close it, including a background tab. F1 opens contextual help directly.", "Klicke auf Hilfe, um das Handbuch zu öffnen, und erneut, um es auch als Hintergrund-Tab zu schließen. F1 öffnet direkt die kontextbezogene Hilfe."),
       text("Use stable identifiers without spaces.", "Verwende stabile Kennungen ohne Leerzeichen."),
       text("Describe responsibilities, not feature lists.", "Beschreibe Verantwortungen statt Funktionslisten."),
       text("Give every relationship a clear direction and intent.", "Gib jeder Verbindung eine klare Richtung und Absicht."),

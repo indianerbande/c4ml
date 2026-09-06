@@ -1,13 +1,20 @@
-<div class="wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+<div c4mlModal class="wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
   <header>
     <div>
       <p>{{ i18n.t("wizard.eyebrow") }}</p>
-      <h2 id="wizard-title">{{ i18n.t("wizard.title") }}</h2>
-      <span>{{ i18n.t("wizard.description") }}</span>
+      <h2 id="wizard-title">{{ i18n.t(minimal() ? "starter.begin" : "wizard.title") }}</h2>
+      <span>{{ i18n.t(minimal() ? "starter.emptyHint" : "wizard.description") }}</span>
     </div>
     <button type="button" class="close-button" (click)="cancel()" [attr.aria-label]="i18n.t('wizard.close')">×</button>
   </header>
 
+  @if (step() === 0) {
+    <div class="goal-options" role="group" [attr.aria-label]="i18n.t('starter.choose')">
+      <button type="button" [attr.aria-pressed]="minimal()" (click)="selectMinimal(true)"><strong>{{ i18n.t('starter.empty') }}</strong><p>{{ i18n.t('starter.emptyHint') }}</p></button>
+      <button type="button" [attr.aria-pressed]="!minimal()" (click)="selectMinimal(false)"><strong>{{ i18n.t('starter.guided') }}</strong><p>{{ i18n.t('starter.guidedHint') }}</p></button>
+    </div>
+  }
+  @if (!minimal()) {
   <nav [attr.aria-label]="i18n.t('wizard.progress')">
     @for (label of progress(); track label; let index = $index) {
       <span [class.current]="step() === index" [class.complete]="step() > index">
@@ -15,9 +22,20 @@
       </span>
     }
   </nav>
+  }
 
   <div class="wizard-body">
-    @if (step() === 0) {
+    @if (minimal()) {
+      <section>
+        <label><span class="field-heading"><span>{{ i18n.t('starter.name') }}</span>
+          <button type="button" class="field-help-button" (click)="toggleHelp('empty-name', $event)" [attr.aria-label]="i18n.t('wizard.help.open', { field: i18n.t('starter.name') })" [attr.aria-expanded]="openHelp() === 'empty-name'" aria-controls="empty-name-help">?</button></span>
+          <input [attr.aria-label]="i18n.t('starter.name')" data-modal-initial-focus [value]="emptyName()" (input)="updateEmptyName($event)" />
+          @if (openHelp() === 'empty-name') { <small class="field-help" id="empty-name-help">{{ i18n.t('starter.nameHint') }}</small> }
+        </label>
+        <p>{{ i18n.t('starter.nameHint') }}</p>
+        @if (compiler.wizard().source; as source) { <pre>{{ source }}</pre> }
+      </section>
+    } @else if (step() === 0) {
       <section aria-labelledby="goal-step-title">
         <div class="step-intro">
           <p>{{ i18n.t("wizard.goal.eyebrow") }}</p>
@@ -420,6 +438,7 @@
     <button type="button" class="secondary" (click)="cancel()">{{ i18n.t("wizard.cancel") }}</button>
     <span class="validation-state" [attr.data-phase]="compiler.wizard().phase">
       @if (compiler.wizard().phase === "valid") { {{ i18n.t("wizard.ready") }} }
+      @else if (minimal() && !emptyName().trim()) { {{ i18n.t('starter.name') }} }
       @else if (compiler.wizard().phase === "invalid") { {{ i18n.t("wizard.invalid") }} }
       @else { {{ i18n.t("wizard.checking") }} }
     </span>
@@ -430,7 +449,7 @@
       <button type="button" class="primary" (click)="next()">{{ i18n.t("wizard.continue") }}</button>
     } @else {
       <button type="button" class="primary" (click)="apply()" [disabled]="compiler.wizard().phase !== 'valid'">
-        {{ i18n.t(mode() === "extend" ? "wizard.extend" : "wizard.create") }}
+        {{ i18n.t(minimal() ? "starter.create" : mode() === "extend" ? "wizard.extend" : "wizard.create") }}
       </button>
     }
   </footer>

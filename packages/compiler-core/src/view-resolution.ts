@@ -218,6 +218,11 @@ function validateViewMetadata(
   view: ArchitectureView,
   diagnostics: Diagnostic[],
 ): void {
+  if ((view.kind === "dynamic" || view.kind === "deployment") && (view.selection?.additionalElementIds?.length ?? 0) > 0) {
+    addViewDiagnostic(diagnostics, view, "C4ML-VIEW-011",
+      `View ${displayId(view.id)} cannot add static elements through its selection.`,
+      "Use Dynamic Interactions or Deployment Instances for this view type.");
+  }
   if (isBlank(view.id)) {
     addViewDiagnostic(
       diagnostics,
@@ -433,6 +438,10 @@ function projectedStaticScope(
   };
 
   const allowed = new Set(primaryIds);
+  for (const id of view.selection?.additionalElementIds ?? []) {
+    const element = index.elementById.get(id);
+    if (element !== undefined && (primaryIds.has(id) || supports(element))) allowed.add(id);
+  }
   const direct: ResolvedRelationship[] = [];
   const impliedByPair = new Map<
     string,
@@ -534,6 +543,11 @@ function selectStaticScope(
   diagnostics: Diagnostic[],
 ): Pick<ResolvedView, "elements" | "relationships"> {
   const allowedElementIds = idsOf(scope.elements);
+  for (const id of view.selection?.additionalElementIds ?? []) {
+    if (!allowedElementIds.has(id)) {
+      invalidSelectionId(view, id, "additional element", index.elementById, diagnostics);
+    }
+  }
   const selectedElementIds = selectIds(
     view,
     view.selection,

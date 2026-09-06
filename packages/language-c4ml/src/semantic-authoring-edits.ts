@@ -15,6 +15,7 @@ import type {
   ViewDeclaration,
 } from "./generated/ast.js";
 import { createC4mlDraftServices } from "./services.js";
+import { parseC4mlProjectDraft } from "./language.js";
 
 export type C4mlSemanticElementKind =
   | "code-element"
@@ -90,17 +91,32 @@ export interface C4mlSemanticDynamicAuthoringContext {
 }
 
 export interface C4mlSemanticAuthoringContext {
-  readonly viewId: string;
-  readonly viewKind: C4mlSemanticViewKind;
+  readonly viewId: string | undefined;
+  readonly viewKind: C4mlSemanticViewKind | undefined;
+  readonly diagramOptions?: readonly C4mlDiagramCreateOption[];
   readonly scopeId?: string;
   readonly createActions: readonly C4mlSemanticCreateAction[];
   readonly elements: readonly C4mlSemanticAuthoringElement[];
   readonly connectionOptions: readonly C4mlSemanticConnectionOption[];
+  readonly viewElements?: readonly (C4mlSemanticAuthoringElement & {
+    readonly visible: boolean;
+    readonly canShow: boolean;
+    readonly suitableViews: readonly string[];
+  })[];
   readonly deployment?: C4mlSemanticDeploymentAuthoringContext;
   readonly dynamic?: C4mlSemanticDynamicAuthoringContext;
 }
 
+export interface C4mlDiagramCreateOption {
+  readonly id: string;
+  readonly kind: "system-landscape" | "system-context" | "container" | "component" | "code";
+  readonly scopeId?: string;
+  readonly scopeLabel?: string;
+}
+
 export type C4mlSemanticEditOperation =
+  | { readonly kind: "create-view"; readonly optionId: string; readonly viewId: string;
+      readonly title: string; readonly purpose: string; readonly scopeName: string }
   | {
       readonly kind: "create-element";
       readonly elementKind: C4mlSemanticElementKind;
@@ -112,6 +128,7 @@ export type C4mlSemanticEditOperation =
       readonly technology?: string;
       readonly codeKind?: string;
       readonly language?: string;
+      readonly showInView?: boolean;
     }
   | {
       readonly kind: "create-relationship";
@@ -121,7 +138,9 @@ export type C4mlSemanticEditOperation =
       readonly intent: string;
       readonly technology?: string;
       readonly protocol?: string;
+      readonly showInView?: boolean;
     }
+  | { readonly kind: "show-element"; readonly elementId: string }
   | {
       readonly kind: "create-deployment-item";
       readonly itemKind: C4mlSemanticDeploymentItemKind;
@@ -144,7 +163,8 @@ export type C4mlSemanticEditOperation =
 
 export interface C4mlSemanticEditRequest {
   readonly id: string;
-  readonly viewId: string;
+  readonly viewId: string | undefined;
+  readonly documentUri?: string;
   readonly intent: SourceChangeIntent;
   readonly operation: C4mlSemanticEditOperation;
 }
@@ -201,7 +221,7 @@ const identifierPattern = /^[_A-Za-z][\-_A-Za-z0-9]*$/u;
 
 export async function inspectC4mlSemanticAuthoringContext(
   project: ArchitectureProjectInput,
-  viewId: string,
+  viewId: string | undefined,
 ): Promise<C4mlSemanticAuthoringContextResult> {
   const parsed = await parseProject(project);
   if (parsed === undefined) {
@@ -209,6 +229,12 @@ export async function inspectC4mlSemanticAuthoringContext(
       "C4ML-AUTHORING-201",
       "Semantic authoring requires a valid C4ML project.",
     );
+  }
+  if (viewId === undefined) {
+    const compiled = await parseC4mlProjectDraft(project);
+    return compiled.valid
+      ? { valid: true, context: modelContext(parsed), issues: [] }
+      : contextInvalid("C4ML-AUTHORING-201", "Authoring requires a valid project.");
   }
   const owner = uniqueViewOwner(parsed, viewId);
   if (owner === undefined) {
@@ -224,9 +250,27 @@ export async function inspectC4mlSemanticAuthoringContext(
       `View "${viewId}" has no supported C4 view type.`,
     );
   }
+  const context = createContext(parsed, owner, viewKind);
+  const compiled = await parseC4mlProjectDraft(project);
+  if (!compiled.valid) return contextInvalid("C4ML-AUTHORING-201", "Authoring requires a valid project.");
+  const visible = new Set(compiled.resolvedViews?.find(({ id }) => id === viewId)?.elements.map(({ id }) => id));
+  const allElements = parsed.flatMap(({ ast }) => ast.model?.elements ?? []);
+  const allViews = parsed.flatMap(({ ast }) => ast.views);
+  const viewElements = allElements.flatMap((element) => {
+    const kind = semanticKind(element);
+    if (kind === undefined) return [];
+    const suitableViews = allViews.filter((view) => {
+      const type = viewType(view);
+      return type !== undefined && connectionElementsFor(type, viewScope(view), allElements).some(({ id }) => id === element.name);
+    }).map(({ name }) => name).sort(compareText);
+    const ownerId = elementOwnerId(element);
+    return [{ id: element.name, label: elementLabel(element), kind,
+      ...(ownerId === undefined ? {} : { ownerId }), visible: visible.has(element.name),
+      canShow: context.elements.some(({ id }) => id === element.name), suitableViews }];
+  }).sort((a, b) => compareText(a.id, b.id));
   return {
     valid: true,
-    context: createContext(parsed, owner, viewKind),
+    context: { ...context, viewElements },
     issues: [],
   };
 }
@@ -248,6 +292,7 @@ export async function proposeC4mlSemanticEdit(
       "Semantic authoring requires a valid C4ML project.",
     );
   }
+  if (request.viewId === undefined) return proposeModelEdit(project, parsed, request);
   const owner = uniqueViewOwner(parsed, request.viewId);
   const viewKind = owner === undefined ? undefined : viewType(owner.view);
   if (owner === undefined || viewKind === undefined) {
@@ -267,11 +312,17 @@ export async function proposeC4mlSemanticEdit(
       "C4ML could not locate a safe source insertion point for this architecture change.",
     );
   }
+  const extra = request.operation.kind === "create-element" && request.operation.showInView
+    ? createShowEdit(owner, [request.operation.elementId])
+    : request.operation.kind === "create-relationship" && request.operation.showInView
+      ? createShowEdit(owner, [request.operation.sourceId, request.operation.targetId])
+      : undefined;
   const changeSet = createProposedProjectSourceChangeSet(project, {
     id: request.id,
     intent: request.intent,
     affectedIds: affectedIdsFor(request.operation),
-    edits: [{ documentUri: generated.documentUri, ...generated.edit }],
+    edits: [{ documentUri: generated.documentUri, ...generated.edit },
+      ...(extra === undefined ? [] : [{ documentUri: extra.documentUri, ...extra.edit }])],
   });
   const application = applyProjectSourceChangeSet(project, changeSet);
   if (!application.valid) {
@@ -284,7 +335,8 @@ export async function proposeC4mlSemanticEdit(
     valid: true,
     changeSet,
     documentUri: generated.documentUri,
-    proposedText: generated.proposedText,
+    proposedText: [generated, ...(extra === undefined ? [] : [extra])]
+      .map(({ documentUri, proposedText }) => `// ${documentUri}\n${proposedText}`).join("\n\n"),
     issues: [],
   };
 }
@@ -505,6 +557,7 @@ function validateOperation(
   context: C4mlSemanticAuthoringContext,
   operation: C4mlSemanticEditOperation,
 ): C4mlSemanticAuthoringIssue | undefined {
+  if (operation.kind === "create-view") return issue("C4ML-AUTHORING-203", "Create diagrams from the model, not from a View operation.");
   const elements = documents.flatMap(({ ast }) => ast.model?.elements ?? []);
   const relationships = documents.flatMap(
     ({ ast }) => ast.relations?.relationships ?? [],
@@ -512,6 +565,11 @@ function validateOperation(
   const deploymentItems = documents.flatMap(({ ast }) =>
     ast.deployment?.environments.flatMap(({ items }) => items) ?? [],
   );
+  if (operation.kind === "show-element") {
+    return context.elements.some(({ id }) => id === operation.elementId)
+      ? undefined
+      : issue("C4ML-AUTHORING-203", "This element does not belong to the level or scope of this View. Choose a suitable View.");
+  }
   if (operation.kind === "create-element") {
     if (!identifierPattern.test(operation.elementId)) {
       return issue("C4ML-AUTHORING-203", "The element identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
@@ -640,6 +698,57 @@ function validateOperation(
   return undefined;
 }
 
+function modelContext(documents: readonly ParsedProjectDocument[]): C4mlSemanticAuthoringContext {
+  const elements = documents.flatMap(({ ast }) => ast.model?.elements ?? []);
+  const diagramOptions: C4mlDiagramCreateOption[] = [{ id: "system-landscape", kind: "system-landscape" }];
+  for (const element of [...elements].sort((a, b) => compareText(a.name, b.name))) {
+    const kinds: C4mlDiagramCreateOption["kind"][] = element.$type === "SoftwareSystemDeclaration"
+      ? ["system-context", "container"] : element.$type === "ContainerDeclaration"
+        ? ["component"] : element.$type === "ComponentDeclaration" ? ["code"] : [];
+    for (const kind of kinds) diagramOptions.push({ id: `${kind}:${element.name}`, kind,
+      scopeId: element.name, scopeLabel: elementLabel(element) });
+  }
+  return { viewId: undefined, viewKind: undefined, createActions: [{ kind: "person" }, { kind: "software-system" }],
+    elements: connectionElementsFor("system-landscape", undefined, elements), connectionOptions: [], diagramOptions };
+}
+
+async function proposeModelEdit(project: ArchitectureProjectInput, documents: readonly ParsedProjectDocument[], request: C4mlSemanticEditRequest): Promise<C4mlSemanticEditProposal> {
+  if (!(await parseC4mlProjectDraft(project)).valid) return proposalInvalid("C4ML-AUTHORING-201", "Authoring requires a valid project.");
+  const target = request.documentUri === undefined ? documents[0] : documents.find(({ uri }) => uri === request.documentUri);
+  if (target === undefined) return proposalInvalid("C4ML-AUTHORING-205", "Select an existing source document.");
+  const context = modelContext(documents);
+  const operation = request.operation;
+  let generated;
+  if (operation.kind === "create-element") {
+    if (operation.showInView) return proposalInvalid("C4ML-AUTHORING-203", "Create a diagram explicitly before showing an element in it.");
+    const failure = validateOperation(documents, context, operation);
+    if (failure !== undefined) return proposalInvalid(failure.code, failure.message);
+    generated = createElementEdit(documents, { document: target }, operation);
+  } else if (operation.kind === "create-view") {
+    const option = context.diagramOptions?.find(({ id }) => id === operation.optionId);
+    if (option === undefined || !identifierPattern.test(operation.viewId) || !operation.title.trim() || !operation.purpose.trim() || (option.kind === "system-landscape" && !operation.scopeName.trim())) {
+      return proposalInvalid("C4ML-AUTHORING-203", "Select a valid diagram, an identifier, a title, a purpose, and its scope.");
+    }
+    if (documents.some(({ ast }) => ast.views.some(({ name }) => name === operation.viewId))) return proposalInvalid("C4ML-AUTHORING-204", "The diagram identifier is already in use.");
+    const show = connectionElementsFor(option.kind, option.scopeId, documents.flatMap(({ ast }) => ast.model?.elements ?? []));
+    const eol = lineEnding(target.source);
+    const proposedText = [`view ${operation.viewId} {`, `  type = ${option.kind}`,
+      `  scope = ${option.scopeId ?? JSON.stringify(operation.scopeName.trim())}`,
+      `  title = ${JSON.stringify(operation.title.trim())}`, `  purpose = ${JSON.stringify(operation.purpose.trim())}`,
+      "  audience = default", "  legend = generated",
+      ...(show.length ? [`  show = [${show.map(({ id }) => id).join(", ")}]`] : []),
+      "  layout {", "    flow = right", "  }", "}"].join(eol);
+    generated = { documentUri: target.uri, proposedText, edit: { startOffset: target.source.length,
+      endOffset: target.source.length, text: `${eol}${eol}${proposedText}${eol}` } };
+  } else return proposalInvalid("C4ML-AUTHORING-203", "This operation requires an active diagram.");
+  if (generated === undefined) return proposalInvalid("C4ML-AUTHORING-205", "No safe insertion point was found.");
+  const changeSet = createProposedProjectSourceChangeSet(project, { id: request.id, intent: request.intent,
+    affectedIds: affectedIdsFor(operation), edits: [{ documentUri: generated.documentUri, ...generated.edit }] });
+  const applied = applyProjectSourceChangeSet(project, changeSet);
+  if (!applied.valid) return proposalInvalid("C4ML-AUTHORING-205", "The change could not be applied atomically.");
+  return { valid: true, changeSet, documentUri: generated.documentUri, proposedText: generated.proposedText, issues: [] };
+}
+
 function createOperationEdit(
   documents: readonly ParsedProjectDocument[],
   owner: ContextOwner,
@@ -647,6 +756,9 @@ function createOperationEdit(
   operation: C4mlSemanticEditOperation,
 ) {
   switch (operation.kind) {
+    case "create-view": return undefined;
+    case "show-element":
+      return createShowEdit(owner, [operation.elementId]);
     case "create-element":
       return createElementEdit(documents, owner, operation);
     case "create-relationship":
@@ -660,6 +772,9 @@ function createOperationEdit(
 
 function affectedIdsFor(operation: C4mlSemanticEditOperation): readonly string[] {
   switch (operation.kind) {
+    case "create-view": return [operation.viewId];
+    case "show-element":
+      return [operation.elementId];
     case "create-element":
       return [operation.elementId, ...(operation.ownerId === undefined ? [] : [operation.ownerId])];
     case "create-relationship":
@@ -676,9 +791,31 @@ function affectedIdsFor(operation: C4mlSemanticEditOperation): readonly string[]
   }
 }
 
+function createShowEdit(owner: ContextOwner, ids: readonly string[]) {
+  const show = owner.view.properties.find((property) => property.$type === "ViewShowProperty");
+  const additions = [...new Set(ids)].filter((id) => show?.values.some((value) => value.$refText === id) !== true);
+  if (additions.length === 0) return undefined;
+  const proposedText = `  show = [${[...(show?.values.map((value) => value.$refText) ?? []), ...additions].join(", ")}]`;
+  if (show?.$cstNode !== undefined) {
+    // Append after the final reference, preserving comments and whitespace in the list.
+    const last = show.values.at(-1)?.$refNode;
+    if (last === undefined) return undefined;
+    return { documentUri: owner.document.uri, proposedText,
+      edit: { startOffset: last.end, endOffset: last.end, text: `, ${additions.join(", ")}` } };
+  }
+  const first = owner.view.properties[0]?.$cstNode;
+  if (first === undefined) return undefined;
+  const lineStart = owner.document.source.lastIndexOf("\n", first.offset - 1) + 1;
+  const prefix = owner.document.source.slice(lineStart, first.offset);
+  const indent = /^[\t ]*$/.test(prefix) ? prefix : "  ";
+  return { documentUri: owner.document.uri, proposedText,
+    edit: { startOffset: first.offset, endOffset: first.offset,
+      text: `${proposedText.trimStart()}${lineEnding(owner.document.source)}${indent}` } };
+}
+
 function createElementEdit(
   documents: readonly ParsedProjectDocument[],
-  owner: ContextOwner,
+  owner: Pick<ContextOwner, "document">,
   operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-element" }>,
 ) {
   const target =

@@ -61,6 +61,28 @@ position, theme, or legend does not change the semantic model.
 
 ## 2. Current and planned usage
 
+### Start small
+
+1. Open **Assistant → Start empty** and enter a name.
+2. Review the short source and click **Create empty model**. This creates only
+   the header, the name as a comment, and an empty `model` block.
+3. Use **Add element…** to add people or systems. Review and apply the proposed
+   source; no diagram is required yet.
+4. Choose **Create diagram…** on the empty canvas or in **Diagrams**. Select its
+   scope, title, purpose, and stable diagram ID. The preview shows compatible
+   existing elements without copying them.
+5. After applying the diagram, use **Connect** to add relationships.
+
+The model contains the architecture; a diagram shows a projection of it. No
+hidden views or example relationships are created. Model edits and diagram
+creation remain reviewable, undoable source changes. The detailed assistant
+remains available under **Build with guidance**.
+
+Without a diagram, this starter offers people and systems. The first diagram
+form supports an overview plus System Context, Container, Component, and Code
+when the required owner exists. Dynamic and Deployment retain their existing
+creation paths.
+
 ### Available today for contributors
 
 The TypeScript compiler core can be built and tested:
@@ -99,6 +121,12 @@ toolbar or the native File menu to open and save `.c4ml` source. The standard sh
 header mark unsaved changes, and closing a dirty document asks before discarding
 them. The renderer receives only an opaque document handle; native filesystem
 paths and Node.js APIs remain in the Electron main process.
+
+C4thedral dialogs stay open when you click outside, drag a text selection beyond
+their edge, or press Escape. Use **Close**, **Cancel**, or the explicit action
+button to finish; these buttons also work with the keyboard. A genuine outside
+click gives a short local attention tone when audio is available. Tab stays
+inside the dialog. Native file pickers follow operating-system behavior.
 
 An installed C4thedral application can also open a `.c4ml` file through the
 operating system's **Open With** action. This works both when C4thedral is closed
@@ -142,7 +170,11 @@ window geometry after a relaunch. This local session record never stores source
 text, document handles, or filesystem paths; `.c4ml` files remain the
 architecture source of truth.
 
-Open **Help** from the `?` activity or search for **Open C4ML handbook** in the
+The **Help** activity is a switch: click to open and bring the Handbook forward;
+click again to close it and remove its tab, even from the background. The icon
+is highlighted while the Handbook is open. F1 opens contextual help directly.
+
+Open **Help** from the activity bar or search for **Open C4ML handbook** in the
 command palette. The local handbook groups the currently executable syntax by
 authoring task, can be searched in English or German, and opens beside the
 source editor without closing the diagram. Its **At cursor** card follows the
@@ -1261,6 +1293,32 @@ top-left position in diagram units with `pin`; use it only when the relative
 controls below cannot express the required result. The editor never stores a
 private drag offset or geometry that is absent from the source.
 
+For frequent actions, right-click the element directly. **Connect with…**
+opens the connection dialog with that source preselected; diagram picking is
+also available there. **Move in
+direction** opens the same placement editor with Up, Left, Right, or Down
+already selected; **Align with other elements…** and **Set exact position…**
+open the corresponding form. **Show in source** reveals the declaration. These
+shortcuts never apply an edit immediately: source changes still require the
+normal compiled candidate preview and **Apply to source**.
+
+An element can exist in the architecture model without appearing in the current
+diagram. Right-click an empty part of the canvas and choose **Show existing
+element …** to include it without creating a duplicate or inventing a
+relationship. Already visible and incompatible elements are labelled; unsuitable
+elements remain disabled, with suitable declared views listed where available.
+The preview adds `show = [element-id]` to this View. This additive selection keeps
+automatic neighbours and affects neither other Views nor model definitions.
+It is supported by the five static View types; Dynamic and Deployment use
+their interaction and instance authoring instead.
+
+Creating an element or connection offers **Show in the current view**, enabled
+by default. Turning it off changes only the model; normal View projection may
+still make the result visible. The connection dialog includes eligible hidden
+targets marked **not in this view**, and explains incompatible targets. Review
+the candidate source and diagram before applying; the authoring Undo action
+restores all affected source documents together.
+
 To refine a connection graphically, select its line in the preview, open
 **Route details**, and choose **Edit route…**. The Route editor can choose the
 source and target Ports or add, move, and remove guidance points. It starts a
@@ -1278,6 +1336,12 @@ preceding source and dirty state in one step. Returning a path to automatic
 routing removes obsolete guidance while preserving still-relevant explicit
 Ports and label placement; if no route controls remain, the empty `route`
 block is removed too.
+
+Right-clicking a Relationship, its label, a Port, or a corridor opens an
+object-specific shortcut menu. A label prioritizes **Move relationship
+label…**, while a Port prioritizes **Change endpoint ports…**. Route editing,
+new waypoint guidance, automatic reset, and source navigation all continue
+through the same Route editor and review boundary described above.
 
 ### 9.1 Flow direction
 

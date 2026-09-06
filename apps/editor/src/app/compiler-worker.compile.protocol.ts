@@ -401,10 +401,12 @@ export function isCompilerWorkerResponse(
     (candidate.activeViewId === undefined ||
       typeof candidate.activeViewId === "string") &&
     (candidate.status === "valid"
-      ? typeof candidate.svg === "string" &&
+      ? (candidate.views.length === 0
+        ? candidate.svg === undefined && candidate.navigation === undefined && candidate.activeViewId === undefined
+        : typeof candidate.svg === "string" &&
         isCompilerWorkerNavigation(candidate.navigation) &&
         typeof candidate.activeViewId === "string" &&
-        candidate.views.some(({ id }) => id === candidate.activeViewId)
+        candidate.views.some(({ id }) => id === candidate.activeViewId))
       : candidate.svg === undefined && candidate.navigation === undefined)
   );
 }

@@ -1,12 +1,12 @@
-<div class="settings-backdrop" (click)="onBackdropClick($event)">
+<div class="settings-backdrop">
   <section
     #dialog
+    c4mlModal
     class="settings-dialog"
     role="dialog"
     aria-modal="true"
     aria-labelledby="settings-title"
     aria-describedby="settings-description"
-    (keydown)="onDialogKeydown($event)"
   >
     <header class="settings-header">
       <div>

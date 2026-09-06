@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  defaultSystemContextWizardAnswers,
+  generateSystemContextDraft,
   proposeC4mlPlacementEdit,
   proposeC4mlRouteEdit,
   proposeC4mlSemanticEdit,
@@ -61,6 +63,14 @@ function io(cwd: string): CliIo {
 }
 
 describe("experimental C4ML CLI", () => {
+  it("checks a minimal model without requiring or inventing a diagram", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "c4ml-minimal-check-"));
+    const source = generateSystemContextDraft({ ...defaultSystemContextWizardAnswers, emptyName: "Garden planning" }).source!;
+    await writeFile(join(cwd, "model.c4ml"), source);
+    expect(await runCli(["check", "model.c4ml"], io(cwd))).toBe(cliExitCode.success);
+    expect(await readFile(join(cwd, "model.c4ml"), "utf8")).toBe(source);
+    expect(stderr).toEqual([]);
+  });
   it("exposes the canonical analysis report through the CLI boundary", async () => {
     const cwd = fileURLToPath(new URL("../../..", import.meta.url));
     const exitCode = await runCli(

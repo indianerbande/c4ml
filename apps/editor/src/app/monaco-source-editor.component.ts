@@ -27,6 +27,7 @@ import {
   SourceEditorDocumentSession,
   type SourceEditorDocumentHost,
 } from "./source-editor-document-session.js";
+import { applySourceEditorProjectEdit } from "./source-editor-project-edit.js";
 import {
   applySourceChangeSetAsSingleUndo,
   type SourceEditorChangeSetApplication,
@@ -245,6 +246,36 @@ export class C4mlMonacoSourceEditorComponent
 
   undoAuthoringChange(): void {
     this.#editor?.trigger("c4ml.authoring", "undo", undefined);
+  }
+
+  /** Validate every model first, then change them synchronously as one project action. */
+  applyDocumentBatch(changes: readonly { uri: string; before: string; after: string }[]): (() => boolean) | undefined {
+    const host = this.#documentHost();
+    if (host === undefined) return undefined;
+    const entries = changes.map((change) => ({ ...change, model: this.#documents.ensure(change.uri, change.before, host) }));
+    const batch = entries.map(({ model, before, after }) => ({
+      before, after,
+      read: () => model.isDisposed() ? undefined : model.getValue(),
+      version: () => model.getAlternativeVersionId(),
+      apply: () => {
+        model.pushStackElement();
+        model.pushEditOperations(null, [{ range: model.getFullModelRange(), text: after }], () => null);
+        model.pushStackElement();
+      },
+      undo: () => { model.undo(); },
+    }));
+    this.#synchronizeExternalValue = true;
+    let undo: (() => boolean) | undefined;
+    try {
+      undo = applySourceEditorProjectEdit(batch);
+    } finally { this.#synchronizeExternalValue = false; }
+    if (undo === undefined) return undefined;
+    const undoBatch = undo;
+    return () => {
+      this.#synchronizeExternalValue = true;
+      try { return undoBatch(); }
+      finally { this.#synchronizeExternalValue = false; }
+    };
   }
 
   focus(): void {

@@ -180,6 +180,73 @@ function request(
 }
 
 describe("semantic authoring context", () => {
+  it("distinguishes hidden valid targets from wrong-level elements", async () => {
+    const result = await inspectC4mlSemanticAuthoringContext(project(), "garden-context");
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.context.viewElements).toContainEqual(expect.objectContaining({ id: "caretaker", visible: false, canShow: true }));
+    expect(result.context.viewElements).toContainEqual(expect.objectContaining({ id: "garden-api", canShow: false, suitableViews: expect.arrayContaining(["garden-containers"]) }));
+    expect(result.context.connectionOptions.find(({ sourceId }) => sourceId === "garden-pulse")?.targetIds).toContain("caretaker");
+  });
+
+  it("shows an unconnected existing element without adding model data or losing automatic neighbours", async () => {
+    const input = project();
+    const proposal = await proposeC4mlSemanticEdit(input, request("garden-context", { kind: "show-element", elementId: "caretaker" }));
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const before = await parseC4mlProjectDraft(input);
+    const after = await parseC4mlProjectDraft(applied.project);
+    expect(after.valid).toBe(true);
+    expect(after.model).toEqual(before.model);
+    expect(after.resolvedViews?.find(({ id }) => id === "garden-context")?.elements.map(({ id }) => id)).toEqual(["caretaker", "garden-pulse", "weather-feed"]);
+    expect(after.resolvedViews?.find(({ id }) => id === "garden-containers")?.elements).toEqual(before.resolvedViews?.find(({ id }) => id === "garden-containers")?.elements);
+  });
+
+  it("creates and shows through one project proposal even when model and view are in different files", async () => {
+    const split = source.indexOf("view garden-context");
+    const input = createArchitectureProjectInput({ id: "split-garden", documents: [
+      { uri: "model.c4ml", text: source.slice(0, split) },
+      { uri: "views.c4ml", text: `c4ml draft-1\n${source.slice(split)}` },
+    ] });
+    const proposal = await proposeC4mlSemanticEdit(input, request("garden-context", {
+      kind: "create-element", elementKind: "person", elementId: "gardener", name: "Gardener",
+      responsibility: "Tends garden beds.", classification: "internal", showInView: true,
+    }));
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    expect(new Set(proposal.changeSet.edits.map(({ documentUri }) => documentUri))).toEqual(new Set(["model.c4ml", "views.c4ml"]));
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const result = await parseC4mlProjectDraft(applied.project);
+    expect(result.valid).toBe(true);
+    expect(result.resolvedViews?.find(({ id }) => id === "garden-context")?.elements.map(({ id }) => id)).toContain("gardener");
+    expect(input.documents[0]!.text).not.toContain("person gardener");
+  });
+
+  it("preserves comments and CRLF when appending to a show list", async () => {
+    const text = source.replace('view garden-context {', 'view garden-context {\n  show = [weather-feed // keep this comment\n  ]').replaceAll("\n", "\r\n");
+    const input = project(text);
+    const proposal = await proposeC4mlSemanticEdit(input, request("garden-context", { kind: "show-element", elementId: "caretaker" }));
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    if (!applied.valid) throw new Error("Rejected valid show change");
+    expect(applied.project.documents[0]!.text).toBe(text.replace("[weather-feed //", "[weather-feed, caretaker //"));
+    expect((await parseC4mlProjectDraft(applied.project)).valid).toBe(true);
+  });
+
+  it("rejects wrong-level show requests and handwritten lists", async () => {
+    const proposal = await proposeC4mlSemanticEdit(project(), request("garden-context", { kind: "show-element", elementId: "garden-api" }));
+    expect(proposal.valid).toBe(false);
+    const result = await parseC4mlProjectDraft(project(source.replace("view garden-context {", "view garden-context {\n show = [garden-api]")));
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.some(({ severity }) => severity === "error")).toBe(true);
+  });
+
   it("offers only the C4 element kinds owned by each static view scope", async () => {
     const context = await inspectC4mlSemanticAuthoringContext(
       project(),

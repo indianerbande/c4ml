@@ -242,7 +242,7 @@ export class CompilerWorkerClient {
   inspectSemanticAuthoring(
     project: CompilerWorkerProject,
     file: string,
-    viewId: string,
+    viewId: string | undefined,
   ): Promise<InspectSemanticAuthoringWorkerResponse | undefined> {
     const { request, result } = this.#semanticContextSession.beginAsync(
       project,

@@ -21,6 +21,7 @@ import {
   workbenchEditorFontFamilyOptions,
 } from "./workbench-preferences.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import { ModalInteractionDirective } from "./modal-interaction.directive.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import {
   c4mlSyntaxThemePresets,
@@ -53,6 +54,7 @@ interface SyntaxThemeOption {
 
 @Component({
   selector: "c4ml-settings-panel",
+  imports: [ModalInteractionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./settings-panel.component.html",
   styleUrl: "./settings-panel.component.css",
@@ -106,7 +108,6 @@ export class SettingsPanelComponent {
   readonly activeCategory = signal<SettingsCategoryId>("appearance");
   readonly closeButton =
     viewChild.required<ElementRef<HTMLButtonElement>>("closeButton");
-  readonly dialog = viewChild.required<ElementRef<HTMLElement>>("dialog");
 
   constructor() {
     afterNextRender(() => this.closeButton().nativeElement.focus());
@@ -178,42 +179,4 @@ export class SettingsPanelComponent {
     this.preferences.setEditorFontSize(target.valueAsNumber);
   }
 
-  onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.close();
-    }
-  }
-
-  onDialogKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      this.close();
-      return;
-    }
-    if (event.key !== "Tab") {
-      return;
-    }
-    const focusable = Array.from(
-      this.dialog().nativeElement.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
-      ),
-    );
-    const first = focusable.at(0);
-    const last = focusable.at(-1);
-    if (first === undefined || last === undefined) {
-      return;
-    }
-    if (event.shiftKey && this.#documentActiveElement() === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && this.#documentActiveElement() === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  #documentActiveElement(): Element | null {
-    return this.dialog().nativeElement.ownerDocument.activeElement;
-  }
 }

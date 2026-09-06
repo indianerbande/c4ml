@@ -43,6 +43,7 @@
         type="button"
         class="title-action architecture-action"
         [disabled]="!canEditArchitecture()"
+        [title]="i18n.t('starter.addHint')"
         (click)="openSemanticEditor()"
       >
         {{ i18n.t("semanticEditor.open") }}
@@ -135,7 +136,8 @@
       <span class="activity-spacer"></span>
       <button
         type="button"
-        [class.is-active]="activeActivity() === 'help'"
+        [class.is-active]="help.opened()"
+        [attr.aria-pressed]="help.opened()"
         [attr.aria-current]="activeActivity() === 'help' ? 'page' : null"
         data-activity="help"
         [attr.aria-label]="i18n.t('area.help')"
@@ -436,6 +438,7 @@
           </section>
           <section class="side-section quick-actions">
             <h3>{{ i18n.t("diagrams.help") }}</h3>
+            <button type="button" [disabled]="!canEditArchitecture()" (click)="openDiagramEditor()">{{ i18n.t('starter.diagram') }}</button>
             <button type="button" (click)="startWizard()">
               {{ i18n.t("diagrams.create") }}
             </button>
@@ -711,6 +714,7 @@
               <span class="diagram-tab-mark" aria-hidden="true"></span>
               <span id="preview-heading">{{ activeViewTitle() }}</span>
             </button>
+            @if (help.opened()) {
             <button
               type="button"
               class="editor-tab help-tab"
@@ -725,6 +729,7 @@
                 {{ activeHelpTopic().title }}</span
               >
             </button>
+            }
             <span class="tab-fill"></span>
             @if (rightPaneMode() === "diagram") {
               <div
@@ -824,7 +829,7 @@
               [attr.aria-label]="i18n.t('help.articleLabel')"
             />
           } @else {
-            <div class="preview-stage" role="tabpanel">
+            <div class="preview-stage" role="tabpanel" (contextmenu)="onPreviewContextMenu($event)">
               @if (previewUrl(); as url) {
                 <img
                   class="diagram"
@@ -842,6 +847,14 @@
                   <span class="empty-glyph" aria-hidden="true"></span>
                   <strong>{{ i18n.t("preview.noDocument") }}</strong>
                   <span>{{ i18n.t("preview.openDocument") }}</span>
+                  <button type="button" (click)="startWizard()">{{ i18n.t('starter.begin') }}</button>
+                </div>
+              } @else if (compiler.state().phase === 'valid' && compiler.state().views.length === 0) {
+                <div class="empty-preview">
+                  <strong>{{ i18n.t('starter.modelReady') }}</strong>
+                  <span>{{ i18n.t('starter.next') }}</span>
+                  <button type="button" (click)="openSemanticEditor()">{{ i18n.t('semanticEditor.open') }}</button>
+                  <button type="button" (click)="openDiagramEditor()">{{ i18n.t('starter.diagram') }}</button>
                 </div>
               } @else {
                 <div class="empty-preview">
@@ -1220,18 +1233,21 @@
 </div>
 
 @if (commandPaletteOpen()) {
-  <div class="command-backdrop" (click)="closeCommandPalette()">
+  <div class="command-backdrop">
     <section
       class="command-palette"
+      c4mlModal
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="i18n.t('command.palette')"
       (click)="$event.stopPropagation()"
     >
+      <button type="button" class="command-close" (click)="closeCommandPalette()">{{ i18n.t('command.close') }}</button>
       <label>
         <span aria-hidden="true">›</span>
         <input
           #commandInput
+          data-modal-initial-focus
           type="text"
           [placeholder]="i18n.t('command.type')"
           [value]="commandQuery()"
@@ -1264,9 +1280,10 @@
 }
 
 @if (wizardUndoConfirmationOpen()) {
-  <div class="confirmation-backdrop" (click)="cancelUndoWizard()">
+  <div class="confirmation-backdrop">
     <section
       class="confirmation-dialog"
+      c4mlModal
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="wizard-undo-confirm-title"
@@ -1326,6 +1343,8 @@
       [viewId]="activeViewId"
       [nodes]="placement.nodes()"
       [selectedId]="node.referenceId"
+      [initialOperation]="placement.initialOperation()"
+      [initialDirection]="placement.initialDirection()"
       (applied)="applyPlacement($event)"
       (cancelled)="closePlacementEditor()"
     />
@@ -1338,17 +1357,27 @@
     [activeFile]="session.activeFile"
     [viewId]="session.viewId"
     [route]="session.route"
+    [initialOperation]="session.initialOperation"
     (applied)="applyRoute($event)"
     (cancelled)="closeRouteEditor()"
   />
 }
 
+@if (diagramContextMenu(); as contextMenu) {
+  <c4ml-diagram-context-menu
+    [target]="contextMenu.target"
+    [position]="contextMenu.position"
+    [connectAvailable]="canConnectArchitecture()"
+    (actionSelected)="onDiagramContextAction($event)"
+    (dismissed)="closeDiagramContextMenu()"
+  />
+}
+
 @if (semanticEditor.open()) {
-  @if (compiler.state().activeViewId; as activeViewId) {
     <c4ml-semantic-editor
       [project]="semanticEditor.project()"
       [activeFile]="activeDocumentUri()"
-      [viewId]="activeViewId"
+      [viewId]="semanticEditor.mode() === 'diagram' ? undefined : compiler.state().activeViewId"
       [mode]="semanticEditor.mode()"
       [initialSourceId]="semanticEditor.initialSourceId()"
       [initialTargetId]="semanticEditor.initialTargetId()"
@@ -1356,5 +1385,4 @@
       (cancelled)="closeSemanticEditor()"
       (selectionRequested)="startConnectionPicking($event)"
     />
-  }
 }

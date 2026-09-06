@@ -21,6 +21,7 @@ import type {
 } from "./compiler-worker.protocol.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import { ModalInteractionDirective } from "./modal-interaction.directive.js";
 
 export type RouteEditorOperationKind =
   | "add-waypoint"
@@ -37,6 +38,7 @@ export interface RouteEditorSegment {
 
 @Component({
   selector: "c4ml-route-editor",
+  imports: [ModalInteractionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./route-editor.component.html",
   styleUrls: [
@@ -49,6 +51,7 @@ export class RouteEditorComponent {
   readonly activeFile = input.required<string>();
   readonly viewId = input.required<string>();
   readonly route = input.required<CompilerWorkerRouteNavigationTarget>();
+  readonly initialOperation = input<RouteEditorOperationKind>("ports");
   readonly applied = output<PreviewRouteChangeWorkerResponse>();
   readonly cancelled = output<void>();
 
@@ -141,6 +144,7 @@ export class RouteEditorComponent {
       const route = this.route();
       if (this.#initialized) return;
       this.#initialized = true;
+      this.operationKind.set(this.initialOperation());
       this.sourcePort.set(route.sourcePortSelection);
       this.targetPort.set(route.targetPortSelection);
       this.labelOffsetX.set(route.labelOffset.x);

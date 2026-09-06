@@ -21,6 +21,7 @@ import type {
 } from "./compiler-worker.protocol.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
+import { ModalInteractionDirective } from "./modal-interaction.directive.js";
 
 export type PlacementEditorOperationKind =
   | "align"
@@ -38,6 +39,7 @@ export interface PlacementEditorNode {
 
 @Component({
   selector: "c4ml-placement-editor",
+  imports: [ModalInteractionDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: "./placement-editor.component.html",
   styleUrl: "./placement-editor.component.css",
@@ -48,6 +50,8 @@ export class PlacementEditorComponent {
   readonly viewId = input.required<string>();
   readonly nodes = input.required<readonly PlacementEditorNode[]>();
   readonly selectedId = input.required<string>();
+  readonly initialOperation = input<PlacementEditorOperationKind>("relative");
+  readonly initialDirection = input<"down" | "left" | "right" | "up">("right");
   readonly applied = output<PreviewPlacementChangeWorkerResponse>();
   readonly cancelled = output<void>();
 
@@ -123,6 +127,8 @@ export class PlacementEditorComponent {
       const nodes = this.nodes();
       if (this.#initialized || selected.length === 0 || nodes.length === 0) return;
       this.#initialized = true;
+      this.operationKind.set(this.initialOperation());
+      this.direction.set(this.initialDirection());
       this.primaryId.set(selected);
       this.itemIds.set([selected]);
       this.anchorId.set(nodes.find(({ id }) => id !== selected)?.id ?? selected);

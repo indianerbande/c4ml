@@ -15,8 +15,17 @@
   max-width: 100%;
 }
 .semantic-editor .placement-form textarea { resize: vertical; }
+.semantic-editor .placement-form input:not([type="checkbox"]),
+.semantic-editor .placement-form textarea {
+  border: 1px solid var(--line-strong); border-radius: 7px; padding: 8px 10px;
+  background: var(--control-bg); color: var(--control-ink); font: inherit; font-weight: 400;
+}
+.semantic-editor .placement-form textarea { min-height: 72px; }
+.is-diagram-editor .candidate-preview img { width: 100%; height: 260px; object-fit: contain; }
 .semantic-editor > header { border-top: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); }
 .semantic-editor.is-connection-editor > header { border-top-color: var(--accent); }
+.semantic-editor .show-in-view-control { display: flex; align-items: center; gap: 8px; }
+.semantic-editor .show-in-view-control input { width: auto; flex: 0 0 auto; }
 .semantic-authority { display: grid; gap: 4px; padding: 11px 12px; border-left: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); color: var(--control-ink); }
 .semantic-authority span,
 .semantic-loading,
