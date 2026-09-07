@@ -3,7 +3,7 @@
 ## Project status
 
 C4thedral, powered by the C4ML language and compiler, is published as the
-`0.1.0-beta.5` public source beta. `docs/en/project-status.md` owns the concise
+`0.1.0-beta.6` public source beta. `docs/en/project-status.md` owns the concise
 reader-facing maturity statement; this section retains the detailed engineering
 state needed by repository agents. The local Git repository and GitHub remote exist.
 The Apache-2.0 TypeScript/pnpm monorepo contains only production packages and
@@ -54,8 +54,11 @@ matrix.
 
 Graphical placement, route, and semantic authoring share one source
 authoring transaction that waits for the editor to present the target
-document before applying an edit, binds its one-step undo to that document,
-and is exercised in the packaged multi-document smoke.
+document before applying an edit. Accepted actions enter one chronological,
+bounded undo/redo history across those authoring tools; multi-document changes
+remain atomic and restore every affected dirty state. The fixed, contextual
+history controls and cross-document behavior are exercised automatically and
+in the packaged multi-document smoke.
 The desktop workbench also has an implemented original IDE-like shell with
 C4ML-specific Files, Source Control, Diagrams, Output, and Help activity areas, simultaneous
 source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
@@ -91,7 +94,12 @@ detection, a lazy
 Monaco source-editor adapter, and a versioned request/response contract to run
 the experimental language package and shared compiler in a local Web Worker.
 It rejects stale responses, retains the last valid SVG during invalid edits,
-and displays source-located diagnostics in a two-pane layout. The same worker
+and displays source-located diagnostics in a two-pane layout. Worker lifetimes
+are generation-scoped: one automatic replacement replays the latest in-memory
+project into compilation and analysis, a second failure stops without a loop,
+and an explicit localized Retry starts each further attempt. Interrupted
+authoring previews fail visibly and retired generations cannot deliver a
+response into current sessions. The same worker
 provides the only context-completion, help-context, syntax-highlighting, and diagnostic
 source; syntax spans distinguish declarations, properties, predefined values,
 identifiers, strings, numbers, operators, and comments, while Monaco presents
@@ -175,16 +183,40 @@ pin changes through those boundaries. The first graphical Route editor uses the
 same boundaries for cardinal Port choice, independent signed x/y relationship-
 label offsets in diagram units, and add/move/remove/reset guidance, with
 explicit safe repairs, blocking compiler diagnostics, candidate SVG/source
-review, and one-step apply/undo. Semantic graphical authoring creates or connects architecture elements in the five static C4 views through
+review, and shared undo/redo history. Semantic graphical authoring creates or connects architecture elements in the five static C4 views through
 context-filtered language-worker operations, candidate compilation, explicit
-source review, and one-step apply/undo. Creation and connection are separate
+source review, and the same undo/redo history. Creation and connection are separate
 top-level actions; connection authoring additionally supports a temporary,
 worker-validated Source-to-Target diagram picker without hidden model state.
+Diagram membership is a separate View-intent operation: context actions can
+show or explicitly hide an existing element in one static View without changing
+the model. Deleting the shared model definition remains a visibly destructive
+architecture-intent action whose full candidate compilation blocks unresolved
+references.
+The Diagrams activity activates declared Views and manages their title/purpose,
+visible `show`/`hide` content, and deletion through the same reviewed
+source-change boundary and shared Undo/Redo history; its type labels use
+reader-facing descriptions rather than raw View-kind keywords.
+Every graphical source-change dialog also identifies its reach as shared
+Architecture model, Active diagram, or Diagram layout with localized text and
+a redundant non-color marker; this presentation adds no editor-owned state.
+Static connection authoring is explicitly labelled as creation of a reusable
+architecture Relationship. Dynamic authoring is explicitly labelled as an
+ordered Active-diagram interaction step that selects, but does not duplicate or
+change, its static Relationship basis.
+Deployment authoring replaces generic element language with a runtime-
+environment action. Its form groups runtime topology separately from running
+Software System and Container instances, states that each instance references
+an unchanged logical element, and retains Architecture-model scope because the
+deployment model is shared across Views.
+Localized element-form guidance disambiguates the practitioner term “service”
+as Software System, Container, or Component according to independence and the
+active View scope; it does not introduce a generic Service kind.
 Component and Code guidance derives the fixed owner from the active View.
 Dedicated Deployment-topology authoring adds environment-bounded nodes,
 infrastructure, and scoped instances; dedicated Dynamic-interaction authoring
 reuses eligible directed static Relationships with explicit order and optional
-parallel grouping. Both use the same source-review and undo boundary. The portable version-one
+parallel grouping. Both use the same source-review and history boundary. The portable version-one
 semantic differ is implemented and automatically validated: it matches
 kind-qualified stable identities, separates model, Relationship, deployment,
 View, presentation, and layout changes, recognizes renames, ignores source and
@@ -367,7 +399,10 @@ display-label comment, and an empty model. Model-only sources are valid in CLI
 and worker without a diagram. Users can add Persons and Software Systems,
 then explicitly create a compatible static diagram through the shared
 source-preview/apply/undo transaction. No View or Relationship is invented
-behind the scenes. The guided path remains separately selectable and
+behind the scenes. The viewless workbench explains the model/diagram
+distinction, leads an empty model to its first element, then makes the first
+diagram the primary next step and points to the Diagrams activity for creating
+and activating further diagrams. The guided path remains separately selectable and
 creates a new System Context or Container document or extends the
 active valid document through bounded project edits. Existing-document
 extension requires model and relations blocks, rejects project-wide stable-ID

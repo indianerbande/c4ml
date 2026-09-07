@@ -117,6 +117,7 @@ import type {
   ViewDeclaration,
   ViewDisplayProperty,
   ViewEnvironmentProperty,
+  ViewHideProperty,
   ViewLegendProperty,
   ViewRelationshipsProperty,
   ViewShowProperty,
@@ -1042,10 +1043,13 @@ function lowerView(
   const show = optionalProperty<ViewShowProperty>(
     declaration.properties, "ViewShowProperty", "show", declaration, file, diagnostics,
   );
-  if (show !== undefined && (type.value === "dynamic" || type.value === "deployment")) {
+  const hide = optionalProperty<ViewHideProperty>(
+    declaration.properties, "ViewHideProperty", "hide", declaration, file, diagnostics,
+  );
+  if ((show !== undefined || hide !== undefined) && (type.value === "dynamic" || type.value === "deployment")) {
     diagnostics.push(createDiagnostic({ code: "C4ML-LANG-103", severity: "error",
-      message: "Explicit show lists apply to static Views. Use interactions or deployment instances in this View.",
-      source: sourceReference(show, file) }));
+      message: "Explicit show and hide lists apply to static Views. Use interactions or deployment instances in this View.",
+      source: sourceReference(show ?? hide!, file) }));
     return undefined;
   }
   const base = {
@@ -1053,7 +1057,12 @@ function lowerView(
     title: title.value,
     purpose: purpose.value,
     legend: { mode: legend.value },
-    ...(show === undefined ? {} : { selection: { additionalElementIds: show.values.map((value) => value.$refText) } }),
+    ...(show === undefined && hide === undefined
+      ? {}
+      : { selection: {
+          ...(show === undefined ? {} : { additionalElementIds: show.values.map((value) => value.$refText) }),
+          ...(hide === undefined ? {} : { excludeElementIds: hide.values.map((value) => value.$refText) }),
+        } }),
     ...(relationships === undefined
       ? {}
       : { relationshipProjection: relationships.value }),

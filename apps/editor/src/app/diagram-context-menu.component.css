@@ -50,6 +50,10 @@ button:focus-visible {
   box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
+button.destructive-action {
+  color: var(--danger);
+}
+
 .context-menu-separator {
   height: 1px;
   margin: 5px 3px;

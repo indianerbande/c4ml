@@ -845,6 +845,44 @@ describe("compiler worker runtime", () => {
     expect(project.documents[0]?.source).toBe(initialC4mlSource);
   });
 
+  it("keeps deletion unavailable while the shared element is still referenced", async () => {
+    const project = {
+      version: 1 as const,
+      id: "garden-delete-preview",
+      documents: [{ uri: "architecture.c4ml", source: initialC4mlSource }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 50,
+      file: "architecture.c4ml",
+      project,
+      requestedViewId: "garden-pulse-context",
+      semantic: {
+        id: "semantic:delete-caretaker",
+        viewId: "garden-pulse-context",
+        intent: {
+          id: "architecture:delete-element",
+          kind: "architecture",
+          summary: "Delete an architecture element.",
+        },
+        operation: { kind: "delete-element", elementId: "caretaker" },
+      },
+    };
+
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result.status).toBe("invalid");
+    expect(result.compilation?.status).toBe("invalid");
+    expect(result.compilation?.diagnostics.length).toBeGreaterThan(0);
+    expect(project.documents[0]?.source).toBe(initialC4mlSource);
+  });
+
   it("previews a Dynamic interaction through the same non-mutating worker boundary", async () => {
     const source = await readFile(dynamicSourceUrl, "utf8");
     const project = {

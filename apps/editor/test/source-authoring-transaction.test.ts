@@ -30,8 +30,10 @@ class FakeWorkbench implements AuthoringDocumentHost, AuthoringEditorHost {
   presentedUri: string;
   readonly appliedTo: string[] = [];
   readonly undoneIn: string[] = [];
+  readonly redoneIn: string[] = [];
   readonly #waiters: { uri: string; resolve: (active: boolean) => void }[] = [];
-  #history: { uri: string; before: string }[] = [];
+  #history: { uri: string; before: string; after: string }[] = [];
+  #redoHistory: { uri: string; before: string; after: string }[] = [];
 
   constructor(documents: FakeDocument[], activeUri: string) {
     this.documents = documents;
@@ -77,7 +79,12 @@ class FakeWorkbench implements AuthoringDocumentHost, AuthoringEditorHost {
     if (!application.valid) {
       return { applied: false as const, reason: "invalid" as const, issues: application.issues };
     }
-    this.#history.push({ uri: presented.uri, before: presented.source });
+    this.#history.push({
+      uri: presented.uri,
+      before: presented.source,
+      after: application.source,
+    });
+    this.#redoHistory = [];
     presented.source = application.source;
     presented.dirty = true;
     this.appliedTo.push(presented.uri);
@@ -92,6 +99,22 @@ class FakeWorkbench implements AuthoringDocumentHost, AuthoringEditorHost {
     this.#history = this.#history.filter((candidate) => candidate !== entry);
     presented.source = entry.before;
     presented.dirty = true;
+    this.#redoHistory.push(entry);
+  }
+
+  redoAuthoringChange(): void {
+    const presented = this.#presented();
+    const entry = [...this.#redoHistory]
+      .reverse()
+      .find(({ uri }) => uri === presented.uri);
+    this.redoneIn.push(presented.uri);
+    if (entry === undefined) return;
+    this.#redoHistory = this.#redoHistory.filter(
+      (candidate) => candidate !== entry,
+    );
+    presented.source = entry.after;
+    presented.dirty = true;
+    this.#history.push(entry);
   }
 
   /** Simulates the change-detection tick that swaps the Monaco model. */
@@ -144,6 +167,31 @@ function contextChange(host: FakeWorkbench) {
   });
 }
 
+function replaceContextFlow(
+  host: FakeWorkbench,
+  from: string,
+  to: string,
+  intentKind: "layout" | "route",
+) {
+  const document = host.documents[0]!;
+  const project = createArchitectureProjectInput({
+    id: "garden",
+    documents: host.documents.map(({ uri, source }) => ({ uri, text: source })),
+  });
+  const startOffset = document.source.indexOf(from);
+  return createProposedProjectSourceChangeSet(project, {
+    id: `${intentKind}-${to}`,
+    intent: { id: intentKind, kind: intentKind, summary: `Use ${to}.` },
+    affectedIds: ["context"],
+    edits: [{
+      documentUri: document.uri,
+      startOffset,
+      endOffset: startOffset + from.length,
+      text: to,
+    }],
+  });
+}
+
 async function settle(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -161,8 +209,24 @@ describe("source authoring transaction", () => {
       applyDocumentBatch: (changes: readonly { uri: string; before: string; after: string }[]) => {
         if (changes.some(({ uri, before }) => editorSources.get(uri) !== before)) return undefined;
         const prior = new Map(editorSources);
-        editorSources = new Map(changes.map(({ uri, after }) => [uri, after]));
-        return () => { editorSources = prior; return true; };
+        const after = new Map(changes.map(({ uri, after }) => [uri, after]));
+        let applied = true;
+        editorSources = after;
+        return {
+          synchronize: () => true,
+          undo: () => {
+            if (!applied) return false;
+            editorSources = prior;
+            applied = false;
+            return true;
+          },
+          redo: () => {
+            if (applied) return false;
+            editorSources = after;
+            applied = true;
+            return true;
+          },
+        };
       },
     });
     const original = base.projectDocuments();
@@ -177,11 +241,19 @@ describe("source authoring transaction", () => {
     expect(await transaction.undo(host)).toBe(true);
     expect(base.projectDocuments()).toEqual(original);
     expect(editorSources).toEqual(new Map(original.map(({ uri, source }) => [uri, source])));
+    expect(transaction.canRedo()).toBe(true);
+    expect(await transaction.redo(host)).toBe(true);
+    expect(base.documents.every(({ dirty, source }) => dirty && source.endsWith("// new"))).toBe(true);
+    expect(transaction.canUndo()).toBe(true);
+    expect(await transaction.undo(host)).toBe(true);
     base.documents[1]!.source += "\n// later edit";
     const edited = base.projectDocuments();
     expect(await transaction.apply(change, original[0]!.uri, host)).toBe("invalid");
     expect(base.projectDocuments()).toEqual(edited);
     expect(transaction.canUndo()).toBe(false);
+    expect(transaction.canRedo()).toBe(true);
+    expect(await transaction.redo(host)).toBe(false);
+    expect(transaction.canRedo()).toBe(false);
   });
 
   it("applies a change to another document only after the editor presents it", async () => {
@@ -245,6 +317,63 @@ describe("source authoring transaction", () => {
     });
     expect(host.documents[1]!.source).toBe(containerSource);
     expect(transaction.canUndo()).toBe(false);
+    expect(transaction.canRedo()).toBe(true);
+    expect(transaction.redoKind()).toBe("placement");
+    expect(await transaction.redo(host)).toBe(true);
+    expect(host.redoneIn).toEqual(["views/context.c4ml"]);
+    expect(host.documents[0]).toEqual({
+      uri: "views/context.c4ml",
+      source: "view context { flow = down }",
+      dirty: true,
+    });
+    expect(transaction.canUndo()).toBe(true);
+  });
+
+  it("orders different authoring actions in one undo and redo history", async () => {
+    const host = workbench();
+    host.selectDocument("views/context.c4ml");
+    host.presentActive();
+    const transaction = new SourceAuthoringTransaction(host);
+
+    expect(await transaction.apply(
+      replaceContextFlow(host, "right", "down", "layout"),
+      "views/context.c4ml",
+      host,
+      "placement",
+    )).toBe("applied");
+    expect(await transaction.apply(
+      replaceContextFlow(host, "down", "left", "route"),
+      "views/context.c4ml",
+      host,
+      "route",
+    )).toBe("applied");
+    expect(transaction.undoKind()).toBe("route");
+
+    expect(await transaction.undo(host)).toBe(true);
+    expect(host.source()).toBe("view context { flow = down }");
+    expect(transaction.undoKind()).toBe("placement");
+    expect(await transaction.undo(host)).toBe(true);
+    expect(host.source()).toBe(contextSource);
+    expect(transaction.canUndo()).toBe(false);
+    expect(transaction.redoKind()).toBe("placement");
+
+    expect(await transaction.redo(host)).toBe(true);
+    expect(host.source()).toBe("view context { flow = down }");
+    expect(transaction.redoKind()).toBe("route");
+    expect(await transaction.redo(host)).toBe(true);
+    expect(host.source()).toBe("view context { flow = left }");
+    expect(transaction.canRedo()).toBe(false);
+
+    expect(await transaction.undo(host)).toBe(true);
+    expect(transaction.canRedo()).toBe(true);
+    expect(await transaction.apply(
+      replaceContextFlow(host, "down", "up", "route"),
+      "views/context.c4ml",
+      host,
+      "route",
+    )).toBe("applied");
+    expect(host.source()).toBe("view context { flow = up }");
+    expect(transaction.canRedo()).toBe(false);
   });
 
   it("keeps its undo step through its own edits but not through foreign ones", async () => {

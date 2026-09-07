@@ -90,6 +90,7 @@ function response(
     type: "compile-result",
     requestId,
     status,
+    modelElementCount: status === "valid" ? 1 : undefined,
     diagnostics:
       status === "invalid"
         ? [
@@ -295,6 +296,7 @@ describe("editor compilation session", () => {
       phase: "idle",
       activeRequestId: 0,
       diagnostics: [],
+      modelElementCount: undefined,
       lastValidSvg: undefined,
       lastValidNavigation: undefined,
       views: [],
@@ -315,6 +317,12 @@ describe("editor compilation session", () => {
     expect(isCompilerWorkerResponse(response(1, "valid", undefined))).toBe(
       false,
     );
+    expect(
+      isCompilerWorkerResponse({
+        ...response(1, "valid", "<svg>valid</svg>"),
+        modelElementCount: -1,
+      }),
+    ).toBe(false);
     expect(
       isCompilerWorkerResponse({
         ...response(1, "invalid", undefined),

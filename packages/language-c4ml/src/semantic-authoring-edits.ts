@@ -93,6 +93,8 @@ export interface C4mlSemanticDynamicAuthoringContext {
 export interface C4mlSemanticAuthoringContext {
   readonly viewId: string | undefined;
   readonly viewKind: C4mlSemanticViewKind | undefined;
+  readonly viewTitle?: string;
+  readonly viewPurpose?: string;
   readonly diagramOptions?: readonly C4mlDiagramCreateOption[];
   readonly scopeId?: string;
   readonly createActions: readonly C4mlSemanticCreateAction[];
@@ -101,6 +103,8 @@ export interface C4mlSemanticAuthoringContext {
   readonly viewElements?: readonly (C4mlSemanticAuthoringElement & {
     readonly visible: boolean;
     readonly canShow: boolean;
+    readonly canHide: boolean;
+    readonly explicitlyShown: boolean;
     readonly suitableViews: readonly string[];
   })[];
   readonly deployment?: C4mlSemanticDeploymentAuthoringContext;
@@ -117,6 +121,8 @@ export interface C4mlDiagramCreateOption {
 export type C4mlSemanticEditOperation =
   | { readonly kind: "create-view"; readonly optionId: string; readonly viewId: string;
       readonly title: string; readonly purpose: string; readonly scopeName: string }
+  | { readonly kind: "update-view"; readonly title: string; readonly purpose: string }
+  | { readonly kind: "delete-view" }
   | {
       readonly kind: "create-element";
       readonly elementKind: C4mlSemanticElementKind;
@@ -141,6 +147,8 @@ export type C4mlSemanticEditOperation =
       readonly showInView?: boolean;
     }
   | { readonly kind: "show-element"; readonly elementId: string }
+  | { readonly kind: "hide-element"; readonly elementId: string }
+  | { readonly kind: "delete-element"; readonly elementId: string }
   | {
       readonly kind: "create-deployment-item";
       readonly itemKind: C4mlSemanticDeploymentItemKind;
@@ -256,6 +264,9 @@ export async function inspectC4mlSemanticAuthoringContext(
   const visible = new Set(compiled.resolvedViews?.find(({ id }) => id === viewId)?.elements.map(({ id }) => id));
   const allElements = parsed.flatMap(({ ast }) => ast.model?.elements ?? []);
   const allViews = parsed.flatMap(({ ast }) => ast.views);
+  const explicitShow = new Set(owner.view.properties
+    .filter((property) => property.$type === "ViewShowProperty")
+    .flatMap((property) => property.values.map((value) => value.$refText)));
   const viewElements = allElements.flatMap((element) => {
     const kind = semanticKind(element);
     if (kind === undefined) return [];
@@ -266,7 +277,9 @@ export async function inspectC4mlSemanticAuthoringContext(
     const ownerId = elementOwnerId(element);
     return [{ id: element.name, label: elementLabel(element), kind,
       ...(ownerId === undefined ? {} : { ownerId }), visible: visible.has(element.name),
-      canShow: context.elements.some(({ id }) => id === element.name), suitableViews }];
+      canShow: context.elements.some(({ id }) => id === element.name),
+      canHide: visible.has(element.name) && element.name !== context.scopeId,
+      explicitlyShown: explicitShow.has(element.name), suitableViews }];
   }).sort((a, b) => compareText(a.id, b.id));
   return {
     valid: true,
@@ -279,10 +292,17 @@ export async function proposeC4mlSemanticEdit(
   project: ArchitectureProjectInput,
   request: C4mlSemanticEditRequest,
 ): Promise<C4mlSemanticEditProposal> {
-  if (request.intent.kind !== "architecture") {
+  const viewOperation = request.operation.kind === "create-view" ||
+    request.operation.kind === "update-view" ||
+    request.operation.kind === "delete-view" ||
+    request.operation.kind === "show-element" ||
+    request.operation.kind === "hide-element";
+  if (request.intent.kind !== (viewOperation ? "view" : "architecture")) {
     return proposalInvalid(
       "C4ML-AUTHORING-203",
-      "Semantic authoring changes require an architecture intent.",
+      viewOperation
+        ? "Diagram membership changes require a View intent."
+        : "Semantic authoring changes require an architecture intent.",
     );
   }
   const parsed = await parseProject(project);
@@ -305,8 +325,8 @@ export async function proposeC4mlSemanticEdit(
   const issue = validateOperation(parsed, context, request.operation);
   if (issue !== undefined) return proposalInvalid(issue.code, issue.message);
 
-  const generated = createOperationEdit(parsed, owner, context, request.operation);
-  if (generated === undefined) {
+  const generated = createOperationEdits(parsed, owner, context, request.operation);
+  if (generated.length === 0) {
     return proposalInvalid(
       "C4ML-AUTHORING-205",
       "C4ML could not locate a safe source insertion point for this architecture change.",
@@ -320,8 +340,8 @@ export async function proposeC4mlSemanticEdit(
   const changeSet = createProposedProjectSourceChangeSet(project, {
     id: request.id,
     intent: request.intent,
-    affectedIds: affectedIdsFor(request.operation),
-    edits: [{ documentUri: generated.documentUri, ...generated.edit },
+    affectedIds: affectedIdsFor(request.operation, request.viewId),
+    edits: [...generated.map(({ documentUri, edit }) => ({ documentUri, ...edit })),
       ...(extra === undefined ? [] : [{ documentUri: extra.documentUri, ...extra.edit }])],
   });
   const application = applyProjectSourceChangeSet(project, changeSet);
@@ -334,8 +354,8 @@ export async function proposeC4mlSemanticEdit(
   return {
     valid: true,
     changeSet,
-    documentUri: generated.documentUri,
-    proposedText: [generated, ...(extra === undefined ? [] : [extra])]
+    documentUri: generated[0]!.documentUri,
+    proposedText: [...generated, ...(extra === undefined ? [] : [extra])]
       .map(({ documentUri, proposedText }) => `// ${documentUri}\n${proposedText}`).join("\n\n"),
     issues: [],
   };
@@ -370,9 +390,13 @@ function createContext(
   const dynamic = viewKind === "dynamic"
     ? dynamicContext(documents, owner.view, allElements)
     : undefined;
+  const viewTitle = viewPropertyValue(owner.view, "ViewTitleProperty");
+  const viewPurpose = viewPropertyValue(owner.view, "ViewPurposeProperty");
   return {
     viewId: owner.view.name,
     viewKind,
+    ...(viewTitle === undefined ? {} : { viewTitle }),
+    ...(viewPurpose === undefined ? {} : { viewPurpose }),
     ...(scopeId === undefined ? {} : { scopeId }),
     createActions,
     elements: eligible.sort((left, right) => compareText(left.id, right.id)),
@@ -558,6 +582,12 @@ function validateOperation(
   operation: C4mlSemanticEditOperation,
 ): C4mlSemanticAuthoringIssue | undefined {
   if (operation.kind === "create-view") return issue("C4ML-AUTHORING-203", "Create diagrams from the model, not from a View operation.");
+  if (operation.kind === "update-view") {
+    return operation.title.trim().length > 0 && operation.purpose.trim().length > 0
+      ? undefined
+      : issue("C4ML-AUTHORING-203", "Diagram title and purpose are required.");
+  }
+  if (operation.kind === "delete-view") return undefined;
   const elements = documents.flatMap(({ ast }) => ast.model?.elements ?? []);
   const relationships = documents.flatMap(
     ({ ast }) => ast.relations?.relationships ?? [],
@@ -569,6 +599,17 @@ function validateOperation(
     return context.elements.some(({ id }) => id === operation.elementId)
       ? undefined
       : issue("C4ML-AUTHORING-203", "This element does not belong to the level or scope of this View. Choose a suitable View.");
+  }
+  if (operation.kind === "hide-element") {
+    return operation.elementId !== context.scopeId &&
+      context.elements.some(({ id }) => id === operation.elementId)
+      ? undefined
+      : issue("C4ML-AUTHORING-203", "The focal element cannot be removed from its own diagram. Choose another visible element.");
+  }
+  if (operation.kind === "delete-element") {
+    return elements.some(({ name }) => name === operation.elementId)
+      ? undefined
+      : issue("C4ML-AUTHORING-203", "Select an existing architecture element to delete from the model.");
   }
   if (operation.kind === "create-element") {
     if (!identifierPattern.test(operation.elementId)) {
@@ -743,37 +784,57 @@ async function proposeModelEdit(project: ArchitectureProjectInput, documents: re
   } else return proposalInvalid("C4ML-AUTHORING-203", "This operation requires an active diagram.");
   if (generated === undefined) return proposalInvalid("C4ML-AUTHORING-205", "No safe insertion point was found.");
   const changeSet = createProposedProjectSourceChangeSet(project, { id: request.id, intent: request.intent,
-    affectedIds: affectedIdsFor(operation), edits: [{ documentUri: generated.documentUri, ...generated.edit }] });
+    affectedIds: affectedIdsFor(operation, request.viewId), edits: [{ documentUri: generated.documentUri, ...generated.edit }] });
   const applied = applyProjectSourceChangeSet(project, changeSet);
   if (!applied.valid) return proposalInvalid("C4ML-AUTHORING-205", "The change could not be applied atomically.");
   return { valid: true, changeSet, documentUri: generated.documentUri, proposedText: generated.proposedText, issues: [] };
 }
 
-function createOperationEdit(
+function createOperationEdits(
   documents: readonly ParsedProjectDocument[],
   owner: ContextOwner,
   context: C4mlSemanticAuthoringContext,
   operation: C4mlSemanticEditOperation,
-) {
+): readonly {
+  readonly documentUri: string;
+  readonly proposedText: string;
+  readonly edit: { readonly startOffset: number; readonly endOffset: number; readonly text: string };
+}[] {
   switch (operation.kind) {
-    case "create-view": return undefined;
+    case "create-view": return [];
+    case "update-view":
+      return createUpdateViewEdits(owner, operation);
+    case "delete-view":
+      return optionalEdit(createDeleteViewEdit(owner));
     case "show-element":
-      return createShowEdit(owner, [operation.elementId]);
+      return createShowElementEdits(owner, operation.elementId);
+    case "hide-element":
+      return optionalEdit(createHideEdit(owner, operation.elementId));
+    case "delete-element":
+      return createDeleteElementEdits(documents, operation.elementId);
     case "create-element":
-      return createElementEdit(documents, owner, operation);
+      return optionalEdit(createElementEdit(documents, owner, operation));
     case "create-relationship":
-      return createRelationshipEdit(documents, owner, operation);
+      return optionalEdit(createRelationshipEdit(documents, owner, operation));
     case "create-deployment-item":
-      return createDeploymentItemEdit(documents, context, operation);
+      return optionalEdit(createDeploymentItemEdit(documents, context, operation));
     case "create-dynamic-interaction":
-      return createDynamicInteractionEdit(owner, context, operation);
+      return optionalEdit(createDynamicInteractionEdit(owner, context, operation));
   }
 }
 
-function affectedIdsFor(operation: C4mlSemanticEditOperation): readonly string[] {
+function affectedIdsFor(
+  operation: C4mlSemanticEditOperation,
+  viewId?: string,
+): readonly string[] {
   switch (operation.kind) {
     case "create-view": return [operation.viewId];
+    case "update-view":
+    case "delete-view":
+      return viewId === undefined ? [] : [viewId];
     case "show-element":
+    case "hide-element":
+    case "delete-element":
       return [operation.elementId];
     case "create-element":
       return [operation.elementId, ...(operation.ownerId === undefined ? [] : [operation.ownerId])];
@@ -791,6 +852,57 @@ function affectedIdsFor(operation: C4mlSemanticEditOperation): readonly string[]
   }
 }
 
+function createUpdateViewEdits(
+  owner: ContextOwner,
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "update-view" }>,
+) {
+  const replacements = [
+    { type: "ViewTitleProperty", key: "title", value: operation.title.trim() },
+    { type: "ViewPurposeProperty", key: "purpose", value: operation.purpose.trim() },
+  ] as const;
+  return replacements.flatMap(({ type, key, value }) => {
+    const property = owner.view.properties.find(({ $type }) => $type === type);
+    if (property?.$cstNode === undefined) return [];
+    const proposedText = `${key} = ${JSON.stringify(value)}`;
+    return [{
+      documentUri: owner.document.uri,
+      proposedText,
+      edit: {
+        startOffset: property.$cstNode.offset,
+        endOffset: property.$cstNode.end,
+        text: proposedText,
+      },
+    }];
+  });
+}
+
+function createDeleteViewEdit(owner: ContextOwner) {
+  const edit = removeWholeLine(owner.document.source, owner.view.$cstNode);
+  return edit === undefined ? undefined : {
+    documentUri: owner.document.uri,
+    proposedText: `Delete diagram ${owner.view.name}`,
+    edit,
+  };
+}
+
+function createShowElementEdits(owner: ContextOwner, elementId: string) {
+  const show = createShowEdit(owner, [elementId]);
+  const hide = owner.view.properties.find(
+    (property) => property.$type === "ViewHideProperty",
+  );
+  const removeHide = hide?.$type === "ViewHideProperty"
+    ? removeListReference(owner.document.source, hide, elementId)
+    : undefined;
+  return [
+    ...(show === undefined ? [] : [show]),
+    ...(removeHide === undefined ? [] : [{
+      documentUri: owner.document.uri,
+      proposedText: `Remove ${elementId} from the diagram hide list`,
+      edit: removeHide,
+    }]),
+  ];
+}
+
 function createShowEdit(owner: ContextOwner, ids: readonly string[]) {
   const show = owner.view.properties.find((property) => property.$type === "ViewShowProperty");
   const additions = [...new Set(ids)].filter((id) => show?.values.some((value) => value.$refText === id) !== true);
@@ -803,6 +915,33 @@ function createShowEdit(owner: ContextOwner, ids: readonly string[]) {
     return { documentUri: owner.document.uri, proposedText,
       edit: { startOffset: last.end, endOffset: last.end, text: `, ${additions.join(", ")}` } };
   }
+  const first = owner.view.properties.find(
+    (property) => property.$type !== "ViewHideProperty",
+  )?.$cstNode ?? owner.view.properties[0]?.$cstNode;
+  if (first === undefined) return undefined;
+  const lineStart = owner.document.source.lastIndexOf("\n", first.offset - 1) + 1;
+  const prefix = owner.document.source.slice(lineStart, first.offset);
+  const indent = /^[\t ]*$/.test(prefix) ? prefix : "  ";
+  return { documentUri: owner.document.uri, proposedText,
+    edit: { startOffset: first.offset, endOffset: first.offset,
+      text: `${proposedText.trimStart()}${lineEnding(owner.document.source)}${indent}` } };
+}
+
+function createHideEdit(owner: ContextOwner, elementId: string) {
+  const hide = owner.view.properties.find((property) => property.$type === "ViewHideProperty");
+  if (hide?.$type === "ViewHideProperty" && hide.values.some((value) => value.$refText === elementId)) {
+    return undefined;
+  }
+  const proposedText = `  hide = [${[
+    ...(hide?.$type === "ViewHideProperty" ? hide.values.map((value) => value.$refText) : []),
+    elementId,
+  ].join(", ")}]`;
+  if (hide?.$type === "ViewHideProperty" && hide.$cstNode !== undefined) {
+    const last = hide.values.at(-1)?.$refNode;
+    if (last === undefined) return undefined;
+    return { documentUri: owner.document.uri, proposedText,
+      edit: { startOffset: last.end, endOffset: last.end, text: `, ${elementId}` } };
+  }
   const first = owner.view.properties[0]?.$cstNode;
   if (first === undefined) return undefined;
   const lineStart = owner.document.source.lastIndexOf("\n", first.offset - 1) + 1;
@@ -811,6 +950,76 @@ function createShowEdit(owner: ContextOwner, ids: readonly string[]) {
   return { documentUri: owner.document.uri, proposedText,
     edit: { startOffset: first.offset, endOffset: first.offset,
       text: `${proposedText.trimStart()}${lineEnding(owner.document.source)}${indent}` } };
+}
+
+function createDeleteElementEdits(
+  documents: readonly ParsedProjectDocument[],
+  elementId: string,
+) {
+  const edits: {
+    documentUri: string;
+    proposedText: string;
+    edit: { startOffset: number; endOffset: number; text: string };
+  }[] = [];
+  for (const document of documents) {
+    const element = document.ast.model?.elements.find(({ name }) => name === elementId);
+    if (element?.$cstNode !== undefined) {
+      const edit = removeWholeLine(document.source, element.$cstNode);
+      if (edit !== undefined) edits.push({ documentUri: document.uri,
+        proposedText: `Delete architecture element ${elementId}`,
+        edit });
+    }
+    for (const view of document.ast.views) {
+      for (const property of view.properties) {
+        if (property.$type !== "ViewShowProperty" && property.$type !== "ViewHideProperty") continue;
+        const edit = removeListReference(document.source, property, elementId);
+        if (edit !== undefined) edits.push({ documentUri: document.uri,
+          proposedText: `Remove ${elementId} from diagram ${view.name}`,
+          edit });
+      }
+    }
+  }
+  return edits.sort((left, right) =>
+    compareText(left.documentUri, right.documentUri) || left.edit.startOffset - right.edit.startOffset);
+}
+
+function removeListReference(
+  source: string,
+  property: Extract<ViewDeclaration["properties"][number],
+    { readonly $type: "ViewShowProperty" | "ViewHideProperty" }>,
+  elementId: string,
+) {
+  const index = property.values.findIndex((value) => value.$refText === elementId);
+  const current = property.values[index]?.$refNode;
+  if (index < 0 || current === undefined) return undefined;
+  if (property.values.length === 1) return removeWholeLine(source, property.$cstNode);
+  if (index < property.values.length - 1) {
+    const comma = source.indexOf(",", current.end);
+    if (comma < 0) return undefined;
+    return { startOffset: current.offset, endOffset: comma + 1, text: "" };
+  }
+  const comma = source.lastIndexOf(",", current.offset);
+  if (comma < 0) return undefined;
+  return { startOffset: comma, endOffset: current.end, text: "" };
+}
+
+function removeWholeLine(
+  source: string,
+  node: { readonly offset: number; readonly end: number } | undefined,
+) {
+  if (node === undefined) return undefined;
+  const lineStart = source.lastIndexOf("\n", Math.max(0, node.offset - 1)) + 1;
+  const nextBreak = source.indexOf("\n", node.end);
+  const lineEnd = nextBreak < 0 ? source.length : nextBreak + 1;
+  const before = source.slice(lineStart, node.offset);
+  const after = source.slice(node.end, nextBreak < 0 ? source.length : nextBreak);
+  return /^[\t ]*$/.test(before) && /^[\t ]*$/.test(after)
+    ? { startOffset: lineStart, endOffset: lineEnd, text: "" }
+    : { startOffset: node.offset, endOffset: node.end, text: "" };
+}
+
+function optionalEdit<T>(value: T | undefined): readonly T[] {
+  return value === undefined ? [] : [value];
 }
 
 function createElementEdit(
@@ -1072,6 +1281,14 @@ function viewType(view: ViewDeclaration): C4mlSemanticViewKind | undefined {
 function viewScope(view: ViewDeclaration): string | undefined {
   const scope = view.properties.find(({ $type }) => $type === "ViewScopeProperty");
   return scope?.$type === "ViewScopeProperty" ? scope.element?.$refText : undefined;
+}
+
+function viewPropertyValue(
+  view: ViewDeclaration,
+  type: "ViewPurposeProperty" | "ViewTitleProperty",
+): string | undefined {
+  const property = view.properties.find(({ $type }) => $type === type);
+  return property?.$type === type ? property.value : undefined;
 }
 
 function semanticKind(element: ElementDeclaration): C4mlSemanticElementKind | undefined {

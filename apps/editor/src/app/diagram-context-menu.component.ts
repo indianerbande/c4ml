@@ -28,6 +28,7 @@ export class DiagramContextMenuComponent {
   readonly target = input<CompilerWorkerNavigationTarget | undefined>();
   readonly position = input.required<DiagramContextMenuPosition>();
   readonly connectAvailable = input(false);
+  readonly removeFromDiagramAvailable = input(false);
   readonly actionSelected = output<DiagramContextMenuAction>();
   readonly dismissed = output<void>();
   readonly i18n = inject(WorkbenchLocalizationService);

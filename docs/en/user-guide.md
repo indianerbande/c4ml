@@ -68,7 +68,7 @@ position, theme, or legend does not change the semantic model.
    the header, the name as a comment, and an empty `model` block.
 3. Use **Add element…** to add people or systems. Review and apply the proposed
    source; no diagram is required yet.
-4. Choose **Create diagram…** on the empty canvas or in **Diagrams**. Select its
+4. Choose **Create first diagram…** on the empty canvas or in **Diagrams**. Select its
    scope, title, purpose, and stable diagram ID. The preview shows compatible
    existing elements without copying them.
 5. After applying the diagram, use **Connect** to add relationships.
@@ -77,6 +77,45 @@ The model contains the architecture; a diagram shows a projection of it. No
 hidden views or example relationships are created. Model edits and diagram
 creation remain reviewable, undoable source changes. The detailed assistant
 remains available under **Build with guidance**.
+
+One model can contain several diagrams for different audiences or levels of
+detail. Open **Diagrams** on the left and choose **Create another diagram…**.
+Every diagram is listed there; selecting one activates it in the preview. When
+the model contains more than one diagram, the preview toolbar also offers a
+compact diagram selector.
+
+The active diagram has its own management actions below the list. **Edit title
+and purpose…** changes only those two explanatory fields. **Edit visible
+content…** shows or hides suitable existing model elements in a static diagram.
+Dynamic interactions and Deployment topology use their dedicated authoring
+actions.
+**Delete diagram…** removes this projection but leaves the shared architecture
+model and every other diagram intact. Each action first displays the proposed
+C4ML source and compiled candidate and can be undone or redone. The descriptive
+type shown below a diagram title explains its purpose in everyday language; the
+stable View kind and ID remain in source.
+
+Four actions deliberately have different reach. **Add element…** creates one
+shared architecture definition. **Show existing element…** adds that definition
+to the active diagram. **Remove from this diagram…** hides it only there; it
+remains available to every other diagram. **Delete from architecture model…**
+removes the shared definition and is therefore marked as destructive. Remaining
+relationships, owners, diagram scopes, deployment items, interactions, or layout
+references block that deletion until they have been resolved.
+
+Authoring dialogs repeat that reach at the top of the form. **A · Architecture
+model** changes shared meaning, **D · Active diagram** changes only the selected
+projection, and **L · Diagram layout** changes only arrangement or route
+guidance. The name and explanation are authoritative; the different accent
+colors are only an additional visual cue.
+
+“Service” is deliberately not a separate C4ML element kind. Model an
+independent application or externally owned API as a Software System. Model a
+separately running or deployable service inside a system as a Container: first
+open **Diagrams** on the left, create that system's Container diagram, then use
+**Add element…** there.
+A logical service or module inside that running unit belongs in its Component
+diagram. The element form shows this guidance in the relevant context.
 
 Without a diagram, this starter offers people and systems. The first diagram
 form supports an overview plus System Context, Container, Component, and Code
@@ -452,6 +491,22 @@ when the reverse pair is valid in the active view. Diagram picking is temporary:
 the relationship is still shown as proposed C4ML source and a compiled
 candidate before it can be applied.
 
+**Connect** creates a reusable static architecture Relationship: it states who
+may communicate with whom, in which direction, and why, independently of a
+single scenario. In a Dynamic diagram the main action instead reads **Add
+interaction step…**. That View-local step selects an existing static
+Relationship as its basis and adds order, scenario wording, and an optional
+parallel group; it neither duplicates nor changes that Relationship. The
+dialog's **D · Active diagram** scope makes this reach explicit.
+
+In a Deployment diagram the main action instead reads **Add to runtime
+environment…**. Its form separates runtime locations and infrastructure from
+running instances. A running instance must select an existing logical Software
+System or Container; it does not copy or change that definition, and several
+instances may use the same logical element. The dialog retains **A ·
+Architecture model** because it changes the shared deployment model, which may
+appear in more than one Deployment diagram.
+
 The active view determines the available choices:
 
 - System Landscape and System Context can add a role, team, or group (a C4
@@ -476,10 +531,10 @@ C4ML source, candidate diagram, and blocking diagnostics are shown together.
 Only a valid candidate can be applied; apply is one Monaco edit and **Undo
 architecture change** reverses it once.
 
-The current slice covers the five static C4 views. Dynamic interactions and
-Deployment topology need their own order-, environment-, node-, and instance-
-aware operations and are deliberately not presented as generic element
-creation. The source grammar remains `draft-1` and is not frozen by this UI.
+The five static C4 views use element and relationship authoring. Dynamic and
+Deployment use their dedicated interaction- and runtime-aware operations and
+are deliberately not presented as generic element creation. The source grammar
+remains `draft-1` and is not frozen by this UI.
 
 For the quickest syntax review, begin with
 [`examples/draft/hello-context.c4ml`](../../examples/draft/hello-context.c4ml), move
@@ -1288,6 +1343,14 @@ generated C4ML block and the fully compiled candidate diagram before anything
 changes. **Apply to source** performs one ordinary Monaco edit and **Undo
 arrangement** restores it in one step.
 
+All accepted graphical element, connection, diagram, visibility, placement,
+and Route changes share the two compact Undo and Redo buttons in the title bar.
+Their tooltip identifies the next action; they remain visible but disabled when
+nothing is available. Undo needs no confirmation because Redo reverses it.
+Use `Cmd/Ctrl+Z` for Undo, `Cmd/Ctrl+Shift+Z` for Redo, or `Ctrl+Y` on Windows.
+A manual source edit starts a new source history and clears this bounded
+graphical-authoring history.
+
 **Fix exact current position** is intentionally last. It records the current
 top-left position in diagram units with `pin`; use it only when the relative
 controls below cannot express the required result. The editor never stores a
@@ -1312,12 +1375,20 @@ automatic neighbours and affects neither other Views nor model definitions.
 It is supported by the five static View types; Dynamic and Deployment use
 their interaction and instance authoring instead.
 
+Right-click a visible element and choose **Remove from this diagram…** for the
+opposite diagram-only operation. C4ML records `hide = [element-id]` in that View;
+the architecture element, its relationships, and every other diagram remain
+unchanged. The focal element that defines a scoped diagram cannot be hidden
+there. **Delete from architecture model…** is a separate destructive action.
+Its candidate check removes obsolete `show` and `hide` memberships but refuses
+to apply while any other source reference still needs the element.
+
 Creating an element or connection offers **Show in the current view**, enabled
 by default. Turning it off changes only the model; normal View projection may
 still make the result visible. The connection dialog includes eligible hidden
 targets marked **not in this view**, and explains incompatible targets. Review
-the candidate source and diagram before applying; the authoring Undo action
-restores all affected source documents together.
+the candidate source and diagram before applying; the shared Undo and Redo
+actions restore all affected source documents together.
 
 To refine a connection graphically, select its line in the preview, open
 **Route details**, and choose **Edit route…**. The Route editor can choose the
@@ -1331,8 +1402,8 @@ The dialog shows the proposed C4ML block, the resulting diagram, any safe
 cleanup proposed by C4ML, and hard compiler conflicts separately. For example,
 adding ordered waypoint guidance may safely release an incompatible corridor
 lane. **Apply to source** remains disabled for an invalid candidate and applies
-a valid change as one ordinary Monaco edit. **Undo route edit** restores the
-preceding source and dirty state in one step. Returning a path to automatic
+a valid change as one ordinary Monaco edit. The shared Undo action restores the
+preceding source and dirty state; Redo reapplies it. Returning a path to automatic
 routing removes obsolete guidance while preserving still-relevant explicit
 Ports and label placement; if no route controls remain, the empty `route`
 block is removed too.

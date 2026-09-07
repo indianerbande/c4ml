@@ -2,6 +2,8 @@ import type { CompilerWorkerNavigationTarget } from "./compiler-worker.protocol.
 
 export type DiagramContextMenuAction =
   | { readonly kind: "show-element" }
+  | { readonly kind: "hide-element" }
+  | { readonly kind: "delete-element" }
   | { readonly kind: "connect" }
   | {
       readonly kind: "placement";

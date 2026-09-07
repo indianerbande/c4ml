@@ -26,14 +26,37 @@ describe("model-first worker and editor boundary", () => {
     expect(element.status).toBe("valid");
     expect(isPreviewSemanticChangeWorkerResponse(element)).toBe(true);
     expect(element.compilation?.svg).toBeUndefined();
+    expect(element.compilation?.modelElementCount).toBe(1);
     expect(project.documents[0]?.source).not.toContain("system garden");
     project = { ...project, documents: [...element.candidateProject!.documents] };
     const diagram = await previewSemanticChangeWorkerRequest({ ...request, project,
       requestedViewId: "overview", semantic: { ...request.semantic,
+        intent: { id: "view:create-view", kind: "view", summary: "Create diagram" },
         operation: { kind: "create-view", viewId: "overview", optionId: "system-context:garden", title: "System Context — Garden", purpose: "Shows the garden.", scopeName: "" } } }, adapter, []);
     expect(diagram.status, JSON.stringify(diagram)).toBe("valid");
     expect(diagram.compilation?.svg).toContain("Garten");
     expect(isPreviewSemanticChangeWorkerResponse(diagram)).toBe(true);
+
+    project = { ...project, documents: [...diagram.candidateProject!.documents] };
+    const updateRequest = { ...request, project, requestedViewId: "overview",
+      semantic: { id: "view:update-view", viewId: "overview",
+        intent: { id: "view:update-view", kind: "view" as const, summary: "Edit diagram" },
+        operation: { kind: "update-view" as const, title: "Garden overview", purpose: "Explains the garden system." } } };
+    expect(isPreviewSemanticChangeWorkerRequest(updateRequest)).toBe(true);
+    const updated = await previewSemanticChangeWorkerRequest(updateRequest, adapter, []);
+    expect(updated.status).toBe("valid");
+    expect(updated.compilation?.views).toContainEqual(expect.objectContaining({ id: "overview", title: "Garden overview" }));
+
+    project = { ...project, documents: [...updated.candidateProject!.documents] };
+    const deleteRequest = { ...request, project,
+      semantic: { id: "view:delete-view", viewId: "overview",
+        intent: { id: "view:delete-view", kind: "view" as const, summary: "Delete diagram" },
+        operation: { kind: "delete-view" as const } } };
+    expect(isPreviewSemanticChangeWorkerRequest(deleteRequest)).toBe(true);
+    const deleted = await previewSemanticChangeWorkerRequest(deleteRequest, adapter, []);
+    expect(deleted.status).toBe("valid");
+    expect(deleted.compilation?.views).toEqual([]);
+    expect(deleted.compilation?.modelElementCount).toBe(1);
   });
 
   it("clears obsolete SVG and View selection when source becomes a valid viewless model", async () => {
@@ -43,6 +66,7 @@ describe("model-first worker and editor boundary", () => {
     expect(initial.status, JSON.stringify(initial)).toBe("valid");
     session.accept(initial);
     expect(session.state.lastValidSvg).toBeDefined();
+    expect(session.state.modelElementCount).toBe(1);
     const response = await compileWorkerRequest(session.begin("c4ml draft-1\nmodel {}"), adapter, []);
     expect(response.status).toBe("valid");
     expect(isCompilerWorkerResponse(response)).toBe(true);
@@ -52,5 +76,6 @@ describe("model-first worker and editor boundary", () => {
     expect(session.state.lastValidNavigation).toBeUndefined();
     expect(session.state.views).toEqual([]);
     expect(session.state.activeViewId).toBeUndefined();
+    expect(session.state.modelElementCount).toBe(0);
   });
 });

@@ -35,7 +35,7 @@ assert.equal(
   "C4thedral",
   "the visible desktop product name must be C4thedral",
 );
-assert.equal(rootManifest.version, "0.1.0-beta.5");
+assert.equal(rootManifest.version, "0.1.0-beta.6");
 assert.equal(
   desktopManifest.version,
   rootManifest.version,
@@ -149,8 +149,18 @@ assert.match(
 );
 assert.match(
   lockfile,
+  /appdmg@0\.6\.6:\n    dependencies:[\s\S]*?      image-size: 0\.7\.5[\s\S]*?    optional: true/,
+  "the unpatched image-size edge must remain isolated in the optional macOS DMG graph",
+);
+assert.match(
+  lockfile,
   /ds-store@0\.1\.6:\n    dependencies:[\s\S]*?      macos-alias: 0\.2\.12[\s\S]*?    optional: true/,
   "macos-alias must remain owned by the optional macOS DMG dependency graph",
+);
+assert.match(
+  lockfile,
+  /'@electron\/packager@18\.4\.4\([^\n]+\)':\n    dependencies:[\s\S]*?      extract-zip: 2\.0\.1\([^\n]+\)/,
+  "the unpatched extract-zip edge must remain owned by the reviewed Electron packager",
 );
 
 const expectedPackages = [
@@ -274,6 +284,25 @@ assert.equal(
   forgeConfiguration.packagerConfig?.icon,
   join(desktopRoot, "assets", "icon"),
   "native packages must use the original C4thedral icon family",
+);
+const packagedIgnoreRules = forgeConfiguration.packagerConfig?.ignore ?? [];
+for (const buildOnlyPath of [
+  "/node_modules/extract-zip/index.js",
+  "/node_modules/image-size/index.js",
+]) {
+  assert.ok(
+    packagedIgnoreRules.some((rule) => rule.test(buildOnlyPath)),
+    `${buildOnlyPath} must remain excluded from the installed application`,
+  );
+}
+const dmgMaker = forgeConfiguration.makers?.find(
+  (maker) => maker.name === "@electron-forge/maker-dmg",
+);
+assert.ok(dmgMaker, "the reviewed macOS DMG maker must remain configured");
+assert.equal(
+  dmgMaker.config?.background,
+  undefined,
+  "DMG configuration must not enable the vulnerable image-size background path",
 );
 for (const extension of ["svg", "png", "icns", "ico"]) {
   assert.ok(

@@ -16,7 +16,7 @@ export interface SourceRevision {
 }
 
 export type SourceChangeIntentKind =
-  "architecture" | "layout" | "policy" | "route";
+  "architecture" | "layout" | "policy" | "route" | "view";
 
 export interface SourceChangeIntent {
   readonly id: string;
@@ -663,7 +663,8 @@ function isSourceChangeIntent(value: unknown): value is SourceChangeIntent {
     (value["kind"] === "architecture" ||
       value["kind"] === "layout" ||
       value["kind"] === "policy" ||
-      value["kind"] === "route") &&
+      value["kind"] === "route" ||
+      value["kind"] === "view") &&
     typeof value["summary"] === "string"
   );
 }

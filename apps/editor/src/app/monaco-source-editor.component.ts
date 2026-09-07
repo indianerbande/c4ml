@@ -28,6 +28,7 @@ import {
   type SourceEditorDocumentHost,
 } from "./source-editor-document-session.js";
 import { applySourceEditorProjectEdit } from "./source-editor-project-edit.js";
+import type { SourceEditorProjectEditApplication } from "./source-editor-project-edit.js";
 import {
   applySourceChangeSetAsSingleUndo,
   type SourceEditorChangeSetApplication,
@@ -248,8 +249,14 @@ export class C4mlMonacoSourceEditorComponent
     this.#editor?.trigger("c4ml.authoring", "undo", undefined);
   }
 
+  redoAuthoringChange(): void {
+    this.#editor?.trigger("c4ml.authoring", "redo", undefined);
+  }
+
   /** Validate every model first, then change them synchronously as one project action. */
-  applyDocumentBatch(changes: readonly { uri: string; before: string; after: string }[]): (() => boolean) | undefined {
+  applyDocumentBatch(
+    changes: readonly { uri: string; before: string; after: string }[],
+  ): SourceEditorProjectEditApplication | undefined {
     const host = this.#documentHost();
     if (host === undefined) return undefined;
     const entries = changes.map((change) => ({ ...change, model: this.#documents.ensure(change.uri, change.before, host) }));
@@ -263,18 +270,26 @@ export class C4mlMonacoSourceEditorComponent
         model.pushStackElement();
       },
       undo: () => { model.undo(); },
+      redo: () => { model.redo(); },
     }));
     this.#synchronizeExternalValue = true;
-    let undo: (() => boolean) | undefined;
+    let application: SourceEditorProjectEditApplication | undefined;
     try {
-      undo = applySourceEditorProjectEdit(batch);
+      application = applySourceEditorProjectEdit(batch);
     } finally { this.#synchronizeExternalValue = false; }
-    if (undo === undefined) return undefined;
-    const undoBatch = undo;
-    return () => {
-      this.#synchronizeExternalValue = true;
-      try { return undoBatch(); }
-      finally { this.#synchronizeExternalValue = false; }
+    if (application === undefined) return undefined;
+    return {
+      synchronize: () => application.synchronize(),
+      undo: () => {
+        this.#synchronizeExternalValue = true;
+        try { return application.undo(); }
+        finally { this.#synchronizeExternalValue = false; }
+      },
+      redo: () => {
+        this.#synchronizeExternalValue = true;
+        try { return application.redo(); }
+        finally { this.#synchronizeExternalValue = false; }
+      },
     };
   }
 

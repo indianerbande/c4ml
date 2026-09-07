@@ -10,9 +10,9 @@ import type {
   PlacementEditorNode,
   PlacementEditorOperationKind,
 } from "./placement-editor.component.js";
-import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
+import { WorkbenchAuthoringHistoryService } from "./workbench-authoring-history.service.js";
 
 @Injectable({ providedIn: "root" })
 export class WorkbenchPlacementFacade {
@@ -37,8 +37,7 @@ export class WorkbenchPlacementFacade {
 
   readonly #documents = inject(WorkbenchDocumentFacade);
   readonly #preview = inject(WorkbenchPreviewFacade);
-  readonly #transaction = new SourceAuthoringTransaction(this.#documents);
-  readonly canUndo = this.#transaction.canUndo;
+  readonly #history = inject(WorkbenchAuthoringHistoryService);
 
   show(options: {
     readonly operation?: PlacementEditorOperationKind;
@@ -70,8 +69,8 @@ export class WorkbenchPlacementFacade {
     ) {
       return Promise.resolve();
     }
-    return this.#transaction
-      .apply(changeSet, documentUri, editor)
+    return this.#history
+      .apply(changeSet, documentUri, editor, "placement")
       .then((outcome) => {
         if (outcome === "applied") {
           this.open.set(false);
@@ -79,19 +78,14 @@ export class WorkbenchPlacementFacade {
       });
   }
 
-  undo(editor: C4mlMonacoSourceEditorComponent | undefined): Promise<void> {
-    if (editor === undefined) return Promise.resolve();
-    return this.#transaction.undo(editor).then(() => undefined);
-  }
-
   sourceChanged(): void {
-    this.#transaction.sourceChanged();
+    this.#history.sourceChanged();
   }
 
   reset(): void {
     this.open.set(false);
     this.initialOperation.set("relative");
     this.initialDirection.set("right");
-    this.#transaction.reset();
+    this.#history.reset();
   }
 }

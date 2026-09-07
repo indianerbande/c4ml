@@ -167,13 +167,15 @@ function request(
   viewId: string,
   operation: C4mlSemanticEditRequest["operation"],
 ): C4mlSemanticEditRequest {
+  const viewOperation = operation.kind === "create-view" || operation.kind === "update-view" ||
+    operation.kind === "delete-view" || operation.kind === "show-element" || operation.kind === "hide-element";
   return {
     id: `semantic:${viewId}:${operation.kind}`,
     viewId,
     intent: {
-      id: `architecture:${operation.kind}`,
-      kind: "architecture",
-      summary: "Change the architecture model.",
+      id: `${viewOperation ? "view" : "architecture"}:${operation.kind}`,
+      kind: viewOperation ? "view" : "architecture",
+      summary: viewOperation ? "Change the active diagram." : "Change the architecture model.",
     },
     operation,
   };
@@ -192,7 +194,7 @@ describe("semantic authoring context", () => {
   it("shows an unconnected existing element without adding model data or losing automatic neighbours", async () => {
     const input = project();
     const proposal = await proposeC4mlSemanticEdit(input, request("garden-context", { kind: "show-element", elementId: "caretaker" }));
-    expect(proposal.valid).toBe(true);
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
     if (!proposal.valid) return;
     const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
     expect(applied.valid).toBe(true);
@@ -203,6 +205,72 @@ describe("semantic authoring context", () => {
     expect(after.model).toEqual(before.model);
     expect(after.resolvedViews?.find(({ id }) => id === "garden-context")?.elements.map(({ id }) => id)).toEqual(["caretaker", "garden-pulse", "weather-feed"]);
     expect(after.resolvedViews?.find(({ id }) => id === "garden-containers")?.elements).toEqual(before.resolvedViews?.find(({ id }) => id === "garden-containers")?.elements);
+  });
+
+  it("removes an element from one diagram without deleting it from the model", async () => {
+    const input = project(source.replace(
+      "view garden-context {",
+      "view garden-context {\n  show = [caretaker]",
+    ));
+    const before = await parseC4mlProjectDraft(input);
+    const proposal = await proposeC4mlSemanticEdit(
+      input,
+      request("garden-context", { kind: "hide-element", elementId: "caretaker" }),
+    );
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.intent.kind).toBe("view");
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const after = await parseC4mlProjectDraft(applied.project);
+    expect(after.valid).toBe(true);
+    expect(after.model).toEqual(before.model);
+    expect(after.resolvedViews?.find(({ id }) => id === "garden-context")?.elements.map(({ id }) => id)).not.toContain("caretaker");
+    expect(after.resolvedViews?.find(({ id }) => id === "garden-landscape")?.elements.map(({ id }) => id)).toContain("caretaker");
+  });
+
+  it("shows an explicitly hidden element by removing its hide entry", async () => {
+    const text = source.replace(
+      "view garden-context {",
+      "view garden-context {\n  hide = [caretaker]",
+    );
+    const input = project(text);
+    const proposal = await proposeC4mlSemanticEdit(
+      input,
+      request("garden-context", { kind: "show-element", elementId: "caretaker" }),
+    );
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const after = await parseC4mlProjectDraft(applied.project);
+    expect(after.valid).toBe(true);
+    expect(after.resolvedViews?.find(({ id }) => id === "garden-context")?.elements.map(({ id }) => id)).toContain("caretaker");
+    expect(applied.project.documents[0]?.text).not.toContain("hide = [caretaker]");
+  });
+
+  it("deletes an unreferenced element from the shared model and cleans diagram lists", async () => {
+    const input = project(source.replace(
+      "view garden-landscape {",
+      "view garden-landscape {\n  show = [caretaker]\n  hide = [caretaker]",
+    ));
+    const proposal = await proposeC4mlSemanticEdit(
+      input,
+      request("garden-landscape", { kind: "delete-element", elementId: "caretaker" }),
+    );
+    expect(proposal.valid).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.intent.kind).toBe("architecture");
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const after = await parseC4mlProjectDraft(applied.project);
+    expect(after.valid).toBe(true);
+    expect(after.model?.elements.map(({ id }) => id)).not.toContain("caretaker");
+    expect(applied.project.documents[0]?.text).not.toContain("show = [caretaker]");
+    expect(applied.project.documents[0]?.text).not.toContain("hide = [caretaker]");
   });
 
   it("creates and shows through one project proposal even when model and view are in different files", async () => {
@@ -343,6 +411,52 @@ describe("semantic authoring context", () => {
 });
 
 describe("semantic source edits", () => {
+  it("updates only the active diagram title and purpose", async () => {
+    const input = project();
+    const proposal = await proposeC4mlSemanticEdit(
+      input,
+      request("garden-context", {
+        kind: "update-view",
+        title: "Garden Pulse and its neighbours",
+        purpose: "Explains who exchanges information with Garden Pulse.",
+      }),
+    );
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.intent.kind).toBe("view");
+    expect(proposal.changeSet.affectedIds).toEqual(["garden-context"]);
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const changed = applied.project.documents[0]!.text;
+    expect(changed).toContain('title = "Garden Pulse and its neighbours"');
+    expect(changed).toContain('purpose = "Explains who exchanges information with Garden Pulse."');
+    expect(changed).toContain('title = "Container View — Garden Pulse"');
+    expect(changed).toContain("view garden-context {");
+    expect((await parseC4mlProjectDraft(applied.project)).valid).toBe(true);
+  });
+
+  it("deletes one diagram without deleting the shared model or other diagrams", async () => {
+    const input = project();
+    const before = await parseC4mlProjectDraft(input);
+    const proposal = await proposeC4mlSemanticEdit(
+      input,
+      request("garden-context", { kind: "delete-view" }),
+    );
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.intent.kind).toBe("view");
+    expect(proposal.changeSet.affectedIds).toEqual(["garden-context"]);
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const after = await parseC4mlProjectDraft(applied.project);
+    expect(after.valid).toBe(true);
+    expect(after.model).toEqual(before.model);
+    expect(after.resolvedViews?.some(({ id }) => id === "garden-context")).toBe(false);
+    expect(after.resolvedViews?.some(({ id }) => id === "garden-containers")).toBe(true);
+  });
+
   it("creates a scope-owned Container without reprinting existing source", async () => {
     const proposal = await proposeC4mlSemanticEdit(
       project(),

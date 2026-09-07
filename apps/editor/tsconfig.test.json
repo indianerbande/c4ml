@@ -12,6 +12,7 @@
   },
   "include": [
     "src/app/compiler-worker-runtime.ts",
+    "src/app/compiler-worker-client.core.ts",
     "src/app/compiler-worker.protocol.ts",
     "src/app/desktop-bridge.ts",
     "src/app/editor-session.ts",

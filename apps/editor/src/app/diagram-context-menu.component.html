@@ -21,6 +21,12 @@
       </button>
     }
 
+    @if (removeFromDiagramAvailable()) {
+      <button type="button" role="menuitem" (click)="choose({ kind: 'hide-element' })">
+        {{ i18n.t("contextMenu.removeFromDiagram") }}
+      </button>
+    }
+
     <div class="context-submenu">
       <button type="button" role="menuitem" aria-haspopup="menu">
         <span>{{ i18n.t("contextMenu.moveDirection") }}</span>
@@ -86,5 +92,10 @@
   <button type="button" role="menuitem" (click)="choose({ kind: 'reveal-source' })">
     {{ i18n.t("contextMenu.revealSource") }}
   </button>
+  @if (capabilities().kind === "element") {
+    <button type="button" role="menuitem" class="destructive-action" (click)="choose({ kind: 'delete-element' })">
+      {{ i18n.t("contextMenu.deleteFromModel") }}
+    </button>
+  }
   }
 </nav>

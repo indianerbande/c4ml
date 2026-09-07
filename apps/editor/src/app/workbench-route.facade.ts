@@ -7,9 +7,9 @@ import type {
 } from "./compiler-worker.protocol.js";
 import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
 import type { RouteEditorOperationKind } from "./route-editor.component.js";
-import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
 import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
+import { WorkbenchAuthoringHistoryService } from "./workbench-authoring-history.service.js";
 
 export interface RouteEditorSession {
   readonly project: CompilerWorkerProject;
@@ -25,8 +25,7 @@ export class WorkbenchRouteFacade {
 
   readonly #documents = inject(WorkbenchDocumentFacade);
   readonly #preview = inject(WorkbenchPreviewFacade);
-  readonly #transaction = new SourceAuthoringTransaction(this.#documents);
-  readonly canUndo = this.#transaction.canUndo;
+  readonly #history = inject(WorkbenchAuthoringHistoryService);
 
   show(initialOperation: RouteEditorOperationKind = "ports"): void {
     const route = this.#preview.selectedRoute();
@@ -59,8 +58,8 @@ export class WorkbenchRouteFacade {
     ) {
       return Promise.resolve();
     }
-    return this.#transaction
-      .apply(changeSet, documentUri, editor)
+    return this.#history
+      .apply(changeSet, documentUri, editor, "route")
       .then((outcome) => {
         if (outcome === "applied") {
           this.session.set(undefined);
@@ -68,17 +67,12 @@ export class WorkbenchRouteFacade {
       });
   }
 
-  undo(editor: C4mlMonacoSourceEditorComponent | undefined): Promise<void> {
-    if (editor === undefined) return Promise.resolve();
-    return this.#transaction.undo(editor).then(() => undefined);
-  }
-
   sourceChanged(): void {
-    this.#transaction.sourceChanged();
+    this.#history.sourceChanged();
   }
 
   reset(): void {
     this.session.set(undefined);
-    this.#transaction.reset();
+    this.#history.reset();
   }
 }
