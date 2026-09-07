@@ -5,8 +5,12 @@ import { defaultSystemContextWizardAnswers, generateSystemContextDraft, inspectC
 
 const source = generateSystemContextDraft({ ...defaultSystemContextWizardAnswers, emptyName: "Gartenplanung" }).source!;
 const projectOf = (text: string) => createArchitectureProjectInput({ id: "starter", documents: [{ uri: "model.c4ml", text }] });
-const request = (operation: C4mlSemanticEditOperation) => ({ id: "starter-edit", viewId: undefined, documentUri: "model.c4ml",
-  intent: { id: "starter", kind: "architecture" as const, summary: "Build a model explicitly" }, operation });
+const request = (operation: C4mlSemanticEditOperation) => {
+  const viewOperation = operation.kind === "create-view" || operation.kind === "show-element" || operation.kind === "hide-element";
+  return { id: "starter-edit", viewId: undefined, documentUri: "model.c4ml",
+    intent: { id: "starter", kind: viewOperation ? "view" as const : "architecture" as const,
+      summary: viewOperation ? "Change a diagram explicitly" : "Build a model explicitly" }, operation };
+};
 const system: C4mlSemanticEditOperation = { kind: "create-element", elementKind: "software-system", elementId: "garden",
   name: "Gartenplanung", responsibility: "Plant Gartenarbeiten.", classification: "internal" };
 const diagram: C4mlSemanticEditOperation = { kind: "create-view", viewId: "garden-context", optionId: "system-context:garden",

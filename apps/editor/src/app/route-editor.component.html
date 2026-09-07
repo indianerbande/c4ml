@@ -1,5 +1,5 @@
 <div class="placement-backdrop">
-  <section c4mlModal class="placement-editor route-editor" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('routeEditor.title')" (click)="$event.stopPropagation()">
+  <section c4mlModal class="placement-editor route-editor scope-layout" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('routeEditor.title')" (click)="$event.stopPropagation()">
     <header>
       <div>
         <p>{{ i18n.t("routeEditor.eyebrow") }}</p>
@@ -11,6 +11,13 @@
 
     <div class="placement-body">
       <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
+        <aside class="authoring-scope">
+          <span class="authoring-scope-mark" aria-hidden="true">L</span>
+          <span class="authoring-scope-copy">
+            <strong>{{ i18n.t("authoringScope.layout.title") }}</strong>
+            <small>{{ i18n.t("authoringScope.layout.description") }}</small>
+          </span>
+        </aside>
         <div class="route-identity"><small>{{ i18n.t("routeEditor.relationship") }}</small><strong>{{ route().label }}</strong><code>{{ route().referenceId }}</code></div>
 
         <label>

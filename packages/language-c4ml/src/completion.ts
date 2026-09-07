@@ -89,6 +89,7 @@ export interface C4mlCompletionResult {
 
 const propertyLabels = new Set([
   "show",
+  "hide",
   "around",
   "anchor",
   "avoid",
@@ -217,6 +218,7 @@ const propertyTypesByLabel: Readonly<Record<string, readonly string[]>> = {
   legend: ["ViewLegendProperty"],
   relationships: ["ViewRelationshipsProperty"],
   show: ["ViewShowProperty"],
+  hide: ["ViewHideProperty"],
   language: ["LanguageProperty"],
   "label-segment": ["RouteLabelSegmentProperty"],
   "label-offset-x": ["RouteLabelOffsetXProperty"],
@@ -312,6 +314,7 @@ const documentationByLabel: Readonly<Record<string, string>> = {
   legend: "Declares how this view explains its notation.",
   relationships: "Chooses whether detailed relationships are lifted to this view's abstraction level (implied, default) or only declared ones appear.",
   show: "Adds eligible existing elements to this static view without changing its automatic neighbours or creating relationships.",
+  hide: "Removes eligible elements from this static view without deleting them from the architecture model.",
   declared: "Shows only relationships declared directly between visible elements.",
   implied: "Lifts relationships between more detailed elements to the nearest visible element, as the C4 model intends.",
   language: "Declares the implementation language of a Code Element.",
@@ -523,6 +526,7 @@ function recoverViewPropertyCompletion(
   const end = document.textDocument.positionAt(offset);
   const labels = [
     "show",
+    "hide",
     "allow-mixed-levels",
     "audience",
     "display",

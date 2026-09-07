@@ -10,25 +10,31 @@ const languageSource = new URL(
 
 describe("workbench semantic authoring architecture", () => {
   it("keeps source transactions and C4 operation discovery outside Angular", async () => {
-    const [root, facade, editor, runtime, language, protocol] = await Promise.all([
+    const [root, facade, editor, runtime, language, protocol, history] = await Promise.all([
       readFile(new URL("app.component.ts", appSource), "utf8"),
       readFile(new URL("workbench-semantic.facade.ts", appSource), "utf8"),
       readFile(new URL("semantic-editor.component.ts", appSource), "utf8"),
       readFile(new URL("compiler-worker-runtime.ts", appSource), "utf8"),
       readFile(new URL("semantic-authoring-edits.ts", languageSource), "utf8"),
       readFile(new URL("compiler-worker.protocol.ts", appSource), "utf8"),
+      readFile(new URL("workbench-authoring-history.service.ts", appSource), "utf8"),
     ]);
 
     expect(root).toContain("this.semanticEditor.apply(response, this.sourceEditor())");
-    expect(root).toContain("this.semanticEditor.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.redo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
     expect(facade).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).toContain("WorkbenchAuthoringHistoryService");
+    expect(history).toContain("SourceAuthoringTransaction");
     expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("inspectSemanticAuthoring(");
     expect(facade).toContain("connectionOptions");
     expect(facade).toContain("pickConnectionElement");
+    expect(facade).toContain("editDiagramContent");
+    expect(facade).toContain("deleteDiagram");
+    expect(facade).toContain('endsWith(":create-deployment-item")');
     expect(root).toContain("target?.kind !== \"node\"");
     expect(root).toContain("target.nodeRole !== \"element\"");
     expect(editor).toContain("this.compiler.inspectSemanticAuthoring(");
@@ -38,6 +44,8 @@ describe("workbench semantic authoring architecture", () => {
     expect(runtime).toContain("inspectC4mlSemanticAuthoringContext");
     expect(runtime).toContain("proposeC4mlSemanticEdit");
     expect(language).toContain("export async function proposeC4mlSemanticEdit");
+    expect(language).toContain('case "update-view"');
+    expect(language).toContain('case "delete-view"');
     expect(protocol.split("\n").length - 1).toBeLessThanOrEqual(100);
   });
 });

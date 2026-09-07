@@ -22,20 +22,25 @@
 }
 .semantic-editor .placement-form textarea { min-height: 72px; }
 .is-diagram-editor .candidate-preview img { width: 100%; height: 260px; object-fit: contain; }
-.semantic-editor > header { border-top: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); }
-.semantic-editor.is-connection-editor > header { border-top-color: var(--accent); }
 .semantic-editor .show-in-view-control { display: flex; align-items: center; gap: 8px; }
 .semantic-editor .show-in-view-control input { width: auto; flex: 0 0 auto; }
 .semantic-authority { display: grid; gap: 4px; padding: 11px 12px; border-left: 4px solid color-mix(in srgb, var(--accent) 55%, var(--danger)); background: color-mix(in srgb, var(--accent) 6%, var(--panel)); color: var(--control-ink); }
+.semantic-authority.is-destructive,
+.semantic-context-card.is-destructive { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, var(--panel)); }
 .semantic-authority span,
 .semantic-loading,
 .semantic-empty span { color: var(--muted); }
 .semantic-empty { display: grid; gap: 5px; padding: 16px; border: 1px solid var(--line); border-radius: 9px; }
 .semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
+.semantic-service-hint { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); color: var(--control-ink); }
+.semantic-service-hint span { color: var(--muted); }
 .semantic-context-card { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
 .semantic-context-card span { color: var(--muted); }
+.dynamic-context-card,
+.deployment-context-card { border-left: 4px solid var(--accent); }
 .semantic-preview-button,
 .semantic-apply-button { background: color-mix(in srgb, var(--accent) 72%, var(--danger)); }
+.semantic-apply-button.is-destructive { border-color: var(--danger); background: var(--danger); }
 .semantic-editor.is-connection-editor .semantic-preview-button,
 .semantic-editor.is-connection-editor .semantic-apply-button { background: var(--accent); }
 .semantic-pick-button,

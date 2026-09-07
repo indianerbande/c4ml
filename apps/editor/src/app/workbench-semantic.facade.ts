@@ -6,10 +6,19 @@ import type {
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import type { PreviewSemanticChangeWorkerResponse } from "./compiler-worker.protocol.js";
 import type { C4mlMonacoSourceEditorComponent } from "./monaco-source-editor.component.js";
-import { SourceAuthoringTransaction } from "./source-authoring-transaction.js";
 import { WorkbenchDocumentFacade } from "./workbench-document.facade.js";
+import { WorkbenchAuthoringHistoryService } from "./workbench-authoring-history.service.js";
 
-export type SemanticEditorMode = "element" | "relationship" | "show-element" | "diagram";
+export type SemanticEditorMode =
+  | "delete-element"
+  | "diagram"
+  | "diagram-content"
+  | "diagram-delete"
+  | "diagram-edit"
+  | "element"
+  | "hide-element"
+  | "relationship"
+  | "show-element";
 
 export type ConnectionPickResult =
   | { readonly status: "ignored" }
@@ -41,8 +50,7 @@ export class WorkbenchSemanticFacade {
   readonly #connectionContext = signal<C4mlSemanticAuthoringContext | undefined>(
     undefined,
   );
-  readonly #transaction = new SourceAuthoringTransaction(this.#documents);
-  readonly canUndo = this.#transaction.canUndo;
+  readonly #history = inject(WorkbenchAuthoringHistoryService);
   #activeViewId: string | undefined;
 
   showElement(activeViewId: string | undefined): void {
@@ -53,7 +61,27 @@ export class WorkbenchSemanticFacade {
     this.#show(activeViewId, "show-element");
   }
 
+  hideElement(activeViewId: string | undefined, elementId: string): void {
+    this.#show(activeViewId, "hide-element", elementId);
+  }
+
+  deleteElement(activeViewId: string | undefined, elementId: string): void {
+    this.#show(activeViewId, "delete-element", elementId);
+  }
+
   showDiagram(): void { this.#show(undefined, "diagram"); }
+
+  editDiagram(activeViewId: string | undefined): void {
+    this.#show(activeViewId, "diagram-edit");
+  }
+
+  editDiagramContent(activeViewId: string | undefined): void {
+    this.#show(activeViewId, "diagram-content");
+  }
+
+  deleteDiagram(activeViewId: string | undefined): void {
+    this.#show(activeViewId, "diagram-delete");
+  }
 
   showRelationship(
     activeViewId: string | undefined,
@@ -149,8 +177,27 @@ export class WorkbenchSemanticFacade {
     ) {
       return Promise.resolve();
     }
-    return this.#transaction
-      .apply(changeSet, documentUri, editor)
+    const kind = changeSet.intent.id.endsWith(":create-deployment-item")
+      ? "deployment"
+      : this.mode() === "relationship"
+      ? "relationship"
+      : this.mode() === "diagram"
+        ? "diagram"
+        : this.mode() === "diagram-edit"
+          ? "diagram-edit"
+          : this.mode() === "diagram-content"
+            ? "diagram-content"
+            : this.mode() === "diagram-delete"
+              ? "diagram-delete"
+        : this.mode() === "show-element"
+          ? "view-element"
+          : this.mode() === "hide-element"
+            ? "view-element-hide"
+            : this.mode() === "delete-element"
+              ? "element-delete"
+          : "element";
+    return this.#history
+      .apply(changeSet, documentUri, editor, kind)
       .then((outcome) => {
         if (outcome === "applied") {
           this.open.set(false);
@@ -160,16 +207,11 @@ export class WorkbenchSemanticFacade {
       });
   }
 
-  undo(editor: C4mlMonacoSourceEditorComponent | undefined): Promise<void> {
-    if (editor === undefined) return Promise.resolve();
-    return this.#transaction.undo(editor).then(() => undefined);
-  }
-
   sourceChanged(): void {
     // Connection picking is bound to the compiled diagram; any edit ends it.
     // Only the undo step must survive the facade's own apply/undo edits.
     this.cancelConnectionPicking();
-    this.#transaction.sourceChanged();
+    this.#history.sourceChanged();
   }
 
   reset(): void {
@@ -178,7 +220,7 @@ export class WorkbenchSemanticFacade {
     this.initialSourceId.set(undefined);
     this.initialTargetId.set(undefined);
     this.cancelConnectionPicking();
-    this.#transaction.reset();
+    this.#history.reset();
   }
 
   #show(

@@ -4,15 +4,15 @@
 
 Status: Öffentliche Source-Beta
 
-Aktuelle Version: `v0.1.0-beta.5`
+Aktuelle Version: `v0.1.0-beta.6`
 
-Aktualisiert: 2026-09-04
+Aktualisiert: 2026-09-07
 
 Dieses Dokument beschreibt den aktuellen Reifegrad und die Grenzen der Beta.
 Es ist kein Entwicklungstagebuch. Detaillierte Produktanforderungen stehen in
 der [technischen Spezifikation](../engineering/specification.md), notwendige
 Nachweise in [Testing](../engineering/testing.md), abgeschlossene Änderungen in
-den [Versionshinweisen](releases/0.1.0-beta.5.md) und technische Arbeitspunkte
+den [Versionshinweisen](releases/0.1.0-beta.6.md) und technische Arbeitspunkte
 in der [Roadmap](../engineering/roadmap.md).
 
 ## Was Beta hier bedeutet
@@ -87,7 +87,10 @@ ab.
   und leerer Startarbeitsbereich.
 - Navigation zwischen Quelle und Diagramm sowie quellgebundene grafische
   Erstellung, Verbindung, Platzierung, Routing, Deployment-Topologie und
-  Dynamic-Interaktionen mit Kandidatenprüfung und einmaligem Rückgängigmachen.
+  Dynamic-Interaktionen mit Kandidatenprüfung und gemeinsamer
+  Rückgängig-/Wiederholen-Historie.
+- Aktivierung von Diagrammen und quellgebundene Verwaltung von Titel, Zweck,
+  sichtbarem Inhalt und Löschung mit verständlichen Typbeschreibungen.
 - Vollbildvorschau und abtrennbare reine Projektionsvorschau.
 - Ausdrückliche lokale Git-Aktionen für Status, Stage, Unstage, Commit und Push;
   bewusst ohne verstecktes Pull, Checkout, Verwerfen oder Umschreiben.
@@ -152,7 +155,7 @@ auf:
 - Ubuntu arm64; und
 - Ubuntu x64.
 
-Diese Nachweise gelten nicht als erneute Hostfreigabe für Beta 5. Beta 5 wird
+Diese Nachweise gelten nicht als erneute Hostfreigabe für Beta 6. Beta 6 wird
 als Source-Release ohne freigegebene native Downloads veröffentlicht.
 
 macOS-Entwicklungsartefakte sind nur ad hoc signiert. Die öffentliche
@@ -180,7 +183,7 @@ Assistentenabläufe und eine separat paketierte CLI.
 
 ## Maßgebliche Statusquellen
 
-- [Versionshinweise](releases/0.1.0-beta.5.md): Inhalt des aktuellen Tags.
+- [Versionshinweise](releases/0.1.0-beta.6.md): Inhalt des aktuellen Tags.
 - [Plattformmatrix](platforms.md): aktuelle native Nachweise.
 - [Testing](../engineering/testing.md): notwendige Nachweise für Aussagen.
 - [Roadmap](../engineering/roadmap.md): Arbeitspunkte und bewusste Vertagungen.

@@ -469,19 +469,31 @@ Source: [pnpm managed runtime (`devEngines.runtime`)](https://pnpm.io/package_js
   production-only registry audit. The Node.js 24 native gate rebuilds and
   verifies the unpacked application, DMG, and ZIP.
 
-The 2026-09-03 complete development audit still reports three high-severity
-build-only findings for `extract-zip` 2.0.1
-(`GHSA-jmr9-qjv8-65gv`) and `image-size` 0.7.5
-(`GHSA-w3rx-r6r6-pgpr`, `GHSA-5p2g-fcmc-qvqq`). Upstream publishes no patched
-version for either package. Forge 7.11.2 constrains `@electron/packager` to its
-18.x line; the 20.x packager that replaces `extract-zip` is not a safe isolated
-override. The affected `image-size` copy is optional and used only by the macOS
-DMG maker with repository-controlled artwork. The `extract-zip` edge is used
-only while packaging the checksum-validated Electron distribution. Neither
-package is present in the application ASAR or production dependency audit.
-These are temporary accepted build-chain risks, not dismissed vulnerabilities:
-Dependabot remains enabled, and every Forge or maker maintenance change must
-re-evaluate whether upstream has removed or patched them.
+The 2026-09-07 complete development-graph review still reports three
+high-severity build-only findings for `extract-zip` 2.0.1
+([`GHSA-jmr9-qjv8-65gv`](https://github.com/advisories/GHSA-jmr9-qjv8-65gv))
+and `image-size` 0.7.5
+([`GHSA-w3rx-r6r6-pgpr`](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr),
+[`GHSA-5p2g-fcmc-qvqq`](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq)).
+Upstream publishes no patched version for either package. Forge 7.11.2
+constrains `@electron/packager` to its 18.x line; replacing that internal edge
+with the current packager major is not a safe isolated override.
+
+The affected `image-size` copy remains below the macOS-only optional `appdmg`
+graph. That implementation reads image dimensions only for a configured DMG
+background, while C4thedral deliberately configures no background. The
+production check freezes that omission so enabling the affected path requires
+an explicit dependency-security review. The `extract-zip` edge remains below
+the reviewed Electron packager and is exercised only after the Electron archive
+has been validated against the pinned local `electron/checksums.json` map. The
+production check also requires both packages to remain below their reviewed
+owners and excluded with all `node_modules` from the installed application.
+
+Neither package is present in the application ASAR or the production dependency
+audit. These are contained, temporary build-chain risks, not dismissed
+vulnerabilities: the GitHub alerts remain open, Dependabot remains enabled, and
+every stable Forge or maker maintenance release must be evaluated for removal
+or a published fix before the affected edges are changed.
 
 ## Experimental CLI application
 

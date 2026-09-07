@@ -34,15 +34,22 @@ describe("graphical route editor", () => {
     expect(template).toContain('i18n.t("routeEditor.authority")');
   });
 
+  it("identifies route guidance as diagram layout", () => {
+    expect(template).toContain("route-editor scope-layout");
+    expect(template).toContain('i18n.t("authoringScope.layout.title")');
+    expect(template).toContain('i18n.t("authoringScope.layout.description")');
+  });
+
   it("keeps a visible preview state while the candidate is compiling", () => {
     expect(template).toContain("@if (busy())");
     expect(template).toContain('i18n.t("routeEditor.previewing")');
   });
 
-  it("opens from the selected Route and exposes one-step undo", () => {
+  it("opens from the selected Route and uses shared undo and redo", () => {
     expect(rootTemplate).toContain('(click)="openRouteEditor()"');
     expect(rootTemplate).toContain("<c4ml-route-editor");
     expect(rootTemplate).toContain('(applied)="applyRoute($event)"');
-    expect(rootTemplate).toContain('(click)="undoRoute()"');
+    expect(rootTemplate).toContain('(click)="undoAuthoring()"');
+    expect(rootTemplate).toContain('(click)="redoAuthoring()"');
   });
 });

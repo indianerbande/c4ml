@@ -944,6 +944,7 @@ view {
       { kind: "property", label: "audience" },
       { kind: "property", label: "display" },
       { kind: "property", label: "environment" },
+      { kind: "property", label: "hide" },
       { kind: "property", label: "legend" },
       { kind: "property", label: "purpose" },
       { kind: "property", label: "relationships" },

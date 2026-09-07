@@ -193,6 +193,7 @@ ViewProperty:
     | ViewLegendProperty
     | ViewRelationshipsProperty
     | ViewShowProperty
+    | ViewHideProperty
     | ViewDisplayProperty
     | ViewAllowMixedLevelsProperty
     | ViewEnvironmentProperty
@@ -229,6 +230,10 @@ ViewRelationshipsProperty:
 
 ViewShowProperty:
     'show' '=' '[' values+=[ElementDeclaration:ID]
+        (',' values+=[ElementDeclaration:ID])* ']';
+
+ViewHideProperty:
+    'hide' '=' '[' values+=[ElementDeclaration:ID]
         (',' values+=[ElementDeclaration:ID])* ']';
 
 ViewDisplayProperty:

@@ -5,7 +5,7 @@
 This guide is for the finished C4thedral installation package. You do not need
 Node.js, pnpm, or any developer tools.
 
-> **Status of `v0.1.0-beta.5`:** This version is published as a source beta;
+> **Status of `v0.1.0-beta.6`:** This version is published as a source beta;
 > no approved native installation packages are offered for it yet. This guide
 > applies when a DEB verified on its target system is explicitly provided.
 > Until then, follow [Build C4thedral from source](build-from-source.md).

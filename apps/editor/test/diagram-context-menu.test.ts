@@ -94,6 +94,10 @@ describe("diagram context menu", () => {
     expect(root).toContain("this.semanticEditor.beginConnectionPicking(");
     expect(root).toContain("this.placement.show({");
     expect(root).toContain("this.routeEditor.show(action.operation)");
+    expect(root).toContain("this.semanticEditor.hideElement(");
+    expect(root).toContain("this.semanticEditor.deleteElement(");
+    const template = await readFile(new URL("../src/app/diagram-context-menu.component.html", import.meta.url), "utf8");
+    expect(template).toContain("removeFromDiagramAvailable()");
     expect(root).not.toContain("proposeC4mlPlacementEdit");
     expect(root).not.toContain("proposeC4mlRouteEdit");
   });

@@ -1260,8 +1260,23 @@ request, so an older compilation, completion list, or generated source can
 never replace a newer result. Invalid current source replaces the diagnostic
 list but retains the last valid SVG. Source changes are compiled after a short
 local debounce. A successful compilation returns the declared executable view
-catalogue and active view identity; the UI can request another view by stable
-identifier without creating another semantic model.
+catalogue, active view identity, and architecture-element count; the last value
+lets the viewless workbench choose a valid next action without parsing source
+in Angular. The UI can request another view by stable identifier without
+creating another semantic model.
+
+The client also assigns every worker lifetime a monotonically increasing
+generation. An `error` or `messageerror` retires that generation, settles all
+interrupted language and authoring requests as failed, and preserves the latest
+in-memory document or complete project compilation input. The client starts at
+most one automatic replacement and replays compilation and analysis from that
+preserved input. It considers recovery complete only after current-generation
+responses for both requests have been accepted. A later failure stops without
+a restart loop and exposes an explicit localized Retry action; each manual
+Retry starts one further bounded attempt. Messages from retired generations are
+discarded before protocol dispatch even if their request identifier matches a
+current request. Recovery never writes source, persists document handles, or
+introduces a service or network dependency.
 
 The worker executes the experimental `draft-1` parser, explicit AST-to-domain
 lowering, shared semantic and view resolution, diagram compiler, scene builder,
@@ -1439,9 +1454,18 @@ label. Without an active View it offers Person and Software System creation
 through the existing worker-owned, revision-checked semantic authoring contract,
 with source review and apply/undo but no invented diagram. Existing View-scoped
 Container, Component, Code, Dynamic, and Deployment authoring remains intact.
-The empty preview explains the next steps and offers Add element and the
-separate **Create diagram…** action. Diagram creation is also available in the
-Diagrams activity after the first diagram exists.
+The empty preview explains that the model owns the architecture while each
+diagram selects a visible projection. It MUST state that one model can own
+several diagrams for different audiences or levels of detail. While the model
+is empty, **Add element…** is the primary next step and diagram creation is not
+offered because a complete View requires an architecture element. Once the
+model contains an element, **Create first diagram…** becomes primary while
+**Add element…** remains available.
+The Diagrams activity MUST list every declared diagram, explain that selecting
+one activates it in the preview, and expose **Create another diagram…** after
+the first exists. Applying a created diagram activates that diagram. With more
+than one diagram, the preview toolbar additionally exposes the existing compact
+diagram selector. No control creates a duplicate model or hidden View.
 
 This first diagram-creation form offers an organizational System Landscape
 overview and the four static scoped views whose required owners already exist.
@@ -1450,8 +1474,9 @@ title, purpose, stable View ID, and (for the overview) organizational scope.
 The generated View references compatible existing elements with `show`, uses
 the generated legend/default audience and an explicit automatic flow, and never
 duplicates elements or creates Relationships. Candidate source/SVG review and
-one-step apply/undo use the shared transaction. Dynamic/Deployment creation is
-not part of this starter form; their existing source and authoring paths remain.
+one-unit apply through the shared authoring history use the same transaction.
+Dynamic/Deployment creation is not part of this starter form; their existing
+source and authoring paths remain.
 Earlier statements requiring a View before any model authoring are superseded.
 
 The language package exposes an editor-independent completion contract for the
@@ -1829,7 +1854,49 @@ also show its endpoints. These operations generate ordinary source edits; they
 never duplicate model definitions or invent relationships to force visibility.
 Model and View edits in separate documents are one revision-checked project
 proposal, applied synchronously after validating every affected editor model,
-with one explicit authoring undo restoring all affected sources and dirty states.
+with one authoring-history entry restoring all affected sources and dirty
+states atomically through Undo or Redo.
+
+Right-clicking a visible static architecture element keeps two inverse-looking
+operations deliberately separate. **Remove from this diagram** creates a
+View-intent change and records the element in the View's explicit `hide` list;
+the shared model, Relationships, and all other Views remain unchanged. A View's
+focal scope element cannot be removed from the diagram it defines. **Delete
+from architecture model** is a separately styled destructive architecture
+operation. It removes the model declaration and obsolete `show`/`hide`
+memberships, then compiles the complete candidate project. Any remaining
+Relationship, ownership, View-scope, deployment, Dynamic, placement, Route, or
+resource reference keeps Apply disabled and is reported through the ordinary
+candidate diagnostics. Both actions require the existing explicit source and
+candidate review and enter the shared Undo/Redo history under distinct labels.
+The portable source-change intent therefore distinguishes `view` from
+`architecture`, `layout`, `route`, and `policy`; no editor-only visibility or
+deletion state is permitted.
+
+The Diagrams activity is also the explicit management surface for declared
+Views. Selecting a row activates that View in the compiler-backed preview; its
+secondary label uses reader-facing architecture language instead of exposing
+the raw source keyword. The active row offers three separate reviewed actions:
+editing title and purpose, editing visible content in a static diagram, and
+deleting the diagram.
+Title/purpose editing preserves stable View identity, type, scope, and content.
+Static content editing delegates to the same `show`/`hide` source operations
+described above; Dynamic interactions and Deployment topology retain their
+dedicated authoring paths. Diagram deletion removes only the owning `view`
+declaration, is styled
+as destructive, and is blocked by ordinary candidate compilation while another
+project resource still references the View. Every action shows proposed source
+and candidate output before apply and participates in the shared Undo/Redo
+history; the sidebar never owns a parallel View record.
+
+Every source-changing authoring dialog MUST identify its reach before the form:
+**Architecture model** for shared semantic definitions and Relationships,
+**Active diagram** for View identity, membership, or Dynamic interactions, and
+**Diagram layout** for placement and Route guidance. Each scope uses a stable letter mark, localized
+name, and plain-language consequence; color is a redundant secondary cue and
+MUST NOT carry the distinction by itself. The scope label does not create a new
+state layer: all three continue to preview and apply ordinary source changes
+through the same worker-owned transaction and shared Undo/Redo history.
 
 ### 9.10 Shared authoring, comparison, and analysis foundations
 
@@ -1843,7 +1910,7 @@ before feature-specific editor work begins:
   created from, contains deterministic non-overlapping text edits, describes
   the affected stable architecture identities and author intent, and can be
   previewed, compiled, applied atomically, or rejected as stale. Applying one
-  change set in the editor MUST create one understandable undo operation.
+  change set in the editor MUST create one understandable history entry.
 - A canonical architecture snapshot normalizes a validated model and its
   resolved views independently of parser AST objects, declaration order,
   source formatting, frontend state, and renderer output. It MUST retain stable
@@ -1876,6 +1943,23 @@ document-addressed change set. It validates every edit before applying any,
 rejects stale or unknown documents, and can preview a complete candidate project
 without mutating active documents. The original single-document contract remains
 available as the implicit-project convenience boundary.
+
+Accepted graphical element, Relationship, diagram, View-membership,
+placement, and Route changes enter one shared chronological authoring history.
+It retains at most 50 accepted actions. Undo and redo restore the complete
+source and dirty state, activate the owning document when necessary, and keep
+multi-document actions atomic. A new authoring action after undo discards the
+redo branch; a source change outside this transaction invalidates the bounded
+authoring history rather than guessing how it relates to authored source.
+Monaco's ordinary text-editing history remains independent.
+
+The title bar presents a fixed pair of compact Undo and Redo icon buttons.
+Unavailable actions remain visible but disabled; the accessible name and
+tooltip identify the next operation. Undo is deliberately immediate because it
+is reversible through Redo and therefore has no confirmation dialog. The same
+history is available through `Cmd/Ctrl+Z`, `Cmd/Ctrl+Shift+Z`, and `Ctrl+Y` on
+Windows. When the bounded authoring history is empty, the normal Monaco
+shortcuts remain available to the source editor.
 
 The first graphical placement-authoring slice is implemented in the editor.
 A selected source-mapped element can be placed relative to another element,
@@ -1919,9 +2003,18 @@ only the element type owned by their active Software System, Container, or
 Component scope. Angular asks in familiar architecture language and does not
 own those C4 rules. A requested action becomes a deterministic project-
 addressed source change, the worker compiles the complete candidate project,
-and Monaco applies an accepted transaction with one-step authoring undo. A
+and Monaco records an accepted transaction as one entry in the shared
+authoring history. A
 creation with View inclusion may update separate model and View documents;
 the complete project revision is validated before either is changed.
+Because practitioners use “service” for several architectural levels, the
+element form MUST NOT invent a generic Service kind. Its visible, localized
+guidance distinguishes an independent application or externally owned API as a
+Software System, a separately running part inside a system as a Container, and
+a logical service or module inside that running unit as a Component. Outside a
+scoped View it explains that Container creation first requires creating and
+opening the owning system's Container diagram. Inside Container and Component
+Views it confirms the effective kind selected by the worker-owned context.
 The dialog is visibly identified as an architecture-model change and remains a
 separate tool from placement and Route editing. Every operation form remains
 contained in its dialog column regardless of intrinsic control content;
@@ -1945,10 +2038,29 @@ changes the entry point into a dedicated ordered-interaction gesture. It offers
 only existing directed static Relationships whose endpoints are Software
 Systems, Containers, or Components, derives the endpoints from the selected
 Relationship, and suggests the next unused positive order. Parallel grouping
-remains explicit. Both gestures use the same deterministic candidate
-compilation, exact proposed-source review, one-unit apply, and one-step undo as
-static authoring. Neither is represented as a generic box or hidden model
-state.
+remains explicit. The workbench action and every dialog control MUST distinguish
+this View-local occurrence from creation of the reusable static Relationship:
+the Dynamic gesture is labelled as an interaction step, carries Active-diagram
+scope, names its selected Relationship as the static basis, and uses dedicated
+preview, apply, cancel, result, source, conflict, and history language. The
+separate **Connect** dialog is labelled as a static architecture Relationship
+and explains that Dynamic diagrams may reuse it. Both gestures use the same deterministic candidate
+compilation, exact proposed-source review, one-unit apply, and shared undo/redo
+history as static authoring. Neither is represented as a generic box or hidden
+model state.
+
+Deployment authoring MUST also keep logical architecture elements and runtime
+instances visibly distinct. In an active Deployment View the main action is
+labelled as adding to the runtime environment rather than adding a generic
+element. The form groups runtime locations and infrastructure separately from
+running instances. A Software System or Container instance explicitly selects
+the existing logical element it instantiates, explains that the definition is
+not copied or changed, and permits several instances to reference the same
+logical element. Preview, apply, cancel, result, conflict, source, and history
+copy use deployment-specific language. Because runtime topology belongs to the
+shared deployment model and may be projected by more than one View, this dialog
+retains Architecture-model scope rather than claiming to change only the active
+diagram.
 
 The implemented architecture snapshot removes source locations and parser
 objects, sorts unordered declarations, preserves typed semantic, deployment,

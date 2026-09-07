@@ -6,16 +6,19 @@ const appSource = new URL("../src/app/", import.meta.url);
 
 describe("workbench placement architecture", () => {
   it("keeps placement transactions out of the root component", async () => {
-    const [root, facade] = await Promise.all([
+    const [root, facade, history] = await Promise.all([
       readFile(new URL("app.component.ts", appSource), "utf8"),
       readFile(new URL("workbench-placement.facade.ts", appSource), "utf8"),
+      readFile(new URL("workbench-authoring-history.service.ts", appSource), "utf8"),
     ]);
 
     expect(root).toContain("this.placement.apply(response, this.sourceEditor())");
-    expect(root).toContain("this.placement.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.redo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
     expect(facade).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).toContain("WorkbenchAuthoringHistoryService");
+    expect(history).toContain("SourceAuthoringTransaction");
     expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("WorkbenchPreviewFacade");

@@ -12,6 +12,7 @@ import {
 
 import type {
   CompilerWorkerDiagnostic,
+  CompilerWorkerView,
   CompilerWorkerNavigationTarget,
   PreviewPlacementChangeWorkerResponse,
   PreviewRouteChangeWorkerResponse,
@@ -67,6 +68,7 @@ import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
 import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
 import { WorkbenchSemanticFacade } from "./workbench-semantic.facade.js";
 import { WorkbenchSourceControlFacade } from "./workbench-source-control.facade.js";
+import { WorkbenchAuthoringHistoryService } from "./workbench-authoring-history.service.js";
 
 @Component({
   selector: "c4ml-root",
@@ -105,6 +107,7 @@ export class AppComponent {
   readonly routeEditor = inject(WorkbenchRouteFacade);
   readonly semanticEditor = inject(WorkbenchSemanticFacade);
   readonly sourceControl = inject(WorkbenchSourceControlFacade);
+  readonly authoringHistory = inject(WorkbenchAuthoringHistoryService);
   readonly source = this.documents.source;
   readonly documentName = this.documents.documentName;
   readonly documentHandle = this.documents.documentHandle;
@@ -162,6 +165,24 @@ export class AppComponent {
       state.phase === "valid" && this.hasOpenDocument()
     );
   });
+  readonly primaryAuthoringActionKey = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return activeView?.kind === "dynamic"
+      ? "dynamicEditor.open"
+      : activeView?.kind === "deployment"
+        ? "deploymentEditor.open"
+        : "semanticEditor.open";
+  });
+  readonly primaryAuthoringActionHintKey = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return activeView?.kind === "dynamic"
+      ? "dynamicEditor.openHint"
+      : activeView?.kind === "deployment"
+        ? "deploymentEditor.openHint"
+        : "starter.addHint";
+  });
   readonly canConnectArchitecture = computed(() => {
     const state = this.compiler.state();
     const activeView = state.views.find(({ id }) => id === state.activeViewId);
@@ -171,8 +192,25 @@ export class AppComponent {
       activeView?.kind !== "deployment" &&
       !this.semanticEditor.picking();
   });
+  readonly canRemoveElementFromDiagram = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return this.canEditArchitecture() &&
+      activeView !== undefined &&
+      activeView.kind !== "dynamic" &&
+      activeView.kind !== "deployment";
+  });
+  readonly canEditActiveDiagramContent = computed(() => {
+    const state = this.compiler.state();
+    const activeView = state.views.find(({ id }) => id === state.activeViewId);
+    return activeView !== undefined &&
+      activeView.kind !== "dynamic" && activeView.kind !== "deployment";
+  });
   readonly canStartWizard = computed(
-    () => this.compiler.state().phase !== "compiling" && !this.wizardOpen(),
+    () =>
+      this.compiler.recovery().phase === "ready" &&
+      this.compiler.state().phase !== "compiling" &&
+      !this.wizardOpen(),
   );
   readonly settingsButton =
     viewChild<ElementRef<HTMLButtonElement>>("settingsButton");
@@ -203,7 +241,14 @@ export class AppComponent {
   readonly analysisFindings = computed(
     () => this.compiler.analysis().report?.findings ?? [],
   );
+  readonly workerStatusPhase = computed(() => {
+    const recovery = this.compiler.recovery().phase;
+    return recovery === "ready" ? this.compiler.state().phase : recovery;
+  });
   readonly statusLabel = computed(() => {
+    const recovery = this.compiler.recovery().phase;
+    if (recovery === "recovering") return this.i18n.t("status.recovering");
+    if (recovery === "failed") return this.i18n.t("status.workerUnavailable");
     switch (this.compiler.state().phase) {
       case "compiling":
         return this.i18n.t("status.compiling");
@@ -215,6 +260,40 @@ export class AppComponent {
         return this.i18n.t(this.compiler.state().views.length === 0 ? "starter.valid" : "status.valid");
       default:
         return this.i18n.t("status.waiting");
+    }
+  });
+  readonly undoAuthoringLabel = computed(() => {
+    switch (this.authoringHistory.undoKind()) {
+      case "diagram": return this.i18n.t("history.undo.diagram");
+      case "diagram-content": return this.i18n.t("history.undo.diagramContent");
+      case "diagram-delete": return this.i18n.t("history.undo.diagramDelete");
+      case "diagram-edit": return this.i18n.t("history.undo.diagramEdit");
+      case "deployment": return this.i18n.t("history.undo.deployment");
+      case "element": return this.i18n.t("history.undo.element");
+      case "element-delete": return this.i18n.t("history.undo.elementDelete");
+      case "placement": return this.i18n.t("history.undo.placement");
+      case "relationship": return this.i18n.t("history.undo.relationship");
+      case "route": return this.i18n.t("history.undo.route");
+      case "view-element": return this.i18n.t("history.undo.viewElement");
+      case "view-element-hide": return this.i18n.t("history.undo.viewElementHide");
+      default: return this.i18n.t("history.undo.none");
+    }
+  });
+  readonly redoAuthoringLabel = computed(() => {
+    switch (this.authoringHistory.redoKind()) {
+      case "diagram": return this.i18n.t("history.redo.diagram");
+      case "diagram-content": return this.i18n.t("history.redo.diagramContent");
+      case "diagram-delete": return this.i18n.t("history.redo.diagramDelete");
+      case "diagram-edit": return this.i18n.t("history.redo.diagramEdit");
+      case "deployment": return this.i18n.t("history.redo.deployment");
+      case "element": return this.i18n.t("history.redo.element");
+      case "element-delete": return this.i18n.t("history.redo.elementDelete");
+      case "placement": return this.i18n.t("history.redo.placement");
+      case "relationship": return this.i18n.t("history.redo.relationship");
+      case "route": return this.i18n.t("history.redo.route");
+      case "view-element": return this.i18n.t("history.redo.viewElement");
+      case "view-element-hide": return this.i18n.t("history.redo.viewElementHide");
+      default: return this.i18n.t("history.redo.none");
     }
   });
 
@@ -287,7 +366,29 @@ export class AppComponent {
   onWorkbenchKeydown(event: KeyboardEvent): void {
     if (this.modals.controller.active) return;
     const modifier = event.metaKey || event.ctrlKey;
-    if (modifier && event.shiftKey && event.key.toLocaleLowerCase() === "p") {
+    const key = event.key.toLocaleLowerCase();
+    if (
+      modifier &&
+      !event.altKey &&
+      key === "z" &&
+      (event.shiftKey
+        ? this.authoringHistory.canRedo()
+        : this.authoringHistory.canUndo())
+    ) {
+      event.preventDefault();
+      if (event.shiftKey) this.redoAuthoring();
+      else this.undoAuthoring();
+    } else if (
+      event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      key === "y" &&
+      this.authoringHistory.canRedo()
+    ) {
+      event.preventDefault();
+      this.redoAuthoring();
+    } else if (modifier && event.shiftKey && key === "p") {
       event.preventDefault();
       this.openCommandPalette();
     } else if (event.key === "Escape" && this.semanticEditor.picking()) {
@@ -457,6 +558,16 @@ export class AppComponent {
       case "show-element":
         this.semanticEditor.showExisting(this.compiler.state().activeViewId);
         break;
+      case "hide-element":
+        if (context.target?.referenceId !== undefined) {
+          this.semanticEditor.hideElement(this.compiler.state().activeViewId, context.target.referenceId);
+        }
+        break;
+      case "delete-element":
+        if (context.target?.referenceId !== undefined) {
+          this.semanticEditor.deleteElement(this.compiler.state().activeViewId, context.target.referenceId);
+        }
+        break;
       case "connect":
         this.semanticEditor.showRelationship(this.compiler.state().activeViewId, context.target?.referenceId);
         break;
@@ -525,10 +636,6 @@ export class AppComponent {
     void this.placement.apply(response, this.sourceEditor());
   }
 
-  undoPlacement(): void {
-    void this.placement.undo(this.sourceEditor());
-  }
-
   openRouteEditor(): void {
     this.routeEditor.show();
   }
@@ -539,10 +646,6 @@ export class AppComponent {
 
   applyRoute(response: PreviewRouteChangeWorkerResponse): void {
     void this.routeEditor.apply(response, this.sourceEditor());
-  }
-
-  undoRoute(): void {
-    void this.routeEditor.undo(this.sourceEditor());
   }
 
   openSemanticEditor(): void {
@@ -564,6 +667,22 @@ export class AppComponent {
     if (!this.canEditArchitecture()) return;
     this.help.showDiagram();
     this.semanticEditor.showDiagram();
+  }
+
+  editActiveDiagram(): void {
+    this.semanticEditor.editDiagram(this.compiler.state().activeViewId);
+  }
+
+  editActiveDiagramContent(): void {
+    this.semanticEditor.editDiagramContent(this.compiler.state().activeViewId);
+  }
+
+  deleteActiveDiagram(): void {
+    this.semanticEditor.deleteDiagram(this.compiler.state().activeViewId);
+  }
+
+  diagramKindLabel(kind: CompilerWorkerView["kind"]): string {
+    return this.i18n.t(`starter.type.${kind}`);
   }
 
   async startConnectionPicking(request: { readonly sourceId?: string }): Promise<void> {
@@ -591,18 +710,26 @@ export class AppComponent {
   applySemantic(response: PreviewSemanticChangeWorkerResponse): void {
     void this.semanticEditor.apply(response, this.sourceEditor()).then(() => {
       if (this.semanticEditor.open()) return;
-      this.placement.sourceChanged();
-      this.routeEditor.sourceChanged();
       this.#wizardSourceSession.invalidateUndo();
       this.canUndoWizard.set(false);
       this.preview.clearSelection();
-      if (this.semanticEditor.mode() === "diagram") this.#compileCurrentProject(response.compilation?.activeViewId);
+      if (this.semanticEditor.mode() === "diagram" || this.semanticEditor.mode() === "diagram-delete") {
+        this.#compileCurrentProject(response.compilation?.activeViewId);
+      }
       else this.#scheduleCompile();
     });
   }
 
-  undoSemantic(): void {
-    void this.semanticEditor.undo(this.sourceEditor()).then(() => this.#scheduleCompile());
+  undoAuthoring(): void {
+    void this.authoringHistory.undo(this.sourceEditor()).then((changed) => {
+      if (changed) this.#afterAuthoringHistoryMove();
+    });
+  }
+
+  redoAuthoring(): void {
+    void this.authoringHistory.redo(this.sourceEditor()).then((changed) => {
+      if (changed) this.#afterAuthoringHistoryMove();
+    });
   }
 
   #previewTargetAt(event: MouseEvent): CompilerWorkerNavigationTarget | undefined {
@@ -964,5 +1091,12 @@ export class AppComponent {
     this.placement.reset();
     this.routeEditor.reset();
     this.semanticEditor.reset();
+  }
+
+  #afterAuthoringHistoryMove(): void {
+    this.#wizardSourceSession.invalidateUndo();
+    this.canUndoWizard.set(false);
+    this.preview.clearSelection();
+    this.#scheduleCompile();
   }
 }

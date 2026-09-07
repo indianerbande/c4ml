@@ -8,17 +8,21 @@ function entry(before: string) {
     version() { return this.revision; },
     apply() { this.value = this.after; this.revision++; this.writes++; },
     undo() { this.value = this.before; this.revision++; },
+    redo() { this.value = this.after; this.revision++; },
   };
 }
 
 describe("project editor batch", () => {
   it("changes and undoes all models together", () => {
     const entries = [entry("model"), entry("view")];
-    const undo = applySourceEditorProjectEdit(entries);
+    const application = applySourceEditorProjectEdit(entries);
     expect(entries.map((e) => e.value)).toEqual(["model!", "view!"]);
-    expect(undo?.()).toBe(true);
+    expect(application?.undo()).toBe(true);
     expect(entries.map((e) => e.value)).toEqual(["model", "view"]);
-    expect(undo?.()).toBe(false);
+    expect(application?.undo()).toBe(false);
+    expect(application?.redo()).toBe(true);
+    expect(entries.map((e) => e.value)).toEqual(["model!", "view!"]);
+    expect(application?.redo()).toBe(false);
   });
   it("rejects a stale model before any write and foreign history before any undo", () => {
     const entries = [entry("model"), entry("view")];
@@ -26,10 +30,12 @@ describe("project editor batch", () => {
     expect(applySourceEditorProjectEdit(entries)).toBeUndefined();
     expect(entries.map((e) => e.writes)).toEqual([0, 0]);
     entries[1]!.value = "view";
-    const undo = applySourceEditorProjectEdit(entries);
+    const application = applySourceEditorProjectEdit(entries);
     entries[1]!.revision++;
-    expect(undo?.()).toBe(false);
+    expect(application?.undo()).toBe(false);
     expect(entries.map((e) => e.value)).toEqual(["model!", "view!"]);
+    expect(application?.synchronize()).toBe(true);
+    expect(application?.undo()).toBe(true);
   });
   it("rolls back a later rejected edit without leaving a partial project", () => {
     const entries = [entry("model"), entry("view")];

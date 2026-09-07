@@ -65,7 +65,7 @@ Theme oder Legende verändern das semantische Modell nicht.
    Es entstehen nur Header, Bezeichnung als Kommentar und ein leeres `model`.
 3. Mit **Element hinzufügen…** legst du zunächst Personen oder Systeme an.
    Prüfe den Quelltextvorschlag und übernimm ihn. Ein Diagramm ist dafür nicht nötig.
-4. Wähle **Diagramm erstellen…** auf der leeren Zeichenfläche oder im Bereich
+4. Wähle **Erstes Diagramm erstellen…** auf der leeren Zeichenfläche oder im Bereich
    **Diagramme**. Wähle den gewünschten Ausschnitt, Titel, Zweck und eine stabile
    Diagramm-ID. Die Vorschau zeigt passende vorhandene Elemente, ohne sie zu kopieren.
 5. Nach dem Übernehmen kannst du mit **Verbinden** Beziehungen hinzufügen.
@@ -75,6 +75,47 @@ Diagramm zeigt einen Ausschnitt davon. Es entstehen keine versteckten Ansichten
 oder Beispielbeziehungen. Modelländerungen und Diagrammerstellung bleiben
 prüfbare, rückgängig machbare Quelltextänderungen. Der ausführliche Assistent
 steht unter **Schrittweise mit Anleitung** weiterhin zur Verfügung.
+
+Ein Modell kann mehrere Diagramme für unterschiedliche Zielgruppen oder
+Detailstufen enthalten. Öffne links **Diagramme** und wähle **Weiteres Diagramm
+erstellen…**. Dort sind alle Diagramme des Modells aufgeführt; ein Klick
+aktiviert das gewählte Diagramm in der Vorschau. Bei mehr als einem Diagramm
+steht zusätzlich die kompakte Diagrammauswahl in der Vorschauleiste bereit.
+
+Unter der Liste stehen die Aktionen für das aktive Diagramm. **Titel und Zweck
+bearbeiten…** ändert nur diese beiden erklärenden Angaben. **Sichtbaren Inhalt
+bearbeiten…** zeigt passende vorhandene Modellelemente in einem statischen
+Diagramm oder blendet sie dort aus. Dynamic-Interaktionen und Deployment-
+Topologie verwenden ihre eigenen Bearbeitungsaktionen. **Diagramm löschen…**
+entfernt diese Sicht, lässt aber das
+gemeinsame Architekturmodell und alle anderen Diagramme unverändert. Jede
+Aktion zeigt zuerst den vorgeschlagenen C4ML-Quelltext und den kompilierten
+Kandidaten und lässt sich rückgängig machen oder wiederholen. Die Beschreibung
+unter dem Diagrammtitel erklärt den Typ in Alltagssprache; stabile View-Art und
+Kennung bleiben im Quelltext erhalten.
+
+Vier Aktionen haben bewusst eine unterschiedliche Reichweite. **Element
+hinzufügen…** erzeugt eine gemeinsame Architekturbeschreibung. **Vorhandenes
+Element anzeigen…** nimmt sie in das aktive Diagramm auf. **Aus diesem Diagramm
+entfernen…** blendet sie nur dort aus; in allen anderen Diagrammen bleibt sie
+verfügbar. **Aus dem Architekturmodell löschen…** entfernt die gemeinsame
+Definition und ist deshalb als destruktiv gekennzeichnet. Verbleibende
+Beziehungen, Besitzer, Diagrammbereiche, Deployment-Elemente, Interaktionen oder
+Layoutverweise verhindern das Löschen, bis sie aufgelöst wurden.
+
+Die Bearbeitungsdialoge wiederholen diesen Geltungsbereich oben im Formular.
+**A · Architekturmodell** ändert die gemeinsame Bedeutung, **D · Aktives
+Diagramm** nur die gewählte Sicht und **L · Diagrammlayout** nur Anordnung oder
+Routenführung. Maßgeblich sind Bezeichnung und Erklärung; die unterschiedlichen
+Akzentfarben sind nur ein zusätzliches visuelles Signal.
+
+„Service“ ist bewusst kein eigener C4ML-Elementtyp. Eine eigenständige
+Anwendung oder fremdbetriebene API wird als Softwaresystem modelliert. Ein
+separat laufender oder bereitstellbarer Service innerhalb eines Systems ist ein
+Container: Öffne links **Diagramme**, erstelle das Container-Diagramm dieses
+Systems und verwende dort **Element hinzufügen…**. Ein logischer Service oder ein Modul
+innerhalb dieser laufenden Einheit gehört in ihr Component-Diagramm. Der
+Elementdialog zeigt diese Einordnung passend zum aktuellen Kontext.
 
 Ohne Diagramm bietet der Einstieg Personen und Systeme an. Die erste
 Diagrammerstellung unterstützt den Überblick sowie Systemkontext, Container,
@@ -236,6 +277,24 @@ stellt den vorherigen Stand einmal wieder her.
 hinzu. **Connect** ist getrennt, weil eine gerichtete Beziehung eine andere
 Aufgabe ist. Quelle und Ziel kommen aus gültigen Listen oder werden temporär im
 Diagramm gewählt. View und C4-Ebene begrenzen die möglichen Elementarten.
+
+**Verbinden** erzeugt eine wiederverwendbare statische Architekturbeziehung:
+Sie legt unabhängig von einem einzelnen Szenario fest, wer mit wem in welcher
+Richtung und warum kommunizieren darf. In einem Dynamic-Diagramm heißt die
+Hauptaktion stattdessen **Interaktionsschritt hinzufügen…**. Dieser lokale
+Schritt wählt eine bestehende statische Beziehung als Grundlage und ergänzt
+Reihenfolge, Szenariobeschreibung und optional eine parallele Gruppe; er
+dupliziert oder verändert die Beziehung nicht. Der Geltungsbereich **D · Aktives
+Diagramm** macht das ausdrücklich sichtbar.
+
+In einem Deployment-Diagramm heißt die Hauptaktion stattdessen **Zur
+Laufzeitumgebung hinzufügen…**. Das Formular trennt Ausführungsorte und
+Infrastruktur von laufenden Instanzen. Eine laufende Instanz muss ein
+vorhandenes logisches Softwaresystem oder einen Container auswählen; sie
+kopiert oder verändert diese Definition nicht, und mehrere Instanzen dürfen
+dasselbe logische Element verwenden. Der Dialog behält **A ·
+Architekturmodell**, weil er das gemeinsame Deployment-Modell ändert, das in
+mehreren Deployment-Diagrammen erscheinen kann.
 
 Die Vorschau erzeugt zuerst ein normales dokumentadressiertes Text-Edit und
 kompiliert das vollständige Kandidatenprojekt ohne Änderung. Quellvorschlag,
@@ -661,6 +720,15 @@ Kandidatendiagramm. **Apply to source** ist ein normaler Monaco-Edit; **Undo
 arrangement** nimmt ihn einmal zurück. **Fix exact current position** ist
 bewusst die letzte Option.
 
+Alle angewendeten grafischen Änderungen an Elementen, Verbindungen, Diagrammen,
+Sichtbarkeit, Platzierung und Routen verwenden gemeinsam die beiden kompakten
+Symbole für Rückgängig und Wiederholen in der Titelleiste. Ihr Tooltip nennt die
+nächste Aktion; ohne verfügbaren Schritt bleiben sie sichtbar, aber deaktiviert.
+Rückgängig benötigt keine Bestätigung, weil Wiederholen den Schritt erneut
+anwendet. Tastenkürzel sind `Cmd/Strg+Z`, `Cmd/Strg+Umschalt+Z` sowie unter
+Windows `Strg+Y`. Eine manuelle Quelltextänderung beginnt eine neue
+Quelltexthistorie und leert diese begrenzte Historie der grafischen Bearbeitung.
+
 Für häufige Aktionen kann das Element direkt mit der rechten Maustaste
 angeklickt werden. **Verbinden mit…** öffnet den Verbindungsdialog mit diesem
 Element als Quelle; dort steht auch die Diagrammauswahl bereit.
@@ -682,13 +750,23 @@ angezeigte Nachbarn und ändert weder andere Views noch Modelldefinitionen.
 Sie gilt für die fünf statischen View-Typen; Dynamic und Deployment verwenden
 stattdessen ihre Interaktions- und Instanzbearbeitung.
 
+Ein Rechtsklick auf ein sichtbares Element bietet mit **Aus diesem Diagramm
+entfernen…** die umgekehrte, ebenfalls diagrammbezogene Aktion. C4ML trägt dafür
+`hide = [element-id]` in diesem View ein; Architekturelement, Beziehungen und
+alle anderen Diagramme bleiben unverändert. Das zentrale Element, das ein
+Diagramm definiert, kann dort nicht ausgeblendet werden. **Aus dem
+Architekturmodell löschen…** ist eine getrennte destruktive Aktion. Ihre
+Kandidatenprüfung entfernt überflüssige `show`- und `hide`-Einträge, verweigert
+das Anwenden aber, solange eine andere Quelltextreferenz das Element noch
+benötigt.
+
 Beim Anlegen eines Elements oder einer Verbindung ist **In aktueller Ansicht
 anzeigen** standardmäßig eingeschaltet. Ohne Häkchen wird nur das Modell
 geändert; die normale View-Projektion kann das Ergebnis dennoch anzeigen.
 Der Verbindungsdialog bietet auch zulässige, **nicht in dieser Ansicht**
 sichtbare Ziele an und erklärt ungeeignete Ziele. Vor dem Anwenden stehen
-Quelltext- und Diagrammvorschau; die Rückgängig-Aktion der Bearbeitung stellt
-alle betroffenen Quelldokumente gemeinsam wieder her.
+Quelltext- und Diagrammvorschau; die gemeinsamen Aktionen für Rückgängig und
+Wiederholen stellen alle betroffenen Quelldokumente gemeinsam wieder her.
 
 **Edit route…** bearbeitet Ports und Führungspunkte einer ausgewählten
 Verbindung. Vor dem Anwenden kompiliert **Preview route change** das gesamte

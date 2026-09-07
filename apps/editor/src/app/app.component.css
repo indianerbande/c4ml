@@ -131,12 +131,60 @@ kbd {
   gap: 7px;
 }
 
+.history-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.history-action {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.history-action:not(:disabled):hover,
+.history-action:not(:disabled):focus-visible {
+  background: var(--accent-soft);
+  outline: 2px solid var(--focus-ring);
+}
+
+.history-action:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
 .empty-preview button {
   min-height: 34px; padding: 7px 14px; border: 1px solid var(--line-strong);
   border-radius: 7px; background: var(--control-bg); color: var(--control-ink);
   font: inherit; font-weight: 700; cursor: pointer;
 }
 .empty-preview button:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+.empty-preview .empty-primary-action {
+  border-color: var(--accent-strong);
+  background: var(--accent);
+  color: white;
+}
+
+.empty-preview .empty-primary-action:hover,
+.empty-preview .empty-primary-action:focus-visible {
+  border-color: var(--accent-strong);
+  background: var(--accent);
+  filter: brightness(0.96);
+  outline: 2px solid var(--focus-ring);
+}
 
 .title-action,
 .primary-action {
@@ -157,6 +205,12 @@ kbd {
 .architecture-action {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--danger));
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 55%, var(--danger));
+}
+
+.diagram-authoring-action {
+  border-color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 12%, var(--control-bg));
+  box-shadow: inset 3px 0 0 var(--accent-strong);
 }
 
 .connection-action {
@@ -216,6 +270,25 @@ kbd {
 .worker-state[data-phase="failed"] .state-dot,
 .worker-state[data-phase="invalid"] .state-dot {
   background: var(--danger);
+}
+
+.worker-retry {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.worker-retry:hover,
+.worker-retry:focus-visible {
+  background: var(--accent-soft);
+  outline: 2px solid var(--focus-ring);
 }
 
 .workbench-main {
@@ -423,6 +496,49 @@ button.tree-row {
 .quick-actions {
   display: grid;
   gap: 5px;
+}
+
+.diagram-management {
+  display: grid;
+  gap: 5px;
+}
+
+.diagram-management p {
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.diagram-management button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+}
+
+.diagram-management button:hover,
+.diagram-management button:focus-visible {
+  border-color: var(--accent-border);
+  background: var(--control-hover);
+  color: var(--accent);
+  outline: 0;
+}
+
+.diagram-management button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.diagram-management button.is-destructive {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+  color: var(--danger);
 }
 
 .quick-actions button,
@@ -645,6 +761,13 @@ button.tree-row {
 .diagram-list {
   display: grid;
   gap: 4px;
+}
+
+.diagram-selection-hint {
+  margin: 0 7px 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
 }
 
 .diagram-row {
@@ -1351,7 +1474,7 @@ button.editor-tab {
 
 .empty-preview {
   display: grid;
-  max-width: 300px;
+  max-width: 470px;
   justify-items: center;
   gap: 7px;
   color: var(--muted);
@@ -1362,6 +1485,13 @@ button.editor-tab {
 .empty-preview strong {
   color: var(--ink);
   font-size: 1.3rem;
+}
+
+.empty-preview small {
+  max-width: 410px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .empty-glyph {

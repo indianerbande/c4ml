@@ -169,11 +169,16 @@ export function isPreviewSemanticChangeWorkerResponse(
 
 function isSemanticEditRequest(value: unknown): value is C4mlSemanticEditRequest {
   if (!isRecord(value) || !isRecord(value["intent"]) || !isRecord(value["operation"])) return false;
+  const operationKind = value["operation"]["kind"];
+  const expectedIntent = operationKind === "create-view" || operationKind === "update-view" ||
+    operationKind === "delete-view" || operationKind === "show-element" || operationKind === "hide-element"
+    ? "view"
+    : "architecture";
   return (
     isId(value["id"]) &&
     (value["viewId"] === undefined || isId(value["viewId"])) &&
     isId(value["intent"]["id"]) &&
-    value["intent"]["kind"] === "architecture" &&
+    value["intent"]["kind"] === expectedIntent &&
     typeof value["intent"]["summary"] === "string" &&
     isSemanticOperation(value["operation"])
   );
@@ -182,8 +187,10 @@ function isSemanticEditRequest(value: unknown): value is C4mlSemanticEditRequest
 function isSemanticOperation(value: Record<string, unknown>): boolean {
   if (value["kind"] === "create-view") return isId(value["optionId"]) && isId(value["viewId"]) &&
     typeof value["title"] === "string" && typeof value["purpose"] === "string" && typeof value["scopeName"] === "string";
+  if (value["kind"] === "update-view") return typeof value["title"] === "string" && typeof value["purpose"] === "string";
+  if (value["kind"] === "delete-view") return true;
   if (value["showInView"] !== undefined && typeof value["showInView"] !== "boolean") return false;
-  if (value["kind"] === "show-element") return isId(value["elementId"]);
+  if (value["kind"] === "show-element" || value["kind"] === "hide-element" || value["kind"] === "delete-element") return isId(value["elementId"]);
   if (value["kind"] === "create-element") {
     return (
       isSemanticKind(value["elementKind"]) &&
@@ -219,6 +226,7 @@ function isSemanticOperation(value: Record<string, unknown>): boolean {
 function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthoringContext {
   if (!isRecord(value)) return false;
   return (value["viewId"] === undefined ? value["viewKind"] === undefined : isId(value["viewId"]) && isViewKind(value["viewKind"])) &&
+    optionalString(value["viewTitle"]) && optionalString(value["viewPurpose"]) &&
     (value["diagramOptions"] === undefined || (Array.isArray(value["diagramOptions"]) && value["diagramOptions"].every((option) =>
       isRecord(option) && isId(option["id"]) && ["system-landscape", "system-context", "container", "component", "code"].includes(String(option["kind"])) && optionalString(option["scopeId"]) && optionalString(option["scopeLabel"])))) &&
     optionalString(value["scopeId"]) && Array.isArray(value["createActions"]) &&
@@ -227,7 +235,9 @@ function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthor
     Array.isArray(value["connectionOptions"]) && value["connectionOptions"].every((option) => isRecord(option) && isId(option["sourceId"]) && Array.isArray(option["targetIds"]) && option["targetIds"].every(isId)) &&
     (value["viewElements"] === undefined || (Array.isArray(value["viewElements"]) && value["viewElements"].every((element) =>
       isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" && isSemanticKind(element["kind"]) && optionalString(element["ownerId"]) &&
-      typeof element["visible"] === "boolean" && typeof element["canShow"] === "boolean" && Array.isArray(element["suitableViews"]) && element["suitableViews"].every(isId)))) &&
+      typeof element["visible"] === "boolean" && typeof element["canShow"] === "boolean" &&
+      typeof element["canHide"] === "boolean" && typeof element["explicitlyShown"] === "boolean" &&
+      Array.isArray(element["suitableViews"]) && element["suitableViews"].every(isId)))) &&
     (value["deployment"] === undefined || isDeploymentContext(value["deployment"])) &&
     (value["dynamic"] === undefined || isDynamicContext(value["dynamic"]));
 }

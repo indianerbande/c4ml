@@ -4,15 +4,15 @@
 
 Status: Public source beta
 
-Current release: `v0.1.0-beta.5`
+Current release: `v0.1.0-beta.6`
 
-Updated: 2026-09-04
+Updated: 2026-09-07
 
 This document states the current product maturity and the boundaries of the
 beta. It is not a development diary. Detailed product requirements live in
 the [engineering specification](../engineering/specification.md), validation
 evidence in [testing](../engineering/testing.md), completed changes in the
-[release notes](releases/0.1.0-beta.5.md), and engineering work items in the
+[release notes](releases/0.1.0-beta.6.md), and engineering work items in the
 [roadmap](../engineering/roadmap.md).
 
 ## What beta means here
@@ -82,7 +82,9 @@ implemented placement and route controls.
   export, and an empty startup workspace.
 - Bidirectional source/diagram navigation and source-backed graphical creation,
   connection, placement, routing, Deployment topology, and Dynamic interaction
-  operations with candidate review and one-step undo.
+  operations with candidate review and shared undo/redo history.
+- Diagram activation and source-backed management of title, purpose, visible
+  content, and deletion, with reader-facing type descriptions.
 - Full-workbench and detached projection-only preview modes.
 - Explicit local Git status, stage, unstage, commit, and push actions. There is
   intentionally no hidden pull, checkout, discard, or history rewrite.
@@ -144,7 +146,7 @@ installation, offline launch, and native file/export workflows on:
 - Ubuntu arm64; and
 - Ubuntu x64.
 
-That evidence is not a renewed host approval for beta 5. Beta 5 is published as
+That evidence is not a renewed host approval for beta 6. Beta 6 is published as
 a source release without approved native downloads.
 
 macOS development artifacts are ad-hoc signed only. Public Apple distribution
@@ -179,7 +181,7 @@ source beta:
 
 ## Status sources
 
-- [Release notes](releases/0.1.0-beta.5.md) record what is included in the
+- [Release notes](releases/0.1.0-beta.6.md) record what is included in the
   current tagged release.
 - The [platform matrix](platforms.md) records current native platform evidence.
 - [Testing](../engineering/testing.md) defines the evidence required for

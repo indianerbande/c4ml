@@ -6,18 +6,21 @@ const appSource = new URL("../src/app/", import.meta.url);
 
 describe("workbench route architecture", () => {
   it("keeps route transactions out of the root component", async () => {
-    const [root, rootTemplate, facade, editor] = await Promise.all([
+    const [root, rootTemplate, facade, editor, history] = await Promise.all([
       readFile(new URL("app.component.ts", appSource), "utf8"),
       readFile(new URL("app.component.html", appSource), "utf8"),
       readFile(new URL("workbench-route.facade.ts", appSource), "utf8"),
       readFile(new URL("route-editor.component.ts", appSource), "utf8"),
+      readFile(new URL("workbench-authoring-history.service.ts", appSource), "utf8"),
     ]);
 
     expect(root).toContain("this.routeEditor.apply(response, this.sourceEditor())");
-    expect(root).toContain("this.routeEditor.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.undo(this.sourceEditor())");
+    expect(root).toContain("this.authoringHistory.redo(this.sourceEditor())");
     expect(root).not.toContain("projectChangeToSourceChange");
     expect(facade).not.toContain("projectChangeToSourceChange");
-    expect(facade).toContain("SourceAuthoringTransaction");
+    expect(facade).toContain("WorkbenchAuthoringHistoryService");
+    expect(history).toContain("SourceAuthoringTransaction");
     expect(facade).not.toContain("queueMicrotask");
     expect(facade).toContain("WorkbenchDocumentFacade");
     expect(facade).toContain("WorkbenchPreviewFacade");

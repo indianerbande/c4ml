@@ -354,6 +354,40 @@ Deployment and Dynamic candidates through the same protocol guards used by
 static authoring. Template tests protect the separate contextual forms,
 explicit Dynamic order/parallel fields, and Deployment environment/placement
 choices.
+Deployment-authoring template and localization tests MUST additionally prove
+that the active Deployment View replaces **Add element…** with **Add to runtime
+environment…**, separates runtime topology from running-instance choices, and
+states that an instance references an existing logical Software System or
+Container without changing it. Deployment-specific preview, apply, cancel,
+result, source, conflict, authority, and Undo/Redo text must not fall back to
+generic element language. The form retains Architecture-model scope because it
+changes the shared deployment model, not only the selected View.
+Dynamic-authoring template and localization tests MUST additionally prove that
+the top-level action says **Add interaction step**, the dialog carries
+Active-diagram rather than Architecture-model scope, the selected Relationship
+is named as its static basis, and preview/apply/cancel/result/source/conflict
+copy consistently describes an interaction step. The separate **Connect**
+dialog MUST call its result a reusable static architecture Relationship.
+A Node-served English/German workbench check on 2026-09-07 compared one static
+System Landscape View with one Dynamic View over the same Relationship. The
+static View kept **Connect** and opened an **A · Architecture model** dialog
+that described a reusable static Relationship. Selecting the Dynamic View
+replaced the primary action with **Add interaction step…**, disabled
+**Connect**, and opened a **D · Active diagram** dialog that named the selected
+static Relationship as its basis and used interaction-step wording throughout.
+The check did not apply either candidate, so the source document remained the
+authority and the two operations were compared without introducing model
+changes.
+A Node-served English/German validation on 2026-09-07 then exercised a
+Deployment View containing one logical Software System, one logical Container,
+and one runtime location. The main action read **Add to runtime environment…**;
+the form separated runtime-topology choices from running instances and changed
+its explanation and identifier label when a Software System or Container
+instance was selected. The instance field offered only the matching logical
+element and stated that the definition remains unchanged. Preview generated an
+ordinary `system-instance` reference, apply compiled with zero diagnostics,
+and the dedicated runtime-environment Undo/Redo labels completed a reversible
+round trip. This is interactive renderer evidence, not a packaged-app test.
 The local dark renderer harness was visually and interactively inspected on
 2026-08-31 with the German online-shop example. The dedicated **Verbinden**
 dialog remained contained beside its candidate preview; selecting Customer and
@@ -827,6 +861,67 @@ identity, show compatible existing elements, reject unknown scopes/duplicate IDs
 and remain non-mutating until a revision-checked apply. Cancel, undo, and the
 retained detailed wizard require regression and interactive evidence.
 
+Workbench template and localization tests MUST keep model and diagram language
+distinct: the viewless state explains that several diagrams can project one
+model. With no architecture elements it makes **Add element…** primary and does
+not offer an impossible View; after the first element it gives **Create first
+diagram…** primary visual precedence and keeps **Add element…** available. The
+Diagrams activity MUST identify the list as the
+model's diagrams, explain activation by selection, and change its creation label
+to **Create another diagram…** once a View exists. Existing list and preview-
+toolbar selection continue to invoke explicit View compilation.
+
+Diagram-management tests MUST also prove that the list presents reader-facing
+type descriptions, marks the activated row, and exposes title/purpose editing,
+visible-content editing, and destructive deletion only for the active View.
+Portable source-edit tests MUST prove that metadata editing preserves View
+identity and neighbouring Views, content editing uses the existing `show`/`hide`
+contract, and deletion preserves the shared model and remaining Views. Worker
+protocol guards and Angular template compilation MUST cover all three paths;
+each applied operation must receive a distinct shared Undo/Redo label.
+
+Template and localization tests MUST keep the three authoring scopes visible
+and textual: **Architecture model** for semantic element/Relationship changes,
+**Active diagram** for View and membership changes, and **Diagram layout** for
+placement and Route controls. The mark and explanatory sentence must remain in
+the form column, and visual validation in both languages MUST confirm that the
+distinction remains understandable without relying on accent color.
+
+Interactive renderer validation on 2026-09-07 used the Node-served German
+Angular application. An empty model offered **Element hinzufügen…** without the
+compiler-invalid diagram dead end. After adding one Person, the empty preview
+promoted **Erstes Diagramm erstellen…** and explained model, diagram, and the
+later **Diagramme** path. Applying the first and then a second System Landscape
+diagram activated each new diagram, changed the side action to **Weiteres
+Diagramm erstellen…**, listed both diagrams, and exposed the compact selector.
+Selection through the list and through the selector switched the same preview
+and highlight. The run also found and fixed a stale native-select title after
+creating the second diagram; the selected option is now bound explicitly to
+the compiler-owned active View ID. This is interactive renderer evidence, not
+a packaged-app test.
+
+A later Node-served German validation on the same date exercised the completed
+diagram-management surface. The Diagrams activity showed the active
+System-Landscape View as **Personen und Systeme im Überblick**, visibly grouped
+its three management actions, and styled **Diagramm löschen…** as destructive.
+The title/purpose dialog retained and displayed the stable View ID. The content
+dialog preselected its only visible Person, produced `hide = [operator]`, and
+recorded **Änderung des Diagramminhalts rückgängig machen** in the shared
+history. Deleting the only View returned to the valid viewless model; Undo
+restored the View and exposed the matching Redo label. All three dialogs were
+visually inspected at the Node-served Angular runtime. This is interactive
+renderer evidence, not a packaged-app test.
+
+A further Node-served validation on 2026-09-07 exercised the scope distinction
+in German and English. Element creation showed **A · Architekturmodell /
+Architecture model**, diagram creation showed **D · Aktives Diagramm / Active
+diagram**, and exact placement showed **L · Diagrammlayout / Diagram layout**.
+In every dialog the letter, localized scope name, and consequence were readable
+before the first form control; architecture, diagram, and layout also retained
+different accent rails as a secondary cue. The diagram footer correctly stated
+that only the active diagram source changes. This is interactive renderer
+evidence, not a packaged-app test.
+
 Model-first validation on 2026-09-06: `pnpm run check` passed, including
 CLI acceptance of an unchanged minimal document, worker protocol and stale-preview
 regressions, and source-generation tests for all five static diagram types.
@@ -890,6 +985,25 @@ serialization MUST NOT change compiler behavior.
 
 Race tests MUST deliberately deliver worker responses out of order and prove
 that the editor never displays an obsolete result.
+
+Worker-lifecycle tests MUST inject a controlled worker factory and prove that
+the first failure terminates the old generation, settles interrupted language
+and authoring previews, and replays the exact latest in-memory document or
+project into compilation and analysis. A response delivered through a retired
+generation's former listener MUST be rejected even when it carries the active
+request identifier. Recovery is successful only after both replayed requests
+respond. A partial response followed by another failure MUST NOT create another
+automatic worker, and further attempts MUST require the visible manual Retry
+action. The recovered generation MUST again accept language-service requests.
+
+Validation on 2026-09-07: the editor's 280 tests and production Angular build
+passed. The controlled-worker regression retained an unsaved multifile project,
+invalidated an interrupted placement preview and completion request, rejected a
+synthetic obsolete-generation compilation, restored compilation, analysis, and
+completion, and stopped after a partial recovery failed. Removing the
+generation check made the stale-response assertion fail, confirming that the
+test observes the intended boundary. This is automated renderer evidence, not
+an interactive or packaged-app recovery test.
 
 The current editor foundation covers worker execution, scheduled compilation,
 out-of-order response rejection, current diagnostics, and last-valid-preview
@@ -1028,7 +1142,8 @@ Desktop tests MUST cover:
   the source editor, a placement change whose edit belongs to another project
   document than the active one, verification that only that document became
   dirty and was presented, undo issued from a different tab that returns to
-  and cleans the edited document, and cross-document reveal of an Output
+  and cleans the edited document, redo restoring the change and dirty state,
+  and cross-document reveal of an Output
   finding — this is the only place where Angular's change-detection timing,
   Monaco's model switch, and the compiler worker are exercised together; and
 - signature, installer/archive integrity, installation, launch, file round
@@ -1073,8 +1188,13 @@ prove that:
   source revision is stale;
 - previewing an edit does not mutate source, dirty state, compiler state, or
   canonical output;
-- applying one operation creates one editor undo unit and undo restores the
-  exact preceding source;
+- applying one operation creates one editor history unit; chronological undo
+  and redo restore the exact preceding and following source and dirty state;
+- placement, Route, and semantic actions share one history, multi-document
+  actions remain atomic, and a new action after undo clears the redo branch;
+- the fixed icon controls remain visible while unavailable, expose contextual
+  accessible names, act without confirmation, and match `Cmd/Ctrl+Z`,
+  `Cmd/Ctrl+Shift+Z`, and Windows `Ctrl+Y`;
 - comments, unrelated formatting, stable identifiers, and unrelated
   declarations remain unchanged;
 - nudge, alignment, distribution, exact positioning, Port selection, and route
@@ -1084,9 +1204,29 @@ prove that:
   compiler, and diagnostic pipeline before it can be accepted; and
 - CLI and compiler-worker compilation remain equivalent after an applied edit.
 
-Tests MUST distinguish semantic architecture operations from view-local layout
-operations. UI event coordinates and Monaco edit objects MUST NOT enter the
-portable authoring contract.
+Tests MUST distinguish semantic architecture operations from View-membership
+and view-local layout operations. Show/remove proposals use View intent; model
+creation/deletion uses architecture intent. Removing a visible non-focal
+element must leave the model and every other View unchanged, while deleting an
+unreferenced element removes its declaration and obsolete `show`/`hide`
+memberships. A referenced deletion must remain unapplied because normal
+candidate compilation reports the remaining references. UI event coordinates
+and Monaco edit objects MUST NOT enter the portable authoring contract.
+
+Semantic-authoring template and localization tests MUST keep the overloaded
+term “service” out of the portable element-kind contract while explaining its
+three common meanings in the element form. A model-level form points an
+independent application/API to Software System and a separately running
+internal service to the owning system's Container diagram. Container and
+Component contexts identify their respective effective kinds without changing
+the worker-owned operation set.
+
+On 2026-09-07 the German model-level element form was visually checked in the
+Node-served Angular renderer. The service guidance appeared immediately below
+the kind selector, named the independent-system choice and the exact
+**Diagramme** → Container-diagram → **Element hinzufügen…** path, remained
+readable without horizontal overflow, and left the form independently
+scrollable above its fixed action footer.
 
 The first graphical placement slice is automatically validated with original
 Signal Garden fixtures. Language tests cover deterministic, syntax-aware
@@ -1119,8 +1259,8 @@ project snapshot so losing the main preview selection during an asynchronous
 candidate build cannot dismiss the dialog. A local
 renderer-harness interaction additionally verified relationship selection, dark and
 light dialog layouts, candidate SVG and source review, corridor-release repair
-copy, a valid Port change, zero diagnostics after apply, one-step undo, and
-restoration of the original clean dirty-state marker.
+copy, a valid Port change, zero diagnostics after apply, undo/redo, and
+restoration of the original clean dirty-state marker after undo.
 
 The first diagram-object context-menu slice has focused editor tests that prove
 the menu role is derived from the clicked compiler navigation target, element
@@ -1134,12 +1274,20 @@ right-click hit testing, localized menu roles, object-specific entries,
 directional movement, source navigation, Escape dismissal, and preselection in
 the unchanged candidate-preview dialogs.
 
+On 2026-09-07 the local Angular renderer was served through its Node.js
+development session and checked in German. The fixed Undo/Redo pair remained
+compact and visible while disabled, exposed contextual accessible names and
+shortcut tooltips, and did not disturb the title-bar layout. Adding a Person
+through semantic authoring enabled Undo; Undo removed it immediately without a
+confirmation dialog and enabled Redo; Redo restored it. `Cmd+Z` and
+`Cmd+Shift+Z` repeated the same round trip.
+
 Visibility authoring evidence additionally covers an unconnected Person added
 to a static View without changing model/Relationships or automatic neighbours;
 wrong-level rejection; comment/CRLF-preserving show-list edits; hidden endpoint
 availability; and one creation/show proposal spanning model and View documents.
-Project-authoring tests require complete batch apply/undo, per-document dirty
-state restoration, and rejection of a stale project before any write. Interactive
+Project-authoring tests require complete batch apply/undo/redo, per-document
+dirty-state restoration, and rejection of a stale project before any write. Interactive
 checks cover Handbook open/background/close, the canvas action, visibility
 labels, and candidate source/SVG review before apply.
 
@@ -1479,6 +1627,12 @@ The source workflow runs `pnpm audit --prod --audit-level=low` after installing
 the committed lockfile. The full development graph is still monitored by
 Dependabot; any unpatched build-only exception and its containment must be
 recorded in `dependencies.md` rather than hidden from the audit.
+For the currently unpatched `extract-zip` and `image-size` edges, the desktop
+check additionally requires their exact reviewed transitive owners, local
+Electron archive checksum validation, a DMG configuration without a background,
+and package-time exclusion of all `node_modules`. These checks turn an upstream
+upgrade or configuration change into an explicit review event; they do not
+misrepresent the upstream vulnerabilities as fixed.
 It also protects the local CSP, main/preview preload separation, the restricted
 preview channel inventory, and packaged resource inventory. A release pipeline
 MUST additionally inventory the complete installer payload and verify platform

@@ -262,6 +262,7 @@ export interface CompilerWorkerResponse {
   readonly requestId: number;
   readonly status: "failed" | "invalid" | "valid";
   readonly diagnostics: readonly CompilerWorkerDiagnostic[];
+  readonly modelElementCount: number | undefined;
   readonly svg: string | undefined;
   readonly navigation: CompilerWorkerNavigation | undefined;
   readonly views: readonly CompilerWorkerView[];
@@ -396,17 +397,23 @@ export function isCompilerWorkerResponse(
       candidate.status === "invalid" ||
       candidate.status === "valid") &&
     Array.isArray(candidate.diagnostics) &&
+    (candidate.modelElementCount === undefined ||
+      (Number.isSafeInteger(candidate.modelElementCount) &&
+        candidate.modelElementCount >= 0)) &&
     Array.isArray(candidate.views) &&
     candidate.views.every(isCompilerWorkerView) &&
     (candidate.activeViewId === undefined ||
       typeof candidate.activeViewId === "string") &&
     (candidate.status === "valid"
-      ? (candidate.views.length === 0
-        ? candidate.svg === undefined && candidate.navigation === undefined && candidate.activeViewId === undefined
-        : typeof candidate.svg === "string" &&
-        isCompilerWorkerNavigation(candidate.navigation) &&
-        typeof candidate.activeViewId === "string" &&
-        candidate.views.some(({ id }) => id === candidate.activeViewId))
+      ? candidate.modelElementCount !== undefined &&
+        (candidate.views.length === 0
+          ? candidate.svg === undefined &&
+            candidate.navigation === undefined &&
+            candidate.activeViewId === undefined
+          : typeof candidate.svg === "string" &&
+            isCompilerWorkerNavigation(candidate.navigation) &&
+            typeof candidate.activeViewId === "string" &&
+            candidate.views.some(({ id }) => id === candidate.activeViewId))
       : candidate.svg === undefined && candidate.navigation === undefined)
   );
 }

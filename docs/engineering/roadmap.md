@@ -17,8 +17,11 @@ the current code on 2026-09-06. Work through these in the order below:
 recovery first, integration evidence second, measured performance improvements
 last. These are open tasks, not implemented capabilities or approval of a
 particular technical design. P1 = high, P2 = medium, P3 = low.
+The original German review record is preserved as
+[historical evidence](../../reviews/REVIEW-2026-09-04.md); its old patch and
+status instructions are not current work items.
 
-- [ ] **1. P1 — Recover after a compiler-worker failure (B3, resilience).**
+- [x] **1. P1 — Recover after a compiler-worker failure (B3, resilience).**
       The client currently marks sessions as failed but does not recreate the
       worker. Provide bounded recovery with visible failure/retry feedback;
       preserve unsaved project source, invalidate interrupted authoring
@@ -26,6 +29,9 @@ particular technical design. P1 = high, P2 = medium, P3 = low.
       Acceptance: a simulated worker failure and repeated recovery failure do
       not lose source or trigger a restart loop; successful recovery restores
       compilation, analysis, and language services for the current project.
+      Completed 2026-09-07 with generation-scoped response rejection, one
+      automatic replay, explicit localized Retry, and controlled-worker
+      regression coverage.
 - [ ] **2. P2 — Add Angular integration tests for real signal timing (B1,
       remaining coverage).** Exercise facades and components with actual
       zoneless Angular scheduling and a controlled editor host, including
@@ -468,6 +474,10 @@ covered by the editor test suite and packaged-workbench evidence.
       requests;
 - [x] schedule explicit dependency-update pull requests without automatic merge;
 - [x] correct the currently reported production dependency vulnerabilities;
+- [x] contain and document the currently unpatched build-only `extract-zip` and
+      `image-size` alerts without suppressing or dismissing them;
+- [ ] replace those build-only dependency edges when a compatible stable
+      upstream release publishes the fix;
 - [x] rewrite the personal maintainer email address out of `main` and every
       retained local branch;
 - [x] configure the repository to use the maintainer's GitHub `noreply` address
@@ -531,7 +541,7 @@ Code retain the scope-derived owner with explicit guidance. Deployment offers
 environment-bounded nodes, infrastructure, and scoped instances. Dynamic adds
 ordered occurrences only through an existing directed static Relationship.
 All three remain deterministic source change sets with candidate compilation,
-explicit source review, and one-step undo.
+explicit source review, and one shared chronological undo/redo history.
 
 The bounded extension slice intentionally requires existing `model` and
 `relations` blocks. Creating missing top-level sections and choosing a target
@@ -548,6 +558,22 @@ heuristics.
 
 - [x] show existing compatible static-model elements through the canvas menu,
       using additive View source selection and reviewed candidate compilation;
+- [x] distinguish adding to the model, showing/removing in one diagram, and
+      deleting from the shared model through separate labels, source intents,
+      candidate checks, and Undo/Redo entries;
+- [x] make the Diagrams activity an explicit View-management surface: activate
+      a diagram, edit title/purpose, edit its visible content, or delete only
+      that diagram through reviewed View-source changes and shared Undo/Redo;
+- [x] replace raw View-kind keywords in the diagram list with reader-facing
+      descriptions while retaining the stable authored title and identity;
+- [x] label every graphical source-change dialog as Architecture model, Active
+      diagram, or Diagram layout with a textual consequence and redundant
+      visual marker;
+- [x] distinguish reusable static Relationships from View-local ordered Dynamic
+      interaction steps in the main action, scope, form, and review language;
+- [x] distinguish logical Software Systems and Containers from their running
+      Deployment instances in the main action, grouped form, review language,
+      and Undo/Redo labels;
 - [x] offer View inclusion when creating elements/connections, label hidden
       connection targets, and explain incompatible targets;
 - [x] apply creation/View changes across project documents with one-step

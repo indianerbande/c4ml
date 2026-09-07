@@ -18,6 +18,18 @@ describe("workbench localization", () => {
     expect(workbenchMessage("de", "editor.noSuggestions")).toBe(
       "Keine Vorschläge",
     );
+    expect(workbenchMessage("en", "starter.firstDiagram")).toBe(
+      "Create first diagram…",
+    );
+    expect(workbenchMessage("de", "starter.firstDiagram")).toBe(
+      "Erstes Diagramm erstellen…",
+    );
+    expect(workbenchMessage("en", "diagrams.createAnother")).toBe(
+      "Create another diagram…",
+    );
+    expect(workbenchMessage("de", "diagrams.createAnother")).toBe(
+      "Weiteres Diagramm erstellen…",
+    );
   });
 
   it("interpolates dynamic values without changing authored content", () => {

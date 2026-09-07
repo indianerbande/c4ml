@@ -419,10 +419,22 @@ export async function compileWorkerRequest(
         undefined,
         parsed.views.map(toWorkerView),
         parsed.views[0]?.id,
+        parsed.model.elements.length,
       );
     }
 
-    if (parsed.views[0] === undefined) return response(request, "valid", parsed.diagnostics, undefined, undefined, [], undefined);
+    if (parsed.views[0] === undefined) {
+      return response(
+        request,
+        "valid",
+        parsed.diagnostics,
+        undefined,
+        undefined,
+        [],
+        undefined,
+        parsed.model.elements.length,
+      );
+    }
     const themeResource = request.project?.theme;
     const parsedTheme = themeResource === undefined
       ? undefined
@@ -443,6 +455,7 @@ export async function compileWorkerRequest(
         undefined,
         parsed.views.map(toWorkerView),
         parsed.views[0].id,
+        parsed.model.elements.length,
       );
     }
     const shapeResource = request.project?.shapes;
@@ -450,14 +463,23 @@ export async function compileWorkerRequest(
       ? undefined
       : parseArchitectureShapeResource(shapeResource.source);
     if (parsedShapes !== undefined && !parsedShapes.valid) {
-      return response(request, "invalid", [{
-        code: parsedShapes.error.code,
-        severity: "error",
-        message: parsedShapes.error.message,
-        source: resourceSource(shapeResource!.uri, shapeResource!.source),
-        related: [],
-        correction: "Review the project-local shape resource and assignments.",
-      }], undefined, undefined, parsed.views.map(toWorkerView), parsed.views[0].id);
+      return response(
+        request,
+        "invalid",
+        [{
+          code: parsedShapes.error.code,
+          severity: "error",
+          message: parsedShapes.error.message,
+          source: resourceSource(shapeResource!.uri, shapeResource!.source),
+          related: [],
+          correction: "Review the project-local shape resource and assignments.",
+        }],
+        undefined,
+        undefined,
+        parsed.views.map(toWorkerView),
+        parsed.views[0].id,
+        parsed.model.elements.length,
+      );
     }
 
     const views = parsed.views.map(toWorkerView);
@@ -493,6 +515,7 @@ export async function compileWorkerRequest(
         undefined,
         views,
         view.id,
+        parsed.model.elements.length,
       );
     }
 
@@ -513,6 +536,7 @@ export async function compileWorkerRequest(
       ),
       views,
       view.id,
+      parsed.model.elements.length,
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -521,6 +545,7 @@ export async function compileWorkerRequest(
       type: "compile-result",
       requestId: request.requestId,
       status: "failed",
+      modelElementCount: undefined,
       svg: undefined,
       navigation: undefined,
       views: [],
@@ -1275,6 +1300,7 @@ function response(
   navigation: CompilerWorkerNavigation | undefined,
   views: readonly CompilerWorkerView[],
   activeViewId: string | undefined,
+  modelElementCount?: number,
 ): CompilerWorkerResponse {
   return {
     protocolVersion: compilerWorkerProtocolVersion,
@@ -1282,6 +1308,7 @@ function response(
     requestId: request.requestId,
     status,
     diagnostics: diagnostics.map(toWorkerDiagnostic),
+    modelElementCount,
     svg,
     navigation,
     views,

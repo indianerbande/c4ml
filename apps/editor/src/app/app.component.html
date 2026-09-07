@@ -24,29 +24,38 @@
     </button>
 
     <div class="title-actions">
-      @if (placement.canUndo()) {
-        <button type="button" class="title-action" (click)="undoPlacement()">
-          {{ i18n.t("placement.undo") }}
+      <div class="history-actions" [attr.aria-label]="i18n.t('history.label')">
+        <button
+          type="button"
+          class="history-action"
+          [disabled]="!authoringHistory.canUndo()"
+          [attr.aria-label]="undoAuthoringLabel()"
+          [title]="undoAuthoringLabel() + ' (' + i18n.t('history.undoShortcut') + ')'"
+          (click)="undoAuthoring()"
+        >
+          <span aria-hidden="true">↶</span>
         </button>
-      }
-      @if (routeEditor.canUndo()) {
-        <button type="button" class="title-action" (click)="undoRoute()">
-          {{ i18n.t("routeEditor.undo") }}
+        <button
+          type="button"
+          class="history-action"
+          [disabled]="!authoringHistory.canRedo()"
+          [attr.aria-label]="redoAuthoringLabel()"
+          [title]="redoAuthoringLabel() + ' (' + i18n.t('history.redoShortcut') + ')'"
+          (click)="redoAuthoring()"
+        >
+          <span aria-hidden="true">↷</span>
         </button>
-      }
-      @if (semanticEditor.canUndo()) {
-        <button type="button" class="title-action" (click)="undoSemantic()">
-          {{ i18n.t("semanticEditor.undo") }}
-        </button>
-      }
+      </div>
       <button
         type="button"
-        class="title-action architecture-action"
+        class="title-action"
+        [class.architecture-action]="primaryAuthoringActionKey() !== 'dynamicEditor.open'"
+        [class.diagram-authoring-action]="primaryAuthoringActionKey() === 'dynamicEditor.open'"
         [disabled]="!canEditArchitecture()"
-        [title]="i18n.t('starter.addHint')"
+        [title]="i18n.t(primaryAuthoringActionHintKey())"
         (click)="openSemanticEditor()"
       >
-        {{ i18n.t("semanticEditor.open") }}
+        {{ i18n.t(primaryAuthoringActionKey()) }}
       </button>
       <button
         type="button"
@@ -64,9 +73,19 @@
       >
         {{ i18n.t("wizard.open") }}
       </button>
-      <div class="worker-state" [attr.data-phase]="compiler.state().phase">
+      <div class="worker-state" [attr.data-phase]="workerStatusPhase()">
         <span class="state-dot" aria-hidden="true"></span>
         <span aria-live="polite">{{ statusLabel() }}</span>
+        @if (compiler.recovery().phase === "failed") {
+          <button
+            type="button"
+            class="worker-retry"
+            [title]="i18n.t('status.retryWorkerHint')"
+            (click)="compiler.retryWorker()"
+          >
+            {{ i18n.t("status.retryWorker") }}
+          </button>
+        }
       </div>
     </div>
   </header>
@@ -421,24 +440,80 @@
           </header>
           <section class="side-section diagram-list">
             <h3>{{ i18n.t("diagrams.available") }}</h3>
+            @if (compiler.state().views.length > 0) {
+              <p class="diagram-selection-hint">
+                {{ i18n.t('diagrams.selectionHint') }}
+              </p>
+            }
             @for (view of compiler.state().views; track view.id) {
               <button
                 type="button"
                 class="diagram-row"
                 [class.is-selected]="compiler.state().activeViewId === view.id"
+                [attr.aria-pressed]="compiler.state().activeViewId === view.id"
                 (click)="selectView(view.id)"
               >
                 <span aria-hidden="true">{{ $index + 1 }}</span>
                 <strong>{{ view.title }}</strong>
-                <small>{{ view.kind }}</small>
+                <small>{{ diagramKindLabel(view.kind) }}</small>
               </button>
             } @empty {
-              <p class="side-empty">{{ i18n.t("diagrams.empty") }}</p>
+              <p class="side-empty">
+                {{
+                  i18n.t(
+                    compiler.state().modelElementCount === 0
+                      ? 'diagrams.emptyModel'
+                      : 'diagrams.empty'
+                  )
+                }}
+              </p>
             }
           </section>
+          @if (compiler.state().activeViewId) {
+            <section class="side-section diagram-management">
+              <h3>{{ i18n.t('diagrams.manageActive') }}</h3>
+              <p>{{ i18n.t('diagrams.manageHint') }}</p>
+              <button type="button" (click)="editActiveDiagram()">
+                {{ i18n.t('diagrams.edit') }}
+              </button>
+              <button
+                type="button"
+                [disabled]="!canEditActiveDiagramContent()"
+                [attr.title]="canEditActiveDiagramContent() ? null : i18n.t('diagrams.contentUnavailable')"
+                (click)="editActiveDiagramContent()"
+              >
+                {{ i18n.t('diagrams.editContent') }}
+              </button>
+              <button type="button" class="is-destructive" (click)="deleteActiveDiagram()">
+                {{ i18n.t('diagrams.delete') }}
+              </button>
+            </section>
+          }
           <section class="side-section quick-actions">
             <h3>{{ i18n.t("diagrams.help") }}</h3>
-            <button type="button" [disabled]="!canEditArchitecture()" (click)="openDiagramEditor()">{{ i18n.t('starter.diagram') }}</button>
+            @if (compiler.state().modelElementCount === 0) {
+              <button
+                type="button"
+                [disabled]="!canEditArchitecture()"
+                (click)="openSemanticEditor()"
+              >
+                {{ i18n.t('starter.addElement') }}
+              </button>
+            } @else {
+              <button
+                type="button"
+                [disabled]="!canEditArchitecture()"
+                (click)="openDiagramEditor()"
+              >
+                {{
+                  i18n.t(
+                    compiler.state().views.length === 0
+                      ? 'starter.firstDiagram'
+                      : 'diagrams.createAnother'
+                  )
+                }}
+              </button>
+            }
             <button type="button" (click)="startWizard()">
               {{ i18n.t("diagrams.create") }}
             </button>
@@ -747,7 +822,12 @@
                       [attr.aria-label]="i18n.t('preview.selectView')"
                     >
                       @for (view of compiler.state().views; track view.id) {
-                        <option [value]="view.id">{{ view.title }}</option>
+                        <option
+                          [value]="view.id"
+                          [selected]="compiler.state().activeViewId === view.id"
+                        >
+                          {{ view.title }}
+                        </option>
                       }
                     </select>
                   </label>
@@ -851,10 +931,31 @@
                 </div>
               } @else if (compiler.state().phase === 'valid' && compiler.state().views.length === 0) {
                 <div class="empty-preview">
-                  <strong>{{ i18n.t('starter.modelReady') }}</strong>
-                  <span>{{ i18n.t('starter.next') }}</span>
-                  <button type="button" (click)="openSemanticEditor()">{{ i18n.t('semanticEditor.open') }}</button>
-                  <button type="button" (click)="openDiagramEditor()">{{ i18n.t('starter.diagram') }}</button>
+                  @if (compiler.state().modelElementCount === 0) {
+                    <strong>{{ i18n.t('starter.emptyModel') }}</strong>
+                    <span>{{ i18n.t('starter.emptyModelNext') }}</span>
+                    <button
+                      class="empty-primary-action"
+                      type="button"
+                      (click)="openSemanticEditor()"
+                    >
+                      {{ i18n.t('starter.addElement') }}
+                    </button>
+                  } @else {
+                    <strong>{{ i18n.t('starter.modelReady') }}</strong>
+                    <span>{{ i18n.t('starter.next') }}</span>
+                    <small>{{ i18n.t('starter.diagramPath') }}</small>
+                    <button
+                      class="empty-primary-action"
+                      type="button"
+                      (click)="openDiagramEditor()"
+                    >
+                      {{ i18n.t('starter.firstDiagram') }}
+                    </button>
+                    <button type="button" (click)="openSemanticEditor()">
+                      {{ i18n.t('starter.addElement') }}
+                    </button>
+                  }
                 </div>
               } @else {
                 <div class="empty-preview">
@@ -1368,6 +1469,7 @@
     [target]="contextMenu.target"
     [position]="contextMenu.position"
     [connectAvailable]="canConnectArchitecture()"
+    [removeFromDiagramAvailable]="canRemoveElementFromDiagram()"
     (actionSelected)="onDiagramContextAction($event)"
     (dismissed)="closeDiagramContextMenu()"
   />

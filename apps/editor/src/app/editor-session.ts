@@ -253,6 +253,7 @@ export interface EditorCompilationState {
   readonly phase: EditorCompilationPhase;
   readonly activeRequestId: number;
   readonly diagnostics: readonly CompilerWorkerDiagnostic[];
+  readonly modelElementCount: number | undefined;
   readonly lastValidSvg: string | undefined;
   readonly lastValidNavigation: CompilerWorkerNavigation | undefined;
   readonly views: readonly CompilerWorkerView[];
@@ -263,6 +264,7 @@ const initialState: EditorCompilationState = {
   phase: "idle",
   activeRequestId: 0,
   diagnostics: [],
+  modelElementCount: undefined,
   lastValidSvg: undefined,
   lastValidNavigation: undefined,
   views: [],
@@ -332,6 +334,10 @@ export class EditorCompilationSession {
       phase: response.status,
       activeRequestId: response.requestId,
       diagnostics: response.diagnostics,
+      modelElementCount:
+        response.status === "valid"
+          ? response.modelElementCount
+          : this.#state.modelElementCount,
       lastValidSvg:
         response.status === "valid"
           ? response.svg
