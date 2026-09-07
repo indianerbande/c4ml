@@ -41,7 +41,7 @@
     "check": "pnpm run build && pnpm run check:documentation && pnpm run check:public-source && pnpm run check:editor-production && pnpm run check:desktop-production && pnpm run check:worker-bundles && pnpm run check:architecture-proof && pnpm run typecheck:tests && pnpm run test"
   },
   "devDependencies": {
-    "@types/node": "24.13.3",
+    "@types/node": "26.4.1",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
