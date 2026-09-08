@@ -2056,13 +2056,17 @@ element form MUST NOT invent a generic Service kind. Its visible, localized
 guidance distinguishes an independent application or externally owned API as a
 Software System, a separately running part inside a system as a Container, and
 a logical service or module inside that running unit as a Component. Outside a
-scoped View it explains that Container creation first requires the owning
-system's Container diagram and offers a direct action that opens diagram
-creation with Container selected. When the current System Context identifies
-the owner, that Software System is preselected; otherwise every eligible
-Software System is named explicitly as **Container diagram for “...”** in the
-choice. Inside Container and Component Views it confirms the effective kind
-selected by the worker-owned context.
+scoped View, the dialog asks where the service runs and offers two direct paths:
+**Create as a Software System** or **Create inside a Software System**. The
+second path remains in the same dialog, selects the owning Software System, and
+selects either one of that system's existing Container diagrams or **Create a
+new Container diagram**. Creating the Container in an existing diagram adds it
+to that View in the same reviewed source transaction. Creating the first
+Container diagram produces the Container and the scoped View together as one
+architecture-plus-diagram transaction and shows the new Container immediately.
+The entered name, responsibility, stable identity, and technology survive the
+path choice. Inside Container and Component Views the form confirms the
+effective kind selected by the worker-owned context.
 The dialog is visibly identified as an architecture-model change and remains a
 separate tool from placement and Route editing. Every operation form remains
 contained in its dialog column regardless of intrinsic control content;

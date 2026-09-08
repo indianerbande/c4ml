@@ -34,7 +34,20 @@
 .semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
 .semantic-service-hint { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); color: var(--control-ink); }
 .semantic-service-hint span { color: var(--muted); }
-.semantic-service-action { justify-self: start; margin-top: 6px; }
+.semantic-service-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 6px; }
+.semantic-service-action,
+.semantic-service-back {
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--control-bg));
+  color: var(--control-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.semantic-service-action:disabled { cursor: default; opacity: 0.48; }
+.semantic-service-back { justify-self: start; min-height: 30px; padding: 0 10px; margin-top: 5px; }
 .semantic-context-card { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
 .semantic-context-card span { color: var(--muted); }
 .dynamic-context-card,

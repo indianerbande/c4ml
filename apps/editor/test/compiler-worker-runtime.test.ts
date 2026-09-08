@@ -1044,6 +1044,59 @@ describe("compiler worker runtime", () => {
     expect(project.documents[0]?.source).toBe(source);
   });
 
+  it("previews a service Container and its first Container diagram atomically", async () => {
+    const source = await readFile(containerSourceUrl, "utf8");
+    const project = {
+      version: 1 as const,
+      id: "service-container-semantic-preview",
+      documents: [{ uri: "container.c4ml", source }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 53,
+      file: "container.c4ml",
+      project,
+      requestedViewId: "route-services",
+      semantic: {
+        id: "semantic:add-notification-service",
+        viewId: undefined,
+        intent: {
+          id: "architecture:create-container-with-view",
+          kind: "architecture",
+          summary: "Create a service Container and its Container diagram.",
+        },
+        operation: {
+          kind: "create-container-with-view",
+          ownerId: "route-canvas",
+          elementId: "notification-service",
+          name: "Notification Service",
+          responsibility: "Sends route notifications.",
+          technology: "Node.js",
+          viewId: "route-services",
+          title: "Container View — Route Services",
+          purpose: "Shows separately running services.",
+        },
+      },
+    };
+
+    expect(isPreviewSemanticChangeWorkerRequest(request)).toBe(true);
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      compilation: { status: "valid", activeViewId: "route-services" },
+    });
+    expect(result.proposedText).toContain("container notification-service inside route-canvas");
+    expect(result.proposedText).toContain("view route-services");
+    expect(result.candidateProject?.documents[0]?.source).toContain("show = [notification-service]");
+    expect(project.documents[0]?.source).toBe(source);
+  });
+
   it("keeps deletion unavailable while the shared element is still referenced", async () => {
     const project = {
       version: 1 as const,

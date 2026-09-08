@@ -96,6 +96,7 @@ export interface C4mlSemanticAuthoringContext {
   readonly viewTitle?: string;
   readonly viewPurpose?: string;
   readonly diagramOptions?: readonly C4mlDiagramCreateOption[];
+  readonly containerDiagrams?: readonly C4mlContainerDiagramOption[];
   readonly scopeId?: string;
   readonly createActions: readonly C4mlSemanticCreateAction[];
   readonly elements: readonly C4mlSemanticAuthoringElement[];
@@ -109,6 +110,13 @@ export interface C4mlSemanticAuthoringContext {
   })[];
   readonly deployment?: C4mlSemanticDeploymentAuthoringContext;
   readonly dynamic?: C4mlSemanticDynamicAuthoringContext;
+}
+
+export interface C4mlContainerDiagramOption {
+  readonly id: string;
+  readonly title: string;
+  readonly scopeId: string;
+  readonly scopeLabel: string;
 }
 
 export interface C4mlDiagramCreateOption {
@@ -127,6 +135,17 @@ export type C4mlSemanticEditOperation =
       readonly name: string;
       readonly responsibility: string;
       readonly classification: "external" | "internal";
+      readonly viewId: string;
+      readonly title: string;
+      readonly purpose: string;
+    }
+  | {
+      readonly kind: "create-container-with-view";
+      readonly ownerId: string;
+      readonly elementId: string;
+      readonly name: string;
+      readonly responsibility: string;
+      readonly technology: string;
       readonly viewId: string;
       readonly title: string;
       readonly purpose: string;
@@ -411,6 +430,7 @@ function createContext(
     createActions,
     elements: eligible.sort((left, right) => compareText(left.id, right.id)),
     connectionOptions,
+    containerDiagrams: containerDiagramOptions(documents, allElements),
     ...(deployment === undefined ? {} : { deployment }),
     ...(dynamic === undefined ? {} : { dynamic }),
   };
@@ -657,6 +677,12 @@ function validateOperation(
     }
     return undefined;
   }
+  if (operation.kind === "create-container-with-view") {
+    return issue(
+      "C4ML-AUTHORING-203",
+      "A Container with a new Container diagram must be created from the architecture model context.",
+    );
+  }
   if (operation.kind === "create-element") {
     if (!identifierPattern.test(operation.elementId)) {
       return issue("C4ML-AUTHORING-203", "The element identifier must start with a letter and contain only letters, numbers, hyphens, or underscores.");
@@ -787,6 +813,7 @@ function validateOperation(
 
 function modelContext(documents: readonly ParsedProjectDocument[]): C4mlSemanticAuthoringContext {
   const elements = documents.flatMap(({ ast }) => ast.model?.elements ?? []);
+  const containerDiagrams = containerDiagramOptions(documents, elements);
   const diagramOptions: C4mlDiagramCreateOption[] = [{ id: "system-landscape", kind: "system-landscape" }];
   for (const element of [...elements].sort((a, b) => compareText(a.name, b.name))) {
     const kinds: C4mlDiagramCreateOption["kind"][] = element.$type === "SoftwareSystemDeclaration"
@@ -796,7 +823,26 @@ function modelContext(documents: readonly ParsedProjectDocument[]): C4mlSemantic
       scopeId: element.name, scopeLabel: elementLabel(element) });
   }
   return { viewId: undefined, viewKind: undefined, createActions: [{ kind: "person" }, { kind: "software-system" }],
-    elements: connectionElementsFor("system-landscape", undefined, elements), connectionOptions: [], diagramOptions };
+    elements: connectionElementsFor("system-landscape", undefined, elements), connectionOptions: [], diagramOptions,
+    containerDiagrams };
+}
+
+function containerDiagramOptions(
+  documents: readonly ParsedProjectDocument[],
+  elements: readonly ElementDeclaration[],
+): C4mlContainerDiagramOption[] {
+  return documents.flatMap(({ ast }) => ast.views).flatMap((view) => {
+    if (viewType(view) !== "container") return [];
+    const scopeId = viewScope(view);
+    const scope = elements.find(({ name }) => name === scopeId);
+    if (scopeId === undefined || scope?.$type !== "SoftwareSystemDeclaration") return [];
+    return [{
+      id: view.name,
+      title: viewPropertyValue(view, "ViewTitleProperty") ?? view.name,
+      scopeId,
+      scopeLabel: elementLabel(scope),
+    }];
+  }).sort((left, right) => compareText(left.id, right.id));
 }
 
 async function proposeModelEdit(project: ArchitectureProjectInput, documents: readonly ParsedProjectDocument[], request: C4mlSemanticEditRequest): Promise<C4mlSemanticEditProposal> {
@@ -805,12 +851,37 @@ async function proposeModelEdit(project: ArchitectureProjectInput, documents: re
   if (target === undefined) return proposalInvalid("C4ML-AUTHORING-205", "Select an existing source document.");
   const context = modelContext(documents);
   const operation = request.operation;
-  let generated;
+  let generated: readonly {
+    readonly documentUri: string;
+    readonly proposedText: string;
+    readonly edit: { readonly startOffset: number; readonly endOffset: number; readonly text: string };
+  }[];
   if (operation.kind === "create-element") {
     if (operation.showInView) return proposalInvalid("C4ML-AUTHORING-203", "Create a diagram explicitly before showing an element in it.");
     const failure = validateOperation(documents, context, operation);
     if (failure !== undefined) return proposalInvalid(failure.code, failure.message);
-    generated = createElementEdit(documents, { document: target }, operation);
+    generated = optionalEdit(createElementEdit(documents, { document: target }, operation));
+  } else if (operation.kind === "create-container-with-view") {
+    const owner = documents.flatMap(({ ast }) => ast.model?.elements ?? [])
+      .find((element) => element.name === operation.ownerId);
+    const views = documents.flatMap(({ ast }) => ast.views);
+    if (owner?.$type !== "SoftwareSystemDeclaration") {
+      return proposalInvalid("C4ML-AUTHORING-203", "Select an existing Software System for the Container.");
+    }
+    if (!identifierPattern.test(operation.elementId) || !identifierPattern.test(operation.viewId)) {
+      return proposalInvalid("C4ML-AUTHORING-203", "Container and diagram identifiers must be stable identifiers.");
+    }
+    if (documents.flatMap(({ ast }) => ast.model?.elements ?? []).some(({ name }) => name === operation.elementId)) {
+      return proposalInvalid("C4ML-AUTHORING-204", `Element identifier "${operation.elementId}" is already in use.`);
+    }
+    if (views.some(({ name }) => name === operation.viewId)) {
+      return proposalInvalid("C4ML-AUTHORING-204", `Diagram identifier "${operation.viewId}" is already in use.`);
+    }
+    if (!operation.name.trim() || !operation.responsibility.trim() || !operation.technology.trim() ||
+      !operation.title.trim() || !operation.purpose.trim()) {
+      return proposalInvalid("C4ML-AUTHORING-203", "Container name, responsibility, technology, diagram title, and diagram purpose are required.");
+    }
+    generated = createContainerWithViewEdits(documents, { document: target }, operation);
   } else if (operation.kind === "create-view") {
     const option = context.diagramOptions?.find(({ id }) => id === operation.optionId);
     if (option === undefined || !identifierPattern.test(operation.viewId) || !operation.title.trim() || !operation.purpose.trim() || (option.kind === "system-landscape" && !operation.scopeName.trim())) {
@@ -825,15 +896,19 @@ async function proposeModelEdit(project: ArchitectureProjectInput, documents: re
       "  audience = default", "  legend = generated",
       ...(show.length ? [`  show = [${show.map(({ id }) => id).join(", ")}]`] : []),
       "  layout {", "    flow = right", "  }", "}"].join(eol);
-    generated = { documentUri: target.uri, proposedText, edit: { startOffset: target.source.length,
-      endOffset: target.source.length, text: `${eol}${eol}${proposedText}${eol}` } };
+    generated = [{ documentUri: target.uri, proposedText, edit: { startOffset: target.source.length,
+      endOffset: target.source.length, text: `${eol}${eol}${proposedText}${eol}` } }];
   } else return proposalInvalid("C4ML-AUTHORING-203", "This operation requires an active diagram.");
-  if (generated === undefined) return proposalInvalid("C4ML-AUTHORING-205", "No safe insertion point was found.");
+  if (generated.length === 0) return proposalInvalid("C4ML-AUTHORING-205", "No safe insertion point was found.");
   const changeSet = createProposedProjectSourceChangeSet(project, { id: request.id, intent: request.intent,
-    affectedIds: affectedIdsFor(operation, request.viewId), edits: [{ documentUri: generated.documentUri, ...generated.edit }] });
+    affectedIds: affectedIdsFor(operation, request.viewId), edits: generated.map(({ documentUri, edit }) => ({ documentUri, ...edit })) });
   const applied = applyProjectSourceChangeSet(project, changeSet);
   if (!applied.valid) return proposalInvalid("C4ML-AUTHORING-205", "The change could not be applied atomically.");
-  return { valid: true, changeSet, documentUri: generated.documentUri, proposedText: generated.proposedText, issues: [] };
+  return { valid: true, changeSet, documentUri: generated[0]!.documentUri,
+    proposedText: generated.length === 1
+      ? generated[0]!.proposedText
+      : generated.map(({ documentUri, proposedText }) => `// ${documentUri}\n${proposedText}`).join("\n\n"),
+    issues: [] };
 }
 
 function createOperationEdits(
@@ -850,6 +925,7 @@ function createOperationEdits(
     case "create-view": return [];
     case "create-system-with-container-view":
       return createSystemWithContainerViewEdits(documents, owner, operation);
+    case "create-container-with-view": return [];
     case "update-view":
       return createUpdateViewEdits(owner, operation);
     case "delete-view":
@@ -878,6 +954,7 @@ function affectedIdsFor(
   switch (operation.kind) {
     case "create-view": return [operation.viewId];
     case "create-system-with-container-view": return [operation.systemId, operation.viewId];
+    case "create-container-with-view": return [operation.ownerId, operation.elementId, operation.viewId];
     case "update-view":
     case "delete-view":
       return viewId === undefined ? [] : [viewId];
@@ -938,6 +1015,47 @@ function createSystemWithContainerViewEdits(
     },
   };
   return system === undefined ? [] : [system, view];
+}
+
+function createContainerWithViewEdits(
+  documents: readonly ParsedProjectDocument[],
+  owner: Pick<ContextOwner, "document">,
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-container-with-view" }>,
+) {
+  const container = createElementEdit(documents, owner, {
+    kind: "create-element",
+    elementKind: "container",
+    elementId: operation.elementId,
+    name: operation.name,
+    responsibility: operation.responsibility,
+    technology: operation.technology,
+    ownerId: operation.ownerId,
+  });
+  const eol = lineEnding(owner.document.source);
+  const proposedText = [
+    `view ${operation.viewId} {`,
+    "  type = container",
+    `  scope = ${operation.ownerId}`,
+    `  title = ${JSON.stringify(operation.title.trim())}`,
+    `  purpose = ${JSON.stringify(operation.purpose.trim())}`,
+    "  audience = default",
+    "  legend = generated",
+    `  show = [${operation.elementId}]`,
+    "  layout {",
+    "    flow = right",
+    "  }",
+    "}",
+  ].join(eol);
+  const view = {
+    documentUri: owner.document.uri,
+    proposedText,
+    edit: {
+      startOffset: owner.document.source.length,
+      endOffset: owner.document.source.length,
+      text: `${eol}${eol}${proposedText}${eol}`,
+    },
+  };
+  return container === undefined ? [] : [container, view];
 }
 
 function createUpdateViewEdits(

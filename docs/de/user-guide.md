@@ -112,10 +112,13 @@ Akzentfarben sind nur ein zusätzliches visuelles Signal.
 „Service“ ist bewusst kein eigener C4ML-Elementtyp. Eine eigenständige
 Anwendung oder fremdbetriebene API wird als Softwaresystem modelliert. Ein
 separat laufender oder bereitstellbarer Service innerhalb eines Systems ist ein
-Container: Verwende im Service-Hinweis **Container-Diagramm erstellen…**. Der
-folgende Dialog benennt jede Auswahl ausdrücklich als **Container-Diagramm für
-„Systemname“**; erstelle und aktiviere das benötigte Diagramm und verwende dort
-**Container hinzufügen…**. Ein logischer Service oder ein Modul
+Container. Die Service-Abfrage bietet **Als Softwaresystem anlegen** und **Als
+Container in einem Softwaresystem anlegen**. Bei der zweiten Auswahl wählst du direkt das
+besitzende Softwaresystem und danach ein bestehendes Container-Diagramm oder
+**Neues Container-Diagramm erstellen**. Du bleibst dabei im selben Dialog.
+C4thedral fügt den Container der vorhandenen Ansicht hinzu oder erstellt
+Container und erstes Diagramm gemeinsam als eine rückgängig machbare
+Quelltextänderung. Ein logischer Service oder ein Modul
 innerhalb dieser laufenden Einheit gehört in ihr Component-Diagramm. Der
 Elementdialog zeigt diese Einordnung passend zum aktuellen Kontext.
 

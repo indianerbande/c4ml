@@ -3,7 +3,7 @@
 ## Project status
 
 C4thedral, powered by the C4ML language and compiler, is published as the
-`0.1.0-beta.6` public source beta. `docs/en/project-status.md` owns the concise
+`0.1.0-beta.7` public source beta. `docs/en/project-status.md` owns the concise
 reader-facing maturity statement; this section retains the detailed engineering
 state needed by repository agents. The local Git repository and GitHub remote exist.
 The Apache-2.0 TypeScript/pnpm monorepo contains only production packages and
@@ -236,9 +236,10 @@ an unchanged logical element, and retains Architecture-model scope because the
 deployment model is shared across Views.
 Localized element-form guidance disambiguates the practitioner term “service”
 as Software System, Container, or Component according to independence and the
-active View scope; it does not introduce a generic Service kind. Its direct
-Container-diagram action opens diagram creation with the relevant Software
-System selected when the active context identifies one.
+active View scope; it does not introduce a generic Service kind. Its model-level
+service choice stays in one dialog, selects the owning Software System and an
+existing Container View, or creates the Container and its first scoped View as
+one source-reviewed, undoable transaction.
 Component and Code guidance derives the fixed owner from the active View.
 Dedicated Deployment-topology authoring adds environment-bounded nodes,
 infrastructure, and scoped instances; dedicated Dynamic-interaction authoring

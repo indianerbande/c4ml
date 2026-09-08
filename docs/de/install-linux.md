@@ -5,7 +5,7 @@
 Diese Anleitung ist für das fertige C4thedral-Installationspaket. Du brauchst
 weder Node.js noch pnpm und musst keine Entwicklerwerkzeuge einrichten.
 
-> **Stand von `v0.1.0-beta.6`:** Diese Version wird als Source-Beta
+> **Stand von `v0.1.0-beta.7`:** Diese Version wird als Source-Beta
 > veröffentlicht; es werden dafür noch keine freigegebenen nativen
 > Installationspakete angeboten. Die Anleitung gilt, sobald ein auf dem
 > Zielsystem geprüftes DEB ausdrücklich bereitgestellt wurde. Bis dahin nutze
