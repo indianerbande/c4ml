@@ -16,6 +16,7 @@ import {
   resolveArchitectureSnapshot,
 } from "@c4ml/compiler-core";
 import { createBundledElkLayoutAdapter } from "@c4ml/layout-elk/bundled";
+import { loadIbmPlexSansSvgFontFaces } from "@c4ml/font-ibm-plex/node";
 
 import {
   compilerWorkerProtocolVersion,
@@ -32,6 +33,7 @@ import {
   isPreviewPlacementChangeWorkerResponse,
   isPreviewRouteChangeWorkerResponse,
   isInspectSemanticAuthoringWorkerResponse,
+  isPreviewSemanticChangeWorkerRequest,
   isPreviewSemanticChangeWorkerResponse,
   type InspectSemanticAuthoringWorkerRequest,
   type PreviewPlacementChangeWorkerRequest,
@@ -43,12 +45,14 @@ import {
 import {
   analyzeWorkerRequest,
   compareWorkerRequest,
+  CompilerWorkerRuntime,
   compileWorkerRequest,
   completeWorkerRequest,
   generateWorkerRequest,
   highlightWorkerRequest,
   helpWorkerRequest,
   inspectSemanticAuthoringWorkerRequest,
+  parseWorkerArchitectureRequest,
   previewProjectChangeWorkerRequest,
   previewPlacementChangeWorkerRequest,
   previewRouteChangeWorkerRequest,
@@ -56,6 +60,11 @@ import {
 } from "../src/app/compiler-worker-runtime.js";
 import { initialC4mlSource } from "../src/app/initial-source.js";
 import { LinearPreviewLayoutAdapter } from "../src/app/linear-preview-layout.js";
+import {
+  navigationHighlightOverlay,
+  svgWithNavigationHighlight,
+} from "../src/app/preview-navigation.js";
+import { PreviewSvgObjectUrl } from "../src/app/preview-svg-object-url.js";
 
 const documentedSourceUrl = new URL(
   "../../../examples/draft/hello-context.c4ml",
@@ -75,6 +84,10 @@ const dynamicSourceUrl = new URL(
 );
 const deploymentSourceUrl = new URL(
   "../../../examples/draft/hello-deployment.c4ml",
+  import.meta.url,
+);
+const signalGardenSourceUrl = new URL(
+  "../../../examples/draft/signal-garden.c4ml",
   import.meta.url,
 );
 const nodeLayoutAdapter = createBundledElkLayoutAdapter();
@@ -163,6 +176,130 @@ function helpRequest(
 }
 
 describe("compiler worker runtime", () => {
+  it("shares one bounded revision parse between compilation and analysis", async () => {
+    const source = await readFile(signalGardenSourceUrl, "utf8");
+    const project = {
+      version: 1 as const,
+      id: "signal-garden-measurement",
+      documents: [{ uri: "signal-garden.c4ml", source }],
+    };
+    const compileRequest: CompilerWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "compile",
+      requestId: 900,
+      file: "signal-garden.c4ml",
+      source,
+      project,
+    };
+    const analysisRequest: AnalysisWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "analyze",
+      requestId: 901,
+      file: "signal-garden.c4ml",
+      source,
+      project,
+    };
+    let parseCalls = 0;
+    const runtime = new CompilerWorkerRuntime({
+      layoutAdapter: nodeLayoutAdapter,
+      embeddedFontFaces: testFontFaces,
+      parseArchitecture: async (request) => {
+        parseCalls += 1;
+        return parseWorkerArchitectureRequest(request);
+      },
+    });
+
+    const [cachedCompilation, cachedAnalysis] = await Promise.all([
+      runtime.execute(compileRequest),
+      runtime.execute(analysisRequest),
+    ]);
+    const [directCompilation, directAnalysis] = await Promise.all([
+      compileWorkerRequest(compileRequest, nodeLayoutAdapter, testFontFaces),
+      analyzeWorkerRequest(analysisRequest),
+    ]);
+
+    expect(parseCalls).toBe(1);
+    expect(cachedCompilation).toEqual(directCompilation);
+    expect(cachedAnalysis).toEqual(directAnalysis);
+
+    const invalidSource = source.replace("c4ml draft-1", "c4ml draft-2");
+    const invalidProject = {
+      ...project,
+      documents: [{ uri: "signal-garden.c4ml", source: invalidSource }],
+    };
+    const [invalidCompilation, invalidAnalysis] = await Promise.all([
+      runtime.execute({
+        ...compileRequest,
+        requestId: 902,
+        source: invalidSource,
+        project: invalidProject,
+      }),
+      runtime.execute({
+        ...analysisRequest,
+        requestId: 903,
+        source: invalidSource,
+        project: invalidProject,
+      }),
+    ]);
+
+    expect(parseCalls).toBe(2);
+    expect(invalidCompilation).toMatchObject({
+      type: "compile-result",
+      status: "invalid",
+    });
+    expect(invalidAnalysis).toMatchObject({
+      type: "analysis-result",
+      status: "invalid",
+    });
+
+    await runtime.execute({ ...analysisRequest, requestId: 904 });
+    expect(parseCalls).toBe(3);
+  });
+
+  it("reuses the production-sized Signal Garden SVG when preview selection changes", async () => {
+    const source = await readFile(signalGardenSourceUrl, "utf8");
+    const fontFaces = await loadIbmPlexSansSvgFontFaces();
+    const result = await compileWorkerRequest(
+      request(source, 910, "signal-containers"),
+      nodeLayoutAdapter,
+      fontFaces,
+    );
+    expect(result.status).toBe("valid");
+    if (
+      result.status !== "valid" ||
+      result.svg === undefined ||
+      result.navigation === undefined
+    ) {
+      throw new Error("Signal Garden did not produce a navigable SVG.");
+    }
+    const target = result.navigation.targets.find(
+      (candidate) => candidate.kind === "route",
+    );
+    expect(target).toBeDefined();
+    const overlay = navigationHighlightOverlay(target, {
+      showRouteDebug: true,
+      width: result.navigation.width,
+      height: result.navigation.height,
+    });
+    const preview = new PreviewSvgObjectUrl();
+    const initial = preview.update(result.svg)!;
+    const selected = preview.update(result.svg, overlay)!;
+
+    expect(initial.blob.size).toBeGreaterThan(250_000);
+    expect(selected.reusedCanonicalBytes).toBe(initial.blob.size);
+    expect(selected.encodedStringBytes).toBeLessThan(
+      selected.reusedCanonicalBytes * 0.01,
+    );
+    expect(await selected.blob.text()).toBe(
+      svgWithNavigationHighlight(result.svg, target, {
+        showRouteDebug: true,
+        width: result.navigation.width,
+        height: result.navigation.height,
+      }),
+    );
+    preview.dispose();
+  });
+
   it("returns the same canonical analysis report as the portable Node path", async () => {
     const project = createArchitectureProjectInput({
       id: "garden-analysis",
@@ -843,6 +980,68 @@ describe("compiler worker runtime", () => {
       'name = "Watering Service"',
     );
     expect(project.documents[0]?.source).toBe(initialC4mlSource);
+  });
+
+  it("previews a sibling Software System and its empty Container diagram atomically", async () => {
+    const source = await readFile(containerSourceUrl, "utf8");
+    const project = {
+      version: 1 as const,
+      id: "second-system-semantic-preview",
+      documents: [{ uri: "container.c4ml", source }],
+    };
+    const request: PreviewSemanticChangeWorkerRequest = {
+      protocolVersion: compilerWorkerProtocolVersion,
+      type: "preview-semantic-change",
+      requestId: 52,
+      file: "container.c4ml",
+      project,
+      requestedViewId: "partner-shop-containers",
+      semantic: {
+        id: "semantic:add-partner-shop",
+        viewId: "route-canvas-containers",
+        intent: {
+          id: "architecture:create-system-with-container-view",
+          kind: "architecture",
+          summary: "Create a sibling Software System and its Container diagram.",
+        },
+        operation: {
+          kind: "create-system-with-container-view",
+          systemId: "partner-shop",
+          name: "Partner Shop",
+          responsibility: "Provides a separate shopping experience.",
+          classification: "internal",
+          viewId: "partner-shop-containers",
+          title: "Container View — Partner Shop",
+          purpose: "Shows the separately running parts of the Partner Shop.",
+        },
+      },
+    };
+
+    expect(isPreviewSemanticChangeWorkerRequest(request)).toBe(true);
+    const result = await previewSemanticChangeWorkerRequest(
+      request,
+      nodeLayoutAdapter,
+      testFontFaces,
+    );
+
+    expect(isPreviewSemanticChangeWorkerResponse(result)).toBe(true);
+    expect(result).toMatchObject({
+      status: "valid",
+      changeSet: {
+        intent: { kind: "architecture" },
+        affectedIds: ["partner-shop", "partner-shop-containers"],
+      },
+      compilation: {
+        status: "valid",
+        activeViewId: "partner-shop-containers",
+      },
+    });
+    expect(result.proposedText).toContain("system partner-shop");
+    expect(result.proposedText).toContain("view partner-shop-containers");
+    expect(result.candidateProject?.documents[0]?.source).toContain(
+      "scope = partner-shop",
+    );
+    expect(project.documents[0]?.source).toBe(source);
   });
 
   it("keeps deletion unavailable while the shared element is still referenced", async () => {

@@ -59,10 +59,19 @@ bounded undo/redo history across those authoring tools; multi-document changes
 remain atomic and restore every affected dirty state. The fixed, contextual
 history controls and cross-document behavior are exercised automatically and
 in the packaged multi-document smoke.
+The local editor integration suite mounts the real document facade and a
+controlled source-editor component through zoneless Angular TestBed scheduling;
+it proves cross-document apply, reveal, undo/redo, and dirty-state restoration,
+including a mutation run that fails when the activation wait is removed.
 The desktop workbench also has an implemented original IDE-like shell with
 C4ML-specific Files, Source Control, Diagrams, Output, and Help activity areas, simultaneous
 source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
-local command palette. Its preview can occupy the full main workbench or detach
+local command palette. Its compact title-bar trigger and all adjacent action
+buttons retain fixed, non-wrapping dimensions at the supported minimum window
+width; responsive reduction affects only secondary brand text and never lets
+controls overlap. Compiler activity and health live in the status bar, whose
+adjacent values use subtle theme-aware separators. Its preview can occupy the
+full main workbench or detach
 into a second Electron window. That window receives only a versioned,
 source-neutral projection and exposes no compiler, source, filesystem,
 document, save, or export authority; selection, zoom, Route-overlay state, and
@@ -93,6 +102,10 @@ The production-bound Angular editor foundation is implemented under
 detection, a lazy
 Monaco source-editor adapter, and a versioned request/response contract to run
 the experimental language package and shared compiler in a local Web Worker.
+Compilation and architecture analysis share a single in-flight or completed
+Langium result only for the exact compiler-owned source/project revision; the
+worker retains one entry, replaces it on any other revision, and never exposes
+parser objects through its protocol.
 It rejects stale responses, retains the last valid SVG during invalid edits,
 and displays source-located diagnostics in a two-pane layout. Worker lifetimes
 are generation-scoped: one automatic replacement replays the latest in-memory
@@ -127,6 +140,10 @@ locally packaged
 IBM Plex family: Sans for interface and diagrams, Mono only for source. SVG
 exports embed the controlled Sans WOFF2 faces, and preview zoom changes actual
 preview dimensions instead of applying a rasterizing CSS transform. The
+main workbench preview prepares one canonical SVG Blob and composes selection
+and routing-debug updates from that stable Blob plus a small overlay, avoiding
+repeated embedded-font string conversion and revoking every obsolete object
+URL. Export SVG and PNG continue to consume the untouched canonical SVG. The
 compiler worker
 uses ELK's API-only entry and a separate local ELK Web Worker for automatic
 layout; the earlier linear adapter remains test-only compatibility code. The
@@ -188,6 +205,14 @@ context-filtered language-worker operations, candidate compilation, explicit
 source review, and the same undo/redo history. Creation and connection are separate
 top-level actions; connection authoring additionally supports a temporary,
 worker-validated Source-to-Target diagram picker without hidden model state.
+Context-menu connection authoring keeps the clicked element fixed and limits
+the form to a valid counterpart plus incoming/outgoing direction; the general
+title-bar action retains independent Source and Target selection.
+An active Container View also distinguishes another Container in its current
+Software System from a guided, atomic creation of a sibling Software System and
+its own initially empty Container View. The combined candidate previews both
+source edits, activates the new View after apply, and occupies one shared
+undo/redo history entry.
 Diagram membership is a separate View-intent operation: context actions can
 show or explicitly hide an existing element in one static View without changing
 the model. Deleting the shared model definition remains a visibly destructive
@@ -211,7 +236,9 @@ an unchanged logical element, and retains Architecture-model scope because the
 deployment model is shared across Views.
 Localized element-form guidance disambiguates the practitioner term “service”
 as Software System, Container, or Component according to independence and the
-active View scope; it does not introduce a generic Service kind.
+active View scope; it does not introduce a generic Service kind. Its direct
+Container-diagram action opens diagram creation with the relevant Software
+System selected when the active context identifies one.
 Component and Code guidance derives the fixed owner from the active View.
 Dedicated Deployment-topology authoring adds environment-bounded nodes,
 infrastructure, and scoped instances; dedicated Dynamic-interaction authoring

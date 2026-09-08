@@ -1287,6 +1287,17 @@ and wizard source generator, so Angular and Monaco contain no parallel C4ML
 grammar or C4 rules. No compiler service or runtime network connection is
 required.
 
+Compilation and architecture analysis for the same exact source or project
+revision share one Langium parse result inside the long-lived compiler worker.
+The cache retains at most one revision and also shares its in-flight parse
+promise, because the renderer deliberately dispatches compilation and analysis
+back to back. Its key uses the compiler-owned source/project revision contract;
+a different document path, source, project document, or project resource
+replaces the entry immediately, and a failed parse does not remain cached.
+Requested View selection is not parser input. This optimization does not expose
+parser objects through the worker protocol, alter either response contract, or
+move language semantics into Angular.
+
 This is the accepted foundation of the production editor, not a claim that the
 MVP editor is feature-complete. A lazy Monaco 0.56.0 adapter owns text input,
 selection, undo, keyboard commands, completion presentation, and marker
@@ -1466,6 +1477,21 @@ one activates it in the preview, and expose **Create another diagram…** after
 the first exists. Applying a created diagram activates that diagram. With more
 than one diagram, the preview toolbar additionally exposes the existing compact
 diagram selector. No control creates a duplicate model or hidden View.
+
+An active Container View makes the ownership boundary explicit at the primary
+authoring entry point. The default path is **Add another Container to
+{Software System}** and keeps the current View's Software System as the
+compiler-derived owner. A separate **New Software System with Container
+diagram** path creates one sibling top-level Software System and one initially
+empty Container View scoped to it. The author supplies the system and diagram
+identities, names, responsibility, title, and purpose; no first Container or
+Relationship is invented. Both source edits and the compiled new View are
+reviewed together, applied as one atomic project-addressed change, entered as
+one shared undo/redo item, and the new Container View becomes active after
+apply. The dialog labels this mixed reach as **A+D · Architecture model + new
+diagram**. This combined convenience operation retains architecture intent
+because it introduces shared model meaning; the contained View edit does not
+make it a layout or membership operation.
 
 This first diagram-creation form offers an organizational System Landscape
 overview and the four static scoped views whose required owners already exist.
@@ -1806,6 +1832,16 @@ localized accessible names and tooltips remain C4thedral-owned text. The icon as
 MUST load offline, follow the active workbench color, and MUST NOT enter diagram
 themes or exported SVG/PNG.
 
+The command palette is opened from one compact, accessibly named title-bar
+button rather than a wide control that resembles an editable search field.
+Title-bar action buttons keep one fixed height, do not shrink, and do not wrap
+or reposition their labels as the main window approaches its supported minimum
+width. Responsive reduction may hide secondary brand text, but MUST NOT resize
+a button, wrap its label, or let title-bar controls overlap. Compiler activity
+and health belong in the status bar rather than the title bar. Adjacent status
+values use fixed, decorative one-pixel separators at 25% black in light mode
+and 25% white in dark mode; flexible empty space does not receive a separator.
+
 A versioned session record may persist only installation-local presentation
 state: the active activity area, bottom-panel visibility and tab, preview zoom,
 route-debug visibility, single-window preview mode, and bounded preview-window
@@ -1832,9 +1868,13 @@ source-change boundaries and MUST NOT create hidden semantic or layout state.
 The first diagram-object context-menu slice is implemented in the main
 workbench preview. Right-clicking selects the object under the pointer and
 derives actions from its compiler-owned navigation target. An architecture
-element can start directed connection picking, open placement authoring with a
-chosen nudge direction, open alignment or exact-position authoring, or reveal
-its declaration. A Relationship, Route label, Port, or corridor can open the
+element can open connection authoring with the clicked element fixed as the
+contextual endpoint. The author chooses only a valid counterpart and whether
+the directed Relationship points away from or towards that fixed element; the
+general toolbar action retains free source/target selection and diagram
+picking. An element can also open placement authoring with a chosen nudge
+direction, open alignment or exact-position authoring, or reveal its
+declaration. A Relationship, Route label, Port, or corridor can open the
 same Route editor with Ports, label movement, waypoint guidance, or automatic
 reset preselected and can reveal its owning source. A boundary offers only its
 valid source-navigation action. Parameter-rich and source-changing operations
@@ -2007,14 +2047,22 @@ and Monaco records an accepted transaction as one entry in the shared
 authoring history. A
 creation with View inclusion may update separate model and View documents;
 the complete project revision is validated before either is changed.
+From a Container View, a distinct guided operation may also create a sibling
+Software System and its own empty Container View as specified in section 9.6;
+it MUST NOT reinterpret that Software System as a Container of the current
+scope.
 Because practitioners use “service” for several architectural levels, the
 element form MUST NOT invent a generic Service kind. Its visible, localized
 guidance distinguishes an independent application or externally owned API as a
 Software System, a separately running part inside a system as a Container, and
 a logical service or module inside that running unit as a Component. Outside a
-scoped View it explains that Container creation first requires creating and
-opening the owning system's Container diagram. Inside Container and Component
-Views it confirms the effective kind selected by the worker-owned context.
+scoped View it explains that Container creation first requires the owning
+system's Container diagram and offers a direct action that opens diagram
+creation with Container selected. When the current System Context identifies
+the owner, that Software System is preselected; otherwise every eligible
+Software System is named explicitly as **Container diagram for “...”** in the
+choice. Inside Container and Component Views it confirms the effective kind
+selected by the worker-owned context.
 The dialog is visibly identified as an architecture-model change and remains a
 separate tool from placement and Route editing. Every operation form remains
 contained in its dialog column regardless of intrinsic control content;
@@ -2315,6 +2363,14 @@ The editor preview MUST resize the SVG's actual display box for zoom. It MUST
 NOT use CSS transform scaling that can leave text rasterized at a different
 resolution. Interface and preview font availability, SVG embedding, packaged
 asset integrity, and PNG font loading require automated and visual evidence.
+The main workbench preview MUST retain one prepared Blob for the current
+canonical SVG and compose selection or routing-debug changes from that stable
+Blob plus a small preview-only overlay. It MUST NOT convert the embedded WOFF2
+payload back into a new string for every interactive highlight. Replaced,
+cleared, and destroyed preview object URLs MUST be revoked. This optimization
+is presentation-only: the composed bytes remain equivalent to inserting the
+same overlay before the canonical closing SVG tag, while standalone SVG and
+PNG exports continue to consume the untouched canonical SVG.
 
 ## 11. Shapes, styles, and themes
 

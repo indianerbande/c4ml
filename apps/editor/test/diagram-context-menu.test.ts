@@ -92,6 +92,9 @@ describe("diagram context menu", () => {
   it("routes contextual actions through the existing authoring facades", async () => {
     const root = await readFile(new URL("../src/app/app.component.ts", import.meta.url), "utf8");
     expect(root).toContain("this.semanticEditor.beginConnectionPicking(");
+    expect(root).toContain(
+      "context.target?.referenceId,\n          undefined,\n          context.target?.referenceId,",
+    );
     expect(root).toContain("this.placement.show({");
     expect(root).toContain("this.routeEditor.show(action.operation)");
     expect(root).toContain("this.semanticEditor.hideElement(");

@@ -187,6 +187,13 @@ function isSemanticEditRequest(value: unknown): value is C4mlSemanticEditRequest
 function isSemanticOperation(value: Record<string, unknown>): boolean {
   if (value["kind"] === "create-view") return isId(value["optionId"]) && isId(value["viewId"]) &&
     typeof value["title"] === "string" && typeof value["purpose"] === "string" && typeof value["scopeName"] === "string";
+  if (value["kind"] === "create-system-with-container-view") {
+    return isId(value["systemId"]) && typeof value["name"] === "string" &&
+      typeof value["responsibility"] === "string" &&
+      (value["classification"] === "internal" || value["classification"] === "external") &&
+      isId(value["viewId"]) && typeof value["title"] === "string" &&
+      typeof value["purpose"] === "string";
+  }
   if (value["kind"] === "update-view") return typeof value["title"] === "string" && typeof value["purpose"] === "string";
   if (value["kind"] === "delete-view") return true;
   if (value["showInView"] !== undefined && typeof value["showInView"] !== "boolean") return false;

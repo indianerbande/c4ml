@@ -10,6 +10,7 @@ import {
 } from "@angular/core";
 
 import type {
+  C4mlDiagramCreateOption,
   C4mlSemanticAuthoringContext,
   C4mlSemanticCreateAction,
   C4mlSemanticDeploymentItemKind,
@@ -25,12 +26,17 @@ import type {
 } from "./compiler-worker.protocol.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { ModalInteractionDirective } from "./modal-interaction.directive.js";
+import {
+  contextualConnectionCounterparts,
+  type ContextualConnectionDirection,
+} from "./contextual-connection.js";
 import type { SemanticEditorMode } from "./workbench-semantic.facade.js";
 
 type SemanticEditorOperationKind =
   | "create-deployment-item"
   | "create-dynamic-interaction"
   | "create-element"
+  | "create-system-with-container-view"
   | "delete-element"
   | "hide-element"
   | "show-element"
@@ -50,9 +56,13 @@ export class SemanticEditorComponent {
   readonly mode = input<SemanticEditorMode>("element");
   readonly initialSourceId = input<string | undefined>(undefined);
   readonly initialTargetId = input<string | undefined>(undefined);
+  readonly contextElementId = input<string | undefined>(undefined);
+  readonly preferredDiagramKind = input<C4mlSemanticViewKind | undefined>(undefined);
+  readonly preferredDiagramScopeId = input<string | undefined>(undefined);
   readonly applied = output<PreviewSemanticChangeWorkerResponse>();
   readonly cancelled = output<void>();
   readonly selectionRequested = output<{ readonly sourceId?: string }>();
+  readonly containerDiagramRequested = output<{ readonly scopeId?: string }>();
 
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
@@ -70,6 +80,7 @@ export class SemanticEditorComponent {
   readonly relationshipId = signal("");
   readonly sourceId = signal("");
   readonly targetId = signal("");
+  readonly contextualDirection = signal<ContextualConnectionDirection>("from-context");
   readonly showInView = signal(true);
   readonly diagramOptionId = signal("system-landscape");
   readonly diagramId = signal("");
@@ -114,7 +125,14 @@ export class SemanticEditorComponent {
   readonly selectedCreateAction = computed<C4mlSemanticCreateAction | undefined>(
     () => this.createActions().find(({ kind }) => kind === this.createKind()),
   );
+  readonly canCreateSystemWithContainerView = computed(
+    () => this.mode() === "element" && this.context()?.viewKind === "container",
+  );
+  readonly createsSystemWithContainerView = computed(
+    () => this.operationKind() === "create-system-with-container-view",
+  );
   readonly serviceGuidanceKey = computed(() => {
+    if (this.createsSystemWithContainerView()) return undefined;
     switch (this.createKind()) {
       case "container":
         return "semanticEditor.serviceHint.container" as const;
@@ -127,6 +145,10 @@ export class SemanticEditorComponent {
         return undefined;
     }
   });
+  readonly canRequestContainerDiagram = computed(() =>
+    this.serviceGuidanceKey() === "semanticEditor.serviceHint.model" &&
+      this.context()?.elements.some(({ kind }) => kind === "software-system") === true,
+  );
   readonly sourceOptions = computed(() =>
     (this.context()?.connectionOptions ?? []).flatMap(({ sourceId }) => {
       const element = this.context()?.elements.find(({ id }) => id === sourceId);
@@ -142,6 +164,36 @@ export class SemanticEditorComponent {
       return element === undefined ? [] : [element];
     });
   });
+  readonly contextualElement = computed(() => {
+    const id = this.contextElementId();
+    return id === undefined
+      ? undefined
+      : this.context()?.elements.find((element) => element.id === id);
+  });
+  readonly contextualOutgoingOptions = computed(() => {
+    const context = this.context();
+    const id = this.contextElementId();
+    return context === undefined || id === undefined
+      ? []
+      : contextualConnectionCounterparts(context, id, "from-context");
+  });
+  readonly contextualIncomingOptions = computed(() => {
+    const context = this.context();
+    const id = this.contextElementId();
+    return context === undefined || id === undefined
+      ? []
+      : contextualConnectionCounterparts(context, id, "to-context");
+  });
+  readonly contextualCounterpartOptions = computed(() =>
+    this.contextualDirection() === "from-context"
+      ? this.contextualOutgoingOptions()
+      : this.contextualIncomingOptions(),
+  );
+  readonly contextualCounterpartId = computed(() =>
+    this.contextualDirection() === "from-context"
+      ? this.targetId()
+      : this.sourceId(),
+  );
   readonly deploymentContext = computed(() => this.context()?.deployment);
   readonly deploymentActions = computed(
     () => this.deploymentContext()?.createActions ?? [],
@@ -233,6 +285,15 @@ export class SemanticEditorComponent {
       element.id === this.existingElementId() && element.canHide);
     if (this.mode() === "delete-element") return this.viewElements().some((element) =>
       element.id === this.existingElementId());
+    if (this.operationKind() === "create-system-with-container-view") {
+      return this.canCreateSystemWithContainerView() &&
+        this.elementId().trim().length > 0 &&
+        this.elementName().trim().length > 0 &&
+        this.responsibility().trim().length > 0 &&
+        this.diagramId().trim().length > 0 &&
+        this.diagramTitle().trim().length > 0 &&
+        this.diagramPurpose().trim().length > 0;
+    }
     if (this.operationKind() === "create-deployment-item") {
       const itemKind = this.deploymentItemKind();
       const named = itemKind === "deployment-node" || itemKind === "infrastructure-node";
@@ -276,8 +337,10 @@ export class SemanticEditorComponent {
           ? "connectionEditor.eyebrow"
           : "semanticEditor.eyebrow",
   );
-  readonly changeScope = computed<"architecture" | "diagram">(() =>
-    this.mode().startsWith("diagram") ||
+  readonly changeScope = computed<"architecture" | "architecture-diagram" | "diagram">(() =>
+    this.createsSystemWithContainerView()
+      ? "architecture-diagram"
+      : this.mode().startsWith("diagram") ||
       this.mode() === "show-element" ||
       this.mode() === "hide-element" ||
       this.editorKind() === "dynamic"
@@ -285,12 +348,16 @@ export class SemanticEditorComponent {
       : "architecture",
   );
   readonly changeScopeTitleKey = computed(() =>
-    this.changeScope() === "diagram"
+    this.changeScope() === "architecture-diagram"
+      ? "authoringScope.architectureDiagram.title"
+      : this.changeScope() === "diagram"
       ? "authoringScope.diagram.title"
       : "authoringScope.architecture.title",
   );
   readonly changeScopeDescriptionKey = computed(() =>
-    this.changeScope() === "diagram"
+    this.changeScope() === "architecture-diagram"
+      ? "authoringScope.architectureDiagram.description"
+      : this.changeScope() === "diagram"
       ? "authoringScope.diagram.description"
       : "authoringScope.architecture.description",
   );
@@ -299,14 +366,16 @@ export class SemanticEditorComponent {
       ? "dynamicEditor.authority"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.authority"
-        : this.changeScope() === "diagram"
+      : this.createsSystemWithContainerView()
+        ? "newSystemEditor.authority"
+      : this.changeScope() === "diagram"
           ? "viewEditor.authority"
           : this.mode() === "relationship"
             ? "connectionEditor.authority"
             : "semanticEditor.authority",
   );
   readonly titleKey = computed(() =>
-    this.mode() === "diagram" ? "starter.diagram" : this.mode() === "diagram-edit" ? "diagramEditor.editTitle" : this.mode() === "diagram-content" ? "diagramEditor.contentTitle" : this.mode() === "diagram-delete" ? "diagramEditor.deleteTitle" : this.mode() === "show-element" ? "viewEditor.open" : this.mode() === "hide-element" ? "viewEditor.remove" : this.mode() === "delete-element" ? "modelDelete.title" : this.editorKind() === "deployment"
+    this.createsSystemWithContainerView() ? "newSystemEditor.title" : this.mode() === "diagram" ? "starter.diagram" : this.mode() === "diagram-edit" ? "diagramEditor.editTitle" : this.mode() === "diagram-content" ? "diagramEditor.contentTitle" : this.mode() === "diagram-delete" ? "diagramEditor.deleteTitle" : this.mode() === "show-element" ? "viewEditor.open" : this.mode() === "hide-element" ? "viewEditor.remove" : this.mode() === "delete-element" ? "modelDelete.title" : this.editorKind() === "deployment"
       ? "deploymentEditor.title"
       : this.editorKind() === "dynamic"
         ? "dynamicEditor.title"
@@ -315,7 +384,9 @@ export class SemanticEditorComponent {
           : "semanticEditor.title",
   );
   readonly previewActionKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.preview"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.preview"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.preview"
@@ -328,7 +399,9 @@ export class SemanticEditorComponent {
               : "semanticEditor.preview",
   );
   readonly applyActionKey = computed(() =>
-    this.mode() === "show-element"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.apply"
+      : this.mode() === "show-element"
       ? "viewEditor.applyShow"
       : this.mode() === "hide-element"
         ? "viewEditor.applyRemove"
@@ -351,7 +424,9 @@ export class SemanticEditorComponent {
                         : "semanticEditor.applyElement",
   );
   readonly cancelActionKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.cancel"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.cancel"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.cancel"
@@ -364,7 +439,9 @@ export class SemanticEditorComponent {
               : "semanticEditor.cancel",
   );
   readonly resultKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.result"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.result"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.result"
@@ -377,7 +454,9 @@ export class SemanticEditorComponent {
               : "semanticEditor.result",
   );
   readonly noPreviewKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.noPreview"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.noPreview"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.noPreview"
@@ -390,7 +469,9 @@ export class SemanticEditorComponent {
               : "semanticEditor.noPreview",
   );
   readonly noPreviewHintKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.noPreviewHint"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.noPreviewHint"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.noPreviewHint"
@@ -403,7 +484,7 @@ export class SemanticEditorComponent {
               : "semanticEditor.noPreviewHint",
   );
   readonly descriptionKey = computed(() =>
-    this.mode() === "diagram" ? "starter.diagramHint" : this.mode() === "diagram-edit" ? "diagramEditor.editDescription" : this.mode() === "diagram-content" ? "diagramEditor.contentDescription" : this.mode() === "diagram-delete" ? "diagramEditor.deleteDescription" : this.viewId() === undefined ? "starter.modelHint" : this.mode() === "show-element" ? "viewEditor.description" : this.mode() === "hide-element" ? "viewEditor.removeDescription" : this.mode() === "delete-element" ? "modelDelete.description" : this.editorKind() === "deployment"
+    this.createsSystemWithContainerView() ? "newSystemEditor.description" : this.mode() === "diagram" ? "starter.diagramHint" : this.mode() === "diagram-edit" ? "diagramEditor.editDescription" : this.mode() === "diagram-content" ? "diagramEditor.contentDescription" : this.mode() === "diagram-delete" ? "diagramEditor.deleteDescription" : this.viewId() === undefined ? "starter.modelHint" : this.mode() === "show-element" ? "viewEditor.description" : this.mode() === "hide-element" ? "viewEditor.removeDescription" : this.mode() === "delete-element" ? "modelDelete.description" : this.editorKind() === "deployment"
       ? "deploymentEditor.description"
       : this.editorKind() === "dynamic"
         ? "dynamicEditor.description"
@@ -412,7 +493,9 @@ export class SemanticEditorComponent {
           : "semanticEditor.description",
   );
   readonly previewingKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.previewing"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.previewing"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.previewing"
@@ -421,7 +504,9 @@ export class SemanticEditorComponent {
           : "semanticEditor.previewing",
   );
   readonly previewAltKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.previewAlt"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.previewAlt"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.previewAlt"
@@ -430,7 +515,9 @@ export class SemanticEditorComponent {
           : "semanticEditor.previewAlt",
   );
   readonly sourceChangeKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.sourceChange"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.sourceChange"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.sourceChange"
@@ -439,7 +526,9 @@ export class SemanticEditorComponent {
           : "semanticEditor.sourceChange",
   );
   readonly conflictsKey = computed(() =>
-    this.editorKind() === "dynamic"
+    this.createsSystemWithContainerView()
+      ? "newSystemEditor.conflicts"
+      : this.editorKind() === "dynamic"
       ? "dynamicEditor.conflicts"
       : this.editorKind() === "deployment"
         ? "deploymentEditor.conflicts"
@@ -466,32 +555,22 @@ export class SemanticEditorComponent {
 
   constructor() {
     effect(() => {
-      const key = `${this.project().id}:${this.viewId()}:${this.mode()}:${this.initialSourceId() ?? ""}:${this.initialTargetId() ?? ""}:${this.project().documents.map(({ uri, source }) => `${uri}\u0000${source}`).join("\u0001")}`;
+      const key = `${this.project().id}:${this.viewId()}:${this.mode()}:${this.initialSourceId() ?? ""}:${this.initialTargetId() ?? ""}:${this.contextElementId() ?? ""}:${this.preferredDiagramKind() ?? ""}:${this.preferredDiagramScopeId() ?? ""}:${this.project().documents.map(({ uri, source }) => `${uri}\u0000${source}`).join("\u0001")}`;
       if (key === this.#contextKey) return;
       this.#contextKey = key;
       void this.#loadContext(key);
     });
     effect(() => {
-      const context = this.context();
-      const requestedSource = this.initialSourceId();
-      const requestedTarget = this.initialTargetId();
-      if (
-        this.mode() !== "relationship" ||
-        context === undefined ||
-        requestedSource === undefined
-      ) return;
-      const source = context.connectionOptions.find(
-        ({ sourceId }) => sourceId === requestedSource,
-      );
-      if (source === undefined) return;
-      const targetId =
-        requestedTarget !== undefined && source.targetIds.includes(requestedTarget)
-          ? requestedTarget
-          : source.targetIds[0] ?? "";
-      this.sourceId.set(source.sourceId);
-      this.targetId.set(targetId);
-      this.relationshipId.set(`${source.sourceId}-to-${targetId}`);
-      this.preview.set(undefined);
+      if (this.mode() !== "diagram") return;
+      const preferredKind = this.preferredDiagramKind();
+      if (preferredKind === undefined) return;
+      const preferredScopeId = this.preferredDiagramScopeId();
+      const options = this.diagramOptions();
+      const preferred = options.find((option) =>
+        option.kind === preferredKind &&
+          (preferredScopeId === undefined || option.scopeId === preferredScopeId)) ??
+        options.find((option) => option.kind === preferredKind);
+      if (preferred !== undefined) this.diagramOptionId.set(preferred.id);
     });
     effect((onCleanup) => {
       const svg = this.preview()?.compilation?.svg;
@@ -509,6 +588,24 @@ export class SemanticEditorComponent {
     const value = selectValue(event);
     if (!isSemanticKind(value)) return;
     this.createKind.set(value);
+    this.preview.set(undefined);
+  }
+
+  selectArchitecturePath(event: Event): void {
+    const value = selectValue(event);
+    if (
+      value !== "create-element" &&
+      value !== "create-system-with-container-view"
+    ) return;
+    if (
+      value === "create-system-with-container-view" &&
+      !this.canCreateSystemWithContainerView()
+    ) return;
+    this.operationKind.set(value);
+    if (value === "create-element") {
+      const firstCreate = this.createActions()[0];
+      if (firstCreate !== undefined) this.createKind.set(firstCreate.kind);
+    }
     this.preview.set(undefined);
   }
 
@@ -544,6 +641,26 @@ export class SemanticEditorComponent {
       );
       this.preview.set(undefined);
     }
+  }
+
+  selectContextualDirection(event: Event): void {
+    const value = selectValue(event);
+    if (value !== "from-context" && value !== "to-context") return;
+    const options = value === "from-context"
+      ? this.contextualOutgoingOptions()
+      : this.contextualIncomingOptions();
+    const previousCounterpart = this.contextualCounterpartId();
+    const counterpartId = options.some(({ id }) => id === previousCounterpart)
+      ? previousCounterpart
+      : options[0]?.id ?? "";
+    this.#setContextualConnection(value, counterpartId);
+  }
+
+  selectContextualCounterpart(event: Event): void {
+    const value = selectValue(event);
+    if (value === undefined) return;
+    if (!this.contextualCounterpartOptions().some(({ id }) => id === value)) return;
+    this.#setContextualConnection(this.contextualDirection(), value);
   }
 
   swapDirection(): void {
@@ -650,7 +767,8 @@ export class SemanticEditorComponent {
         },
         operation,
       },
-      operation.kind === "create-view"
+      operation.kind === "create-view" ||
+        operation.kind === "create-system-with-container-view"
         ? operation.viewId
         : operation.kind === "delete-view"
           ? undefined
@@ -679,6 +797,20 @@ export class SemanticEditorComponent {
 
   diagramKindLabel(kind: C4mlSemanticViewKind): string {
     return this.i18n.t(`starter.type.${kind}`);
+  }
+
+  diagramOptionLabel(option: C4mlDiagramCreateOption): string {
+    return option.kind === "container" && option.scopeLabel !== undefined
+      ? this.i18n.t("starter.option.container", { scope: option.scopeLabel })
+      : `${this.diagramKindLabel(option.kind)}${option.scopeLabel === undefined ? "" : ` · ${option.scopeLabel}`}`;
+  }
+
+  requestContainerDiagram(): void {
+    if (!this.canRequestContainerDiagram()) return;
+    const scopeId = this.context()?.viewKind === "system-context"
+      ? this.context()?.scopeId
+      : undefined;
+    this.containerDiagramRequested.emit(scopeId === undefined ? {} : { scopeId });
   }
 
   visibilityLabel(id: string): string {
@@ -751,8 +883,20 @@ export class SemanticEditorComponent {
       return;
     }
     this.context.set(response.context);
-    this.diagramTitle.set(response.context.viewTitle ?? "");
-    this.diagramPurpose.set(response.context.viewPurpose ?? "");
+    if (this.mode() === "diagram") {
+      const preferredKind = this.preferredDiagramKind();
+      const preferredScopeId = this.preferredDiagramScopeId();
+      const options = response.context.diagramOptions ?? [];
+      const preferred = options.find((option) =>
+        option.kind === preferredKind &&
+          (preferredScopeId === undefined || option.scopeId === preferredScopeId)) ??
+        options.find((option) => option.kind === preferredKind) ??
+        options[0];
+      this.diagramOptionId.set(preferred?.id ?? "");
+    }
+    const editsExistingDiagram = this.mode() === "diagram-edit";
+    this.diagramTitle.set(editsExistingDiagram ? response.context.viewTitle ?? "" : "");
+    this.diagramPurpose.set(editsExistingDiagram ? response.context.viewPurpose ?? "" : "");
     const firstHidden = response.context.viewElements?.find((element) => element.canShow && !element.visible);
     const firstVisible = response.context.viewElements?.find((element) => element.canHide);
     if (this.mode() === "diagram-content") {
@@ -794,7 +938,13 @@ export class SemanticEditorComponent {
       this.interactionOrder.set(String(nextOrder));
       this.interactionId.set(dynamicInteractionSuggestion(firstDynamic.id, nextOrder));
     }
-    if (firstSource !== undefined) {
+    if (this.mode() === "relationship" && this.contextElementId() !== undefined) {
+      this.#initializeContextualConnection(
+        response.context,
+        this.contextElementId()!,
+        this.initialTargetId(),
+      );
+    } else if (firstSource !== undefined) {
       const requestedSource = this.initialSourceId();
       const source = response.context.connectionOptions.find(
         ({ sourceId }) => sourceId === requestedSource,
@@ -823,6 +973,18 @@ export class SemanticEditorComponent {
     if (this.mode() === "show-element") return { kind: "show-element", elementId: this.existingElementId() };
     if (this.mode() === "hide-element") return { kind: "hide-element", elementId: this.existingElementId() };
     if (this.mode() === "delete-element") return { kind: "delete-element", elementId: this.existingElementId() };
+    if (this.operationKind() === "create-system-with-container-view") {
+      return {
+        kind: "create-system-with-container-view",
+        systemId: this.elementId().trim(),
+        name: this.elementName().trim(),
+        responsibility: this.responsibility().trim(),
+        classification: this.classification(),
+        viewId: this.diagramId().trim(),
+        title: this.diagramTitle().trim(),
+        purpose: this.diagramPurpose().trim(),
+      };
+    }
     if (this.operationKind() === "create-deployment-item") {
       const itemKind = this.deploymentItemKind();
       return {
@@ -898,6 +1060,68 @@ export class SemanticEditorComponent {
       this.relationshipId.set(`${nextSource}-to-${nextTarget}`);
     }
   }
+
+  #initializeContextualConnection(
+    context: C4mlSemanticAuthoringContext,
+    contextElementId: string,
+    requestedCounterpartId?: string,
+  ): void {
+    const outgoing = contextualConnectionCounterparts(
+      context,
+      contextElementId,
+      "from-context",
+    );
+    const incoming = contextualConnectionCounterparts(
+      context,
+      contextElementId,
+      "to-context",
+    );
+    const direction: ContextualConnectionDirection =
+      requestedCounterpartId !== undefined &&
+      incoming.some(({ id }) => id === requestedCounterpartId) &&
+      !outgoing.some(({ id }) => id === requestedCounterpartId)
+        ? "to-context"
+        : outgoing.length > 0
+          ? "from-context"
+          : "to-context";
+    const options = direction === "from-context" ? outgoing : incoming;
+    const counterpartId =
+      requestedCounterpartId !== undefined &&
+      options.some(({ id }) => id === requestedCounterpartId)
+        ? requestedCounterpartId
+        : options[0]?.id ?? "";
+    this.contextualDirection.set(direction);
+    this.sourceId.set(direction === "from-context" ? contextElementId : counterpartId);
+    this.targetId.set(direction === "from-context" ? counterpartId : contextElementId);
+    this.relationshipId.set(
+      counterpartId.length === 0
+        ? ""
+        : `${this.sourceId()}-to-${this.targetId()}`,
+    );
+    this.preview.set(undefined);
+  }
+
+  #setContextualConnection(
+    direction: ContextualConnectionDirection,
+    counterpartId: string,
+  ): void {
+    const contextElementId = this.contextElementId();
+    if (contextElementId === undefined) return;
+    const previousSource = this.sourceId();
+    const previousTarget = this.targetId();
+    const nextSource = direction === "from-context" ? contextElementId : counterpartId;
+    const nextTarget = direction === "from-context" ? counterpartId : contextElementId;
+    this.contextualDirection.set(direction);
+    this.sourceId.set(nextSource);
+    this.targetId.set(nextTarget);
+    this.#updateRelationshipId(
+      previousSource,
+      previousTarget,
+      nextSource,
+      nextTarget,
+    );
+    this.preview.set(undefined);
+  }
 }
 
 function selectValue(event: Event): string | undefined {
@@ -920,6 +1144,8 @@ function isDeploymentItemKind(value: unknown): value is C4mlSemanticDeploymentIt
 function operationSummary(operation: C4mlSemanticEditOperation): string {
   switch (operation.kind) {
     case "create-view": return `Create diagram ${operation.viewId}`;
+    case "create-system-with-container-view":
+      return `Create Software System ${operation.systemId} with Container diagram ${operation.viewId}.`;
     case "update-view": return "Update the active diagram title and purpose.";
     case "delete-view": return "Delete the active diagram.";
     case "show-element":

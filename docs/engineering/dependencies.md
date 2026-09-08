@@ -514,7 +514,8 @@ remains a Node frontend responsibility and does not enter the compiler core.
 | --- | ---: | --- | --- |
 | pnpm | 11.24.0 | MIT | pinned workspace package manager |
 | TypeScript | 6.0.3 | Apache-2.0 | strict type checking and ESM build; compatible with the Angular 22 editor baseline |
-| Vitest | 4.1.11 | MIT | unit and adapter-contract tests |
+| Vitest | 5.0.0 | MIT | unit, adapter-contract, and Angular integration tests |
+| happy-dom | 20.14.0 | MIT | editor-only DOM host for Angular integration tests |
 | `@types/node` | 24.13.3 | MIT | Node.js 24 LTS type surface |
 | esbuild | 0.28.2 | MIT | in-memory renderer Web Worker bundle compatibility check |
 
@@ -526,6 +527,16 @@ permitted to execute
 dependency build scripts. The version-specific `allowBuilds` map in
 `pnpm-workspace.yaml` records those narrow approvals; all unreviewed dependency
 build scripts remain blocked by pnpm.
+
+happy-dom is confined to `apps/editor` development tests. It provides the DOM
+surface required to mount Angular components through TestBed and exercise real
+zoneless signal scheduling; it adds no application runtime, installer, native
+binary, or network requirement and works offline after the committed lockfile
+has been installed. The controlled-editor integration suite protects the
+boundary by proving that document selection is presented before source reveal,
+apply, undo, or redo reaches the editor model. Angular, the document facade,
+and the source-authoring contracts remain the production owners of that
+behavior; happy-dom is only their replaceable test host.
 
 ## Dependency maintenance and update gate
 

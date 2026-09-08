@@ -199,11 +199,26 @@ export function svgWithNavigationHighlight(
   target: CompilerWorkerNavigationTarget | undefined,
   options?: PreviewOverlayOptions,
 ): string {
+  const overlay = navigationHighlightOverlay(target, options);
+  return overlay.length > 0 && svg.includes("</svg>")
+    ? svg.replace("</svg>", `${overlay}</svg>`)
+    : svg;
+}
+
+/**
+ * Returns only the preview-owned selection and routing-debug layer. Keeping
+ * this fragment separate lets the workbench reuse the canonical SVG Blob,
+ * including its embedded fonts, when only interactive presentation changes.
+ */
+export function navigationHighlightOverlay(
+  target: CompilerWorkerNavigationTarget | undefined,
+  options?: PreviewOverlayOptions,
+): string {
   if (
     target === undefined ||
     target.svgElementIds.some((id) => !/^c4ml-[a-z0-9_-]+$/iu.test(id))
   ) {
-    return svg;
+    return "";
   }
   const style = selectionStyle(target);
   const debug = selectionOverlay(target, options);
@@ -211,8 +226,7 @@ export function svgWithNavigationHighlight(
     style.length === 0
       ? ""
       : `<style id="c4ml-editor-selection">${style}</style>`;
-  const overlay = `${selectionCss}${debug}`;
-  return svg.includes("</svg>") ? svg.replace("</svg>", `${overlay}</svg>`) : svg;
+  return `${selectionCss}${debug}`;
 }
 
 function nearestPointTarget<T extends Extract<PreviewHitTarget, { kind: "port" }>>(

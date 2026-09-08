@@ -24,8 +24,19 @@ import {
   DesktopPreviewProjectionSequence,
   normalizePreviewWindowBounds,
 } from "../src/preview-window.js";
+import { desktopSmokeSourceForTypedInput } from "../src/smoke-source.js";
 
 describe("desktop foundation", () => {
+  it("lets Monaco own indentation for the packaged typed-input smoke", () => {
+    const nonEmptyLines = desktopSmokeSourceForTypedInput
+      .split("\n")
+      .filter((line) => line.length > 0);
+
+    expect(nonEmptyLines.every((line) => !/^\s/.test(line))).toBe(true);
+    expect(desktopSmokeSourceForTypedInput).toContain("system smoke-system {");
+    expect(desktopSmokeSourceForTypedInput).toContain("view smoke-context {");
+  });
+
   it("labels the context-sensitive close action in both interface languages", () => {
     expect(desktopMessage("en", "menu.closeDocument")).toBe("Close File");
     expect(desktopMessage("en", "menu.closeProject")).toBe("Close Project");

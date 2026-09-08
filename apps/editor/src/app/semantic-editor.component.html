@@ -1,5 +1,5 @@
 <div class="placement-backdrop semantic-backdrop">
-  <section c4mlModal class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" [class.is-diagram-editor]="changeScope() === 'diagram'" [class.scope-architecture]="changeScope() === 'architecture'" [class.scope-diagram]="changeScope() === 'diagram'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(titleKey())" (click)="$event.stopPropagation()">
+  <section c4mlModal class="placement-editor semantic-editor" [class.is-connection-editor]="mode() === 'relationship'" [class.is-diagram-editor]="changeScope() === 'diagram'" [class.scope-architecture]="changeScope() !== 'diagram'" [class.scope-diagram]="changeScope() === 'diagram'" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t(titleKey())" (click)="$event.stopPropagation()">
     <header>
       <div>
         <p>{{ i18n.t(eyebrowKey()) }}</p>
@@ -12,13 +12,13 @@
     <div class="placement-body">
       <form class="placement-form" (submit)="$event.preventDefault(); buildPreview()">
         <aside class="authoring-scope" aria-live="polite">
-          <span class="authoring-scope-mark" aria-hidden="true">{{ changeScope() === "architecture" ? "A" : "D" }}</span>
+          <span class="authoring-scope-mark" aria-hidden="true">{{ changeScope() === "architecture-diagram" ? "A+D" : changeScope() === "architecture" ? "A" : "D" }}</span>
           <span class="authoring-scope-copy">
             <strong>{{ i18n.t(changeScopeTitleKey()) }}</strong>
             <small>{{ i18n.t(changeScopeDescriptionKey()) }}</small>
           </span>
         </aside>
-        @if (changeScope() === "architecture") {
+        @if (changeScope() !== "diagram") {
         <aside class="semantic-authority" [class.is-destructive]="mode() === 'delete-element'">
           <strong>{{ i18n.t(mode() === "delete-element" ? "modelDelete.warning" : mode() === "relationship" ? "connectionEditor.architectureWarning" : editorKind() === "deployment" ? "deploymentEditor.architectureWarning" : "semanticEditor.architectureWarning") }}</strong>
           <span>{{ i18n.t(mode() === "delete-element" ? "modelDelete.warningText" : mode() === "relationship" ? "connectionEditor.architectureWarningText" : editorKind() === "deployment" ? "deploymentEditor.architectureWarningText" : "semanticEditor.architectureWarningText") }}</span>
@@ -43,7 +43,7 @@
             <label><span>{{ i18n.t('starter.diagramType') }}</span>
               <select [value]="diagramOptionId()" (change)="selectDiagramOption($event)">
                 @for (option of diagramOptions(); track option.id) {
-                  <option [value]="option.id">{{ diagramKindLabel(option.kind) }}{{ option.scopeLabel ? ' · ' + option.scopeLabel : '' }}</option>
+                  <option [value]="option.id" [selected]="option.id === diagramOptionId()">{{ diagramOptionLabel(option) }}</option>
                 }
               </select>
             </label>
@@ -67,13 +67,6 @@
               <span>{{ diagramKindLabel(context()!.viewKind!) }} · {{ context()?.viewId }}</span>
             </aside>
             <label>
-              <span>{{ i18n.t('diagramEditor.contentAction') }}</span>
-              <select [value]="diagramContentAction()" (change)="selectDiagramContentAction($event)">
-                <option value="show">{{ i18n.t('diagramEditor.showElement') }}</option>
-                <option value="hide">{{ i18n.t('diagramEditor.hideElement') }}</option>
-              </select>
-            </label>
-            <label>
               <span>{{ i18n.t('viewEditor.element') }}</span>
               <select [value]="existingElementId()" (change)="selectExisting($event)">
                 <option value="" [selected]="existingElementId() === ''">{{ i18n.t('viewEditor.choose') }}</option>
@@ -84,6 +77,13 @@
                     [disabled]="diagramContentAction() === 'show' ? !element.canShow || element.visible : !element.canHide"
                   >{{ element.label }} · {{ element.id }} · {{ i18n.t(element.visible ? 'diagramEditor.visible' : 'diagramEditor.hidden') }}</option>
                 }
+              </select>
+            </label>
+            <label>
+              <span>{{ i18n.t('diagramEditor.contentAction') }}</span>
+              <select [value]="diagramContentAction()" (change)="selectDiagramContentAction($event)">
+                <option value="show">{{ i18n.t('diagramEditor.showElement') }}</option>
+                <option value="hide">{{ i18n.t('diagramEditor.hideElement') }}</option>
               </select>
             </label>
             <p>{{ i18n.t(diagramContentAction() === 'show' ? 'diagramEditor.showHint' : 'diagramEditor.hideHint') }}</p>
@@ -240,6 +240,58 @@
                 <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
               </label>
             } @else {
+            @if (canCreateSystemWithContainerView()) {
+              <label>
+                <span>{{ i18n.t("newSystemEditor.path") }}</span>
+                <select [value]="operationKind()" (change)="selectArchitecturePath($event)">
+                  <option value="create-element">{{ i18n.t("newSystemEditor.currentSystem", { owner: selectedCreateAction()?.ownerLabel ?? context()?.scopeId ?? '' }) }}</option>
+                  <option value="create-system-with-container-view">{{ i18n.t("newSystemEditor.newSystem") }}</option>
+                </select>
+              </label>
+            }
+            @if (createsSystemWithContainerView()) {
+              <aside class="semantic-context-card">
+                <strong>{{ i18n.t("newSystemEditor.explanationTitle") }}</strong>
+                <span>{{ i18n.t("newSystemEditor.explanation") }}</span>
+              </aside>
+              <label>
+                <span>{{ i18n.t("newSystemEditor.systemName") }}</span>
+                <input [value]="elementName()" (input)="update(elementName, $event)" [placeholder]="i18n.t('newSystemEditor.systemNamePlaceholder')" />
+              </label>
+              <label>
+                <span>{{ i18n.t("newSystemEditor.systemResponsibility") }}</span>
+                <textarea [value]="responsibility()" (input)="update(responsibility, $event)" [placeholder]="i18n.t('newSystemEditor.systemResponsibilityPlaceholder')"></textarea>
+              </label>
+              <label>
+                <span>{{ i18n.t("newSystemEditor.systemId") }}</span>
+                <input [value]="elementId()" (input)="update(elementId, $event)" placeholder="new-software-system" />
+                <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+              </label>
+              <label>
+                <span>{{ i18n.t("semanticEditor.classification") }}</span>
+                <select [value]="classification()" (change)="setClassification($event)">
+                  <option value="internal">{{ i18n.t("semanticEditor.internal") }}</option>
+                  <option value="external">{{ i18n.t("semanticEditor.external") }}</option>
+                </select>
+              </label>
+              <aside class="semantic-context-card">
+                <strong>{{ i18n.t("newSystemEditor.diagramSection") }}</strong>
+                <span>{{ i18n.t("newSystemEditor.diagramSectionHint") }}</span>
+              </aside>
+              <label>
+                <span>{{ i18n.t("starter.title") }}</span>
+                <input [value]="diagramTitle()" (input)="update(diagramTitle, $event)" [placeholder]="i18n.t('newSystemEditor.diagramTitlePlaceholder')" />
+              </label>
+              <label>
+                <span>{{ i18n.t("starter.purpose") }}</span>
+                <textarea [value]="diagramPurpose()" (input)="update(diagramPurpose, $event)" [placeholder]="i18n.t('newSystemEditor.diagramPurposePlaceholder')"></textarea>
+              </label>
+              <label>
+                <span>{{ i18n.t("starter.diagramId") }}</span>
+                <input [value]="diagramId()" (input)="update(diagramId, $event)" placeholder="new-system-containers" />
+                <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+              </label>
+            } @else {
             <label>
               <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
               <select [value]="createKind()" (change)="selectCreateKind($event)">
@@ -261,6 +313,11 @@
               <aside class="semantic-service-hint">
                 <strong>{{ i18n.t("semanticEditor.serviceHint.title") }}</strong>
                 <span>{{ i18n.t(guidanceKey) }}</span>
+                @if (canRequestContainerDiagram()) {
+                  <button type="button" class="semantic-service-action" (click)="requestContainerDiagram()">
+                    {{ i18n.t("semanticEditor.serviceHint.createContainerDiagram") }}
+                  </button>
+                }
               </aside>
             }
             <label>
@@ -304,42 +361,75 @@
               </div>
             }
             }
+            }
           } @else {
-            <button type="button" class="semantic-pick-button" (click)="requestDiagramSelection()">
-              {{ i18n.t(initialSourceId() === undefined ? "connectionEditor.pickBoth" : "connectionEditor.pickTarget") }}
-            </button>
-            <div class="field-row connection-endpoints">
-              <label>
-                <span>{{ i18n.t("semanticEditor.from") }}</span>
-                <select [value]="sourceId()" (change)="selectSource($event)">
-                  @for (element of sourceOptions(); track element.id) {
-                    <option [value]="element.id" [selected]="element.id === sourceId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                <span>{{ i18n.t("semanticEditor.to") }}</span>
-                <select [value]="targetId()" (change)="selectTarget($event)">
-                  @for (element of targetOptions(); track element.id) {
-                    <option [value]="element.id" [selected]="element.id === targetId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
-                  }
-                  @for (element of unavailableTargets(); track element.id) {
-                    <option [value]="element.id" disabled>{{ element.label }} · {{ unavailableReason(element.id) }}</option>
-                  }
-                </select>
-              </label>
-              <button type="button" class="swap-direction-button" [disabled]="!canSwapDirection()" (click)="swapDirection()">
-                <span aria-hidden="true">⇄</span>
-                {{ i18n.t("connectionEditor.swap") }}
+            @if (contextElementId(); as contextElementId) {
+              <div class="semantic-context-card contextual-connection-element">
+                <span>{{ i18n.t("connectionEditor.contextElement") }}</span>
+                <strong>{{ contextualElement()?.label ?? contextElementId }}</strong>
+              </div>
+              <div class="field-row connection-endpoints">
+                <label>
+                  <span>{{ i18n.t("connectionEditor.direction") }}</span>
+                  <select [value]="contextualDirection()" (change)="selectContextualDirection($event)">
+                    @if (contextualOutgoingOptions().length > 0) {
+                      <option value="from-context" [selected]="contextualDirection() === 'from-context'">
+                        {{ i18n.t("connectionEditor.fromContext", { element: contextualElement()?.label ?? contextElementId }) }}
+                      </option>
+                    }
+                    @if (contextualIncomingOptions().length > 0) {
+                      <option value="to-context" [selected]="contextualDirection() === 'to-context'">
+                        {{ i18n.t("connectionEditor.toContext", { element: contextualElement()?.label ?? contextElementId }) }}
+                      </option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>{{ i18n.t("connectionEditor.counterpart") }}</span>
+                  <select [value]="contextualCounterpartId()" (change)="selectContextualCounterpart($event)">
+                    @for (element of contextualCounterpartOptions(); track element.id) {
+                      <option [value]="element.id" [selected]="element.id === contextualCounterpartId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+            } @else {
+              <button type="button" class="semantic-pick-button" (click)="requestDiagramSelection()">
+                {{ i18n.t("connectionEditor.pickBoth") }}
               </button>
-            </div>
-            @if (unavailableTargets().length > 0) {
-            <details class="semantic-visibility-hint">
-              <summary>{{ i18n.t('viewEditor.unavailableTargets') }}</summary>
-              @for (element of unavailableTargets(); track element.id) {
-                <p>{{ element.label }}: {{ unavailableReason(element.id) }}</p>
+              <div class="field-row connection-endpoints">
+                <label>
+                  <span>{{ i18n.t("semanticEditor.from") }}</span>
+                  <select [value]="sourceId()" (change)="selectSource($event)">
+                    @for (element of sourceOptions(); track element.id) {
+                      <option [value]="element.id" [selected]="element.id === sourceId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>{{ i18n.t("semanticEditor.to") }}</span>
+                  <select [value]="targetId()" (change)="selectTarget($event)">
+                    @for (element of targetOptions(); track element.id) {
+                      <option [value]="element.id" [selected]="element.id === targetId()">{{ element.label }} · {{ element.id }}{{ visibilityLabel(element.id) }}</option>
+                    }
+                    @for (element of unavailableTargets(); track element.id) {
+                      <option [value]="element.id" disabled>{{ element.label }} · {{ unavailableReason(element.id) }}</option>
+                    }
+                  </select>
+                </label>
+                <button type="button" class="swap-direction-button" [disabled]="!canSwapDirection()" (click)="swapDirection()">
+                  <span aria-hidden="true">⇄</span>
+                  {{ i18n.t("connectionEditor.swap") }}
+                </button>
+              </div>
+              @if (unavailableTargets().length > 0) {
+                <details class="semantic-visibility-hint">
+                  <summary>{{ i18n.t('viewEditor.unavailableTargets') }}</summary>
+                  @for (element of unavailableTargets(); track element.id) {
+                    <p>{{ element.label }}: {{ unavailableReason(element.id) }}</p>
+                  }
+                </details>
               }
-            </details>
             }
             <label>
               <span>{{ i18n.t("semanticEditor.connectionIntent") }}</span>

@@ -23,6 +23,7 @@ export type AuthoringHistoryKind =
   | "placement"
   | "relationship"
   | "route"
+  | "system-view"
   | "view-element"
   | "view-element-hide";
 

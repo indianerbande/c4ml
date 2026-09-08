@@ -112,10 +112,23 @@ colors are only an additional visual cue.
 “Service” is deliberately not a separate C4ML element kind. Model an
 independent application or externally owned API as a Software System. Model a
 separately running or deployable service inside a system as a Container: first
-open **Diagrams** on the left, create that system's Container diagram, then use
-**Add element…** there.
+use **Create Container diagram…** in the service hint. The following dialog
+names every available choice as **Container diagram for “System name”**; create
+and activate the required diagram, then use **Add Container…** there.
 A logical service or module inside that running unit belongs in its Component
 diagram. The element form shows this guidance in the relevant context.
+
+In an active Container diagram, the primary action therefore reads **Add
+Container…**. Its first choice adds another separately running part to the
+current Software System. Choose **New Software System with Container diagram**
+when the new application is independent—for example, a second shop—and should
+have its own Software System Boundary. Enter the new system's name,
+responsibility, stable ID and classification, followed by the new diagram's
+title, purpose and stable ID. C4thedral previews both source changes together,
+creates them as one undoable operation, activates the initially empty Container
+diagram, and then lets you add its first Container. The **A+D · Architecture
+model + new diagram** marker makes that combined reach explicit. It does not
+turn the second Software System into a Container of the first.
 
 Without a diagram, this starter offers people and systems. The first diagram
 form supports an overview plus System Context, Container, Component, and Code
@@ -153,8 +166,8 @@ Output, and Help areas. Source Control reports the containing local repository,
 lets you stage or unstage changes, commits staged changes, and pushes the current
 branch through its configured remote. Save editor changes before committing.
 Problems and selected Route details share the bottom panel; their active tab and
-the visible Problems count both toggle that panel. Use the command
-center or `Shift+Cmd/Ctrl+P` to search the local command palette. Use the
+the visible Problems count both toggle that panel. Use the compact command
+button in the title bar or `Shift+Cmd/Ctrl+P` to search the local command palette. Use the
 toolbar or the native File menu to open and save `.c4ml` source. The standard shortcuts are
 `Cmd/Ctrl+O`, `Cmd/Ctrl+S`, and `Cmd/Ctrl+Shift+S`. The window title and source
 header mark unsaved changes, and closing a dirty document asks before discarding
@@ -1357,8 +1370,11 @@ controls below cannot express the required result. The editor never stores a
 private drag offset or geometry that is absent from the source.
 
 For frequent actions, right-click the element directly. **Connect with…**
-opens the connection dialog with that source preselected; diagram picking is
-also available there. **Move in
+opens the connection dialog with that element as a fixed context. It remains
+visible and cannot accidentally be replaced by another element. The dialog
+selects only the counterpart and whether the relationship points away from or
+towards the clicked element. The general Connect action in the title bar still
+offers free selection of both endpoints and diagram picking. **Move in
 direction** opens the same placement editor with Up, Left, Right, or Down
 already selected; **Align with other elements…** and **Set exact position…**
 open the corresponding form. **Show in source** reveals the declaration. These
