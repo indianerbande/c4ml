@@ -34,6 +34,7 @@
 .semantic-visibility-hint { display: block; padding: 8px 9px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--control-ink); }
 .semantic-service-hint { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); color: var(--control-ink); }
 .semantic-service-hint span { color: var(--muted); }
+.semantic-service-action { justify-self: start; margin-top: 6px; }
 .semantic-context-card { display: grid; gap: 4px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
 .semantic-context-card span { color: var(--muted); }
 .dynamic-context-card,
@@ -56,6 +57,7 @@
 }
 .semantic-pick-button { width: 100%; }
 .connection-endpoints { align-items: end; }
+.contextual-connection-element { border-left: 4px solid var(--accent); }
 .connection-endpoints .swap-direction-button {
   grid-column: 1 / -1;
   justify-self: start;

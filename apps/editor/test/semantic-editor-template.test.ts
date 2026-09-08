@@ -43,19 +43,40 @@ describe("semantic graphical authoring", () => {
   });
 
   it("names architecture-model and active-diagram scope without relying on color", () => {
-    expect(template).toContain("changeScope() === 'architecture'");
+    expect(template).toContain('changeScope() === "architecture"');
+    expect(template).toContain('changeScope() === "architecture-diagram"');
     expect(template).toContain("changeScope() === 'diagram'");
     expect(template).toContain("changeScopeTitleKey()");
     expect(template).toContain("changeScopeDescriptionKey()");
-    expect(component).toContain('computed<"architecture" | "diagram">');
+    expect(component).toContain('computed<"architecture" | "architecture-diagram" | "diagram">');
     expect(component).toContain('"viewEditor.authority"');
     expect(template).toContain("authorityKey()");
     expect(messages).toContain('"authoringScope.architecture.title": "Architecture model"');
     expect(messages).toContain('"authoringScope.diagram.title": "Active diagram"');
     expect(messages).toContain('"authoringScope.architecture.title": "Architekturmodell"');
+    expect(messages).toContain('"authoringScope.architectureDiagram.title": "Architekturmodell + neues Diagramm"');
     expect(messages).toContain('"authoringScope.diagram.title": "Aktives Diagramm"');
     expect(messages).toContain("Applying changes only the active diagram source");
     expect(styles).toContain(".semantic-editor");
+  });
+
+  it("separates another Container from a sibling Software System and its own diagram", () => {
+    expect(rootComponent).toContain('"semanticEditor.openContainer"');
+    expect(template).toContain('selectArchitecturePath($event)');
+    expect(template).toContain('value="create-system-with-container-view"');
+    expect(template).toContain('i18n.t("newSystemEditor.currentSystem"');
+    expect(template).toContain('i18n.t("newSystemEditor.systemName")');
+    expect(template).toContain('i18n.t("newSystemEditor.diagramSection")');
+    expect(component).toContain('kind: "create-system-with-container-view"');
+    expect(component).toContain('? operation.viewId');
+    expect(rootComponent).toContain("response.compilation?.activeViewId");
+    expect(rootComponent).toContain(':create-system-with-container-view');
+    expect(messages).toContain("Another Container in {owner}");
+    expect(messages).toContain("Weiteren Container in {owner}");
+    expect(messages).toContain("New Software System with Container diagram");
+    expect(messages).toContain("Neues Softwaresystem mit Container-Diagramm");
+    expect(messages).toContain("Create system and diagram");
+    expect(messages).toContain("System und Diagramm erstellen");
   });
 
   it("uses familiar questions while retaining stable C4-owned source identities", () => {
@@ -71,10 +92,18 @@ describe("semantic graphical authoring", () => {
     expect(template).toContain('i18n.t("semanticEditor.codeContextHint")');
     expect(template).toContain("serviceGuidanceKey()");
     expect(template).toContain('i18n.t("semanticEditor.serviceHint.title")');
+    expect(template).toContain('(click)="requestContainerDiagram()"');
+    expect(template).toContain("diagramOptionLabel(option)");
+    expect(template).toContain('[selected]="option.id === diagramOptionId()"');
+    expect(rootTemplate).toContain('(containerDiagramRequested)="openContainerDiagramEditor($event)"');
+    expect(rootComponent).toContain('kind: "container"');
     expect(messages).toContain("Looking for a service?");
     expect(messages).toContain("Du möchtest einen Service anlegen?");
-    expect(messages).toContain("open Diagrams on the left");
-    expect(messages).toContain("öffne links Diagramme");
+    expect(messages).toContain("Create Container diagram…");
+    expect(messages).toContain("Container-Diagramm erstellen…");
+    expect(messages).toContain("Container-Diagramm für „{scope}“");
+    expect(messages).not.toContain("open Diagrams on the left");
+    expect(messages).not.toContain("öffne links Diagramme");
   });
 
   it("separates model creation, diagram membership, and model deletion actions", () => {
@@ -127,6 +156,17 @@ describe("semantic graphical authoring", () => {
     expect(messages).toContain("Step-by-step interaction");
     expect(messages).toContain("Laufende Instanzen und Infrastruktur");
     expect(messages).toContain("Titel und Zweck bearbeiten…");
+  });
+
+  it("chooses the existing element before the diagram-content action", () => {
+    const diagramContentForm = template.slice(
+      template.indexOf('@else if (mode() === "diagram-content")'),
+      template.indexOf('@else if (mode() === "diagram-delete")'),
+    );
+
+    expect(diagramContentForm.indexOf("i18n.t('viewEditor.element')")).toBeLessThan(
+      diagramContentForm.indexOf("i18n.t('diagramEditor.contentAction')"),
+    );
   });
 
   it("uses dedicated context forms for Deployment topology and Dynamic interactions", () => {
@@ -207,6 +247,21 @@ describe("semantic graphical authoring", () => {
     expect(rootTemplate).toContain('(selectionRequested)="startConnectionPicking($event)"');
     expect(messages).toContain("von der Quelle zum Ziel");
     expect(messages).toContain("from source to target");
+  });
+
+  it("fixes a context-clicked element while choosing only direction and counterpart", () => {
+    expect(template).toContain("@if (contextElementId(); as contextElementId)");
+    expect(template).toContain("contextualElement()?.label ?? contextElementId");
+    expect(template).toContain("selectContextualDirection($event)");
+    expect(template).toContain("selectContextualCounterpart($event)");
+    expect(template).toContain("contextualCounterpartOptions()");
+    expect(template).toContain('i18n.t("connectionEditor.contextElement")');
+    expect(template).toContain('i18n.t("connectionEditor.counterpart")');
+    expect(component).toContain("#initializeContextualConnection(");
+    expect(component).toContain("#setContextualConnection(");
+    expect(rootTemplate).toContain('[contextElementId]="semanticEditor.contextElementId()"');
+    expect(messages).toContain("Selected diagram element");
+    expect(messages).toContain("Ausgewähltes Diagrammelement");
   });
 
   it("contains every operation form inside its column", () => {

@@ -10,6 +10,10 @@ const template = await readFile(
   new URL("../src/app/app.component.html", import.meta.url),
   "utf8",
 );
+const globalStyles = await readFile(
+  new URL("../src/styles.css", import.meta.url),
+  "utf8",
+);
 
 describe("Problems panel", () => {
   it("stacks diagnostics in one readable column", () => {
@@ -47,6 +51,30 @@ describe("Problems panel", () => {
   it("keeps the status bar at the same interface size as tabs", () => {
     const statusBarRule = styles.match(/\.status-bar\s*\{([^}]*)\}/u)?.[1];
     expect(statusBarRule).toMatch(/font-size:\s*1rem/u);
+  });
+
+  it("keeps compiler health in the status bar with subtle theme-aware dividers", () => {
+    const titleBar = template.match(
+      /<header class="title-bar">[\s\S]*?<\/header>/u,
+    )?.[0];
+    const statusBar = template.match(
+      /<footer class="status-bar">[\s\S]*?<\/footer>/u,
+    )?.[0];
+    const dividerRule = styles.match(
+      /\.status-divider\s*\{([^}]*)\}/u,
+    )?.[1];
+
+    expect(titleBar).not.toContain("workerStatusPhase()");
+    expect(titleBar).not.toContain("statusLabel()");
+    expect(statusBar).toContain('class="compiler-status"');
+    expect(statusBar).toContain("workerStatusPhase()");
+    expect(statusBar).toContain("statusLabel()");
+    expect(statusBar?.match(/class="status-divider"/gu)).toHaveLength(3);
+    expect(dividerRule).toMatch(/width:\s*1px/u);
+    expect(dividerRule).toMatch(/height:\s*12px/u);
+    expect(dividerRule).toContain("var(--status-divider)");
+    expect(globalStyles).toContain("--status-divider: rgba(0, 0, 0, 0.25)");
+    expect(globalStyles).toContain("--status-divider: rgba(255, 255, 255, 0.25)");
   });
 
   it("disables contextual authoring actions when they have no valid target", () => {

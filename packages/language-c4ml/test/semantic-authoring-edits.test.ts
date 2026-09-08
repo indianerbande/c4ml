@@ -348,6 +348,108 @@ describe("semantic authoring context", () => {
     ]);
   });
 
+  it("creates a sibling Software System and its empty Container View atomically", async () => {
+    const input = project();
+    const proposal = await proposeC4mlSemanticEdit(input, request("garden-containers", {
+      kind: "create-system-with-container-view",
+      systemId: "marketplace",
+      name: "Community Marketplace",
+      responsibility: "Offers supplies from neighboring gardens.",
+      classification: "internal",
+      viewId: "marketplace-containers",
+      title: "Container View — Community Marketplace",
+      purpose: "Shows the separately running parts of the marketplace.",
+    }));
+
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.intent.kind).toBe("architecture");
+    expect(proposal.changeSet.affectedIds).toEqual([
+      "marketplace",
+      "marketplace-containers",
+    ]);
+    expect(proposal.proposedText).toContain("system marketplace");
+    expect(proposal.proposedText).toContain("view marketplace-containers");
+    expect(proposal.proposedText).toContain("scope = marketplace");
+
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const parsed = await parseC4mlProjectDraft(applied.project);
+    expect(parsed.valid, JSON.stringify(parsed.diagnostics)).toBe(true);
+    expect(parsed.model?.elements).toContainEqual(
+      expect.objectContaining({ id: "marketplace", kind: "software-system" }),
+    );
+    expect(parsed.resolvedViews).toContainEqual(
+      expect.objectContaining({
+        id: "marketplace-containers",
+        kind: "container",
+        scope: "Community Marketplace",
+      }),
+    );
+    expect(input.documents[0]!.text).not.toContain("system marketplace");
+  });
+
+  it("keeps model and diagram edits atomic across source documents", async () => {
+    const split = source.indexOf("view garden-context");
+    const input = createArchitectureProjectInput({
+      id: "split-system-and-view",
+      documents: [
+        { uri: "model.c4ml", text: source.slice(0, split) },
+        { uri: "views.c4ml", text: `c4ml draft-1\n${source.slice(split)}` },
+      ],
+    });
+    const proposal = await proposeC4mlSemanticEdit(input, {
+      ...request("garden-containers", {
+        kind: "create-system-with-container-view",
+        systemId: "marketplace",
+        name: "Community Marketplace",
+        responsibility: "Offers supplies from neighboring gardens.",
+        classification: "internal",
+        viewId: "marketplace-containers",
+        title: "Container View — Community Marketplace",
+        purpose: "Shows the separately running parts of the marketplace.",
+      }),
+      documentUri: "views.c4ml",
+    });
+
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(new Set(proposal.changeSet.edits.map(({ documentUri }) => documentUri))).toEqual(
+      new Set(["model.c4ml", "views.c4ml"]),
+    );
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    expect(applied.project.documents.find(({ uri }) => uri === "model.c4ml")?.text).toContain(
+      "system marketplace",
+    );
+    expect(applied.project.documents.find(({ uri }) => uri === "views.c4ml")?.text).toContain(
+      "view marketplace-containers",
+    );
+  });
+
+  it("rejects the combined workflow outside Container Views and on identity collisions", async () => {
+    const operation = {
+      kind: "create-system-with-container-view" as const,
+      systemId: "weather-feed",
+      name: "Community Marketplace",
+      responsibility: "Offers supplies from neighboring gardens.",
+      classification: "internal" as const,
+      viewId: "garden-context",
+      title: "Container View — Community Marketplace",
+      purpose: "Shows the separately running parts of the marketplace.",
+    };
+    expect((await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-context", { ...operation, systemId: "marketplace", viewId: "marketplace-containers" }),
+    )).valid).toBe(false);
+    expect((await proposeC4mlSemanticEdit(
+      project(),
+      request("garden-containers", operation),
+    )).valid).toBe(false);
+  });
+
   it("derives directed connection choices from the active C4 scope", async () => {
     const context = await inspectC4mlSemanticAuthoringContext(
       project(),

@@ -141,19 +141,26 @@ assertEqual(
   "the editor font package must retain its reviewed aggregate license expression",
 );
 
+const suggestControllerPath = join(
+  installedMonacoRoot,
+  "esm",
+  "vs",
+  "editor",
+  "contrib",
+  "suggest",
+  "browser",
+  "suggestController.js",
+);
 await requireFile(
-  join(
-    installedMonacoRoot,
-    "esm",
-    "vs",
-    "editor",
-    "contrib",
-    "suggest",
-    "browser",
-    "suggestController.js",
-  ),
+  suggestControllerPath,
   "the pinned adapter-local Monaco Suggest controller",
 );
+const suggestControllerSource = await readFile(suggestControllerPath, "utf8");
+if (!/id:\s*["']hideSuggestWidget["']/u.test(suggestControllerSource)) {
+  throw new Error(
+    "the pinned Monaco Suggest controller must register hideSuggestWidget",
+  );
+}
 await requireFile(
   join(
     installedMonacoRoot,

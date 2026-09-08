@@ -150,6 +150,7 @@
   --success: #187a62;
   --danger: #b53a4f;
   --warning: #9a6014;
+  --status-divider: rgba(0, 0, 0, 0.25);
 }
 
 :root[data-color-scheme="dark"] {
@@ -187,6 +188,7 @@
   --success: #55b89d;
   --danger: #ee8799;
   --warning: #e2ae60;
+  --status-divider: rgba(255, 255, 255, 0.25);
 }
 
 :root[data-color-palette="gray"] {

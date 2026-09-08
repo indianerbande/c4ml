@@ -6,6 +6,10 @@ const componentStyles = await readFile(
   new URL("../src/app/app.component.css", import.meta.url),
   "utf8",
 );
+const componentTemplate = await readFile(
+  new URL("../src/app/app.component.html", import.meta.url),
+  "utf8",
+);
 const globalStyles = await readFile(
   new URL("../src/styles.css", import.meta.url),
   "utf8",
@@ -42,5 +46,44 @@ describe("workbench viewport", () => {
     expect(narrowLayout).not.toContain("min-height: 1000px");
     expect(narrowLayout).not.toContain("overflow: visible");
     expect(narrowLayout).toContain("overflow: auto");
+  });
+
+  it("keeps title-bar actions compact, unwrapped, and in one flex group", () => {
+    const commandButton = componentTemplate.match(
+      /<button\s+type="button"\s+class="command-center"[\s\S]*?<\/button>/u,
+    )?.[0];
+    const commandRule = componentStyles.match(
+      /\.command-center\s*\{([^}]*)\}/u,
+    )?.[1];
+    const actionRule = componentStyles.match(
+      /\.title-action,\s*\n\.primary-action\s*\{([^}]*)\}/u,
+    )?.[1];
+    const titleActionsRule = componentStyles.match(
+      /\.title-actions\s*\{([^}]*)\}/u,
+    )?.[1];
+    const responsiveRules = componentStyles.slice(
+      componentStyles.indexOf("@media (max-width: 1120px)"),
+    );
+
+    expect(commandButton).toContain("aria-haspopup=\"dialog\"");
+    expect(commandButton).toContain("[attr.aria-label]");
+    expect(commandButton).not.toContain("<strong>");
+    expect(commandButton).not.toContain("<kbd>");
+    expect(
+      componentTemplate.indexOf('class="command-center"'),
+    ).toBeGreaterThan(componentTemplate.indexOf('class="title-actions"'));
+    expect(commandRule).toMatch(/width:\s*34px/u);
+    expect(commandRule).toMatch(/min-width:\s*34px/u);
+    expect(commandRule).toMatch(/height:\s*30px/u);
+    expect(titleActionsRule).toMatch(/white-space:\s*nowrap/u);
+    expect(actionRule).toMatch(/height:\s*30px/u);
+    expect(actionRule).toMatch(/flex:\s*0 0 auto/u);
+    expect(actionRule).toMatch(/white-space:\s*nowrap/u);
+    expect(responsiveRules).not.toMatch(
+      /\.title-action\s*\{[^}]*display:\s*none/u,
+    );
+    expect(responsiveRules).not.toMatch(
+      /\.primary-action\s*\{[^}]*display:\s*none/u,
+    );
   });
 });

@@ -86,6 +86,7 @@ import {
   DesktopPreviewProjectionSequence,
   normalizePreviewWindowBounds,
 } from "./preview-window.js";
+import { desktopSmokeSourceForTypedInput } from "./smoke-source.js";
 
 const applicationId = "org.c4ml.desktop";
 const productName = "C4thedral";
@@ -1253,25 +1254,7 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
     return;
   }
   await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
-  await window.webContents.insertText(`c4ml draft-1
-
-model {
-  system smoke-system {
-    name = "Smoke System"
-    responsibility = "Validates the packaged desktop compiler and preview."
-    classification = internal
-  }
-}
-
-view smoke-context {
-  type = system-context
-  scope = smoke-system
-  title = "System Context — Smoke System"
-  purpose = "Validates the packaged desktop compiler and preview."
-  audience = default
-  legend = generated
-}
-`);
+  await window.webContents.insertText(desktopSmokeSourceForTypedInput);
   const result = (await window.webContents.executeJavaScript(
     `new Promise((resolve) => {
       const deadline = Date.now() + 20000;
@@ -1296,7 +1279,7 @@ view smoke-context {
         if (!pngExportReady) {
           document.querySelector('button[data-activity="export"]')?.click();
         }
-        const compilerReady = document.querySelector('.worker-state[data-phase="valid"]') !== null;
+        const compilerReady = document.querySelector('.compiler-status[data-phase="valid"]') !== null;
         const fontsReady = document.fonts.check('14px "IBM Plex Sans"') &&
           document.fonts.check('14px "IBM Plex Mono"');
         const language = document.documentElement.lang;
@@ -1421,8 +1404,8 @@ const smokeStepHelpers = `
   const documentTabs = () => [...document.querySelectorAll('.editor-tab[title]')];
   const activeDocument = () => documentTabs().find((tab) => tab.classList.contains('is-active'))?.title;
   const dirtyDocuments = () => documentTabs().filter((tab) => tab.querySelector('.dirty-indicator') !== null).map((tab) => tab.title);
-  const compiled = () => document.querySelector('.worker-state[data-phase="valid"]') !== null;
-  const undoButton = () => document.querySelector('.title-actions .title-action:not(.architecture-action):not(.connection-action)');
+  const compiled = () => document.querySelector('.compiler-status[data-phase="valid"]') !== null;
+  const undoButton = () => document.querySelector('.history-actions .history-action:first-child:not(:disabled)');
   const editorText = () => document.querySelector('.monaco-editor .view-lines')?.textContent ?? '';
 `;
 

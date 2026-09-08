@@ -10,6 +10,8 @@ import {
   evaluateArchitectureObservations,
   evaluateBuiltInArchitectureQuality,
   createArchitectureProjectInput,
+  createProjectRevision,
+  createSourceRevision,
   parseArchitectureObservationSet,
   parseArchitecturePublication,
   parseArchitectureThemeResource,
@@ -52,6 +54,8 @@ import {
   proposeC4mlPlacementEdit,
   proposeC4mlRouteEdit,
   proposeC4mlSemanticEdit,
+  type C4mlDraftResult,
+  type C4mlProjectDraftResult,
 } from "@c4ml/language-c4ml";
 
 import {
@@ -184,14 +188,21 @@ export async function compareWorkerRequest(
   }
 }
 
-export async function analyzeWorkerRequest(
+export function analyzeWorkerRequest(
   request: AnalysisWorkerRequest,
 ): Promise<AnalysisWorkerResponse> {
+  return analyzeWorkerRequestWithParsed(
+    request,
+    parseWorkerArchitectureRequest(request),
+  );
+}
+
+async function analyzeWorkerRequestWithParsed(
+  request: AnalysisWorkerRequest,
+  parsedInput: Promise<WorkerArchitectureParseResult>,
+): Promise<AnalysisWorkerResponse> {
   try {
-    const parsed =
-      request.project === undefined
-        ? await parseC4mlDraft(request.source, { file: request.file })
-        : await parseC4mlProjectDraft(toArchitectureProject(request.project));
+    const parsed = await parsedInput;
     if (
       !parsed.valid ||
       parsed.model === undefined ||
@@ -383,16 +394,27 @@ function resourceSource(file: string, source: string): SourceReference {
   };
 }
 
-export async function compileWorkerRequest(
+export function compileWorkerRequest(
   request: CompilerWorkerRequest,
   layoutAdapter: LayoutAdapter = getBrowserLayoutAdapter(),
   embeddedFontFaces?: readonly SvgEmbeddedFontFace[],
 ): Promise<CompilerWorkerResponse> {
+  return compileWorkerRequestWithParsed(
+    request,
+    layoutAdapter,
+    embeddedFontFaces,
+    parseWorkerArchitectureRequest(request),
+  );
+}
+
+async function compileWorkerRequestWithParsed(
+  request: CompilerWorkerRequest,
+  layoutAdapter: LayoutAdapter,
+  embeddedFontFaces: readonly SvgEmbeddedFontFace[] | undefined,
+  parsedInput: Promise<WorkerArchitectureParseResult>,
+): Promise<CompilerWorkerResponse> {
   try {
-    const parsed =
-      request.project === undefined
-        ? await parseC4mlDraft(request.source, { file: request.file })
-        : await parseC4mlProjectDraft(toArchitectureProject(request.project));
+    const parsed = await parsedInput;
     if (
       !parsed.valid ||
       parsed.model === undefined ||
@@ -1177,35 +1199,141 @@ export async function previewSemanticChangeWorkerRequest(
   }
 }
 
+export type WorkerArchitectureRequest =
+  | AnalysisWorkerRequest
+  | CompilerWorkerRequest;
+
+export type WorkerArchitectureParseResult =
+  | C4mlDraftResult
+  | C4mlProjectDraftResult;
+
+export type WorkerArchitectureParser = (
+  request: WorkerArchitectureRequest,
+) => Promise<WorkerArchitectureParseResult>;
+
+export interface CompilerWorkerRuntimeOptions {
+  readonly layoutAdapter?: LayoutAdapter;
+  readonly embeddedFontFaces?: readonly SvgEmbeddedFontFace[];
+  readonly parseArchitecture?: WorkerArchitectureParser;
+}
+
+interface WorkerParseCacheEntry {
+  readonly revision: string;
+  readonly parsed: Promise<WorkerArchitectureParseResult>;
+}
+
+/** A single-revision cache that also shares an in-flight Langium build. */
+class WorkerArchitectureParseCache {
+  #entry: WorkerParseCacheEntry | undefined;
+
+  constructor(private readonly parse: WorkerArchitectureParser) {}
+
+  get(request: WorkerArchitectureRequest): Promise<WorkerArchitectureParseResult> {
+    const revision = workerArchitectureRevision(request);
+    if (this.#entry?.revision === revision) return this.#entry.parsed;
+
+    const parsed = this.parse(request);
+    const entry = { revision, parsed };
+    this.#entry = entry;
+    void parsed.catch(() => {
+      if (this.#entry === entry) this.#entry = undefined;
+    });
+    return parsed;
+  }
+}
+
+/**
+ * Long-lived worker request executor. Compilation and analysis for one exact
+ * source revision share one parse; a different revision replaces it.
+ */
+export class CompilerWorkerRuntime {
+  readonly #layoutAdapter: LayoutAdapter | undefined;
+  readonly #embeddedFontFaces: readonly SvgEmbeddedFontFace[] | undefined;
+  readonly #parseCache: WorkerArchitectureParseCache;
+
+  constructor(options: CompilerWorkerRuntimeOptions = {}) {
+    this.#layoutAdapter = options.layoutAdapter;
+    this.#embeddedFontFaces = options.embeddedFontFaces;
+    this.#parseCache = new WorkerArchitectureParseCache(
+      options.parseArchitecture ?? parseWorkerArchitectureRequest,
+    );
+  }
+
+  execute(request: CompilerWorkerInbound): Promise<CompilerWorkerOutbound> {
+    switch (request.type) {
+      case "analyze":
+        return analyzeWorkerRequestWithParsed(
+          request,
+          this.#parseCache.get(request),
+        );
+      case "compile":
+        return compileWorkerRequestWithParsed(
+          request,
+          this.#layoutAdapter ?? getBrowserLayoutAdapter(),
+          this.#embeddedFontFaces,
+          this.#parseCache.get(request),
+        );
+      case "compare":
+        return compareWorkerRequest(request);
+      case "complete":
+        return completeWorkerRequest(request);
+      case "highlight":
+        return highlightWorkerRequest(request);
+      case "help-context":
+        return helpWorkerRequest(request);
+      case "inspect-semantic-authoring":
+        return inspectSemanticAuthoringWorkerRequest(request);
+      case "preview-project-change":
+        return previewProjectChangeWorkerRequest(request);
+      case "preview-placement-change":
+        return previewPlacementChangeWorkerRequest(request);
+      case "preview-route-change":
+        return previewRouteChangeWorkerRequest(request);
+      case "preview-semantic-change":
+        return previewSemanticChangeWorkerRequest(request);
+      case "generate-system-context":
+        return generateWorkerRequest(request);
+    }
+  }
+}
+
+const defaultCompilerWorkerRuntime = new CompilerWorkerRuntime();
+
 export function executeWorkerRequest(
   request: CompilerWorkerInbound,
 ): Promise<CompilerWorkerOutbound> {
-  switch (request.type) {
-    case "analyze":
-      return analyzeWorkerRequest(request);
-    case "compile":
-      return compileWorkerRequest(request);
-    case "compare":
-      return compareWorkerRequest(request);
-    case "complete":
-      return completeWorkerRequest(request);
-    case "highlight":
-      return highlightWorkerRequest(request);
-    case "help-context":
-      return helpWorkerRequest(request);
-    case "inspect-semantic-authoring":
-      return inspectSemanticAuthoringWorkerRequest(request);
-    case "preview-project-change":
-      return previewProjectChangeWorkerRequest(request);
-    case "preview-placement-change":
-      return previewPlacementChangeWorkerRequest(request);
-    case "preview-route-change":
-      return previewRouteChangeWorkerRequest(request);
-    case "preview-semantic-change":
-      return previewSemanticChangeWorkerRequest(request);
-    case "generate-system-context":
-      return generateWorkerRequest(request);
+  return defaultCompilerWorkerRuntime.execute(request);
+}
+
+export function parseWorkerArchitectureRequest(
+  request: WorkerArchitectureRequest,
+): Promise<WorkerArchitectureParseResult> {
+  return request.project === undefined
+    ? parseC4mlDraft(request.source, { file: request.file })
+    : parseC4mlProjectDraft(toArchitectureProject(request.project));
+}
+
+function workerArchitectureRevision(request: WorkerArchitectureRequest): string {
+  if (request.project === undefined) {
+    const revision = createSourceRevision(request.source);
+    return [
+      "document",
+      request.file.length,
+      request.file,
+      revision.algorithm,
+      revision.length,
+      revision.hash,
+    ].join(":");
   }
+  const revision = createProjectRevision(toArchitectureProject(request.project));
+  return [
+    "project",
+    revision.algorithm,
+    revision.hash,
+    ...revision.documents.map(({ uri, revision: document }) =>
+      `${uri.length}:${uri}:${document.length}:${document.hash}`
+    ),
+  ].join(":");
 }
 
 function parseComparisonInput(input: ComparisonWorkerInput) {

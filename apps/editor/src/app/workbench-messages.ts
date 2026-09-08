@@ -31,6 +31,7 @@ const englishMessages = {
   "starter.type.system-landscape": "People and systems — overview",
   "starter.type.system-context": "One system and its surroundings",
   "starter.type.container": "Separately running parts of a system",
+  "starter.option.container": "Container diagram for “{scope}”",
   "starter.type.component": "Components inside a running part",
   "starter.type.code": "Code structures inside a component",
   "starter.type.dynamic": "Step-by-step interaction",
@@ -110,6 +111,9 @@ const englishMessages = {
   "wizard.undoConfirm": "Undo creation",
   "wizard.open": "Assistant",
   "semanticEditor.open": "Add element…",
+  "semanticEditor.openContainer": "Add container…",
+  "semanticEditor.openContainerHint":
+    "Add a Container to the active Software System or create another Software System with its own Container diagram.",
   "connectionEditor.open": "Connect",
   "semanticEditor.undo": "Undo architecture change",
   "history.label": "Authoring history",
@@ -117,6 +121,8 @@ const englishMessages = {
   "history.redo.none": "Nothing to redo",
   "history.undo.element": "Undo add element",
   "history.redo.element": "Redo add element",
+  "history.undo.systemView": "Undo create Software System and diagram",
+  "history.redo.systemView": "Redo create Software System and diagram",
   "history.undo.elementDelete": "Undo delete from model",
   "history.redo.elementDelete": "Redo delete from model",
   "history.undo.relationship": "Undo connect elements",
@@ -163,7 +169,7 @@ const englishMessages = {
     "Restart the local compiler worker and rebuild the current project.",
   "status.invalid": "Source has errors",
   "status.valid": "Preview current",
-  "status.waiting": "Waiting",
+  "status.waiting": "Ready",
   "area.label": "Workbench areas",
   "area.files": "Files",
   "area.sourceControl": "Source Control",
@@ -346,6 +352,9 @@ const englishMessages = {
   "authoringScope.architecture.title": "Architecture model",
   "authoringScope.architecture.description":
     "Shared meaning. This can affect every diagram that uses the changed element or relationship.",
+  "authoringScope.architectureDiagram.title": "Architecture model + new diagram",
+  "authoringScope.architectureDiagram.description":
+    "Creates one shared Software System and one Container diagram that presents it.",
   "authoringScope.diagram.title": "Active diagram",
   "authoringScope.diagram.description":
     "This view only. The shared architecture model and other diagrams stay unchanged.",
@@ -581,7 +590,8 @@ const englishMessages = {
   "semanticEditor.kind.code-element": "Important code structure (Code Element)",
   "semanticEditor.serviceHint.title": "Looking for a service?",
   "semanticEditor.serviceHint.model":
-    "If it is an independent application or externally owned API, choose Application or software system. If it runs separately inside an existing system, open Diagrams on the left, create a Container diagram for that system, then add the service there.",
+    "If it is an independent application or externally owned API, choose Application or software system. If it runs separately inside an existing system, create that system's Container diagram and add the service there as a Container.",
+  "semanticEditor.serviceHint.createContainerDiagram": "Create Container diagram…",
   "semanticEditor.serviceHint.container":
     "This is the right level for a service that runs or is deployed separately inside the selected system. It will be created as a Container.",
   "semanticEditor.serviceHint.component":
@@ -626,6 +636,40 @@ const englishMessages = {
     "Applying changes the architecture source in one undoable edit; no semantic state is hidden in the editor.",
   "semanticEditor.apply": "Apply architecture change",
   "semanticEditor.applyElement": "Add to architecture model",
+  "newSystemEditor.path": "What would you like to add?",
+  "newSystemEditor.currentSystem": "Another Container in {owner}",
+  "newSystemEditor.newSystem": "New Software System with Container diagram",
+  "newSystemEditor.title": "Create a Software System with its Container diagram",
+  "newSystemEditor.description":
+    "Create an independent Software System and immediately prepare the diagram for its separately running parts.",
+  "newSystemEditor.explanationTitle": "A separate Software System",
+  "newSystemEditor.explanation":
+    "The new system is a sibling of the current one. Its Container diagram starts empty; add the first Container there after applying.",
+  "newSystemEditor.systemName": "Software System name",
+  "newSystemEditor.systemNamePlaceholder": "For example: Partner Shop",
+  "newSystemEditor.systemResponsibility": "What value does this system provide?",
+  "newSystemEditor.systemResponsibilityPlaceholder":
+    "Describe the system's main responsibility.",
+  "newSystemEditor.systemId": "Stable Software System identifier",
+  "newSystemEditor.diagramSection": "Container diagram",
+  "newSystemEditor.diagramSectionHint":
+    "This diagram is scoped to the new Software System and becomes active after applying.",
+  "newSystemEditor.diagramTitlePlaceholder": "Container View — Partner Shop",
+  "newSystemEditor.diagramPurposePlaceholder":
+    "Shows the separately running parts of the Partner Shop.",
+  "newSystemEditor.preview": "Preview system and diagram",
+  "newSystemEditor.cancel": "Cancel system creation",
+  "newSystemEditor.apply": "Create system and diagram",
+  "newSystemEditor.result": "System-and-diagram preview",
+  "newSystemEditor.noPreview": "No system-and-diagram preview yet",
+  "newSystemEditor.noPreviewHint":
+    "Complete the Software System and diagram fields, then compile a non-destructive preview.",
+  "newSystemEditor.previewing": "Compiling Software System and diagram candidate…",
+  "newSystemEditor.previewAlt": "New empty Container diagram",
+  "newSystemEditor.sourceChange": "Proposed Software System and diagram source",
+  "newSystemEditor.conflicts": "Blocking system or diagram conflicts",
+  "newSystemEditor.authority":
+    "Applying creates the Software System and its Container diagram atomically in one undoable change.",
   "deploymentEditor.open": "Add to runtime environment…",
   "deploymentEditor.openHint":
     "Add a runtime location, infrastructure dependency, or running instance to the active environment.",
@@ -723,6 +767,11 @@ const englishMessages = {
   "connectionEditor.pickBoth": "Select source and target in diagram",
   "connectionEditor.pickTarget": "Select target in diagram",
   "connectionEditor.swap": "Swap direction",
+  "connectionEditor.contextElement": "Selected diagram element",
+  "connectionEditor.direction": "Direction",
+  "connectionEditor.fromContext": "{element} → other element",
+  "connectionEditor.toContext": "Other element → {element}",
+  "connectionEditor.counterpart": "Connect with",
   "connectionEditor.preview": "Preview connection",
   "connectionEditor.previewing": "Compiling connection candidate…",
   "connectionEditor.result": "Connection preview",
@@ -935,6 +984,7 @@ const germanMessages: WorkbenchMessages = {
   "starter.type.system-landscape": "Personen und Systeme im Überblick",
   "starter.type.system-context": "Ein System und sein Umfeld",
   "starter.type.container": "Eigenständig laufende Teile eines Systems",
+  "starter.option.container": "Container-Diagramm für „{scope}“",
   "starter.type.component": "Bausteine innerhalb eines laufenden Teils",
   "starter.type.code": "Codestrukturen innerhalb eines Bausteins",
   "starter.type.dynamic": "Interaktion Schritt für Schritt",
@@ -1014,6 +1064,9 @@ const germanMessages: WorkbenchMessages = {
   "wizard.undoConfirm": "Erstellung rückgängig machen",
   "wizard.open": "Assistent",
   "semanticEditor.open": "Element hinzufügen…",
+  "semanticEditor.openContainer": "Container hinzufügen…",
+  "semanticEditor.openContainerHint":
+    "Füge dem aktiven Softwaresystem einen Container hinzu oder erstelle ein weiteres Softwaresystem mit eigenem Container-Diagramm.",
   "connectionEditor.open": "Verbinden",
   "semanticEditor.undo": "Architekturänderung rückgängig machen",
   "history.label": "Bearbeitungshistorie",
@@ -1021,6 +1074,8 @@ const germanMessages: WorkbenchMessages = {
   "history.redo.none": "Nichts zu wiederholen",
   "history.undo.element": "Element hinzufügen rückgängig machen",
   "history.redo.element": "Element erneut hinzufügen",
+  "history.undo.systemView": "Erstellung von Softwaresystem und Diagramm rückgängig machen",
+  "history.redo.systemView": "Softwaresystem und Diagramm erneut erstellen",
   "history.undo.elementDelete": "Löschen aus dem Modell rückgängig machen",
   "history.redo.elementDelete": "Erneut aus dem Modell löschen",
   "history.undo.relationship": "Verbindung rückgängig machen",
@@ -1067,7 +1122,7 @@ const germanMessages: WorkbenchMessages = {
     "Lokalen Compiler-Worker neu starten und das aktuelle Projekt erneut aufbauen.",
   "status.invalid": "Quelltext enthält Fehler",
   "status.valid": "Vorschau aktuell",
-  "status.waiting": "Warten",
+  "status.waiting": "Bereit",
   "area.label": "Arbeitsbereiche",
   "area.files": "Dateien",
   "area.sourceControl": "Versionsverwaltung",
@@ -1253,6 +1308,9 @@ const germanMessages: WorkbenchMessages = {
   "authoringScope.architecture.title": "Architekturmodell",
   "authoringScope.architecture.description":
     "Gemeinsame Bedeutung. Dies kann jedes Diagramm betreffen, das das geänderte Element oder die Beziehung verwendet.",
+  "authoringScope.architectureDiagram.title": "Architekturmodell + neues Diagramm",
+  "authoringScope.architectureDiagram.description":
+    "Erstellt ein gemeinsam genutztes Softwaresystem und ein Container-Diagramm, das dieses System zeigt.",
   "authoringScope.diagram.title": "Aktives Diagramm",
   "authoringScope.diagram.description":
     "Nur diese Sicht. Das gemeinsame Architekturmodell und andere Diagramme bleiben unverändert.",
@@ -1493,7 +1551,8 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.kind.code-element": "Wichtige Codestruktur (Code Element)",
   "semanticEditor.serviceHint.title": "Du möchtest einen Service anlegen?",
   "semanticEditor.serviceHint.model":
-    "Ist er eine eigenständige Anwendung oder eine fremdbetriebene API, wähle Anwendung oder Softwaresystem. Läuft er separat innerhalb eines bestehenden Systems, öffne links Diagramme, erstelle ein Container-Diagramm für dieses System und füge den Service dort hinzu.",
+    "Ist er eine eigenständige Anwendung oder eine fremdbetriebene API, wähle Anwendung oder Softwaresystem. Läuft er separat innerhalb eines bestehenden Systems, lege dessen Container-Diagramm an und füge ihn dort als Container hinzu.",
+  "semanticEditor.serviceHint.createContainerDiagram": "Container-Diagramm erstellen…",
   "semanticEditor.serviceHint.container":
     "Dies ist die richtige Ebene für einen Service, der innerhalb des gewählten Systems separat läuft oder bereitgestellt wird. Er wird als Container angelegt.",
   "semanticEditor.serviceHint.component":
@@ -1538,6 +1597,40 @@ const germanMessages: WorkbenchMessages = {
     "Übernehmen ändert den Architekturquelltext in einem rücknehmbaren Schritt; der Editor verbirgt keinen semantischen Zustand.",
   "semanticEditor.apply": "Architekturänderung übernehmen",
   "semanticEditor.applyElement": "Zum Architekturmodell hinzufügen",
+  "newSystemEditor.path": "Was möchtest du hinzufügen?",
+  "newSystemEditor.currentSystem": "Weiteren Container in {owner}",
+  "newSystemEditor.newSystem": "Neues Softwaresystem mit Container-Diagramm",
+  "newSystemEditor.title": "Softwaresystem mit Container-Diagramm erstellen",
+  "newSystemEditor.description":
+    "Erstelle ein eigenständiges Softwaresystem und bereite sofort das Diagramm für seine getrennt laufenden Teile vor.",
+  "newSystemEditor.explanationTitle": "Ein eigenständiges Softwaresystem",
+  "newSystemEditor.explanation":
+    "Das neue System ist gleichrangig mit dem aktuellen. Sein Container-Diagramm ist zunächst leer; füge dort nach dem Übernehmen den ersten Container hinzu.",
+  "newSystemEditor.systemName": "Name des Softwaresystems",
+  "newSystemEditor.systemNamePlaceholder": "Zum Beispiel: Partnershop",
+  "newSystemEditor.systemResponsibility": "Welchen Nutzen liefert dieses System?",
+  "newSystemEditor.systemResponsibilityPlaceholder":
+    "Beschreibe die wichtigste Verantwortung des Systems.",
+  "newSystemEditor.systemId": "Stabile Kennung des Softwaresystems",
+  "newSystemEditor.diagramSection": "Container-Diagramm",
+  "newSystemEditor.diagramSectionHint":
+    "Dieses Diagramm bezieht sich auf das neue Softwaresystem und wird nach dem Übernehmen aktiviert.",
+  "newSystemEditor.diagramTitlePlaceholder": "Container-Ansicht — Partnershop",
+  "newSystemEditor.diagramPurposePlaceholder":
+    "Zeigt die getrennt laufenden Teile des Partnershops.",
+  "newSystemEditor.preview": "System und Diagramm prüfen",
+  "newSystemEditor.cancel": "Systemerstellung abbrechen",
+  "newSystemEditor.apply": "System und Diagramm erstellen",
+  "newSystemEditor.result": "Vorschau von System und Diagramm",
+  "newSystemEditor.noPreview": "Noch keine Vorschau von System und Diagramm",
+  "newSystemEditor.noPreviewHint":
+    "Vervollständige die Angaben zu Softwaresystem und Diagramm und kompiliere dann die unverbindliche Vorschau.",
+  "newSystemEditor.previewing": "Kandidat für Softwaresystem und Diagramm wird kompiliert…",
+  "newSystemEditor.previewAlt": "Neues leeres Container-Diagramm",
+  "newSystemEditor.sourceChange": "Vorgeschlagener Quelltext für Softwaresystem und Diagramm",
+  "newSystemEditor.conflicts": "Blockierende Konflikte für System oder Diagramm",
+  "newSystemEditor.authority":
+    "Übernehmen erstellt Softwaresystem und Container-Diagramm atomar in einer rückgängig machbaren Änderung.",
   "deploymentEditor.open": "Zur Laufzeitumgebung hinzufügen…",
   "deploymentEditor.openHint":
     "Füge der aktiven Umgebung einen Ausführungsort, eine Infrastrukturabhängigkeit oder eine laufende Instanz hinzu.",
@@ -1635,6 +1728,11 @@ const germanMessages: WorkbenchMessages = {
   "connectionEditor.pickBoth": "Quelle und Ziel im Diagramm auswählen",
   "connectionEditor.pickTarget": "Ziel im Diagramm auswählen",
   "connectionEditor.swap": "Richtung tauschen",
+  "connectionEditor.contextElement": "Ausgewähltes Diagrammelement",
+  "connectionEditor.direction": "Richtung",
+  "connectionEditor.fromContext": "{element} → anderes Element",
+  "connectionEditor.toContext": "Anderes Element → {element}",
+  "connectionEditor.counterpart": "Verbinden mit",
   "connectionEditor.preview": "Verbindung prüfen",
   "connectionEditor.previewing": "Verbindungskandidat wird kompiliert…",
   "connectionEditor.result": "Vorschau der Verbindung",

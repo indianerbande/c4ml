@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
 import type {
   C4mlSemanticAuthoringContext,
+  C4mlSemanticViewKind,
 } from "@c4ml/language-c4ml";
 
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
@@ -31,6 +32,9 @@ export class WorkbenchSemanticFacade {
   readonly mode = signal<SemanticEditorMode>("element");
   readonly initialSourceId = signal<string | undefined>(undefined);
   readonly initialTargetId = signal<string | undefined>(undefined);
+  readonly contextElementId = signal<string | undefined>(undefined);
+  readonly preferredDiagramKind = signal<C4mlSemanticViewKind | undefined>(undefined);
+  readonly preferredDiagramScopeId = signal<string | undefined>(undefined);
   readonly picking = signal(false);
   readonly pickerSourceId = signal<string | undefined>(undefined);
   readonly pickerIssue = signal<"invalid-source" | "invalid-target" | undefined>(
@@ -69,7 +73,12 @@ export class WorkbenchSemanticFacade {
     this.#show(activeViewId, "delete-element", elementId);
   }
 
-  showDiagram(): void { this.#show(undefined, "diagram"); }
+  showDiagram(preferred?: {
+    readonly kind?: C4mlSemanticViewKind;
+    readonly scopeId?: string;
+  }): void {
+    this.#show(undefined, "diagram", undefined, undefined, undefined, preferred);
+  }
 
   editDiagram(activeViewId: string | undefined): void {
     this.#show(activeViewId, "diagram-edit");
@@ -87,14 +96,24 @@ export class WorkbenchSemanticFacade {
     activeViewId: string | undefined,
     sourceId?: string,
     targetId?: string,
+    contextElementId?: string,
   ): void {
-    this.#show(activeViewId, "relationship", sourceId, targetId);
+    this.#show(
+      activeViewId,
+      "relationship",
+      sourceId,
+      targetId,
+      contextElementId,
+    );
   }
 
   close(): void {
     this.open.set(false);
     this.initialSourceId.set(undefined);
     this.initialTargetId.set(undefined);
+    this.contextElementId.set(undefined);
+    this.preferredDiagramKind.set(undefined);
+    this.preferredDiagramScopeId.set(undefined);
   }
 
   async beginConnectionPicking(
@@ -117,6 +136,7 @@ export class WorkbenchSemanticFacade {
     this.mode.set("relationship");
     this.initialSourceId.set(undefined);
     this.initialTargetId.set(undefined);
+    this.contextElementId.set(undefined);
     this.pickerIssue.set(undefined);
     this.pickerSourceId.set(
       sourceId !== undefined && this.#isValidSource(sourceId)
@@ -179,6 +199,8 @@ export class WorkbenchSemanticFacade {
     }
     const kind = changeSet.intent.id.endsWith(":create-deployment-item")
       ? "deployment"
+      : changeSet.intent.id.endsWith(":create-system-with-container-view")
+        ? "system-view"
       : this.mode() === "relationship"
       ? "relationship"
       : this.mode() === "diagram"
@@ -203,6 +225,9 @@ export class WorkbenchSemanticFacade {
           this.open.set(false);
           this.initialSourceId.set(undefined);
           this.initialTargetId.set(undefined);
+          this.contextElementId.set(undefined);
+          this.preferredDiagramKind.set(undefined);
+          this.preferredDiagramScopeId.set(undefined);
         }
       });
   }
@@ -219,6 +244,9 @@ export class WorkbenchSemanticFacade {
     this.mode.set("element");
     this.initialSourceId.set(undefined);
     this.initialTargetId.set(undefined);
+    this.contextElementId.set(undefined);
+    this.preferredDiagramKind.set(undefined);
+    this.preferredDiagramScopeId.set(undefined);
     this.cancelConnectionPicking();
     this.#history.reset();
   }
@@ -228,6 +256,11 @@ export class WorkbenchSemanticFacade {
     mode: SemanticEditorMode,
     sourceId?: string,
     targetId?: string,
+    contextElementId?: string,
+    preferredDiagram?: {
+      readonly kind?: C4mlSemanticViewKind;
+      readonly scopeId?: string;
+    },
   ): void {
     if (activeViewId === undefined && mode !== "element" && mode !== "diagram") return;
     this.#activeViewId = activeViewId;
@@ -235,6 +268,9 @@ export class WorkbenchSemanticFacade {
     this.mode.set(mode);
     this.initialSourceId.set(sourceId);
     this.initialTargetId.set(targetId);
+    this.contextElementId.set(contextElementId);
+    this.preferredDiagramKind.set(preferredDiagram?.kind);
+    this.preferredDiagramScopeId.set(preferredDiagram?.scopeId);
     this.open.set(true);
   }
 

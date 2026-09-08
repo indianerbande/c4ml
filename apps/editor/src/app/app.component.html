@@ -12,18 +12,17 @@
       </span>
     </div>
 
-    <button
-      type="button"
-      class="command-center"
-      aria-haspopup="dialog"
-      (click)="openCommandPalette()"
-    >
-      <span aria-hidden="true">›_</span>
-      <strong>{{ i18n.t("command.search") }}</strong>
-      <kbd>⇧⌘P</kbd>
-    </button>
-
     <div class="title-actions">
+      <button
+        type="button"
+        class="command-center"
+        aria-haspopup="dialog"
+        [attr.aria-label]="i18n.t('command.search')"
+        [title]="i18n.t('command.palette')"
+        (click)="openCommandPalette()"
+      >
+        <span aria-hidden="true">›_</span>
+      </button>
       <div class="history-actions" [attr.aria-label]="i18n.t('history.label')">
         <button
           type="button"
@@ -73,20 +72,6 @@
       >
         {{ i18n.t("wizard.open") }}
       </button>
-      <div class="worker-state" [attr.data-phase]="workerStatusPhase()">
-        <span class="state-dot" aria-hidden="true"></span>
-        <span aria-live="polite">{{ statusLabel() }}</span>
-        @if (compiler.recovery().phase === "failed") {
-          <button
-            type="button"
-            class="worker-retry"
-            [title]="i18n.t('status.retryWorkerHint')"
-            (click)="compiler.retryWorker()"
-          >
-            {{ i18n.t("status.retryWorker") }}
-          </button>
-        }
-      </div>
     </div>
   </header>
 
@@ -1309,6 +1294,7 @@
       C4ML@if (hasOpenDocument()) { · draft-1 }
     </button>
     @if (hasOpenDocument()) {
+      <span class="status-divider" aria-hidden="true"></span>
       <span
         >{{ documentName() }}
         @if (projectDirty()) {
@@ -1317,6 +1303,21 @@
       </span>
     }
     <span class="status-spacer"></span>
+    <div class="compiler-status" [attr.data-phase]="workerStatusPhase()">
+      <span class="state-dot" aria-hidden="true"></span>
+      <span aria-live="polite">{{ statusLabel() }}</span>
+      @if (compiler.recovery().phase === "failed") {
+        <button
+          type="button"
+          class="worker-retry"
+          [title]="i18n.t('status.retryWorkerHint')"
+          (click)="compiler.retryWorker()"
+        >
+          {{ i18n.t("status.retryWorker") }}
+        </button>
+      }
+    </div>
+    <span class="status-divider" aria-hidden="true"></span>
     <button
       type="button"
       [class.is-active]="bottomPanelOpen() && bottomPanel() === 'problems'"
@@ -1329,6 +1330,7 @@
         })
       }}
     </button>
+    <span class="status-divider" aria-hidden="true"></span>
     <span>{{ zoomLabel() }}</span>
   </footer>
 </div>
@@ -1480,11 +1482,15 @@
       [project]="semanticEditor.project()"
       [activeFile]="activeDocumentUri()"
       [viewId]="semanticEditor.mode() === 'diagram' ? undefined : compiler.state().activeViewId"
+      [preferredDiagramKind]="semanticEditor.preferredDiagramKind()"
+      [preferredDiagramScopeId]="semanticEditor.preferredDiagramScopeId()"
       [mode]="semanticEditor.mode()"
       [initialSourceId]="semanticEditor.initialSourceId()"
       [initialTargetId]="semanticEditor.initialTargetId()"
+      [contextElementId]="semanticEditor.contextElementId()"
       (applied)="applySemantic($event)"
       (cancelled)="closeSemanticEditor()"
       (selectionRequested)="startConnectionPicking($event)"
+      (containerDiagramRequested)="openContainerDiagramEditor($event)"
     />
 }

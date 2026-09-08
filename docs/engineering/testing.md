@@ -208,7 +208,23 @@ retention, route-control source mapping, polyline-distance hit testing with
 node/route/boundary precedence, effective corridor geometry, and preview-only
 node, Route, Port, route-label, and corridor highlighting, preview-only relative
 waypoint, locked-segment, and avoidance overlays, plus distinct detail
-navigation targets. The production-mode Angular build
+navigation targets.
+
+The editor suite also mounts a controlled source-editor component and the real
+`WorkbenchDocumentFacade` through Angular TestBed with zoneless change
+detection in a happy-dom test host. A cross-document authoring change must stay
+pending while the facade has selected the owning document but the child editor
+still presents the previous one; after Angular presents the new input it must
+apply to that document only. The same integration test switches away before
+Undo, verifies the activation wait again, restores the original clean state,
+preserves an independently dirty neighboring document, and verifies Redo. A
+second path exercises the production source-navigation controller and proves
+that a range is revealed only after its owning document is presented. The
+activation wait was deliberately removed during validation and the test
+reproduced the former `editor-rejected` wrong-document failure before the guard
+was restored.
+
+The production-mode Angular build
 proves that compiler services and Monaco's
 generic editor service are separate worker chunks, that Monaco's runtime is
 lazy, and that the reviewed ELK worker and license are packaged locally.
@@ -223,9 +239,12 @@ generated-source review, apply, and undo. The production bundled adapter
 compiles executable slices for all seven view types in worker-runtime tests;
 the platform-shortcut suite advertises `Cmd+I` for macOS user agents and
 `Ctrl+Space` for Windows and Linux, while the visible action triggers the same
-Monaco suggestion command. In the packaged macOS application, the workbench
-displayed `⌘I` and that keystroke opened the four context-valid top-level
-suggestions on 2026-08-30;
+Monaco suggestion command. The adapter suite also verifies that changing
+localized suggestion copy dismisses an open popup through Monaco's registered
+`hideSuggestWidget` command, and the production dependency gate confirms that
+the pinned Suggest controller still registers that exact command. In the
+packaged macOS application, the workbench displayed `⌘I` and that keystroke
+opened the four context-valid top-level suggestions on 2026-08-30;
 the current renderer ELK pass visually covers a System Context with two
 guided routes, distinct target Ports, a named corridor and independent signed
 label offsets in diagram units, plus a
@@ -284,6 +303,11 @@ unchanged-size lines without entering either Component. The former
 canvas-colored label rectangle was then replaced with a bounded gap in the
 selected route segment, leaving no visible label background while preserving
 the line on both sides.
+
+The status-bar contract test also verifies that compiler health is absent from
+the title bar, remains live and recoverable in the status bar, and uses 1 px by
+12 px decorative dividers with 25% black or white contrast for the active
+light or dark scheme.
 
 On 2026-08-31 the German **Dein erstes Diagramm** handbook article was also
 inspected in the live renderer. Its example retained literal `draft-1`
@@ -1023,6 +1047,15 @@ yet satisfy individually selectable Arrowheads, full CLI parity, real
 assistive-technology coverage, or complete-source coverage requirements in
 this section.
 
+The 2026-09-08 title-bar correction is protected by a viewport contract test:
+the command-palette trigger contains only its compact icon and accessible name;
+it has a fixed 34 × 30 px box, and adjacent action buttons retain a fixed 30 px
+height, `flex: 0 0 auto`, and non-wrapping labels. Responsive rules may remove
+secondary brand and status copy but are rejected if they hide or resize those
+actions. A 1,280 px browser-harness inspection measured every visible action
+at 30 px high with separate, non-overlapping bounds. Native inspection at the
+980 px supported minimum width remains host-specific manual evidence.
+
 If the guided modeling wizard is implemented, tests MUST prove that identical
 answers generate deterministic C4ML source, generated source passes through the
 normal parser and semantic validator, only context-valid ownership and
@@ -1122,6 +1155,9 @@ Desktop tests MUST cover:
 - 13 px interface and status-bar defaults, a 15 px source-editor default,
   context-sensitive Architecture/Assistant actions, and one unambiguous
   Diagrams activity control;
+- one compact, accessibly named command-palette button plus fixed-height,
+  non-shrinking, non-wrapping title actions whose labels and bounds do not move
+  or overlap at the supported minimum main-window width;
 - validated English/German synchronization of C4thedral-owned native menu commands,
   dialog labels, failure copy, and unsaved-close protection;
 - packaging without development sources or an application `node_modules`
@@ -1144,8 +1180,9 @@ Desktop tests MUST cover:
   dirty and was presented, undo issued from a different tab that returns to
   and cleans the edited document, redo restoring the change and dirty state,
   and cross-document reveal of an Output
-  finding — this is the only place where Angular's change-detection timing,
-  Monaco's model switch, and the compiler worker are exercised together; and
+  finding — this complements the local zoneless Angular integration suite and
+  remains the only place where Angular's change-detection timing, Monaco's
+  actual model switch, and the compiler worker are exercised together; and
 - signature, installer/archive integrity, installation, launch, file round
   trip, and uninstall behavior on every supported release platform.
 
@@ -1219,14 +1256,31 @@ three common meanings in the element form. A model-level form points an
 independent application/API to Software System and a separately running
 internal service to the owning system's Container diagram. Container and
 Component contexts identify their respective effective kinds without changing
-the worker-owned operation set.
+the worker-owned operation set. Template and integration evidence MUST also
+cover the direct Container-diagram action, the transfer of a known System
+Context scope into diagram creation, and an explicit, system-named option for
+each eligible Container diagram.
+
+Container-View authoring tests MUST distinguish **another Container in the
+current Software System** from **a new Software System with its own Container
+diagram**. The combined operation is available only from a valid Container
+View, rejects missing or colliding system/View identities, and produces one
+architecture-intent change set whose affected identities include both new
+objects. Language tests cover same-document and split model/View documents;
+worker tests compile the requested new View without mutating the active project.
+Template/localization evidence covers the explicit path selector, the
+compiler-derived current owner, the redundant **A+D** scope label, distinct
+system and diagram fields, contextual title-bar wording, candidate source/SVG
+review, and apply labels. Integration evidence MUST prove activation of the new
+empty Container View and one-unit undo/redo across every edited document.
 
 On 2026-09-07 the German model-level element form was visually checked in the
 Node-served Angular renderer. The service guidance appeared immediately below
-the kind selector, named the independent-system choice and the exact
-**Diagramme** → Container-diagram → **Element hinzufügen…** path, remained
-readable without horizontal overflow, and left the form independently
-scrollable above its fixed action footer.
+the kind selector and named the independent-system choice. On 2026-09-08 the
+same renderer was checked again after creating an empty model and a Software
+System: **Container-Diagramm erstellen…** replaced the element form with diagram
+creation, the select named **Container-Diagramm für „Onlineshop“**, and that
+exact option was selected rather than the generic System Landscape option.
 
 The first graphical placement slice is automatically validated with original
 Signal Garden fixtures. Language tests cover deterministic, syntax-aware
@@ -1272,7 +1326,10 @@ delegate to the existing semantic, placement, or Route facade; Angular MUST
 NOT generate C4ML edits from a context-menu action. Template evidence covers
 right-click hit testing, localized menu roles, object-specific entries,
 directional movement, source navigation, Escape dismissal, and preselection in
-the unchanged candidate-preview dialogs.
+the unchanged candidate-preview dialogs. Contextual connection evidence fixes
+the clicked element across both valid directions, exposes only eligible
+counterparts, and proves that the general toolbar flow still owns independent
+source and target selection.
 
 On 2026-09-07 the local Angular renderer was served through its Node.js
 development session and checked in German. The fixed Undo/Redo pair remained
@@ -1595,6 +1652,27 @@ Performance targets will be set after the first spike. Benchmarks MUST separate:
 The benchmark set must include small interactive diagrams and a deliberately
 dense upper-bound fixture. Performance work MUST NOT trade away determinism or
 diagnostics without an explicit specification change.
+
+The worker parse-reuse measurement uses the executable 9,068-byte,
+349-line `examples/draft/signal-garden.c4ml` project. The instrumented runtime
+test dispatches compilation and analysis concurrently and requires exactly one
+language parse instead of the former two, a 50% reduction in parse invocations
+per unchanged revision. It compares both cached responses with their uncached
+direct equivalents, changes the language header to require a fresh invalid
+parse, and then returns to the original revision to prove that the one-entry
+cache did not retain an older result. On the 2026-09-07 macOS arm64 development
+host, twelve warmed direct-parser rounds measured 26.63 ms per revision for two
+parses and 15.31 ms for one; these wall-clock values are illustrative, while
+the invocation count and output parity are the automated acceptance evidence.
+
+The workbench preview-allocation test renders the same Signal Garden source and
+selected Container View with the production IBM Plex Sans WOFF2 faces. Its
+current canonical SVG is 288,495 bytes. An overlay-only selection update MUST
+reuse every canonical byte and encode less than one percent of that size as new
+string data. The resulting Blob text MUST exactly equal the former canonical-
+plus-overlay composition. Separate lifecycle tests require unchanged inputs to
+reuse their URL and every replaced, cleared, or disposed URL to be revoked.
+The canonical export SVG remains outside this preview-only object-URL owner.
 
 ## 7. Dependency and license checks
 

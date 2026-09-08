@@ -112,10 +112,26 @@ Akzentfarben sind nur ein zusätzliches visuelles Signal.
 „Service“ ist bewusst kein eigener C4ML-Elementtyp. Eine eigenständige
 Anwendung oder fremdbetriebene API wird als Softwaresystem modelliert. Ein
 separat laufender oder bereitstellbarer Service innerhalb eines Systems ist ein
-Container: Öffne links **Diagramme**, erstelle das Container-Diagramm dieses
-Systems und verwende dort **Element hinzufügen…**. Ein logischer Service oder ein Modul
+Container: Verwende im Service-Hinweis **Container-Diagramm erstellen…**. Der
+folgende Dialog benennt jede Auswahl ausdrücklich als **Container-Diagramm für
+„Systemname“**; erstelle und aktiviere das benötigte Diagramm und verwende dort
+**Container hinzufügen…**. Ein logischer Service oder ein Modul
 innerhalb dieser laufenden Einheit gehört in ihr Component-Diagramm. Der
 Elementdialog zeigt diese Einordnung passend zum aktuellen Kontext.
+
+In einem aktiven Container-Diagramm heißt die primäre Aktion deshalb
+**Container hinzufügen…**. Die erste Auswahl fügt dem aktuellen Softwaresystem
+einen weiteren getrennt laufenden Teil hinzu. Wähle **Neues Softwaresystem mit
+Container-Diagramm**, wenn die neue Anwendung eigenständig ist – etwa ein
+zweiter Shop – und eine eigene Software System Boundary erhalten soll. Gib
+Name, Verantwortung, stabile Kennung und Klassifikation des neuen Systems sowie
+Titel, Zweck und stabile Kennung seines Diagramms an. C4thedral zeigt beide
+Quelltextänderungen gemeinsam zur Prüfung, übernimmt sie in einem einzigen
+rückgängig machbaren Schritt, aktiviert das zunächst leere Container-Diagramm
+und bietet dort anschließend das Hinzufügen des ersten Containers an. Die
+Kennzeichnung **A+D · Architekturmodell + neues Diagramm** macht diese
+kombinierte Reichweite sichtbar. Das zweite Softwaresystem wird dadurch nicht
+zum Container des ersten.
 
 Ohne Diagramm bietet der Einstieg Personen und Systeme an. Die erste
 Diagrammerstellung unterstützt den Überblick sowie Systemkontext, Container,
@@ -143,6 +159,9 @@ Speichern verwenden die nativen Menüs und `Cmd/Ctrl+O`, `Cmd/Ctrl+S` sowie
 `Cmd/Ctrl+Shift+S`. Ungespeicherte Änderungen sind sichtbar und beim Schließen
 geschützt. Der Renderer erhält nur einen undurchsichtigen Dokument-Handle;
 native Pfade und Node.js bleiben im Electron-Hauptprozess.
+
+Die lokale Befehlspalette öffnet sich über den kompakten Befehlsbutton in der
+Kopfzeile oder mit `Shift+Cmd/Ctrl+P`.
 
 C4thedral-Dialoge bleiben bei Außenklicks, beim Markieren über den Dialogrand
 hinaus und bei Escape geöffnet. Beende sie über **Schließen**, **Abbrechen**
@@ -731,7 +750,11 @@ Quelltexthistorie und leert diese begrenzte Historie der grafischen Bearbeitung.
 
 Für häufige Aktionen kann das Element direkt mit der rechten Maustaste
 angeklickt werden. **Verbinden mit…** öffnet den Verbindungsdialog mit diesem
-Element als Quelle; dort steht auch die Diagrammauswahl bereit.
+Element als festem Bezugspunkt. Es bleibt sichtbar und kann nicht versehentlich
+durch ein anderes Element ersetzt werden. Im Dialog werden nur die Gegenstelle
+und die Richtung – vom angeklickten Element weg oder zu ihm hin – gewählt. Die
+allgemeine Verbinden-Aktion in der Titelleiste bietet weiterhin die freie
+Auswahl beider Endpunkte und die Auswahl im Diagramm.
 **Verschieben in Richtung** öffnet dieselbe
 Platzierungsbearbeitung mit Oben, Links, Rechts oder Unten vorausgewählt;
 **Mit anderen Elementen ausrichten…** und **Exakte Position festlegen…** öffnen

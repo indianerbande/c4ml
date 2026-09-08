@@ -10,6 +10,7 @@ import type {
 } from "../src/app/compiler-worker.protocol.js";
 import {
   clientPointToScene,
+  navigationHighlightOverlay,
   navigationTargetAtPoint,
   navigationTargetForOffset,
   svgWithNavigationHighlight,
@@ -299,6 +300,17 @@ describe("preview navigation", () => {
     expect(highlighted).not.toContain('id="c4ml-editor-selection"');
     expect(highlighted).not.toContain(".element-surface{stroke:");
     expect(svg).not.toContain("c4ml-editor-selection");
+  });
+
+  it("exposes the same small overlay independently of the canonical SVG", () => {
+    const svg = '<svg><g id="c4ml-scene-node-element-garden-pulse"></g></svg>';
+    const overlay = navigationHighlightOverlay(elementTarget);
+
+    expect(overlay).toContain('id="c4ml-editor-node-selection"');
+    expect(svgWithNavigationHighlight(svg, elementTarget)).toBe(
+      svg.replace("</svg>", `${overlay}</svg>`),
+    );
+    expect(overlay).not.toContain("<svg");
   });
 
   it("highlights a route and adds inspectable debug geometry only to the preview", () => {

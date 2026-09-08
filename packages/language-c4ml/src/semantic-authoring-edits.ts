@@ -121,6 +121,16 @@ export interface C4mlDiagramCreateOption {
 export type C4mlSemanticEditOperation =
   | { readonly kind: "create-view"; readonly optionId: string; readonly viewId: string;
       readonly title: string; readonly purpose: string; readonly scopeName: string }
+  | {
+      readonly kind: "create-system-with-container-view";
+      readonly systemId: string;
+      readonly name: string;
+      readonly responsibility: string;
+      readonly classification: "external" | "internal";
+      readonly viewId: string;
+      readonly title: string;
+      readonly purpose: string;
+    }
   | { readonly kind: "update-view"; readonly title: string; readonly purpose: string }
   | { readonly kind: "delete-view" }
   | {
@@ -589,6 +599,7 @@ function validateOperation(
   }
   if (operation.kind === "delete-view") return undefined;
   const elements = documents.flatMap(({ ast }) => ast.model?.elements ?? []);
+  const views = documents.flatMap(({ ast }) => ast.views);
   const relationships = documents.flatMap(
     ({ ast }) => ast.relations?.relationships ?? [],
   );
@@ -610,6 +621,41 @@ function validateOperation(
     return elements.some(({ name }) => name === operation.elementId)
       ? undefined
       : issue("C4ML-AUTHORING-203", "Select an existing architecture element to delete from the model.");
+  }
+  if (operation.kind === "create-system-with-container-view") {
+    if (context.viewKind !== "container") {
+      return issue(
+        "C4ML-AUTHORING-203",
+        "A Software System with its Container diagram can be created from an active Container View.",
+      );
+    }
+    if (!identifierPattern.test(operation.systemId) || !identifierPattern.test(operation.viewId)) {
+      return issue(
+        "C4ML-AUTHORING-203",
+        "The Software System and diagram identifiers must start with a letter and contain only letters, numbers, hyphens, or underscores.",
+      );
+    }
+    if (elements.some(({ name }) => name === operation.systemId)) {
+      return issue("C4ML-AUTHORING-204", `Element identifier "${operation.systemId}" is already in use.`);
+    }
+    if (views.some(({ name }) => name === operation.viewId)) {
+      return issue("C4ML-AUTHORING-204", `Diagram identifier "${operation.viewId}" is already in use.`);
+    }
+    if (
+      operation.name.trim().length === 0 ||
+      operation.responsibility.trim().length === 0 ||
+      operation.title.trim().length === 0 ||
+      operation.purpose.trim().length === 0
+    ) {
+      return issue(
+        "C4ML-AUTHORING-203",
+        "Software System name, responsibility, diagram title, and diagram purpose are required.",
+      );
+    }
+    if (operation.classification !== "internal" && operation.classification !== "external") {
+      return issue("C4ML-AUTHORING-203", "Software Systems require an internal or external classification.");
+    }
+    return undefined;
   }
   if (operation.kind === "create-element") {
     if (!identifierPattern.test(operation.elementId)) {
@@ -802,6 +848,8 @@ function createOperationEdits(
 }[] {
   switch (operation.kind) {
     case "create-view": return [];
+    case "create-system-with-container-view":
+      return createSystemWithContainerViewEdits(documents, owner, operation);
     case "update-view":
       return createUpdateViewEdits(owner, operation);
     case "delete-view":
@@ -829,6 +877,7 @@ function affectedIdsFor(
 ): readonly string[] {
   switch (operation.kind) {
     case "create-view": return [operation.viewId];
+    case "create-system-with-container-view": return [operation.systemId, operation.viewId];
     case "update-view":
     case "delete-view":
       return viewId === undefined ? [] : [viewId];
@@ -850,6 +899,45 @@ function affectedIdsFor(
     case "create-dynamic-interaction":
       return [operation.interactionId, operation.relationshipId];
   }
+}
+
+function createSystemWithContainerViewEdits(
+  documents: readonly ParsedProjectDocument[],
+  owner: ContextOwner,
+  operation: Extract<C4mlSemanticEditOperation, { readonly kind: "create-system-with-container-view" }>,
+) {
+  const system = createElementEdit(documents, owner, {
+    kind: "create-element",
+    elementKind: "software-system",
+    elementId: operation.systemId,
+    name: operation.name,
+    responsibility: operation.responsibility,
+    classification: operation.classification,
+  });
+  const eol = lineEnding(owner.document.source);
+  const proposedText = [
+    `view ${operation.viewId} {`,
+    "  type = container",
+    `  scope = ${operation.systemId}`,
+    `  title = ${JSON.stringify(operation.title.trim())}`,
+    `  purpose = ${JSON.stringify(operation.purpose.trim())}`,
+    "  audience = default",
+    "  legend = generated",
+    "  layout {",
+    "    flow = right",
+    "  }",
+    "}",
+  ].join(eol);
+  const view = {
+    documentUri: owner.document.uri,
+    proposedText,
+    edit: {
+      startOffset: owner.document.source.length,
+      endOffset: owner.document.source.length,
+      text: `${eol}${eol}${proposedText}${eol}`,
+    },
+  };
+  return system === undefined ? [] : [system, view];
 }
 
 function createUpdateViewEdits(

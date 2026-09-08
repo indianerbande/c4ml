@@ -20,7 +20,11 @@ import type {
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
 import { createPreviewProjection } from "./preview-projection.js";
-import { svgWithNavigationHighlight } from "./preview-navigation.js";
+import {
+  navigationHighlightOverlay,
+  svgWithNavigationHighlight,
+} from "./preview-navigation.js";
+import { PreviewSvgObjectUrl } from "./preview-svg-object-url.js";
 import { WorkbenchLocalizationService } from "./workbench-localization.js";
 import { WorkbenchPreferencesService } from "./workbench-preferences.service.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
@@ -37,6 +41,7 @@ export class WorkbenchPreviewFacade {
   readonly #session = inject(WorkbenchSessionService);
   readonly #destroyRef = inject(DestroyRef);
   readonly #desktop = resolveC4mlDesktopApi();
+  readonly #previewObjectUrl = new PreviewSvgObjectUrl();
   readonly #detachedSelectionListeners = new Set<
     (target: CompilerWorkerNavigationTarget | undefined) => void
   >();
@@ -123,21 +128,29 @@ export class WorkbenchPreviewFacade {
               },
         );
   });
+  readonly displayOverlay = computed(() => {
+    const navigation = this.navigation();
+    return navigationHighlightOverlay(
+      this.selectedTarget(),
+      navigation === undefined
+        ? undefined
+        : {
+            showRouteDebug: this.routingDebugEnabled(),
+            width: navigation.width,
+            height: navigation.height,
+          },
+    );
+  });
   readonly displaySize = computed(() => `${Math.round(this.zoom() * 100)}%`);
   readonly zoomLabel = computed(() => `${Math.round(this.zoom() * 100)}%`);
 
   constructor() {
-    effect((onCleanup) => {
-      const svg = this.displaySvg();
-      if (svg === undefined) {
-        this.previewUrl.set(undefined);
-        return;
-      }
-      const url = URL.createObjectURL(
-        new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+    effect(() => {
+      const allocation = this.#previewObjectUrl.update(
+        this.lastValidSvg(),
+        this.displayOverlay(),
       );
-      this.previewUrl.set(url);
-      onCleanup(() => URL.revokeObjectURL(url));
+      this.previewUrl.set(allocation?.url);
     });
 
     const unsubscribeInteraction = this.#desktop?.onPreviewInteraction(
@@ -150,15 +163,14 @@ export class WorkbenchPreviewFacade {
       ?.getPreviewWindowState()
       .then((state) => this.#acceptWindowState(state));
     this.#destroyRef.onDestroy(() => {
+      this.#previewObjectUrl.dispose();
       unsubscribeInteraction?.();
       unsubscribeWindowState?.();
     });
 
     effect(() => {
-      const projection = this.#nextProjection();
-      if (this.detached()) {
-        this.#desktop?.updatePreviewProjection(projection);
-      }
+      if (!this.detached()) return;
+      this.#desktop?.updatePreviewProjection(this.#nextProjection());
     });
   }
 

@@ -41,6 +41,7 @@ import {
   type SourceEditorCompletionProvider,
   type SourceEditorHighlightProvider,
 } from "./source-editor.contract.js";
+import { dismissSourceEditorSuggestions } from "./source-editor-shortcut.js";
 
 const c4mlLanguageId = "c4ml";
 const markerOwner = "c4ml-compiler";
@@ -110,7 +111,7 @@ export class C4mlMonacoSourceEditorComponent
     effect(() => {
       const noSuggestionsLabel = this.noSuggestionsLabel();
       this.#runtime?.setNoSuggestionsMessage(noSuggestionsLabel);
-      this.#editor?.trigger("c4ml.localization", "hideSuggest", undefined);
+      dismissSourceEditorSuggestions(this.#editor);
     });
 
     effect(() => {

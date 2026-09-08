@@ -64,6 +64,7 @@ import { WorkbenchPreviewFacade } from "./workbench-preview.facade.js";
 import { WorkbenchSessionService } from "./workbench-session.service.js";
 import type { WorkbenchActivity, WorkbenchPanel } from "./workbench-session.js";
 import { sourceEditorSuggestionShortcut } from "./source-editor-shortcut.js";
+import { revealSourceInOwningDocument } from "./source-navigation.js";
 import { WorkbenchPlacementFacade } from "./workbench-placement.facade.js";
 import { WorkbenchRouteFacade } from "./workbench-route.facade.js";
 import { WorkbenchSemanticFacade } from "./workbench-semantic.facade.js";
@@ -172,6 +173,8 @@ export class AppComponent {
       ? "dynamicEditor.open"
       : activeView?.kind === "deployment"
         ? "deploymentEditor.open"
+        : activeView?.kind === "container"
+          ? "semanticEditor.openContainer"
         : "semanticEditor.open";
   });
   readonly primaryAuthoringActionHintKey = computed(() => {
@@ -181,6 +184,8 @@ export class AppComponent {
       ? "dynamicEditor.openHint"
       : activeView?.kind === "deployment"
         ? "deploymentEditor.openHint"
+        : activeView?.kind === "container"
+          ? "semanticEditor.openContainerHint"
         : "starter.addHint";
   });
   readonly canConnectArchitecture = computed(() => {
@@ -274,6 +279,7 @@ export class AppComponent {
       case "placement": return this.i18n.t("history.undo.placement");
       case "relationship": return this.i18n.t("history.undo.relationship");
       case "route": return this.i18n.t("history.undo.route");
+      case "system-view": return this.i18n.t("history.undo.systemView");
       case "view-element": return this.i18n.t("history.undo.viewElement");
       case "view-element-hide": return this.i18n.t("history.undo.viewElementHide");
       default: return this.i18n.t("history.undo.none");
@@ -291,6 +297,7 @@ export class AppComponent {
       case "placement": return this.i18n.t("history.redo.placement");
       case "relationship": return this.i18n.t("history.redo.relationship");
       case "route": return this.i18n.t("history.redo.route");
+      case "system-view": return this.i18n.t("history.redo.systemView");
       case "view-element": return this.i18n.t("history.redo.viewElement");
       case "view-element-hide": return this.i18n.t("history.redo.viewElementHide");
       default: return this.i18n.t("history.redo.none");
@@ -569,7 +576,12 @@ export class AppComponent {
         }
         break;
       case "connect":
-        this.semanticEditor.showRelationship(this.compiler.state().activeViewId, context.target?.referenceId);
+        this.semanticEditor.showRelationship(
+          this.compiler.state().activeViewId,
+          context.target?.referenceId,
+          undefined,
+          context.target?.referenceId,
+        );
         break;
       case "placement":
         this.placement.show({
@@ -669,6 +681,14 @@ export class AppComponent {
     this.semanticEditor.showDiagram();
   }
 
+  openContainerDiagramEditor(request: { readonly scopeId?: string }): void {
+    this.help.showDiagram();
+    this.semanticEditor.showDiagram({
+      kind: "container",
+      ...(request.scopeId === undefined ? {} : { scopeId: request.scopeId }),
+    });
+  }
+
   editActiveDiagram(): void {
     this.semanticEditor.editDiagram(this.compiler.state().activeViewId);
   }
@@ -713,7 +733,11 @@ export class AppComponent {
       this.#wizardSourceSession.invalidateUndo();
       this.canUndoWizard.set(false);
       this.preview.clearSelection();
-      if (this.semanticEditor.mode() === "diagram" || this.semanticEditor.mode() === "diagram-delete") {
+      if (
+        this.semanticEditor.mode() === "diagram" ||
+        this.semanticEditor.mode() === "diagram-delete" ||
+        response.changeSet?.intent.id.endsWith(":create-system-with-container-view")
+      ) {
         this.#compileCurrentProject(response.compilation?.activeViewId);
       }
       else this.#scheduleCompile();
@@ -1044,11 +1068,12 @@ export class AppComponent {
    * must not run before the editor confirms the active document.
    */
   #revealInOwningDocument(source: CompilerWorkerSource): void {
-    if (source.file !== this.activeDocumentUri()) {
-      if (!this.documents.selectDocument(source.file)) return;
-      this.#compileCurrentProject(this.compiler.state().activeViewId);
-    }
-    void this.sourceEditor()?.revealSourceInDocument(source);
+    void revealSourceInOwningDocument(
+      this.documents,
+      this.sourceEditor(),
+      source,
+      () => this.#compileCurrentProject(this.compiler.state().activeViewId),
+    );
   }
 
   #pickConnectionTarget(
