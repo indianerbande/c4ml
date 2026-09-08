@@ -24,7 +24,7 @@ C4thedral und C4ML.
 - [Linux-Installation](install-linux.md)
 - [Windows-Installation](install-windows.md)
 - [Native Plattformmatrix](platforms.md)
-- [Versionshinweise für 0.1.0-beta.6](releases/0.1.0-beta.6.md)
+- [Versionshinweise für 0.1.0-beta.7](releases/0.1.0-beta.7.md)
 
 ## Am Projekt mitarbeiten
 

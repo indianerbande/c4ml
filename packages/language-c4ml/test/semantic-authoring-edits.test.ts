@@ -348,6 +348,62 @@ describe("semantic authoring context", () => {
     ]);
   });
 
+  it("exposes existing Container diagrams in the model context", async () => {
+    const context = await inspectC4mlSemanticAuthoringContext(project(), undefined);
+    expect(context.valid).toBe(true);
+    if (!context.valid) return;
+    expect(context.context.containerDiagrams).toContainEqual({
+      id: "garden-containers",
+      title: "Container View — Garden Pulse",
+      scopeId: "garden-pulse",
+      scopeLabel: "Garden Pulse",
+    });
+  });
+
+  it("creates a Container and its first Container diagram atomically from the model", async () => {
+    const input = project(source.replace(/\nview garden-containers \{[\s\S]*?\n\}\n/u, "\n"));
+    const proposal = await proposeC4mlSemanticEdit(input, {
+      id: "semantic:model:create-container-with-view",
+      viewId: undefined,
+      intent: {
+        id: "architecture:create-container-with-view",
+        kind: "architecture",
+        summary: "Create a service Container and its Container diagram.",
+      },
+      operation: {
+        kind: "create-container-with-view",
+        ownerId: "garden-pulse",
+        elementId: "notification-service",
+        name: "Notification Service",
+        responsibility: "Sends garden notifications.",
+        technology: "Node.js",
+        viewId: "garden-service-containers",
+        title: "Container View — Garden Services",
+        purpose: "Shows the separately running garden services.",
+      },
+    });
+
+    expect(proposal.valid, JSON.stringify(proposal)).toBe(true);
+    if (!proposal.valid) return;
+    expect(proposal.changeSet.affectedIds).toEqual([
+      "garden-pulse",
+      "garden-service-containers",
+      "notification-service",
+    ]);
+    const applied = applyProjectSourceChangeSet(input, proposal.changeSet);
+    expect(applied.valid).toBe(true);
+    if (!applied.valid) return;
+    const parsed = await parseC4mlProjectDraft(applied.project);
+    expect(parsed.valid, JSON.stringify(parsed.diagnostics)).toBe(true);
+    expect(parsed.model?.elements).toContainEqual(expect.objectContaining({
+      id: "notification-service",
+      kind: "container",
+      softwareSystemId: "garden-pulse",
+    }));
+    expect(parsed.resolvedViews?.find(({ id }) => id === "garden-service-containers")?.elements)
+      .toContainEqual(expect.objectContaining({ id: "notification-service" }));
+  });
+
   it("creates a sibling Software System and its empty Container View atomically", async () => {
     const input = project();
     const proposal = await proposeC4mlSemanticEdit(input, request("garden-containers", {

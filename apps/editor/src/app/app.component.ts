@@ -681,14 +681,6 @@ export class AppComponent {
     this.semanticEditor.showDiagram();
   }
 
-  openContainerDiagramEditor(request: { readonly scopeId?: string }): void {
-    this.help.showDiagram();
-    this.semanticEditor.showDiagram({
-      kind: "container",
-      ...(request.scopeId === undefined ? {} : { scopeId: request.scopeId }),
-    });
-  }
-
   editActiveDiagram(): void {
     this.semanticEditor.editDiagram(this.compiler.state().activeViewId);
   }
@@ -736,7 +728,8 @@ export class AppComponent {
       if (
         this.semanticEditor.mode() === "diagram" ||
         this.semanticEditor.mode() === "diagram-delete" ||
-        response.changeSet?.intent.id.endsWith(":create-system-with-container-view")
+        response.changeSet?.intent.id.endsWith(":create-system-with-container-view") ||
+        response.changeSet?.intent.id.endsWith(":create-container-with-view")
       ) {
         this.#compileCurrentProject(response.compilation?.activeViewId);
       }

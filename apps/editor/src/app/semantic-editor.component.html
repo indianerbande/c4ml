@@ -292,33 +292,75 @@
                 <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
               </label>
             } @else {
-            <label>
-              <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
-              <select [value]="createKind()" (change)="selectCreateKind($event)">
-                @for (action of createActions(); track action.kind) {
-                  <option [value]="action.kind">{{ kindLabel(action.kind) }}</option>
+            @if (servicePath() !== "container") {
+              <label>
+                <span>{{ i18n.t("semanticEditor.elementKind") }}</span>
+                <select [value]="createKind()" (change)="selectCreateKind($event)">
+                  @for (action of createActions(); track action.kind) {
+                    <option [value]="action.kind">{{ kindLabel(action.kind) }}</option>
+                  }
+                </select>
+                @if (selectedCreateAction()?.ownerLabel; as ownerLabel) {
+                  <small>{{ i18n.t("semanticEditor.owner", { owner: ownerLabel }) }}</small>
                 }
-              </select>
-              @if (selectedCreateAction()?.ownerLabel; as ownerLabel) {
-                <small>{{ i18n.t("semanticEditor.owner", { owner: ownerLabel }) }}</small>
-              }
-              @if (context()?.viewKind === "component") {
-                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.componentContextHint") }}</small>
-              }
-              @if (context()?.viewKind === "code") {
-                <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.codeContextHint") }}</small>
-              }
-            </label>
-            @if (serviceGuidanceKey(); as guidanceKey) {
+                @if (context()?.viewKind === "component") {
+                  <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.componentContextHint") }}</small>
+                }
+                @if (context()?.viewKind === "code") {
+                  <small class="semantic-visibility-hint">{{ i18n.t("semanticEditor.codeContextHint") }}</small>
+                }
+              </label>
+            }
+            @if (showServicePrompt() && servicePath() !== "container") {
               <aside class="semantic-service-hint">
                 <strong>{{ i18n.t("semanticEditor.serviceHint.title") }}</strong>
-                <span>{{ i18n.t(guidanceKey) }}</span>
-                @if (canRequestContainerDiagram()) {
-                  <button type="button" class="semantic-service-action" (click)="requestContainerDiagram()">
-                    {{ i18n.t("semanticEditor.serviceHint.createContainerDiagram") }}
+                <span>{{ i18n.t("semanticEditor.serviceHint.question") }}</span>
+                <div class="semantic-service-actions">
+                  <button type="button" class="semantic-service-action" (click)="chooseServiceAsSoftwareSystem()">
+                    {{ i18n.t("semanticEditor.serviceHint.asSoftwareSystem") }}
                   </button>
+                  <button type="button" class="semantic-service-action" [disabled]="softwareSystems().length === 0" (click)="chooseServiceAsContainer()">
+                    {{ i18n.t("semanticEditor.serviceHint.asContainer") }}
+                  </button>
+                </div>
+                @if (softwareSystems().length === 0) {
+                  <small>{{ i18n.t("semanticEditor.serviceHint.noSystem") }}</small>
                 }
               </aside>
+            } @else if (serviceGuidanceKey(); as guidanceKey) {
+              @if (servicePath() !== "container") {
+                <aside class="semantic-service-hint">
+                  <strong>{{ i18n.t("semanticEditor.serviceHint.title") }}</strong>
+                  <span>{{ i18n.t(guidanceKey) }}</span>
+                </aside>
+              }
+            }
+            @if (servicePath() === "container") {
+              <aside class="semantic-service-hint service-container-path">
+                <strong>{{ i18n.t("semanticEditor.serviceHint.containerTitle") }}</strong>
+                <span>{{ i18n.t("semanticEditor.serviceHint.containerIntro") }}</span>
+                <button type="button" class="semantic-service-back" (click)="leaveServiceContainerPath()">
+                  {{ i18n.t("semanticEditor.serviceHint.back") }}
+                </button>
+              </aside>
+              <label>
+                <span>{{ i18n.t("semanticEditor.serviceHint.owner") }}</span>
+                <select [value]="serviceOwnerId()" (change)="selectServiceOwner($event)">
+                  @for (system of softwareSystems(); track system.id) {
+                    <option [value]="system.id">{{ system.label }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                <span>{{ i18n.t("semanticEditor.serviceHint.diagram") }}</span>
+                <select [value]="serviceDiagramId()" (change)="selectServiceDiagram($event)">
+                  @for (diagram of serviceOwnerDiagrams(); track diagram.id) {
+                    <option [value]="diagram.id">{{ diagram.title }}</option>
+                  }
+                  <option value="__new__">{{ i18n.t("semanticEditor.serviceHint.newDiagram") }}</option>
+                </select>
+                <small>{{ i18n.t("semanticEditor.serviceHint.diagramHint") }}</small>
+              </label>
             }
             <label>
               <span>{{ i18n.t("semanticEditor.name") }}</span>
@@ -333,7 +375,7 @@
               <input [value]="elementId()" (input)="update(elementId, $event)" placeholder="stable-identifier" />
               <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
             </label>
-            @if (createKind() === "person" || createKind() === "software-system") {
+            @if (servicePath() !== "container" && (createKind() === "person" || createKind() === "software-system")) {
               <label>
                 <span>{{ i18n.t("semanticEditor.classification") }}</span>
                 <select [value]="classification()" (change)="setClassification($event)">
@@ -347,6 +389,31 @@
                 <span>{{ i18n.t("semanticEditor.technology") }}</span>
                 <input [value]="technology()" (input)="update(technology, $event)" [placeholder]="i18n.t('semanticEditor.technologyPlaceholder')" />
               </label>
+            }
+            @if (servicePath() === "container") {
+              <label>
+                <span>{{ i18n.t("semanticEditor.technology") }}</span>
+                <input [value]="technology()" (input)="update(technology, $event)" [placeholder]="i18n.t('semanticEditor.technologyPlaceholder')" />
+              </label>
+              @if (serviceCreatesDiagram()) {
+                <aside class="semantic-context-card">
+                  <strong>{{ i18n.t("semanticEditor.serviceHint.newDiagramTitle") }}</strong>
+                  <span>{{ i18n.t("semanticEditor.serviceHint.newDiagramHint") }}</span>
+                </aside>
+                <label>
+                  <span>{{ i18n.t("starter.title") }}</span>
+                  <input [value]="diagramTitle()" (input)="update(diagramTitle, $event)" [placeholder]="i18n.t('newSystemEditor.diagramTitlePlaceholder')" />
+                </label>
+                <label>
+                  <span>{{ i18n.t("starter.purpose") }}</span>
+                  <textarea [value]="diagramPurpose()" (input)="update(diagramPurpose, $event)" [placeholder]="i18n.t('newSystemEditor.diagramPurposePlaceholder')"></textarea>
+                </label>
+                <label>
+                  <span>{{ i18n.t("starter.diagramId") }}</span>
+                  <input [value]="diagramId()" (input)="update(diagramId, $event)" placeholder="system-containers" />
+                  <small>{{ i18n.t("semanticEditor.stableIdHint") }}</small>
+                </label>
+              }
             }
             @if (createKind() === "code-element") {
               <div class="field-row">
@@ -451,7 +518,7 @@
             </div>
           }
 
-          @if (viewId() !== undefined && (mode() === "relationship" || (mode() === "element" && editorKind() === "static"))) {
+          @if (servicePath() !== "container" && viewId() !== undefined && (mode() === "relationship" || (mode() === "element" && editorKind() === "static"))) {
             <label class="show-in-view-control">
               <input type="checkbox" [checked]="showInView()" (change)="toggleShowInView($event)" />
               <span>{{ i18n.t('viewEditor.showInView') }}</span>

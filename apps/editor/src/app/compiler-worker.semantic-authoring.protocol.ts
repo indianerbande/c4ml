@@ -194,6 +194,12 @@ function isSemanticOperation(value: Record<string, unknown>): boolean {
       isId(value["viewId"]) && typeof value["title"] === "string" &&
       typeof value["purpose"] === "string";
   }
+  if (value["kind"] === "create-container-with-view") {
+    return isId(value["ownerId"]) && isId(value["elementId"]) &&
+      typeof value["name"] === "string" && typeof value["responsibility"] === "string" &&
+      typeof value["technology"] === "string" && isId(value["viewId"]) &&
+      typeof value["title"] === "string" && typeof value["purpose"] === "string";
+  }
   if (value["kind"] === "update-view") return typeof value["title"] === "string" && typeof value["purpose"] === "string";
   if (value["kind"] === "delete-view") return true;
   if (value["showInView"] !== undefined && typeof value["showInView"] !== "boolean") return false;
@@ -236,6 +242,9 @@ function isSemanticAuthoringContext(value: unknown): value is C4mlSemanticAuthor
     optionalString(value["viewTitle"]) && optionalString(value["viewPurpose"]) &&
     (value["diagramOptions"] === undefined || (Array.isArray(value["diagramOptions"]) && value["diagramOptions"].every((option) =>
       isRecord(option) && isId(option["id"]) && ["system-landscape", "system-context", "container", "component", "code"].includes(String(option["kind"])) && optionalString(option["scopeId"]) && optionalString(option["scopeLabel"])))) &&
+    (value["containerDiagrams"] === undefined || (Array.isArray(value["containerDiagrams"]) && value["containerDiagrams"].every((option) =>
+      isRecord(option) && isId(option["id"]) && typeof option["title"] === "string" &&
+      isId(option["scopeId"]) && typeof option["scopeLabel"] === "string"))) &&
     optionalString(value["scopeId"]) && Array.isArray(value["createActions"]) &&
     value["createActions"].every((action) => isRecord(action) && isSemanticKind(action["kind"]) && optionalString(action["ownerId"]) && optionalString(action["ownerLabel"])) &&
     Array.isArray(value["elements"]) && value["elements"].every((element) => isRecord(element) && isId(element["id"]) && typeof element["label"] === "string" && isSemanticKind(element["kind"]) && optionalString(element["ownerId"])) &&

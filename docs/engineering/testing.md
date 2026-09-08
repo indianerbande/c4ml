@@ -1254,12 +1254,14 @@ Semantic-authoring template and localization tests MUST keep the overloaded
 term “service” out of the portable element-kind contract while explaining its
 three common meanings in the element form. A model-level form points an
 independent application/API to Software System and a separately running
-internal service to the owning system's Container diagram. Container and
+internal service to a concrete in-dialog Container path. Container and
 Component contexts identify their respective effective kinds without changing
-the worker-owned operation set. Template and integration evidence MUST also
-cover the direct Container-diagram action, the transfer of a known System
-Context scope into diagram creation, and an explicit, system-named option for
-each eligible Container diagram.
+the worker-owned element-kind set. Template evidence covers both direct service
+choices, explicit owner and diagram selectors, and the in-dialog option to
+create a new Container diagram. Language evidence covers discovery of existing
+Container diagrams and atomic Container-plus-View creation; the resulting View
+must contain the new Container. Existing-diagram creation continues through the
+normal create-and-show transaction and must remain one undoable edit.
 
 Container-View authoring tests MUST distinguish **another Container in the
 current Software System** from **a new Software System with its own Container
@@ -1276,11 +1278,13 @@ empty Container View and one-unit undo/redo across every edited document.
 
 On 2026-09-07 the German model-level element form was visually checked in the
 Node-served Angular renderer. The service guidance appeared immediately below
-the kind selector and named the independent-system choice. On 2026-09-08 the
-same renderer was checked again after creating an empty model and a Software
-System: **Container-Diagramm erstellen…** replaced the element form with diagram
-creation, the select named **Container-Diagramm für „Onlineshop“**, and that
-exact option was selected rather than the generic System Landscape option.
+the kind selector and named the independent-system choice. The 2026-09-08
+manual review rejected the following navigation-based wording and flow as too
+implicit: **Container-Diagramm erstellen…**, **Container-Diagramm für
+„Onlineshop“**, and instructions to create a diagram elsewhere before returning
+to add the element. The replacement keeps owner, diagram, and element creation
+in one dialog. Its automated contract is covered here; visual acceptance of the
+replacement remains part of the next manual beta review.
 
 The first graphical placement slice is automatically validated with original
 Signal Garden fixtures. Language tests cover deterministic, syntax-aware

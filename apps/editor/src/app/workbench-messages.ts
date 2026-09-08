@@ -354,7 +354,7 @@ const englishMessages = {
     "Shared meaning. This can affect every diagram that uses the changed element or relationship.",
   "authoringScope.architectureDiagram.title": "Architecture model + new diagram",
   "authoringScope.architectureDiagram.description":
-    "Creates one shared Software System and one Container diagram that presents it.",
+    "Changes the shared architecture model and creates a Container diagram for the new content.",
   "authoringScope.diagram.title": "Active diagram",
   "authoringScope.diagram.description":
     "This view only. The shared architecture model and other diagrams stay unchanged.",
@@ -589,9 +589,23 @@ const englishMessages = {
   "semanticEditor.kind.component": "Part inside the running unit (Component)",
   "semanticEditor.kind.code-element": "Important code structure (Code Element)",
   "semanticEditor.serviceHint.title": "Looking for a service?",
-  "semanticEditor.serviceHint.model":
-    "If it is an independent application or externally owned API, choose Application or software system. If it runs separately inside an existing system, create that system's Container diagram and add the service there as a Container.",
-  "semanticEditor.serviceHint.createContainerDiagram": "Create Container diagram…",
+  "semanticEditor.serviceHint.question": "Where does this service run? Choose the description that fits.",
+  "semanticEditor.serviceHint.asSoftwareSystem": "Create as a Software System",
+  "semanticEditor.serviceHint.asContainer": "Create as a Container inside a Software System",
+  "semanticEditor.serviceHint.noSystem":
+    "There is no Software System to contain it yet. Create the service as a Software System first.",
+  "semanticEditor.serviceHint.containerTitle": "Create the service as a Container",
+  "semanticEditor.serviceHint.containerIntro":
+    "Select the Software System that owns the separately running service and the Container diagram that should display it.",
+  "semanticEditor.serviceHint.back": "Back to element types",
+  "semanticEditor.serviceHint.owner": "Which Software System contains the service?",
+  "semanticEditor.serviceHint.diagram": "Where should it be shown?",
+  "semanticEditor.serviceHint.newDiagram": "Create a new Container diagram",
+  "semanticEditor.serviceHint.diagramHint":
+    "An existing diagram will show the new Container immediately. A new diagram is created together with it.",
+  "semanticEditor.serviceHint.newDiagramTitle": "New Container diagram",
+  "semanticEditor.serviceHint.newDiagramHint":
+    "Name the diagram for the selected Software System. The new service will be visible in it from the start.",
   "semanticEditor.serviceHint.container":
     "This is the right level for a service that runs or is deployed separately inside the selected system. It will be created as a Container.",
   "semanticEditor.serviceHint.component":
@@ -1310,7 +1324,7 @@ const germanMessages: WorkbenchMessages = {
     "Gemeinsame Bedeutung. Dies kann jedes Diagramm betreffen, das das geänderte Element oder die Beziehung verwendet.",
   "authoringScope.architectureDiagram.title": "Architekturmodell + neues Diagramm",
   "authoringScope.architectureDiagram.description":
-    "Erstellt ein gemeinsam genutztes Softwaresystem und ein Container-Diagramm, das dieses System zeigt.",
+    "Ändert das gemeinsame Architekturmodell und erstellt ein Container-Diagramm für den neuen Inhalt.",
   "authoringScope.diagram.title": "Aktives Diagramm",
   "authoringScope.diagram.description":
     "Nur diese Sicht. Das gemeinsame Architekturmodell und andere Diagramme bleiben unverändert.",
@@ -1550,9 +1564,23 @@ const germanMessages: WorkbenchMessages = {
   "semanticEditor.kind.component": "Teil innerhalb der laufenden Einheit (Component)",
   "semanticEditor.kind.code-element": "Wichtige Codestruktur (Code Element)",
   "semanticEditor.serviceHint.title": "Du möchtest einen Service anlegen?",
-  "semanticEditor.serviceHint.model":
-    "Ist er eine eigenständige Anwendung oder eine fremdbetriebene API, wähle Anwendung oder Softwaresystem. Läuft er separat innerhalb eines bestehenden Systems, lege dessen Container-Diagramm an und füge ihn dort als Container hinzu.",
-  "semanticEditor.serviceHint.createContainerDiagram": "Container-Diagramm erstellen…",
+  "semanticEditor.serviceHint.question": "Wo läuft dieser Service? Wähle die passende Beschreibung.",
+  "semanticEditor.serviceHint.asSoftwareSystem": "Als Softwaresystem anlegen",
+  "semanticEditor.serviceHint.asContainer": "Als Container in einem Softwaresystem anlegen",
+  "semanticEditor.serviceHint.noSystem":
+    "Es gibt noch kein Softwaresystem, das ihn enthalten kann. Lege den Service zunächst als Softwaresystem an.",
+  "semanticEditor.serviceHint.containerTitle": "Service als Container anlegen",
+  "semanticEditor.serviceHint.containerIntro":
+    "Wähle das Softwaresystem, zu dem der separat laufende Service gehört, und das Container-Diagramm, in dem er sichtbar werden soll.",
+  "semanticEditor.serviceHint.back": "Zurück zu den Elementtypen",
+  "semanticEditor.serviceHint.owner": "Zu welchem Softwaresystem gehört der Service?",
+  "semanticEditor.serviceHint.diagram": "Wo soll er angezeigt werden?",
+  "semanticEditor.serviceHint.newDiagram": "Neues Container-Diagramm erstellen",
+  "semanticEditor.serviceHint.diagramHint":
+    "Ein bestehendes Diagramm zeigt den neuen Container sofort. Ein neues Diagramm wird gemeinsam mit ihm erstellt.",
+  "semanticEditor.serviceHint.newDiagramTitle": "Neues Container-Diagramm",
+  "semanticEditor.serviceHint.newDiagramHint":
+    "Benenne das Diagramm für das gewählte Softwaresystem. Der neue Service ist darin von Anfang an sichtbar.",
   "semanticEditor.serviceHint.container":
     "Dies ist die richtige Ebene für einen Service, der innerhalb des gewählten Systems separat läuft oder bereitgestellt wird. Er wird als Container angelegt.",
   "semanticEditor.serviceHint.component":

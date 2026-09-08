@@ -201,6 +201,8 @@ export class WorkbenchSemanticFacade {
       ? "deployment"
       : changeSet.intent.id.endsWith(":create-system-with-container-view")
         ? "system-view"
+      : changeSet.intent.id.endsWith(":create-container-with-view")
+        ? "system-view"
       : this.mode() === "relationship"
       ? "relationship"
       : this.mode() === "diagram"

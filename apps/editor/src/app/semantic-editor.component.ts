@@ -33,6 +33,7 @@ import {
 import type { SemanticEditorMode } from "./workbench-semantic.facade.js";
 
 type SemanticEditorOperationKind =
+  | "create-container-with-view"
   | "create-deployment-item"
   | "create-dynamic-interaction"
   | "create-element"
@@ -62,7 +63,6 @@ export class SemanticEditorComponent {
   readonly applied = output<PreviewSemanticChangeWorkerResponse>();
   readonly cancelled = output<void>();
   readonly selectionRequested = output<{ readonly sourceId?: string }>();
-  readonly containerDiagramRequested = output<{ readonly scopeId?: string }>();
 
   readonly compiler = inject(CompilerWorkerClient);
   readonly i18n = inject(WorkbenchLocalizationService);
@@ -70,6 +70,9 @@ export class SemanticEditorComponent {
   readonly contextIssues = signal<readonly string[]>([]);
   readonly operationKind = signal<SemanticEditorOperationKind>("create-element");
   readonly createKind = signal<C4mlSemanticElementKind>("person");
+  readonly servicePath = signal<"container" | "none" | "software-system">("none");
+  readonly serviceOwnerId = signal("");
+  readonly serviceDiagramId = signal("");
   readonly elementId = signal("");
   readonly elementName = signal("");
   readonly responsibility = signal("");
@@ -89,6 +92,16 @@ export class SemanticEditorComponent {
   readonly diagramScope = signal("");
   readonly diagramContentAction = signal<"hide" | "show">("show");
   readonly diagramOptions = computed(() => this.context()?.diagramOptions ?? []);
+  readonly containerDiagrams = computed(() => this.context()?.containerDiagrams ?? []);
+  readonly softwareSystems = computed(() =>
+    (this.context()?.elements ?? []).filter(({ kind }) => kind === "software-system"),
+  );
+  readonly serviceOwnerDiagrams = computed(() => this.containerDiagrams().filter(
+    ({ scopeId }) => scopeId === this.serviceOwnerId(),
+  ));
+  readonly serviceCreatesDiagram = computed(() =>
+    this.servicePath() === "container" && this.serviceDiagramId() === "__new__",
+  );
   readonly diagramOption = computed(() => this.diagramOptions().find(({ id }) => id === this.diagramOptionId()));
   readonly existingElementId = signal("");
   readonly viewElements = computed(() => this.context()?.viewElements ?? []);
@@ -140,14 +153,14 @@ export class SemanticEditorComponent {
         return "semanticEditor.serviceHint.component" as const;
       case "person":
       case "software-system":
-        return "semanticEditor.serviceHint.model" as const;
+        return undefined;
       default:
         return undefined;
     }
   });
-  readonly canRequestContainerDiagram = computed(() =>
-    this.serviceGuidanceKey() === "semanticEditor.serviceHint.model" &&
-      this.context()?.elements.some(({ kind }) => kind === "software-system") === true,
+  readonly showServicePrompt = computed(() =>
+    !this.createsSystemWithContainerView() &&
+    (this.createKind() === "person" || this.createKind() === "software-system"),
   );
   readonly sourceOptions = computed(() =>
     (this.context()?.connectionOptions ?? []).flatMap(({ sourceId }) => {
@@ -294,6 +307,15 @@ export class SemanticEditorComponent {
         this.diagramTitle().trim().length > 0 &&
         this.diagramPurpose().trim().length > 0;
     }
+    if (this.servicePath() === "container") {
+      const common = this.softwareSystems().some(({ id }) => id === this.serviceOwnerId()) &&
+        this.elementId().trim().length > 0 && this.elementName().trim().length > 0 &&
+        this.responsibility().trim().length > 0 && this.technology().trim().length > 0;
+      return common && (this.serviceCreatesDiagram()
+        ? this.diagramId().trim().length > 0 && this.diagramTitle().trim().length > 0 &&
+          this.diagramPurpose().trim().length > 0
+        : this.serviceOwnerDiagrams().some(({ id }) => id === this.serviceDiagramId()));
+    }
     if (this.operationKind() === "create-deployment-item") {
       const itemKind = this.deploymentItemKind();
       const named = itemKind === "deployment-node" || itemKind === "infrastructure-node";
@@ -338,7 +360,7 @@ export class SemanticEditorComponent {
           : "semanticEditor.eyebrow",
   );
   readonly changeScope = computed<"architecture" | "architecture-diagram" | "diagram">(() =>
-    this.createsSystemWithContainerView()
+    this.createsSystemWithContainerView() || this.serviceCreatesDiagram()
       ? "architecture-diagram"
       : this.mode().startsWith("diagram") ||
       this.mode() === "show-element" ||
@@ -588,6 +610,40 @@ export class SemanticEditorComponent {
     const value = selectValue(event);
     if (!isSemanticKind(value)) return;
     this.createKind.set(value);
+    this.servicePath.set("none");
+    this.preview.set(undefined);
+  }
+
+  chooseServiceAsSoftwareSystem(): void {
+    this.servicePath.set("software-system");
+    this.createKind.set("software-system");
+    this.preview.set(undefined);
+  }
+
+  chooseServiceAsContainer(): void {
+    const ownerId = this.softwareSystems()[0]?.id ?? "";
+    this.servicePath.set("container");
+    this.serviceOwnerId.set(ownerId);
+    this.#selectDefaultServiceDiagram(ownerId);
+    this.preview.set(undefined);
+  }
+
+  leaveServiceContainerPath(): void {
+    this.servicePath.set("none");
+    const firstCreate = this.createActions()[0];
+    if (firstCreate !== undefined) this.createKind.set(firstCreate.kind);
+    this.preview.set(undefined);
+  }
+
+  selectServiceOwner(event: Event): void {
+    const ownerId = selectValue(event) ?? "";
+    this.serviceOwnerId.set(ownerId);
+    this.#selectDefaultServiceDiagram(ownerId);
+    this.preview.set(undefined);
+  }
+
+  selectServiceDiagram(event: Event): void {
+    this.serviceDiagramId.set(selectValue(event) ?? "");
     this.preview.set(undefined);
   }
 
@@ -752,6 +808,14 @@ export class SemanticEditorComponent {
   async buildPreview(): Promise<void> {
     const operation = this.#operation();
     if (operation === undefined) return;
+    const authoringViewId = this.servicePath() === "container" && !this.serviceCreatesDiagram()
+      ? this.serviceDiagramId()
+      : this.viewId();
+    const requestedViewId = operation.kind === "create-view" ||
+      operation.kind === "create-system-with-container-view" ||
+      operation.kind === "create-container-with-view"
+      ? operation.viewId
+      : authoringViewId;
     const contextKey = this.#contextKey;
     this.preview.set(undefined);
     const response = await this.compiler.previewSemanticChange(
@@ -759,7 +823,7 @@ export class SemanticEditorComponent {
       this.activeFile(),
       {
         id: `semantic:${this.viewId()}:${operation.kind}`,
-        viewId: this.viewId(),
+        viewId: authoringViewId,
         intent: {
           id: `${isViewOperation(operation) ? "view" : "architecture"}:${operation.kind}`,
           kind: isViewOperation(operation) ? "view" : "architecture",
@@ -767,12 +831,7 @@ export class SemanticEditorComponent {
         },
         operation,
       },
-      operation.kind === "create-view" ||
-        operation.kind === "create-system-with-container-view"
-        ? operation.viewId
-        : operation.kind === "delete-view"
-          ? undefined
-          : this.viewId(),
+      operation.kind === "delete-view" ? undefined : requestedViewId,
     );
     if (contextKey === this.#contextKey && JSON.stringify(operation) === JSON.stringify(this.#operation())) this.preview.set(response);
   }
@@ -803,14 +862,6 @@ export class SemanticEditorComponent {
     return option.kind === "container" && option.scopeLabel !== undefined
       ? this.i18n.t("starter.option.container", { scope: option.scopeLabel })
       : `${this.diagramKindLabel(option.kind)}${option.scopeLabel === undefined ? "" : ` · ${option.scopeLabel}`}`;
-  }
-
-  requestContainerDiagram(): void {
-    if (!this.canRequestContainerDiagram()) return;
-    const scopeId = this.context()?.viewKind === "system-context"
-      ? this.context()?.scopeId
-      : undefined;
-    this.containerDiagramRequested.emit(scopeId === undefined ? {} : { scopeId });
   }
 
   visibilityLabel(id: string): string {
@@ -883,6 +934,10 @@ export class SemanticEditorComponent {
       return;
     }
     this.context.set(response.context);
+    this.servicePath.set("none");
+    const firstSystem = response.context.elements.find(({ kind }) => kind === "software-system")?.id ?? "";
+    this.serviceOwnerId.set(firstSystem);
+    this.#selectDefaultServiceDiagram(firstSystem);
     if (this.mode() === "diagram") {
       const preferredKind = this.preferredDiagramKind();
       const preferredScopeId = this.preferredDiagramScopeId();
@@ -983,6 +1038,31 @@ export class SemanticEditorComponent {
         viewId: this.diagramId().trim(),
         title: this.diagramTitle().trim(),
         purpose: this.diagramPurpose().trim(),
+      };
+    }
+    if (this.servicePath() === "container") {
+      if (this.serviceCreatesDiagram()) {
+        return {
+          kind: "create-container-with-view",
+          ownerId: this.serviceOwnerId(),
+          elementId: this.elementId().trim(),
+          name: this.elementName().trim(),
+          responsibility: this.responsibility().trim(),
+          technology: this.technology().trim(),
+          viewId: this.diagramId().trim(),
+          title: this.diagramTitle().trim(),
+          purpose: this.diagramPurpose().trim(),
+        };
+      }
+      return {
+        kind: "create-element",
+        showInView: true,
+        elementKind: "container",
+        ownerId: this.serviceOwnerId(),
+        elementId: this.elementId().trim(),
+        name: this.elementName().trim(),
+        responsibility: this.responsibility().trim(),
+        technology: this.technology().trim(),
       };
     }
     if (this.operationKind() === "create-deployment-item") {
@@ -1122,6 +1202,11 @@ export class SemanticEditorComponent {
     );
     this.preview.set(undefined);
   }
+
+  #selectDefaultServiceDiagram(ownerId: string): void {
+    const existing = this.containerDiagrams().find(({ scopeId }) => scopeId === ownerId);
+    this.serviceDiagramId.set(existing?.id ?? "__new__");
+  }
 }
 
 function selectValue(event: Event): string | undefined {
@@ -1146,6 +1231,8 @@ function operationSummary(operation: C4mlSemanticEditOperation): string {
     case "create-view": return `Create diagram ${operation.viewId}`;
     case "create-system-with-container-view":
       return `Create Software System ${operation.systemId} with Container diagram ${operation.viewId}.`;
+    case "create-container-with-view":
+      return `Create Container ${operation.elementId} with Container diagram ${operation.viewId}.`;
     case "update-view": return "Update the active diagram title and purpose.";
     case "delete-view": return "Delete the active diagram.";
     case "show-element":

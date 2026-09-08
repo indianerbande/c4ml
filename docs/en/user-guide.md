@@ -111,10 +111,13 @@ colors are only an additional visual cue.
 
 “Service” is deliberately not a separate C4ML element kind. Model an
 independent application or externally owned API as a Software System. Model a
-separately running or deployable service inside a system as a Container: first
-use **Create Container diagram…** in the service hint. The following dialog
-names every available choice as **Container diagram for “System name”**; create
-and activate the required diagram, then use **Add Container…** there.
+separately running or deployable service inside a system as a Container. The
+service prompt offers **Create as a Software System** and **Create as a
+Container inside a Software System**. The second choice asks for the owning system and then lets
+you select an existing Container diagram or **Create a new Container diagram**.
+You stay in the same dialog. C4thedral adds the Container to an existing View,
+or creates the Container and its first View together as one undoable source
+change.
 A logical service or module inside that running unit belongs in its Component
 diagram. The element form shows this guidance in the relevant context.
 
