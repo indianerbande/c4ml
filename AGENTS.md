@@ -69,17 +69,20 @@ source, preview, and Handbook tabs, a Problems/Route panel, status bar, and a
 local command palette. Its compact title-bar trigger and all adjacent action
 buttons retain fixed, non-wrapping dimensions at the supported minimum window
 width; responsive reduction affects only secondary brand text and never lets
-controls overlap. Compiler activity and health live in the status bar, whose
+controls overlap. Each application start opens the Files activity, while
+first-diagram actions remain visibly disabled and command-guarded without an
+open valid model containing an architecture element. Compiler activity and
+health live in the status bar, whose
 adjacent values use subtle theme-aware separators. Its preview can occupy the
 full main workbench or detach
 into a second Electron window. That window receives only a versioned,
 source-neutral projection and exposes no compiler, source, filesystem,
 document, save, or export authority; selection, zoom, Route-overlay state, and
 redocking synchronize through the authoritative main window. A versioned
-session contract persists only safe UI presentation state (active activity
-area, bottom-panel state, zoom, route-debug visibility, preview workspace mode,
-and bounded preview-window geometry), never source, document handles, or
-filesystem paths. It also has an implemented version-one local settings
+session contract persists only safe UI presentation state (bottom-panel state,
+zoom, route-debug visibility, preview workspace mode, and bounded preview-window
+geometry), never source, document handles, or filesystem paths. It also has an
+implemented version-one local settings
 contract and category-based settings panel.
 The activity bar uses five locally packaged, hash-pinned Material Symbols
 Outlined SVGs for Files, Diagrams, Output, Help, and Settings plus one original,

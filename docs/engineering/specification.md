@@ -1471,7 +1471,13 @@ several diagrams for different audiences or levels of detail. While the model
 is empty, **Add element…** is the primary next step and diagram creation is not
 offered because a complete View requires an architecture element. Once the
 model contains an element, **Create first diagram…** becomes primary while
-**Add element…** remains available.
+**Add element…** remains available. Empty-preview guidance and its actions MUST
+form one horizontally and vertically centred group in the available preview
+stage. The first action MUST have visibly more separation from the explanatory
+text than adjacent text lines have from each other.
+Every diagram-creation entry point MUST remain disabled and its command MUST
+refuse to open unless a valid source document is open and its model contains at
+least one architecture element.
 The Diagrams activity MUST list every declared diagram, explain that selecting
 one activates it in the preview, and expose **Create another diagram…** after
 the first exists. Applying a created diagram activates that diagram. With more
@@ -1843,9 +1849,11 @@ values use fixed, decorative one-pixel separators at 25% black in light mode
 and 25% white in dark mode; flexible empty space does not receive a separator.
 
 A versioned session record may persist only installation-local presentation
-state: the active activity area, bottom-panel visibility and tab, preview zoom,
-route-debug visibility, single-window preview mode, and bounded preview-window
-geometry. It MUST reject malformed or unsupported records and MUST NOT persist
+state: bottom-panel visibility and tab, preview zoom, route-debug visibility,
+single-window preview mode, and bounded preview-window geometry. Every
+application start MUST open the Files activity; the previously active activity
+is intentionally not restored. The record MUST reject malformed or unsupported
+records and MUST NOT persist
 source text, document handles, filesystem paths, compilation results, diagram
 semantics, or uncommitted graphical state. Source files remain the only
 persistent architecture authority.
@@ -2607,6 +2615,9 @@ Each answer control SHOULD provide progressive, on-demand help in the selected
 interface language. The help MUST distinguish visible names and authored
 descriptions from stable source IDs, reference tokens, protocols, and layout
 preferences without requiring users to infer those distinctions from examples.
+Every expanded field-help block MUST use the same positive spacing from its
+owning control; individual wizard sections MUST NOT override or collapse that
+field-stack spacing.
 
 Available questions and choices SHOULD be derived from the current semantic
 context. For example, Component questions require a selected owning Container,

@@ -20,6 +20,44 @@ compatibility may still change, and signed public installers are not available
 yet. See the [project status](docs/en/project-status.md) for the precise maturity and
 remaining release boundaries.
 
+## From C4ML source to a diagram
+
+C4thedral turns one textual architecture model into audience-specific,
+reviewable diagrams. This Container View is generated directly from the
+repository's executable [`hello-container.c4ml`](examples/draft/hello-container.c4ml)
+example:
+
+![A C4thedral Container View showing Route Canvas, its three containers, a user, an external system, and their relationships](docs/assets/c4thedral-route-canvas.png)
+
+## Who C4thedral is for
+
+- Software architects and development teams who want architecture definitions
+  to live beside their code and remain useful in source control.
+- C4 practitioners who need several zoom levels from one model rather than a
+  collection of unrelated drawings.
+- Authors who value automatic layout but still need precise, reviewable control
+  over placement and relationship routing.
+
+## Try the source beta
+
+Use Node.js 24.15.0 or a newer 24.x release and the pnpm version pinned in
+`package.json`:
+
+```shell
+git clone https://github.com/indianerbande/c4ml.git
+cd c4ml
+corepack enable
+corepack prepare pnpm@11.24.0 --activate
+pnpm install --frozen-lockfile
+pnpm run desktop:start
+```
+
+The application opens with an empty workspace. Open one of the runnable
+examples under [`examples/draft`](examples/draft), or start a new model with
+the Assistant. The complete build, verification, ZIP-download, and native
+packaging instructions are in [Build C4thedral from
+source](docs/en/build-from-source.md).
+
 ## What C4thedral does
 
 - Models People, Software Systems, Containers, Components, Code Elements,
@@ -101,32 +139,16 @@ remain authoritative. See [Vibe coding with engineering
 ownership](docs/en/ai-assisted-development.md) for the benefits, limits, and
 working rules behind that statement.
 
-## Build and run the beta
+## Verify and package the beta
 
-Use Node.js 24.15.0 or a newer 24.x release and the pnpm version pinned in
-`package.json`:
-
-```shell
-git clone https://github.com/indianerbande/c4ml.git
-cd c4ml
-corepack enable
-corepack prepare pnpm@11.24.0 --activate
-pnpm install --frozen-lockfile
-pnpm run check
-pnpm run desktop:start
-```
-
-The application starts with an empty workspace. Open a `.c4ml` document or an
-explicit project from the File menu. Runnable examples are available under
-[`examples/draft`](examples/draft), including the all-seven-view
-`signal-garden.c4ml` demonstration.
-
-For native packages, platform prerequisites, Linux sandbox handling, and the
-complete reproducible procedure, follow
-[Build C4thedral from source](docs/en/build-from-source.md). Self-built macOS and Windows packages
-do not carry future C4thedral publisher signatures.
-A GitHub source ZIP is explicitly supported; the build and complete source gate
-do not require a `.git` directory.
+After installing the dependencies, `pnpm run check` executes the complete
+source gate. For native packages, platform prerequisites, Linux sandbox
+handling, and the complete reproducible procedure, follow [Build C4thedral
+from source](docs/en/build-from-source.md). Self-built macOS and Windows
+packages do not carry future C4thedral publisher signatures. A GitHub source
+ZIP is explicitly supported; the build and complete source gate do not require
+a `.git` directory. The all-seven-view `signal-garden.c4ml` demonstration and
+the smaller runnable examples remain under [`examples/draft`](examples/draft).
 
 ## Use the CLI
 

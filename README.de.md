@@ -22,6 +22,44 @@ noch keine signierten öffentlichen Installationspakete bereitstehen. Den
 genauen Reifegrad und die verbleibenden Auslieferungsgrenzen beschreibt der
 [Projektstatus](docs/de/project-status.md).
 
+## Vom C4ML-Quelltext zum Diagramm
+
+C4thedral erzeugt aus einem textuellen Architekturmodell zielgruppengerechte,
+prüfbare Diagramme. Diese Container-Ansicht wird direkt aus dem ausführbaren
+Beispiel [`hello-container.c4ml`](examples/draft/hello-container.c4ml) im
+Repository erzeugt:
+
+![Eine mit C4thedral erzeugte Container-Ansicht mit Route Canvas, seinen drei Containern, einem Nutzer, einem externen System und deren Beziehungen](docs/assets/c4thedral-route-canvas.png)
+
+## Für wen C4thedral gedacht ist
+
+- Softwarearchitekten und Entwicklungsteams, deren Architekturbeschreibungen
+  neben dem Code liegen und in der Versionsverwaltung nützlich bleiben sollen.
+- C4-Anwender, die mehrere Detailstufen aus einem gemeinsamen Modell statt
+  einer Sammlung voneinander unabhängiger Zeichnungen benötigen.
+- Autoren, die eine automatische Anordnung wünschen, Positionen und
+  Verbindungswege aber bei Bedarf präzise und prüfbar beeinflussen möchten.
+
+## Source-Beta ausprobieren
+
+Verwende Node.js 24.15.0 oder eine neuere Version der 24er-Reihe sowie die in
+`package.json` festgelegte pnpm-Version:
+
+```shell
+git clone https://github.com/indianerbande/c4ml.git
+cd c4ml
+corepack enable
+corepack prepare pnpm@11.24.0 --activate
+pnpm install --frozen-lockfile
+pnpm run desktop:start
+```
+
+Die Anwendung öffnet eine leere Arbeitsfläche. Öffne eines der ausführbaren
+Beispiele unter [`examples/draft`](examples/draft), oder beginne mit dem
+Assistenten ein neues Modell. Die vollständige Anleitung für Build, Prüfung,
+GitHub-ZIP und native Pakete steht unter [C4thedral aus dem Quellcode
+bauen](docs/de/build-from-source.md).
+
 ## Was C4thedral kann
 
 - Personen, Softwaresysteme, Container, Komponenten, Codeelemente,
@@ -107,33 +145,18 @@ bleiben Spezifikationen, Quelltext, Reviews, Test-Gates und native Nachweise.
 [Vibe Coding mit fachlicher Verantwortung](docs/de/ki-gestuetzte-entwicklung.md)
 beschreibt Vorteile, Grenzen und Arbeitsregeln ausführlich.
 
-## Beta bauen und starten
+## Beta prüfen und paketieren
 
-Verwende Node.js 24.15.0 oder eine neuere Version der 24er-Reihe sowie die in
-`package.json` festgelegte pnpm-Version:
-
-```shell
-git clone https://github.com/indianerbande/c4ml.git
-cd c4ml
-corepack enable
-corepack prepare pnpm@11.24.0 --activate
-pnpm install --frozen-lockfile
-pnpm run check
-pnpm run desktop:start
-```
-
-Die Anwendung startet mit einer leeren Arbeitsfläche. Öffne über das Dateimenü
-ein `.c4ml`-Dokument oder ein ausdrücklich definiertes Projekt. Ausführbare
-Beispiele liegen unter [`examples/draft`](examples/draft), darunter die
-Demonstration `signal-garden.c4ml` mit allen sieben Ansichten.
-
-Die Betriebssystemvoraussetzungen, den Umgang mit der Linux-Sandbox und den
-vollständigen reproduzierbaren Ablauf für native Pakete beschreibt
-[C4thedral aus dem Quellcode bauen](docs/de/build-from-source.md). Selbst erstellte macOS- und
-Windows-Pakete tragen noch nicht die künftigen Herausgebersignaturen von
-C4thedral.
-Ein von GitHub heruntergeladenes Source-ZIP wird ausdrücklich unterstützt; der
-Build und das vollständige Prüf-Gate benötigen kein `.git`-Verzeichnis.
+Nach der Installation der Abhängigkeiten führt `pnpm run check` das vollständige
+Quelltext-Prüfgate aus. Die Betriebssystemvoraussetzungen, den Umgang mit der
+Linux-Sandbox und den vollständigen reproduzierbaren Ablauf für native Pakete
+beschreibt [C4thedral aus dem Quellcode bauen](docs/de/build-from-source.md).
+Selbst erstellte macOS- und Windows-Pakete tragen noch nicht die künftigen
+Herausgebersignaturen von C4thedral. Ein von GitHub heruntergeladenes Source-ZIP
+wird ausdrücklich unterstützt; der Build und das vollständige Prüf-Gate
+benötigen kein `.git`-Verzeichnis. Die Demonstration `signal-garden.c4ml` mit
+allen sieben Ansichten und kleinere ausführbare Beispiele liegen weiterhin
+unter [`examples/draft`](examples/draft).
 
 ## CLI verwenden
 

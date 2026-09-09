@@ -61,9 +61,7 @@ export function parseWorkbenchSession(
     }
     return {
       version: 1,
-      activeActivity: isActivity(value["activeActivity"])
-        ? value["activeActivity"]
-        : defaultWorkbenchSession.activeActivity,
+      activeActivity: defaultWorkbenchSession.activeActivity,
       bottomPanel: isPanel(value["bottomPanel"])
         ? value["bottomPanel"]
         : defaultWorkbenchSession.bottomPanel,
@@ -106,7 +104,13 @@ export function storeWorkbenchSession(
   session: WorkbenchSession,
 ): boolean {
   try {
-    storage?.setItem(workbenchSessionStorageKey, JSON.stringify(session));
+    storage?.setItem(
+      workbenchSessionStorageKey,
+      JSON.stringify({
+        ...session,
+        activeActivity: defaultWorkbenchSession.activeActivity,
+      }),
+    );
     return storage !== undefined;
   } catch {
     return false;
@@ -151,10 +155,6 @@ export function normalizePreviewWindowBounds(
     width,
     height,
   };
-}
-
-function isActivity(value: unknown): value is WorkbenchActivity {
-  return workbenchActivities.some((candidate) => candidate === value);
 }
 
 function isPanel(value: unknown): value is WorkbenchPanel {
