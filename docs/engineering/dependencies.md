@@ -335,7 +335,7 @@ Electron is accepted as the desktop container for the Angular/Monaco editor.
 It is an application adapter only: the portable compiler and compiler worker do
 not depend on Electron.
 
-### Electron 44.0.0
+### Electron 44.2.0
 
 - **Capability:** native macOS/Windows/Linux application lifecycle, Chromium renderer,
   isolated preload, native windows, menus, keyboard shortcuts, file dialogs,
@@ -361,8 +361,15 @@ not depend on Electron.
   local-only CSP inspection, denied navigation/permissions, and visual
   inspection of the packaged application.
 
+Accepted update note (2026-09-09): Electron 44.2.0 remains within the reviewed
+major line and replaces 44.0.0 after dependency installation and the complete
+source gate passed. The update brings upstream Chromium and Node.js patches as
+well as fixes for renderer, main-process, Windows, Linux, IPC, and
+`contextBridge` crashes without changing C4thedral's Electron boundary.
+
 Source: [Electron application distribution](https://www.electronjs.org/docs/latest/tutorial/application-distribution)
-and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial/security).
+and [Electron security guidance](https://www.electronjs.org/docs/latest/tutorial/security),
+plus the [Electron 44.2.0 release notes](https://github.com/electron/electron/releases/tag/v44.2.0).
 
 ### Electron Forge 7.11.2 and Electron Fuses 2.1.3
 
@@ -623,7 +630,7 @@ do not rely on TypeScript 7-only language or configuration features.
 
 These results establish technical feasibility for the remaining candidates,
 not their permanent acceptance. The complete product grammar and final routing
-architecture remain open. Angular 22, Monaco 0.56.0, Electron 44.0.0, Electron
+architecture remain open. Angular 22, Monaco 0.56.0, Electron 44.2.0, Electron
 Forge 7.11.2, ELK.js 0.12.0, resvg-js 2.6.2, and the controlled IBM Plex assets
 are accepted production dependencies behind the boundaries recorded above.
 
