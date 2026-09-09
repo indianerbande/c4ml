@@ -136,6 +136,10 @@ describe("semantic graphical authoring", () => {
     expect(rootTemplate).toContain("i18n.t('diagrams.selectionHint')");
     expect(rootTemplate).toContain("compiler.state().views.length === 0");
     expect(rootTemplate).toContain("compiler.state().modelElementCount === 0");
+    expect(rootTemplate).toContain('[disabled]="!canCreateDiagram()"');
+    expect(rootComponent).toContain("readonly canCreateDiagram = computed");
+    expect(rootComponent).toContain("(state.modelElementCount ?? 0) > 0");
+    expect(rootComponent).toContain("if (!this.canCreateDiagram()) return;");
     expect(rootTemplate).toContain("'diagrams.createAnother'");
     expect(rootTemplate).toContain('(click)="selectView(view.id)"');
     expect(rootTemplate).toContain('(change)="onViewSelection($event)"');

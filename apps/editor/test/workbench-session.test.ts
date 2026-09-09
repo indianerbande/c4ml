@@ -15,6 +15,43 @@ describe("workbench session", () => {
     expect(parseWorkbenchSession(null)).toEqual(defaultWorkbenchSession);
   });
 
+  it("starts in Files while restoring the remaining presentation state", () => {
+    const storage = {
+      getItem: () =>
+        JSON.stringify({
+          ...defaultWorkbenchSession,
+          activeActivity: "diagrams",
+          bottomPanel: "route",
+          previewZoom: 1.6,
+        }),
+      setItem: () => undefined,
+    };
+
+    expect(loadWorkbenchSession(storage)).toMatchObject({
+      activeActivity: "files",
+      bottomPanel: "route",
+      previewZoom: 1.6,
+    });
+  });
+
+  it("does not persist a previously selected activity for the next start", () => {
+    let serialized = "";
+    const storage = {
+      getItem: () => null,
+      setItem: (_key: string, value: string) => {
+        serialized = value;
+      },
+    };
+
+    expect(
+      storeWorkbenchSession(storage, {
+        ...defaultWorkbenchSession,
+        activeActivity: "diagrams",
+      }),
+    ).toBe(true);
+    expect(JSON.parse(serialized)).toMatchObject({ activeActivity: "files" });
+  });
+
   it("round-trips only validated presentation state", () => {
     const parsed = parseWorkbenchSession(
       JSON.stringify({
@@ -36,7 +73,7 @@ describe("workbench session", () => {
 
     expect(parsed).toEqual({
       version: 1,
-      activeActivity: "diagrams",
+      activeActivity: "files",
       bottomPanel: "route",
       bottomPanelOpen: false,
       previewZoom: 1.6,
@@ -51,7 +88,7 @@ describe("workbench session", () => {
     expect(parsed).not.toHaveProperty("afterRef");
   });
 
-  it("persists the local help activity like the other workbench areas", () => {
+  it("does not restore the local Help activity on application start", () => {
     expect(
       parseWorkbenchSession(
         JSON.stringify({
@@ -59,10 +96,10 @@ describe("workbench session", () => {
           activeActivity: "help",
         }),
       ).activeActivity,
-    ).toBe("help");
+    ).toBe("files");
   });
 
-  it("persists the Source Control activity without repository details", () => {
+  it("returns to Files without restoring Source Control repository details", () => {
     expect(
       parseWorkbenchSession(
         JSON.stringify({
@@ -73,7 +110,7 @@ describe("workbench session", () => {
       ),
     ).toEqual({
       ...defaultWorkbenchSession,
-      activeActivity: "source-control",
+      activeActivity: "files",
     });
   });
 

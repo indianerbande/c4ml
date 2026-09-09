@@ -10,6 +10,8 @@
 }
 
 .wizard {
+  --wizard-field-stack-gap: 5px;
+
   display: flex;
   flex-direction: column;
   width: min(980px, 100%);
@@ -321,13 +323,10 @@ nav span.complete i {
   gap: 13px;
 }
 
-.field-grid label,
-.entry-connection label,
-.connection-path label,
-.advanced-fields label {
+.wizard-body label {
   display: grid;
   align-content: start;
-  gap: 5px;
+  gap: var(--wizard-field-stack-gap);
   color: var(--control-ink);
   font-size: 0.95rem;
   font-weight: 700;
@@ -371,6 +370,7 @@ nav span.complete i {
 }
 
 .field-help {
+  margin: 0;
   padding: 7px 9px;
   border-left: 3px solid var(--accent);
   border-radius: 3px 6px 6px 3px;

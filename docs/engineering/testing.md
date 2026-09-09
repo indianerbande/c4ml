@@ -890,6 +890,9 @@ distinct: the viewless state explains that several diagrams can project one
 model. With no architecture elements it makes **Add element…** primary and does
 not offer an impossible View; after the first element it gives **Create first
 diagram…** primary visual precedence and keeps **Add element…** available. The
+empty-preview content group MUST remain centred in both axes of the available
+preview stage, while its first action has a larger gap from the explanatory
+text than the text lines have from each other. The
 Diagrams activity MUST identify the list as the
 model's diagrams, explain activation by selection, and change its creation label
 to **Create another diagram…** once a View exists. Existing list and preview-
@@ -923,6 +926,12 @@ and highlight. The run also found and fixed a stale native-select title after
 creating the second diagram; the selected option is now bound explicitly to
 the compiler-owned active View ID. This is interactive renderer evidence, not
 a packaged-app test.
+
+The startup and empty-workspace regression tests MUST prove that a stored
+activity is not restored over the Files activity and that every first-diagram
+entry point is disabled and command-guarded without both an open valid source
+and at least one architecture element. Disabled diagram actions MUST be visibly
+distinguishable from enabled side-panel actions.
 
 A later Node-served German validation on the same date exercised the completed
 diagram-management surface. The Diagrams activity showed the active
@@ -1085,7 +1094,9 @@ Interaction review also checks that questions can be completed from familiar
 architecture concepts without prior C4 vocabulary. Template and localization
 tests MUST additionally verify that every rendered form control has adjacent
 expandable help, that help controls expose expanded state and controlled
-content accessibly, that IDs are described as source tokens rather than vague
+content accessibly, and that every expanded help block uses the shared positive
+field-stack spacing without section-specific overrides. Tests also verify that
+IDs are described as source tokens rather than vague
 technical names, and that German interface selection starts with German-owned
 example answers. Those answers MUST retain one coherent original online-shop
 story across role, application, separately running parts, technologies, and

@@ -50,6 +50,10 @@ describe("system context wizard template", () => {
     expect(template).toContain("[attr.aria-expanded]");
     expect(template).toContain("aria-controls");
     expect(template).toContain('class="field-help"');
+    expect(styles).toContain("--wizard-field-stack-gap: 5px");
+    expect(styles).toContain(".wizard-body label {");
+    expect(styles).toContain("gap: var(--wizard-field-stack-gap)");
+    expect(styles).toMatch(/\.field-help\s*\{[^}]*margin:\s*0;/su);
   });
 
   it("draws the close icon from geometrically centered strokes", () => {

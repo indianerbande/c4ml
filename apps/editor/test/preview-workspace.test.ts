@@ -64,4 +64,11 @@ describe("preview workspace boundaries", () => {
       expect(styles).not.toContain("filter: drop-shadow");
     }
   });
+
+  it("centers empty-preview guidance and separates its first action", () => {
+    expect(mainStyles).toContain("place-self: center;");
+    expect(mainStyles).toContain(".empty-preview > span + button");
+    expect(mainStyles).toContain(".empty-preview > small + button");
+    expect(mainStyles).toContain("margin-top: 7px;");
+  });
 });

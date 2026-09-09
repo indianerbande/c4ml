@@ -166,6 +166,10 @@ export class AppComponent {
       state.phase === "valid" && this.hasOpenDocument()
     );
   });
+  readonly canCreateDiagram = computed(() => {
+    const state = this.compiler.state();
+    return this.canEditArchitecture() && (state.modelElementCount ?? 0) > 0;
+  });
   readonly primaryAuthoringActionKey = computed(() => {
     const state = this.compiler.state();
     const activeView = state.views.find(({ id }) => id === state.activeViewId);
@@ -676,7 +680,7 @@ export class AppComponent {
   }
 
   openDiagramEditor(): void {
-    if (!this.canEditArchitecture()) return;
+    if (!this.canCreateDiagram()) return;
     this.help.showDiagram();
     this.semanticEditor.showDiagram();
   }
