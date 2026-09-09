@@ -23,7 +23,7 @@ Parser, rendering, and remaining UI dependencies stay draft unless a recorded
 spike result explicitly accepts them. ELK.js 0.12.0 is now the accepted first
 automatic-layout dependency behind the C4ML-owned `LayoutAdapter`.
 
-Electron 44.0.0 is the accepted desktop shell and Electron Forge 7.11.2 is the
+Electron 44.2.0 is the accepted desktop shell and Electron Forge 7.11.2 is the
 replaceable packaging adapter. `apps/desktop` owns native lifecycle, menus,
 file dialogs, local source persistence, and distribution artifacts; it MUST NOT
 own compiler semantics. The sandboxed Angular renderer receives only a

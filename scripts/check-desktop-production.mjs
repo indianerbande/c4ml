@@ -164,7 +164,7 @@ assert.match(
 );
 
 const expectedPackages = [
-  ["electron", "44.0.0", "MIT"],
+  ["electron", "44.2.0", "MIT"],
   ["@electron-forge/cli", "7.11.2", "MIT"],
   ["@electron-forge/maker-deb", "7.11.2", "MIT"],
   ["@electron-forge/maker-dmg", "7.11.2", "MIT"],
@@ -589,7 +589,7 @@ assert.ok(
 );
 
 console.log(
-  "Desktop production boundary verified (Electron 44.0.0, Forge 7.11.2, native Squirrel/DMG/ZIP/DEB makers, installed-app C4ML document opening, separated secure preloads, local editor assets, native SVG save, controlled resvg PNG export).",
+  "Desktop production boundary verified (Electron 44.2.0, Forge 7.11.2, native Squirrel/DMG/ZIP/DEB makers, installed-app C4ML document opening, separated secure preloads, local editor assets, native SVG save, controlled resvg PNG export).",
 );
 
 function readRequired(relativePath) {
