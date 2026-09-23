@@ -199,8 +199,8 @@ importers:
         version: 4.3.1
     devDependencies:
       langium-cli:
-        specifier: 4.3.0
-        version: 4.3.0
+        specifier: 4.4.0
+        version: 4.4.0
 
   packages/layout-elk:
     dependencies:
@@ -447,17 +447,32 @@ packages:
   '@chevrotain/cst-dts-gen@12.0.0':
     resolution: {integrity: sha512-fSL4KXjTl7cDgf0B5Rip9Q05BOrYvkJV/RrBTE/bKDN096E4hN/ySpcBK5B24T76dlQ2i32Zc3PAE27jFnFrKg==}
 
+  '@chevrotain/cst-dts-gen@13.2.0':
+    resolution: {integrity: sha512-bA9dvWlhAUcHkNwU+8w9yiUxJPlj/Lm3VqS7MD+NbIR/7LmpNLuK/AWNFdCo/T3SK5ND0/UHf3IJvl/Jn/i6yg==}
+
   '@chevrotain/gast@12.0.0':
     resolution: {integrity: sha512-1ne/m3XsIT8aEdrvT33so0GUC+wkctpUPK6zU9IlOyJLUbR0rg4G7ZiApiJbggpgPir9ERy3FRjT6T7lpgetnQ==}
+
+  '@chevrotain/gast@13.2.0':
+    resolution: {integrity: sha512-bCARdAsG+eEbOveSXcOAC7pVxA04I1ionzeMOwIYf5NX7SaS7zgn4Dgug2BSqoL+iyKeMNSorQjsFSHJHsCNwg==}
 
   '@chevrotain/regexp-to-ast@12.0.0':
     resolution: {integrity: sha512-p+EW9MaJwgaHguhoqwOtx/FwuGr+DnNn857sXWOi/mClXIkPGl3rn7hGNWvo31HA3vyeQxjqe+H36yZJwYU8cA==}
 
+  '@chevrotain/regexp-to-ast@13.2.0':
+    resolution: {integrity: sha512-kxpUkLtiaK09ph+dib+Yvm+3sWSnuwlo25gqfKRgTPNmF6H7uW4gVkMjaRdtnN783S9sM6vUNWh9CsxYX4QwKw==}
+
   '@chevrotain/types@12.0.0':
     resolution: {integrity: sha512-S+04vjFQKeuYw0/eW3U52LkAHQsB1ASxsPGsLPUyQgrZ2iNNibQrsidruDzjEX2JYfespXMG0eZmXlhA6z7nWA==}
 
+  '@chevrotain/types@13.2.0':
+    resolution: {integrity: sha512-7qrYHRlKfWf2AvBfJi5eVOrKAkbxvMFsy/iIHTGIiApNcEecCaVIdR+mIQhyCBsTDJxBz4JWXHMo6krbhR9hVg==}
+
   '@chevrotain/utils@12.0.0':
     resolution: {integrity: sha512-lB59uJoaGIfOOL9knQqQRfhl9g7x8/wqFkp13zTdkRu1huG9kg6IJs1O8hqj9rs6h7orGxHJUKb+mX3rPbWGhA==}
+
+  '@chevrotain/utils@13.2.0':
+    resolution: {integrity: sha512-SzKYY68rseOrb9KILVzPsl6SjkQtdWw01SRGB5aCVI5kFcHltQsOYV3JB0Ffst72DgkvHCyDQ0NLwxtmCCf97Q==}
 
   '@electron-forge/cli@7.11.2':
     resolution: {integrity: sha512-c+C4ndLfHbxwZuCn9G8iT9wD/woLdaVkoSVjAIbj+0nJhi8UmiVsz/+Gxlj4cvhMRTzBMBxudstLU7RocMikfg==}
@@ -2208,8 +2223,17 @@ packages:
     peerDependencies:
       chevrotain: ^12.0.0
 
+  chevrotain-allstar@0.5.0:
+    resolution: {integrity: sha512-KV7jVd28Qp4Kg9Ovhwlx5vyucoQxqxB22DLpxqRR2YDsHUHirr/NHAHx5bYk+bhJCD88xrLvOrfjlrrZRVa2Mg==}
+    peerDependencies:
+      chevrotain: ^13.0.0
+
   chevrotain@12.0.0:
     resolution: {integrity: sha512-csJvb+6kEiQaqo1woTdSAuOWdN0WTLIydkKrBnS+V5gZz0oqBrp4kQ35519QgK6TpBThiG3V1vNSHlIkv4AglQ==}
+    engines: {node: '>=22.0.0'}
+
+  chevrotain@13.2.0:
+    resolution: {integrity: sha512-GTouk5YzgBxlTPCaDn5q0q2EJKkrYmnPF+HmF8v0Qo4r3iyPG7HJivkN1wthCXZcm3sIcZFpGTRovLPNdJNRCA==}
     engines: {node: '>=22.0.0'}
 
   chokidar@5.0.0:
@@ -2736,6 +2760,10 @@ packages:
     resolution: {integrity: sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA==}
     engines: {node: '>=14.14'}
 
+  fs-extra@11.4.0:
+    resolution: {integrity: sha512-EQsFzMUJkCKGr1ePqlYADkIUmHW1s3ZXr5Yqy6wbGrfUCphpl2maM/kyOIRA2HpP3AaFQTZXD4ldjek+nccddA==}
+    engines: {node: '>=14.14'}
+
   fs-extra@7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
@@ -3112,16 +3140,20 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  langium-cli@4.3.0:
-    resolution: {integrity: sha512-+TtgkhX8Z3exRBJvTFWV1semhWUCnWMhMP+ZKjpKIeyY6GgnQHehf3ZWyCvVL5T95uqgWZb77aoq9rhI2MPNTA==}
+  langium-cli@4.4.0:
+    resolution: {integrity: sha512-CSqwKebp8qWa9Y5s1xgEl4qxGPH71Wf4yMXKPuwICoL2yRfVtUl2zpTwF4O5WhYOxnuSpf0rJrxzjQRK5whL7Q==}
     engines: {node: '>=20.10.0', npm: '>=10.2.3'}
     hasBin: true
 
-  langium-railroad@4.3.0:
-    resolution: {integrity: sha512-dbuv149MQe8XcgM48FagH22JBaqN0MvN9RRJKBdRQWDeHUYAASliiOtLdMfgOl3kV+nLx7idSc+LLdcBSduvHw==}
+  langium-railroad@4.4.0:
+    resolution: {integrity: sha512-5dZINWslRqUkQaVtn+45SdZyOZ2+LwBGrzWKbRkVf76IZPCRTBzbmNYaCFW09Nwl5dMmv+iQvwkUwViljN0hvg==}
 
   langium@4.3.1:
     resolution: {integrity: sha512-4lmkLHytLXD5pvyL0PKUj1LCNpgzv9s8luH+GbWXHG45QLmO6PlFXrCUghDN5BfcFTlaQyXpXiaSl8A28Xep8w==}
+    engines: {node: '>=20.10.0', npm: '>=10.2.3'}
+
+  langium@4.4.0:
+    resolution: {integrity: sha512-VFIFtohpsmJeQ+LkaeuUNtyvkklecklI0FSLxFS8JfiGABE9XCpUJwYUNnLk6C2aOyk0w99tNlvd0pmbJ2AW/w==}
     engines: {node: '>=20.10.0', npm: '>=10.2.3'}
 
   lightningcss-android-arm64@1.33.0:
@@ -4426,11 +4458,18 @@ packages:
     resolution: {integrity: sha512-rfuA6T75H6m5EkbhtEPzre9pT0HPcDI2MMy4+nPFIBks5J8JBAUHD4tRYSgaBOijIEC7SRkC1kKyXTLqbmh9jw==}
     engines: {node: '>=14.0.0'}
 
+  vscode-jsonrpc@9.0.2:
+    resolution: {integrity: sha512-SbQSV9yRemARxeXw6LU5sS6Zq0e9/DgCCX5yelH263ZQWukbTk8EF8fjTrr1dziasf4GwlJbvTwFnTrnQFWZXQ==}
+    engines: {node: '>=14.0.0'}
+
   vscode-languageserver-protocol@3.18.1:
     resolution: {integrity: sha512-RTiiVHdpxpYcJVI5sq6S5TLjQ4WDR/rBrIWru+kPXe6sGQ9PFQ3GamrTKLvPqbR4ylr1SoodhmcqbFII0WXVuw==}
 
   vscode-languageserver-protocol@3.18.2:
     resolution: {integrity: sha512-XRyDbT0Pp3sSNti3JmxVEUMySWCSi1hhM+/KUlCy1hV1zmrqpM1OwO12EAki8blhmLuIMpaJrYbo0OzGVfK2Qg==}
+
+  vscode-languageserver-protocol@3.18.3:
+    resolution: {integrity: sha512-DF49+WeV5py4zO5hhobp60jjsDSK0lAqA0OuKBLBvp423HPWQcCbhZz3JgyfIewsEz2f8U+X75xNIFHdiXZm2w==}
 
   vscode-languageserver-textdocument@1.0.13:
     resolution: {integrity: sha512-nx0ZHwMGIsVkzFG3/VLeJYBLTaFBRuNdGDvevvjuoayU5EOS2fEYazOhtCM3PI9ClMMg5igc0uwXtAq4tJj+Dw==}
@@ -4438,8 +4477,15 @@ packages:
   vscode-languageserver-types@3.18.0:
     resolution: {integrity: sha512-8TsGPNMIMiiBdkORgRSvLjuiEIiAFtO+KssmYWxQ+uSVvlf7RjK8YKCOjPzZ+YA04jXEV7+7LvkSmHkhpNS99g==}
 
+  vscode-languageserver-types@3.18.3:
+    resolution: {integrity: sha512-XIlzJ7Qp/jzSI1ds7/FwPAWrPeTZA7pAtlW4hdJ1J6xXWJL6dR9QYnDhJOdLzdKhUQ5Mm6mvUMw+3DcOQQasPw==}
+
   vscode-languageserver@10.0.1:
     resolution: {integrity: sha512-hfERoZvpaHWzQa7t5mMIrHkEOhF7aTs1dpktem0TW/Xs4QZD7NtcHjIq/aE1CZJEj6Rb8LSGUkBhvTRDdpyGig==}
+    hasBin: true
+
+  vscode-languageserver@10.1.1:
+    resolution: {integrity: sha512-/cG04Fiq99rEtoDrfPpv0k6NyUFlck5GNtZLQZv1rxkBkc/4FrJNvEKTN5k1Si3O1hRguP++ciYlX9cdjdYxFQ==}
     hasBin: true
 
   vscode-uri@3.1.0:
@@ -4865,15 +4911,30 @@ snapshots:
       '@chevrotain/gast': 12.0.0
       '@chevrotain/types': 12.0.0
 
+  '@chevrotain/cst-dts-gen@13.2.0':
+    dependencies:
+      '@chevrotain/gast': 13.2.0
+      '@chevrotain/types': 13.2.0
+
   '@chevrotain/gast@12.0.0':
     dependencies:
       '@chevrotain/types': 12.0.0
 
+  '@chevrotain/gast@13.2.0':
+    dependencies:
+      '@chevrotain/types': 13.2.0
+
   '@chevrotain/regexp-to-ast@12.0.0': {}
+
+  '@chevrotain/regexp-to-ast@13.2.0': {}
 
   '@chevrotain/types@12.0.0': {}
 
+  '@chevrotain/types@13.2.0': {}
+
   '@chevrotain/utils@12.0.0': {}
+
+  '@chevrotain/utils@13.2.0': {}
 
   '@electron-forge/cli@7.11.2(bluebird@3.7.2)(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.26)(supports-color@8.1.1)':
     dependencies:
@@ -6603,6 +6664,11 @@ snapshots:
       chevrotain: 12.0.0
       lodash-es: 4.18.1
 
+  chevrotain-allstar@0.5.0(chevrotain@13.2.0):
+    dependencies:
+      chevrotain: 13.2.0
+      lodash-es: 4.18.1
+
   chevrotain@12.0.0:
     dependencies:
       '@chevrotain/cst-dts-gen': 12.0.0
@@ -6610,6 +6676,14 @@ snapshots:
       '@chevrotain/regexp-to-ast': 12.0.0
       '@chevrotain/types': 12.0.0
       '@chevrotain/utils': 12.0.0
+
+  chevrotain@13.2.0:
+    dependencies:
+      '@chevrotain/cst-dts-gen': 13.2.0
+      '@chevrotain/gast': 13.2.0
+      '@chevrotain/regexp-to-ast': 13.2.0
+      '@chevrotain/types': 13.2.0
+      '@chevrotain/utils': 13.2.0
 
   chokidar@5.0.0:
     dependencies:
@@ -7201,6 +7275,12 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
+  fs-extra@11.4.0:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.1
+      universalify: 2.0.1
+
   fs-extra@7.0.1:
     dependencies:
       graceful-fs: 4.2.11
@@ -7600,19 +7680,19 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  langium-cli@4.3.0:
+  langium-cli@4.4.0:
     dependencies:
       chalk: 5.6.2
       commander: 15.0.0
-      fs-extra: 11.3.6
+      fs-extra: 11.4.0
       jsonschema: 1.5.0
-      langium: 4.3.1
-      langium-railroad: 4.3.0
+      langium: 4.4.0
+      langium-railroad: 4.4.0
       lodash: 4.18.1
 
-  langium-railroad@4.3.0:
+  langium-railroad@4.4.0:
     dependencies:
-      langium: 4.3.1
+      langium: 4.4.0
       railroad-diagrams: 1.0.0
 
   langium@4.3.1:
@@ -7621,6 +7701,17 @@ snapshots:
       chevrotain: 12.0.0
       chevrotain-allstar: 0.4.4(chevrotain@12.0.0)
       vscode-languageserver: 10.0.1
+      vscode-languageserver-protocol: 3.18.2
+      vscode-languageserver-textdocument: 1.0.13
+      vscode-languageserver-types: 3.18.0
+      vscode-uri: 3.1.0
+
+  langium@4.4.0:
+    dependencies:
+      '@chevrotain/regexp-to-ast': 13.2.0
+      chevrotain: 13.2.0
+      chevrotain-allstar: 0.5.0(chevrotain@13.2.0)
+      vscode-languageserver: 10.1.1
       vscode-languageserver-protocol: 3.18.2
       vscode-languageserver-textdocument: 1.0.13
       vscode-languageserver-types: 3.18.0
@@ -8867,6 +8958,8 @@ snapshots:
 
   vscode-jsonrpc@9.0.1: {}
 
+  vscode-jsonrpc@9.0.2: {}
+
   vscode-languageserver-protocol@3.18.1:
     dependencies:
       vscode-jsonrpc: 9.0.0
@@ -8877,13 +8970,24 @@ snapshots:
       vscode-jsonrpc: 9.0.1
       vscode-languageserver-types: 3.18.0
 
+  vscode-languageserver-protocol@3.18.3:
+    dependencies:
+      vscode-jsonrpc: 9.0.2
+      vscode-languageserver-types: 3.18.3
+
   vscode-languageserver-textdocument@1.0.13: {}
 
   vscode-languageserver-types@3.18.0: {}
 
+  vscode-languageserver-types@3.18.3: {}
+
   vscode-languageserver@10.0.1:
     dependencies:
       vscode-languageserver-protocol: 3.18.1
+
+  vscode-languageserver@10.1.1:
+    dependencies:
+      vscode-languageserver-protocol: 3.18.3
 
   vscode-uri@3.1.0: {}
 
