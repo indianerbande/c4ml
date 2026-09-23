@@ -152,7 +152,7 @@ importers:
     devDependencies:
       '@angular/build':
         specifier: 22.1.6
-        version: 22.1.6(@angular/compiler-cli@22.1.4(@angular/compiler@22.1.4)(typescript@6.0.3))(@angular/compiler@22.1.4)(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(@angular/platform-browser@22.1.4(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(jiti@2.7.0)(postcss@8.5.26)(supports-color@8.1.1)(terser@5.51.1)(tslib@2.8.1)(typescript@6.0.3)(vitest@5.0.0(@types/node@24.13.3)(happy-dom@20.14.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.51.1)))
+        version: 22.1.6(@angular/compiler-cli@22.1.7(@angular/compiler@22.1.4)(typescript@6.0.3))(@angular/compiler@22.1.4)(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(@angular/platform-browser@22.1.4(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(jiti@2.7.0)(postcss@8.5.26)(supports-color@8.1.1)(terser@5.51.1)(tslib@2.8.1)(typescript@6.0.3)(vitest@5.0.0(@types/node@24.13.3)(happy-dom@20.14.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.51.1)))
       '@angular/cli':
         specifier: 22.1.7
         version: 22.1.7(@types/node@24.13.3)(chokidar@5.0.0)(supports-color@8.1.1)
@@ -160,8 +160,8 @@ importers:
         specifier: 22.1.4
         version: 22.1.4
       '@angular/compiler-cli':
-        specifier: 22.1.4
-        version: 22.1.4(@angular/compiler@22.1.4)(typescript@6.0.3)
+        specifier: 22.1.7
+        version: 22.1.7(@angular/compiler@22.1.4)(typescript@6.0.3)
       happy-dom:
         specifier: 20.14.0
         version: 20.14.0
@@ -328,12 +328,12 @@ packages:
       '@angular/core': 22.1.4
       rxjs: ^6.5.3 || ^7.4.0
 
-  '@angular/compiler-cli@22.1.4':
-    resolution: {integrity: sha512-h9CcVG614TJLbk+dswlzSjYARYJh2MLOEwcnpt9zUGtOffhrrSS9BFJGjSwzdDSVM3J5mvf5ZuW+0hPAuRRoOA==}
+  '@angular/compiler-cli@22.1.7':
+    resolution: {integrity: sha512-VGg8Kyt0YymQfnUUFk79vFaM+x5xmIMHy+BZh3P2Lh/uxqCXTWhJJH8kOHKtIGGH5/wKhBEmSy2CezdcIuM9xg==}
     engines: {node: ^22.22.3 || ^24.15.0 || >=26.0.0}
     hasBin: true
     peerDependencies:
-      '@angular/compiler': 22.1.4
+      '@angular/compiler': 22.1.7
       typescript: '>=6.0 <6.1'
     peerDependenciesMeta:
       typescript:
@@ -4651,12 +4651,12 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@angular/build@22.1.6(@angular/compiler-cli@22.1.4(@angular/compiler@22.1.4)(typescript@6.0.3))(@angular/compiler@22.1.4)(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(@angular/platform-browser@22.1.4(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(jiti@2.7.0)(postcss@8.5.26)(supports-color@8.1.1)(terser@5.51.1)(tslib@2.8.1)(typescript@6.0.3)(vitest@5.0.0(@types/node@24.13.3)(happy-dom@20.14.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.51.1)))':
+  '@angular/build@22.1.6(@angular/compiler-cli@22.1.7(@angular/compiler@22.1.4)(typescript@6.0.3))(@angular/compiler@22.1.4)(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(@angular/platform-browser@22.1.4(@angular/common@22.1.4(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.4(@angular/compiler@22.1.4)(rxjs@7.8.2)))(@types/node@24.13.3)(chokidar@5.0.0)(jiti@2.7.0)(postcss@8.5.26)(supports-color@8.1.1)(terser@5.51.1)(tslib@2.8.1)(typescript@6.0.3)(vitest@5.0.0(@types/node@24.13.3)(happy-dom@20.14.0)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.101.0)(terser@5.51.1)))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@angular-devkit/architect': 0.2201.6(chokidar@5.0.0)
       '@angular/compiler': 22.1.4
-      '@angular/compiler-cli': 22.1.4(@angular/compiler@22.1.4)(typescript@6.0.3)
+      '@angular/compiler-cli': 22.1.7(@angular/compiler@22.1.4)(typescript@6.0.3)
       '@babel/core': 8.0.1
       '@babel/helper-annotate-as-pure': 8.0.0
       '@babel/helper-split-export-declaration': 7.24.7
@@ -4731,7 +4731,7 @@ snapshots:
       rxjs: 7.8.2
       tslib: 2.8.1
 
-  '@angular/compiler-cli@22.1.4(@angular/compiler@22.1.4)(typescript@6.0.3)':
+  '@angular/compiler-cli@22.1.7(@angular/compiler@22.1.4)(typescript@6.0.3)':
     dependencies:
       '@angular/compiler': 22.1.4
       '@babel/core': 8.0.1
