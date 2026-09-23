@@ -11,6 +11,12 @@ separately; passing a Phase 0 spike alone is not permanent acceptance.
 
 ## Runtime and candidate packages
 
+The desktop also uses the internal `@c4ml/language-c4ml/project-starter`
+subpath for fixed, language-owned empty project fragments. This subpath has no
+parser imports or third-party runtime dependencies; it does not put compiler
+semantics in Electron. Project-starter parsing tests and native filesystem tests
+protect that boundary. All source templates remain original Apache-2.0 assets.
+
 ### Langium 4.3.1
 
 - **Capability:** parser generation, typed syntax trees, references,

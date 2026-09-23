@@ -507,6 +507,19 @@ command-palette access, diagram/Handbook tab switching, keyboard focus, and
 legibility in both light and dark schemes. Help navigation MUST leave source,
 dirty state, and canonical SVG unchanged.
 
+On 2026-09-23 the bilingual project-to-output walkthrough was added to the
+Markdown project guide and the local handbook. Its workbench-only topic ID does
+not extend language-worker context IDs. All five handbook tests, including
+localized discovery by project-file/publication questions, test typechecking,
+the production renderer build, editor production checks, both documentation
+checks, Windows packaging, and native artifact verification passed. The
+documented Garden Pulse check and selected/all SVG+PNG exports ran successfully;
+both pairs were byte-identical and the PNG was inspected. A scoped Git LF rule
+protects the example's SHA-256-verified passive text asset on Windows. The
+packaged German article was opened and visually inspected, and searching for
+Publikation returned it. This documentation verification does not replace or
+claim a rerun of the complete application smoke gate.
+
 The Electron desktop foundation adds unit and boundary evidence for its
 versioned bridge, runtime request validators, opaque document handles, filename
 normalization, local protocol traversal rejection, hardened web preferences,
@@ -872,6 +885,42 @@ Add an invariant here when a rendering defect is found that a stage test
 could not have caught; never weaken one to make an example pass.
 
 ### 2.10 Editor and compiler parity
+
+The initial shortcut (superseded by native project creation) was inspected on
+2026-09-23 in the packaged Windows x64 application with
+the new **Neues Projekt…** action immediately above the Open actions in Files.
+Clicking it opened the existing assistant with **Leer beginnen** selected and
+the model-name field focused; Cancel returned to the unchanged empty workspace.
+The production renderer build, all 312 editor tests, and Windows artifact
+verification passed. Two existing editor tests required temporary LF checkout
+normalization on this CRLF host; their original bytes were restored afterward.
+
+Native project creation tests MUST reject unsafe names, renderer-supplied paths
+and source, and existing target directories/files without changing their contents.
+The exact language-owned starter must compile as a valid empty multi-document
+project. Filesystem tests require manifest reload with stable persisted identity,
+all declared source files, and the documentation directory. Editor tests must
+prove that cancel/failure and declined dirty-state confirmation retain the old
+workspace, while successful creation loads clean documents in project mode.
+Interactive validation covers name entry, structure review, the native parent
+picker, immediate opening, and collision feedback without overwriting a project.
+
+On 2026-09-23 the packaged Windows x64 application created `Projektanlage Test`
+under the ignored build directory through this native flow. All three sources
+opened cleanly, the worker reported zero problems, and the standalone CLI
+accepted the resulting project. Repeating the same name and parent displayed
+the localized collision message; SHA-256 comparison confirmed every existing
+project file remained unchanged. The name/structure dialog and both success and
+collision states were visually inspected. Build, test typechecking, 317 editor,
+123 language and 9 desktop-contract tests passed. The desktop suite excluding
+the existing Unix-path-only external-document-open tests passed 16 tests; the
+subsequently added partial-write rollback case also passed with the other three
+project-creation cases. Documentation, worker-bundle, desktop/editor production,
+and native Windows artifact checks passed. CRLF-sensitive source checks used
+temporary LF normalization and restored the checkout bytes afterward; packaged
+icon assets were restored to their canonical Git bytes. The final packaged
+smoke reported `fontsReady: false`, so its downstream detached-preview and PNG
+steps were not reached; this is not a fully green packaged smoke or full gate.
 
 Model-first onboarding tests MUST cover deterministic minimal source containing
 only the header, escaped passive label, and empty model; empty-name rejection;

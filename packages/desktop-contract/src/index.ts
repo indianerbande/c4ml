@@ -1,4 +1,4 @@
-export const desktopBridgeProtocolVersion = 18 as const;
+export const desktopBridgeProtocolVersion = 19 as const;
 
 export const desktopIpcChannels = {
   command: "c4ml:desktop:command",
@@ -7,6 +7,7 @@ export const desktopIpcChannels = {
   exportSvg: "c4ml:desktop:export-svg",
   openDocument: "c4ml:desktop:open-document",
   openProject: "c4ml:desktop:open-project",
+  createProject: "c4ml:desktop:create-project",
   openPreviewWindow: "c4ml:desktop:open-preview-window",
   closePreviewWindow: "c4ml:desktop:close-preview-window",
   previewWindowState: "c4ml:desktop:preview-window-state",
@@ -306,6 +307,8 @@ export interface DesktopOperationFailure {
   readonly code:
     | "C4ML-DESKTOP-FILE-001"
     | "C4ML-DESKTOP-FILE-002"
+    | "C4ML-DESKTOP-PROJECT-001"
+    | "C4ML-DESKTOP-PROJECT-002"
     | "C4ML-DESKTOP-EXPORT-001"
     | "C4ML-DESKTOP-EXPORT-002"
     | "C4ML-DESKTOP-GIT-001"
@@ -323,6 +326,21 @@ export type DesktopOpenProjectResult =
   | { readonly status: "canceled" }
   | { readonly status: "opened"; readonly project: DesktopSourceProject }
   | DesktopOperationFailure;
+
+export interface DesktopCreateProjectRequest {
+  readonly name: string;
+}
+
+/** A single portable directory name, never a renderer-supplied path. */
+export function isDesktopProjectName(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 80 &&
+    value === value.trim() && !/[<>:"/\\|?*\u0000-\u001f\u007f]/u.test(value) &&
+    !/[. ]$/u.test(value) && !/^(?:con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(?:\.|$)/iu.test(value);
+}
+
+export function isDesktopCreateProjectRequest(value: unknown): value is DesktopCreateProjectRequest {
+  return isRecord(value) && Object.keys(value).length === 1 && isDesktopProjectName(value.name);
+}
 
 export type DesktopSaveResult =
   | { readonly status: "canceled" }
@@ -359,6 +377,7 @@ export interface C4mlDesktopApi {
   claimPendingDocument(): Promise<DesktopOpenResult | undefined>;
   openDocument(): Promise<DesktopOpenResult>;
   openProject(): Promise<DesktopOpenProjectResult>;
+  createProject(request: DesktopCreateProjectRequest): Promise<DesktopOpenProjectResult>;
   openPreviewWindow(
     request: DesktopOpenPreviewRequest,
   ): Promise<DesktopOpenPreviewResult>;
@@ -619,6 +638,7 @@ export function isC4mlDesktopApi(value: unknown): value is C4mlDesktopApi {
     typeof value.claimPendingDocument === "function" &&
     typeof value.openDocument === "function" &&
     typeof value.openProject === "function" &&
+    typeof value.createProject === "function" &&
     typeof value.openPreviewWindow === "function" &&
     typeof value.getPreviewWindowState === "function" &&
     typeof value.closePreviewWindow === "function" &&
@@ -646,6 +666,7 @@ export function isC4mlPreviewApi(value: unknown): value is C4mlPreviewApi {
     value.openDocument === undefined &&
     value.openPreviewWindow === undefined &&
     value.openProject === undefined &&
+    value.createProject === undefined &&
     value.saveDocument === undefined &&
     value.sourceControl === undefined &&
     value.exportPng === undefined &&

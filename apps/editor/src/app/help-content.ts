@@ -6,6 +6,9 @@ import type { WorkbenchUiLanguage } from "./workbench-preferences.js";
 
 type LocalizedText = Readonly<Record<WorkbenchUiLanguage, string>>;
 
+// Workbench guidance is local content, not a language-worker context topic.
+export type HelpTopicId = C4mlHelpTopicId | "project-output";
+
 export type HelpCategoryId =
   | "connections"
   | "layout"
@@ -20,7 +23,7 @@ interface HelpCategoryDefinition {
 }
 
 interface HelpTopicDefinition {
-  readonly id: C4mlHelpTopicId;
+  readonly id: HelpTopicId;
   readonly categoryId: HelpCategoryId;
   readonly title: LocalizedText;
   readonly summary: LocalizedText;
@@ -38,7 +41,7 @@ export interface HelpCategory {
 }
 
 export interface HelpTopic {
-  readonly id: C4mlHelpTopicId;
+  readonly id: HelpTopicId;
   readonly categoryId: HelpCategoryId;
   readonly title: string;
   readonly summary: string;
@@ -61,6 +64,60 @@ const categories: readonly HelpCategoryDefinition[] = [
 
 const topics: readonly HelpTopicDefinition[] = [
   {
+    id: "project-output",
+    categoryId: "start",
+    title: text("From project to finished output", "Vom Projekt zum fertigen Ergebnis"),
+    summary: text(
+      "Describe architecture once, reuse it in several diagrams, and export the selected Views. Project sources → shared model → View → SVG or PNG.",
+      "Architektur einmal beschreiben, in mehreren Diagrammen verwenden und die gewünschten Ansichten ausgeben. Projektdateien → gemeinsames Modell → View → SVG oder PNG.",
+    ),
+    paragraphs: [
+      text(
+        "Why a project? Imagine garden planning: a caretaker uses the system, an API processes observations, and a data store holds work plans. A System Context View explains who uses it; a Container View shows its technical parts. Both reuse the same architecture. A Deployment View can show where instances run, but requires an explicitly authored deployment model.",
+        "Wozu ein Projekt? Stell dir eine Gartenplanung vor: Die Gartenbetreuung nutzt das System, eine API verarbeitet Beobachtungen, ein Datenspeicher hält Arbeitspläne. Eine System-Context-View erklärt, wer das System nutzt; eine Container-View zeigt die technischen Bestandteile. Beide verwenden dieselbe Architektur. Eine Deployment-View kann zeigen, wo Instanzen laufen; dafür musst du ausdrücklich ein Deployment-Modell ergänzen.",
+      ),
+      text(
+        "New project… asks for a name and parent directory. It creates c4ml.project.json, model/architecture.c4ml, relations/relationships.c4ml, views/views.c4ml, and docs/. The manifest lists the sources evaluated together. Model supplies elements, relations supplies directed connections, and Views define the diagrams. The empty starter has no exportable diagram yet.",
+        "Neues Projekt… fragt nach Name und übergeordnetem Ablageordner. Es entstehen c4ml.project.json, model/architecture.c4ml, relations/relationships.c4ml, views/views.c4ml und docs/. Das Manifest listet die gemeinsam ausgewerteten Quellen auf. Modell liefert Elemente, Beziehungen liefern gerichtete Verbindungen, Views definieren Diagramme. Der leere Projektstart enthält noch kein exportierbares Diagramm.",
+      ),
+      text(
+        "Folder names are an organizational convention. One file may hold several Views; one View may use elements from many files. Graphical edits follow their proposed source changes, not an automatic folder rule. Additional sources must be listed in the manifest's sources field; moving a source requires updating its path there. Edit the manifest and resources outside the app's source editor when needed.",
+        "Ordnernamen sind eine Ordnungshilfe. Eine Datei darf mehrere Views enthalten; eine View darf Elemente aus vielen Dateien verwenden. Grafische Bearbeitungen folgen dem Quelltextvorschlag, keiner automatischen Ordnerregel. Zusätzliche Quellen müssen im Manifest unter sources stehen; beim Verschieben ist dort der Pfad anzupassen. Manifest und Ressourcen bearbeitest du bei Bedarf außerhalb des Quelltexteditors der App.",
+      ),
+      text(
+        "Changing the API's responsibility affects relevant Views when rendered again. Hiding it in one View leaves it in the shared model and other Views. Layout changes only its arrangement. A View is a diagram definition, not a source filename. Splitting identical definitions across more files does not produce more diagrams.",
+        "Änderst du die Verantwortung der API, verwenden betroffene Views beim nächsten Rendern die neue Definition. Blendest du sie nur in einer View aus, bleibt sie im Modell und in anderen Views erhalten. Layout verändert nur die Anordnung. Eine View ist eine Diagrammdefinition, kein Quelldateiname. Mehr Dateien erzeugen bei gleichem Inhalt nicht mehr Diagramme.",
+      ),
+      text(
+        "For your first image, create a project, add a person and system with Add element…, then choose Create diagram for a compatible View. Connect adds relationships; Diagrams creates and selects further Views. Review and apply proposed changes. Check problems and preview: invalid edits may leave the last valid image visible. Export only after the current source compiles.",
+        "Für dein erstes Bild legst du ein Projekt an, ergänzt über Element hinzufügen… eine Person und ein System und wählst Diagramm erstellen für eine passende Ansicht. Verbinden ergänzt Beziehungen; unter Diagramme erstellst und wählst du weitere Views. Prüfe und übernimm die Vorschläge. Kontrolliere Probleme und Vorschau: Bei ungültigen Änderungen kann das letzte gültige Bild sichtbar bleiben. Exportiere erst nach erfolgreicher Verarbeitung der aktuellen Quelle.",
+      ),
+      text(
+        "Save All persists every changed source; Save affects the active source. Output exports the active diagram as scalable SVG or raster PNG at 1x, 2x, or 3x. The app compiles unsaved project sources in memory, while the CLI reads disk files: save all before switching to the CLI. Exported images do not update automatically; export again after changes and retain the project for further editing.",
+        "Alles speichern schreibt alle geänderten Quellen; Speichern betrifft die aktive Quelle. Ausgabe exportiert das aktive Diagramm als skalierbares SVG oder als PNG mit 1-, 2- oder 3-facher Auflösung. Die App verarbeitet auch ungespeicherte Projektquellen im Speicher, die CLI liest Dateien von der Festplatte: Speichere vor dem CLI-Aufruf alles. Bilder aktualisieren sich nicht automatisch; exportiere nach Änderungen erneut und bewahre das Projekt zum Weiterbearbeiten auf.",
+      ),
+      text(
+        "The commands below run in the source repository, not automatically after desktop installation. Garden Pulse is an executable example with one View. --view selects its stable identity; --all exports every declared View as individual images, not a combined document. Both commands therefore produce one SVG and one PNG here. Substitute your project path and View identity as needed.",
+        "Die Befehle unten laufen im Quellcode-Repository; eine Desktop-Installation stellt nicht automatisch eine CLI bereit. Garden Pulse ist ein ausführbares Beispiel mit einer View. --view wählt deren stabile Kennung; --all exportiert jede deklarierte View als einzelne Bilder, kein Gesamtdokument. Beide Befehle erzeugen hier deshalb je ein SVG und ein PNG. Ersetze bei Bedarf Projektpfad und View-Kennung durch deine eigenen.",
+      ),
+    ],
+    points: [
+      text("Theme and Shapes control diagram colors and supported shapes, not architecture or workbench preferences.", "Theme und Shapes steuern Diagrammfarben und unterstützte Formen, weder Architektur noch Workbench-Einstellungen."),
+      text("Policy and Observations produce findings, not automatic model corrections. A Glossary records terms and acronyms.", "Policy und Observations liefern Befunde, keine automatische Modellkorrektur. Ein Glossar erfasst Begriffe und Abkürzungen."),
+      text("docs/ is a place for text. Narratives must be explicitly registered and use the validated chapter format; arbitrary Markdown is not automatically included or exported. Assets inventory licensed passive files, not automatic diagram attachments.", "docs/ ist eine Textablage. Narratives müssen ausdrücklich angemeldet sein und das geprüfte Kapitelformat verwenden; beliebiges Markdown wird nicht automatisch eingebunden oder exportiert. Assets erfassen lizenzierte passive Dateien, keine automatischen Diagrammanhänge."),
+      text("Publication describes ordered Views, captions, and output profiles and validates View references. Normal image export does not execute it as a publication job yet.", "Publication beschreibt View-Reihenfolge, Bildunterschriften und Ausgabeprofile und prüft View-Verweise. Der normale Bildexport führt daraus noch keinen Publikationsauftrag aus."),
+      text("There is no general PDF, HTML, or Word handbook export combining chapters, glossary, and diagrams today. Use the images and text in a document tool. Offline HTML migration reviews are a separate comparison capability. Start with model, relationships, and a View; optional resources can wait.", "Ein allgemeiner PDF-, HTML- oder Word-Handbuch-Export aus Kapiteln, Glossar und Diagrammen existiert heute nicht. Verwende Bilder und Texte in einem Dokumentwerkzeug. Offline-HTML-Migrationsreviews sind eine separate Vergleichsfunktion. Für den Einstieg reichen Modell, Beziehungen und eine View; zusätzliche Ressourcen können warten."),
+    ],
+    exampleTitle: text("Run from the repository root", "Im Repository-Hauptordner ausführen"),
+    example: `pnpm run c4ml -- check examples/projects/garden-pulse-multifile
+pnpm run c4ml -- render examples/projects/garden-pulse-multifile --view garden-pulse-context --format svg,png --output build/project-guide/selected
+pnpm run c4ml -- render examples/projects/garden-pulse-multifile --all --format svg,png --output build/project-guide/all`,
+    keywords: text(
+      "project files folders manifest sources docs publication glossary narratives handbook pdf html word svg png export save all model views",
+      "projekt projektdateien ordner ablage manifest sources docs publikation publication glossar narratives handbuch pdf html word svg png export ausgabe alles speichern modell views",
+    ),
+  },
+  {
     id: "getting-started",
     categoryId: "start",
     title: text("Your first diagram", "Dein erstes Diagramm"),
@@ -69,6 +126,10 @@ const topics: readonly HelpTopicDefinition[] = [
       "Beginne mit einer Person, einem Softwaresystem, einer Verbindung und einer Ansicht.",
     ),
     paragraphs: [
+      text(
+        "For a project on disk, use Files → New project… and choose its name and parent directory. The handbook topic From project to finished output explains the files, shared model, Views, and export workflow.",
+        "Für ein Projekt auf der Festplatte wähle Dateien → Neues Projekt… sowie Name und Ablageordner. Das Handbuchthema Vom Projekt zum fertigen Ergebnis erklärt Dateien, gemeinsames Modell, Views und den Weg zum Export.",
+      ),
       text(
         "New here? Open Assistant, choose Start empty, and enter a model name. This creates only a header, a label comment, and an empty model. Add element lets you add a person or a system without a diagram. Then choose Create diagram to show your existing elements; Connect adds their relationships. The detailed guided interview remains available.",
         "Neu hier? Öffne den Assistenten, wähle Leer beginnen und gib eine Modellbezeichnung ein. Es entstehen nur Header, Bezeichnung als Kommentar und ein leeres Model. Mit Element hinzufügen legst du eine Person oder ein System an, auch ohne Diagramm. Wähle anschließend Diagramm erstellen, um vorhandene Elemente anzuzeigen; Verbinden ergänzt ihre Beziehungen. Der ausführliche geführte Assistent bleibt verfügbar.",
@@ -569,7 +630,7 @@ route caretaker-reviews-plan {
 
 export function helpTopic(
   language: WorkbenchUiLanguage,
-  id: C4mlHelpTopicId,
+  id: HelpTopicId,
 ): HelpTopic {
   const definition = topics.find((topic) => topic.id === id);
   if (definition === undefined) {

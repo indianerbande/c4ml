@@ -1,3 +1,5 @@
 packages/font-ibm-plex/LICENSE.txt -text -diff
 packages/font-editor-mono/fonts/** -text -diff
 packages/font-editor-mono/licenses/** -text -diff
+# Keep the project tutorial's SHA-256-verified passive asset byte-stable on Windows.
+examples/projects/garden-pulse-multifile/assets/review-note.txt text eol=lf

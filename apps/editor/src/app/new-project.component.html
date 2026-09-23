@@ -1,0 +1,24 @@
+<section c4mlModal role="dialog" aria-modal="true" aria-labelledby="new-project-title" [attr.aria-busy]="busy()">
+  <h2 id="new-project-title">{{ i18n.t('project.createTitle') }}</h2>
+  <p>{{ i18n.t('project.createHint') }}</p>
+  <label for="new-project-name">{{ i18n.t('project.name') }}</label>
+  <input id="new-project-name" type="text" maxlength="80" autocomplete="off"
+    [value]="name()" (input)="updateName($event)" [disabled]="busy()"
+    [attr.aria-invalid]="name().length > 0 && !valid()" aria-describedby="project-name-hint" />
+  <small id="project-name-hint">{{ i18n.t('project.nameHint') }}</small>
+  <h3>{{ i18n.t('project.structure') }}</h3>
+  <pre>{{ name() || i18n.t('project.namePlaceholder') }}/
+  c4ml.project.json
+  model/architecture.c4ml
+  relations/relationships.c4ml
+  views/views.c4ml
+  docs/</pre>
+  <p>{{ i18n.t('project.emptyHint') }}</p>
+  @if (error(); as message) { <p role="alert">{{ message }}</p> }
+  <footer>
+    <button type="button" [disabled]="busy()" (click)="cancelled.emit()">{{ i18n.t('project.cancel') }}</button>
+    <button type="button" class="create" [disabled]="!valid() || busy()" (click)="create()">
+      {{ i18n.t(busy() ? 'project.creating' : 'project.chooseAndCreate') }}
+    </button>
+  </footer>
+</section>

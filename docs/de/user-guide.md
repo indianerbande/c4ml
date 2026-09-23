@@ -60,6 +60,17 @@ Theme oder Legende verändern das semantische Modell nicht.
 
 ### Klein anfangen
 
+Mit **Dateien → Dateiaktionen → Neues Projekt…** legst du ein Projekt auf der
+Festplatte an. Gib einen Projektnamen ein und prüfe die angezeigte Struktur.
+**Ablageordner wählen und anlegen…** öffnet die native Ordnerauswahl. Wähle den
+übergeordneten Ordner: Die App erstellt darin einen neuen Ordner mit deinem
+Projektnamen, ein Manifest und die Unterordner `model`, `relations`, `views`
+und `docs`. Vorhandene gleichnamige Ordner werden nicht überschrieben. Das neue
+Projekt öffnet sich sofort mit drei leeren Quelldateien; füge anschließend
+Elemente und dein erstes Diagramm hinzu.
+
+Für ein einzelnes Modell ohne Projektstruktur bleibt der Assistent verfügbar:
+
 1. Öffne **Assistent → Leer beginnen** und gib eine Bezeichnung ein.
 2. Prüfe den kurzen Quelltext und klicke auf **Leeres Modell anlegen**.
    Es entstehen nur Header, Bezeichnung als Kommentar und ein leeres `model`.
@@ -350,6 +361,13 @@ Deklarationsreihenfolge hat keine Bedeutung, außer ein Konstrukt wie eine
 Dynamic Interaction gibt sie ausdrücklich an.
 
 ### 3.3 Projekte und mehrere Quelldateien
+
+Für einen praktischen Einstieg lies
+[Vom Projekt zum fertigen Ergebnis](projects.md#vom-projekt-zum-fertigen-ergebnis).
+Die Anleitung erklärt am Beispiel Gartenplanung, wozu die Ordner dienen,
+wie ein gemeinsames Modell mehrere Diagramme liefert und welche Ausgaben heute
+möglich sind. In der App findest du sie unter **Hilfe → Erste Schritte**;
+suche dort nach **Projektdateien** oder **Publikation**.
 
 Eine `.c4ml`-Datei ist bereits ein Projekt. Mehrere Dateien werden durch
 `c4ml.project.json` ausdrücklich aufgelistet:

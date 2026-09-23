@@ -228,6 +228,13 @@
           @if (desktopAvailable) {
             <section class="side-section quick-actions">
               <h3>{{ i18n.t("files.actions") }}</h3>
+              <button
+                type="button"
+                [disabled]="newProjectOpen()"
+                (click)="newProjectOpen.set(true)"
+              >
+                {{ i18n.t("files.newProject") }}
+              </button>
               <button type="button" (click)="openDocument()">
                 {{ i18n.t("files.open") }}
               </button>
@@ -1429,6 +1436,10 @@
     (applied)="applyWizard($event)"
     (cancelled)="cancelWizard()"
   />
+}
+
+@if (newProjectOpen()) {
+  <c4ml-new-project (created)="projectOpened()" (cancelled)="newProjectOpen.set(false)" />
 }
 
 @if (settingsOpen()) {

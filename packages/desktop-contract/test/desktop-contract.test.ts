@@ -6,6 +6,7 @@ import {
   isC4mlPreviewApi,
   isDesktopCommand,
   isDesktopDocumentState,
+  isDesktopCreateProjectRequest,
   isDesktopOpenPreviewRequest,
   isDesktopPngExportRequest,
   isDesktopSvgExportRequest,
@@ -19,6 +20,14 @@ import {
 } from "../src/index.js";
 
 describe("desktop bridge contract", () => {
+  it("accepts a bounded project name but no renderer filesystem paths or source", () => {
+    expect(isDesktopCreateProjectRequest({ name: "Garten Planung ä" })).toBe(true);
+    for (const value of [null, {}, { name: "../escape" }, { name: "C:\\escape" },
+      { name: "x", parent: "/tmp" }, { name: "x", source: "injected" }, { name: "CON.txt" },
+      { name: "x".repeat(81) }, { name: "name." }, { name: "x\n" }]) {
+      expect(isDesktopCreateProjectRequest(value)).toBe(false);
+    }
+  });
   it("accepts only the versioned, callable preload surface", () => {
     const api = {
       protocolVersion: desktopBridgeProtocolVersion,
@@ -28,6 +37,7 @@ describe("desktop bridge contract", () => {
       claimPendingDocument: async () => undefined,
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
+      createProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),
       getPreviewWindowState: async () => ({ open: false, bounds: undefined }),
       closePreviewWindow: () => undefined,
@@ -73,6 +83,7 @@ describe("desktop bridge contract", () => {
       onProjection: () => () => undefined,
     };
     expect(isC4mlPreviewApi(api)).toBe(true);
+    expect(isC4mlPreviewApi({ ...api, createProject: () => undefined })).toBe(false);
     expect(
       isC4mlPreviewApi({ ...api, updatePreviewProjection: () => undefined }),
     ).toBe(false);

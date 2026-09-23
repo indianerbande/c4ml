@@ -14,8 +14,8 @@ C4thedral und C4ML.
   fachkundige Verantwortung zwingend bleibt.
 - [Projektstatus](project-status.md) — Bedeutung der aktuellen Beta, vorhandene
   Funktionen und vorläufige Grenzen.
-- [Projekte](projects.md) — Ein-Datei- und Mehrdatei-Projekte sowie typisierte
-  Projektressourcen.
+- [Vom Projekt zum fertigen Ergebnis](projects.md#vom-projekt-zum-fertigen-ergebnis)
+  — wozu die Dateien dienen, wie Views zusammenhängen und was du ausgeben kannst.
 - [Aus dem Quellcode bauen](build-from-source.md) — C4thedral klonen, prüfen,
   starten und paketieren.
 
@@ -24,7 +24,7 @@ C4thedral und C4ML.
 - [Linux-Installation](install-linux.md)
 - [Windows-Installation](install-windows.md)
 - [Native Plattformmatrix](platforms.md)
-- [Versionshinweise für 0.1.0-beta.7](releases/0.1.0-beta.7.md)
+- [Versionshinweise für 0.1.0-beta.8](releases/0.1.0-beta.8.md)
 
 ## Am Projekt mitarbeiten
 

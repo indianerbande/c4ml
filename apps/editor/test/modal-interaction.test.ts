@@ -111,7 +111,7 @@ describe("explicit modal interaction", () => {
 });
 
 describe("all workbench dialogs use explicit dismissal", () => {
-  for (const name of ["app", "route-editor", "placement-editor", "semantic-editor", "settings-panel", "system-context-wizard"]) {
+  for (const name of ["app", "route-editor", "placement-editor", "semantic-editor", "settings-panel", "system-context-wizard", "new-project"]) {
     it(`protects every modal in ${name}`, async () => {
       const template = await readFile(new URL(`../src/app/${name}.component.html`, import.meta.url), "utf8");
       const modals = template.match(/<[^>]*aria-modal="true"[^>]*>/g) ?? [];

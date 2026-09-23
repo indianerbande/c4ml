@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from "@angular/core";
 
-import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
+import type { HelpTopicId } from "./help-content.js";
 
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { helpCategories, helpTopic } from "./help-content.js";
@@ -10,7 +10,7 @@ import { WorkbenchSessionService } from "./workbench-session.service.js";
 @Injectable({ providedIn: "root" })
 export class WorkbenchHelpFacade {
   readonly query = signal("");
-  readonly activeTopicId = signal<C4mlHelpTopicId>("getting-started");
+  readonly activeTopicId = signal<HelpTopicId>("getting-started");
   readonly pane = signal<"diagram" | "help">("diagram");
   readonly opened = signal(false);
 
@@ -38,7 +38,7 @@ export class WorkbenchHelpFacade {
     this.query.set(query);
   }
 
-  openTopic(topicId: C4mlHelpTopicId): void {
+  openTopic(topicId: HelpTopicId): void {
     this.opened.set(true);
     this.activeTopicId.set(topicId);
     this.pane.set("help");

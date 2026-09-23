@@ -4,15 +4,15 @@
 
 Status: Öffentliche Source-Beta
 
-Aktuelle Version: `v0.1.0-beta.7`
+Aktuelle Version: `v0.1.0-beta.8`
 
-Aktualisiert: 2026-09-08
+Aktualisiert: 2026-09-23
 
 Dieses Dokument beschreibt den aktuellen Reifegrad und die Grenzen der Beta.
 Es ist kein Entwicklungstagebuch. Detaillierte Produktanforderungen stehen in
 der [technischen Spezifikation](../engineering/specification.md), notwendige
 Nachweise in [Testing](../engineering/testing.md), abgeschlossene Änderungen in
-den [Versionshinweisen](releases/0.1.0-beta.7.md) und technische Arbeitspunkte
+den [Versionshinweisen](releases/0.1.0-beta.8.md) und technische Arbeitspunkte
 in der [Roadmap](../engineering/roadmap.md).
 
 ## Was Beta hier bedeutet
@@ -183,7 +183,7 @@ Assistentenabläufe und eine separat paketierte CLI.
 
 ## Maßgebliche Statusquellen
 
-- [Versionshinweise](releases/0.1.0-beta.7.md): Inhalt des aktuellen Tags.
+- [Versionshinweise](releases/0.1.0-beta.8.md): Inhalt des aktuellen Tags.
 - [Plattformmatrix](platforms.md): aktuelle native Nachweise.
 - [Testing](../engineering/testing.md): notwendige Nachweise für Aussagen.
 - [Roadmap](../engineering/roadmap.md): Arbeitspunkte und bewusste Vertagungen.

@@ -5,6 +5,10 @@
   "type": "module",
   "license": "Apache-2.0",
   "exports": {
+    "./project-starter": {
+      "types": "./dist/project-starter.d.ts",
+      "import": "./dist/project-starter.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

@@ -1446,7 +1446,29 @@ Source:
 
 ### 9.6 Experimental authoring assistance
 
-Model-first onboarding (accepted 2026-09-06): the assistant initially offers
+Model-first onboarding (accepted 2026-09-06):
+The Files activity exposes **New project…** beside its Open actions. This is
+separate from the retained single-document Assistant. The project dialog asks
+for a project name and previews the fixed initial structure. Its explicit
+**Choose location and create…** action opens a native parent-directory picker,
+then creates a new child directory named after the project. Cancel leaves disk
+and the current workspace unchanged; unsaved work requires the existing discard
+confirmation before the native operation. Existing files, directories and
+links MUST NOT be overwritten.
+
+The initial explicit project contains `c4ml.project.json`, `model/architecture.c4ml`,
+`relations/relationships.c4ml`, `views/views.c4ml`, and an empty `docs/` directory.
+The language package owns the empty source fragments; no elements,
+Relationships, Views, or optional governance/presentation resources are invented.
+A generated project identity is persisted once in the manifest. After creation,
+the existing project loader opens every declared document with opaque handles
+and clean dirty states, and the worker compiles the complete viewless project.
+The versioned desktop request accepts only a bounded portable directory name;
+the renderer never receives or supplies an absolute destination path. Native
+creation failures stay visible in the dialog so the name or location can be
+changed. Failed writes clean up only the newly reserved project directory.
+
+The assistant initially offers
 **Start empty** alongside the retained guided Context/Container interview.
 The empty path asks only for a model label and generates the language header,
 an escaped passive comment containing that label, and an empty `model` block.

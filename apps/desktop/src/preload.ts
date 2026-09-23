@@ -13,6 +13,7 @@ import {
   type DesktopSvgExportResult,
   type DesktopOpenResult,
   type DesktopOpenProjectResult,
+  type DesktopCreateProjectRequest,
   type DesktopOpenPreviewRequest,
   type DesktopOpenPreviewResult,
   type DesktopPlatform,
@@ -47,6 +48,8 @@ const api: C4mlDesktopApi = Object.freeze({
     ipcRenderer.invoke(desktopIpcChannels.openDocument) as Promise<DesktopOpenResult>,
   openProject: () =>
     ipcRenderer.invoke(desktopIpcChannels.openProject) as Promise<DesktopOpenProjectResult>,
+  createProject: (request: DesktopCreateProjectRequest) =>
+    ipcRenderer.invoke(desktopIpcChannels.createProject, request) as Promise<DesktopOpenProjectResult>,
   openPreviewWindow: (request: DesktopOpenPreviewRequest) =>
     ipcRenderer.invoke(
       desktopIpcChannels.openPreviewWindow,

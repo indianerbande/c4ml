@@ -63,6 +63,16 @@ position, theme, or legend does not change the semantic model.
 
 ### Start small
 
+Use **Files → File actions → New project…** to create a project on disk. Enter
+its name and review the displayed structure. **Choose location and create…**
+opens the native folder picker. Select the parent folder: the app creates a new
+folder with your project name, a manifest, and `model`, `relations`, `views`,
+and `docs` subfolders. Existing folders are never overwritten. The project
+opens immediately with three empty source files; add elements and your first
+diagram next.
+
+The Assistant remains available for a single model without a project structure:
+
 1. Open **Assistant → Start empty** and enter a name.
 2. Review the short source and click **Create empty model**. This creates only
    the header, the name as a comment, and an empty `model` block.
@@ -596,6 +606,11 @@ Declaration order has no semantic or layout meaning unless a construct such as
 a Dynamic Interaction explicitly declares an order.
 
 ### 3.3 Projects and several source files
+
+Start with [From project to finished output](projects.md#from-project-to-finished-output)
+for a garden-planning walkthrough: what the folders do, how one model supplies
+several diagrams, and which exports work today. In the app, find it under
+**Help → First steps**, or search for **project files** or **publication**.
 
 A single `.c4ml` file is also the smallest C4ML project. It needs no manifest.
 The CLI may receive that file directly or a directory containing exactly one
