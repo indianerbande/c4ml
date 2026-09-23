@@ -10,6 +10,110 @@ A C4ML project is one architecture compilation assembled from one or more
 source documents. The project is the compilation unit, a source file is an
 editing unit, and a View is an output unit.
 
+## From project to finished output
+
+Describe an architecture once and generate diagrams for different audiences.
+A business overview and technical detail Views reuse the same definitions of
+names, responsibilities, and relationships.
+
+**Project sources → shared model → selected View → SVG or PNG**
+
+A *View* describes a diagram's question, scope, and arrangement. It references
+the shared model. An exported image is a result, not a replacement for editable
+project sources.
+
+### 1. What goes where?
+
+**Files → New project…** asks for a name and parent directory, then creates:
+
+| Item | Purpose | Effect on output |
+| --- | --- | --- |
+| `c4ml.project.json` | Project identity and explicit source inventory. | Selects the files evaluated together. |
+| `model/architecture.c4ml` | People, systems, and their parts. | Supplies diagram elements. |
+| `relations/relationships.c4ml` | Directed relationships. | Supplies connections for compatible Views. |
+| `views/views.c4ml` | Diagram type, scope, title, and optional layout. | Defines individually renderable diagrams. |
+| `docs/` | Your explanations and decisions. | Text is not automatically included in SVG/PNG exports. |
+
+Folders are an organizational convention, not a language requirement. A source
+can contain model, relationships, and several Views. A View can reference
+elements from several sources. Folder names do not automatically direct
+graphical edits into those files; inspect the proposed source changes.
+
+The manifest does not scan folders: a new `.c4ml` file joins the project only
+when listed in `sources`. Moving a file requires updating that path. Edit the
+manifest and resources outside the app's source editor when needed. Resources
+such as a glossary use separate manifest fields, not `sources`.
+
+### 2. One model, several questions: garden planning
+
+Imagine a caretaker using a garden planning system, an API processing
+observations, and a data store holding work plans:
+
+- A **System Context View** answers who uses the system.
+- A **Container View** shows how API and data store work together inside it.
+- A **Deployment View** shows where instances run. This requires an explicit
+  deployment model; a Container View does not create one automatically.
+
+Changing the API's responsibility updates relevant Views when rendered again.
+Hiding it in one View retains it in the shared model and other Views. Layout
+changes placement, not architecture. Ten sources may supply one View, and one
+source may supply many. A new project has **no exportable diagram yet**.
+
+### 3. From the app to your first image
+
+1. Choose **New project…**, name it, and select its parent directory. Three
+   empty sources open.
+2. Use **Add element…** to create a person and software system; review and apply
+   the proposed source changes.
+3. Choose **Create diagram** for a compatible View, such as the system context.
+   Use **Connect** to add a relationship. **Diagrams** creates and selects more Views.
+4. Check the preview and problems. Invalid edits can leave the last valid
+   preview visible; export only after the current source compiles.
+5. **Save All** persists all changed sources; **Save** affects the active source.
+6. In **Output**, export the active diagram as scalable SVG or raster PNG
+   (1x, 2x, or 3x desktop resolution).
+
+The app evaluates all project sources in memory, including unsaved edits. The
+CLI reads saved files, so save everything before switching to it. Exported
+images do not automatically update: export again after changes and retain your
+project sources for further editing.
+
+### 4. Render one or all Views from the command line
+
+Run the executable [Garden Pulse example](../../examples/projects/garden-pulse-multifile/c4ml.project.json)
+from the repository root:
+
+```sh
+pnpm run c4ml -- check examples/projects/garden-pulse-multifile
+pnpm run c4ml -- render examples/projects/garden-pulse-multifile --view garden-pulse-context --format svg,png --output build/project-guide/selected
+pnpm run c4ml -- render examples/projects/garden-pulse-multifile --all --format svg,png --output build/project-guide/all
+```
+
+`--view` takes the stable View identity, not a filename. `--all` exports the
+chosen formats for every declared View, not a combined document. This example
+has one View, so each render command produces one SVG and one PNG. Substitute
+your own project path and View identity as needed. These commands require the
+source checkout; desktop installation does not automatically install a CLI.
+
+### 5. What optional resources do today
+
+| Resource | Available purpose | Limit |
+| --- | --- | --- |
+| Theme and Shapes | Choose diagram colors and supported shapes. | Do not change architecture or workbench preferences. |
+| Policy and Observations | Check architecture and report confirmed differences. | Do not automatically correct the model. |
+| Glossary | Record and validate terms and acronyms. | Does not generate a complete handbook. |
+| Narratives | Register chapters in a validated format. | Arbitrary `docs/` files are not automatically included or exported. |
+| Publication | Describe ordered Views, captions, and output profiles; validate View references. | Ordinary image export does not execute this as a publication job yet. |
+| Assets | Inventory passive files with integrity and license information. | Does not automatically embed arbitrary files in diagrams. |
+
+**There is no general project export producing a finished PDF, HTML, or Word
+handbook from diagrams, glossary, and chapters today.** Use the exported images
+and your text in a document tool. The separate offline HTML foundation for
+migration reviews concerns architecture comparisons, not handbook export.
+
+Start with model, relationships, and one View. Add optional resources when you
+need their specific purpose. The reference below explains their file links.
+
 ## One-file projects
 
 A normal `.c4ml` file remains the smallest complete project:
@@ -211,6 +315,7 @@ The optional `publication` field selects one local
 captions plus deterministic SVG/PNG profiles with explicit scale and background
 mode. CLI and worker reject references to Views not present in the compiled
 project. Publication settings do not change source, architecture, or layout.
+Ordinary image export does not execute these settings as a publication job yet.
 
 The optional `theme` field selects one local `.c4ml-theme.json` resource. It
 chooses a built-in semantic diagram preset and may deeply override canvas,

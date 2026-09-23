@@ -11,7 +11,7 @@ describe("local handbook content", () => {
     const german = helpCategories("de").flatMap(({ topics }) => topics);
 
     expect(english.map(({ id }) => id)).toEqual(german.map(({ id }) => id));
-    expect(english).toHaveLength(12);
+    expect(english).toHaveLength(13);
     expect(english.every(({ status }) => status === "available")).toBe(true);
     expect(helpTopic("de", "routes").title).toBe(
       "Ports, Korridore und Routen",
@@ -45,6 +45,14 @@ describe("local handbook content", () => {
     expect(examples.every((example) => !/https?:\/\//u.test(example))).toBe(
       true,
     );
+  });
+
+  it("finds the project workflow by file and publication questions in both languages", () => {
+    for (const [language, query] of [["de", "projektdateien"], ["de", "publikation"], ["en", "project files"]] as const) {
+      const matches = helpCategories(language, query).flatMap(({ topics }) => topics);
+      expect(matches.map(({ id }) => id)).toEqual(["project-output"]);
+      expect(helpTopic(language, matches[0]!.id).categoryId).toBe("start");
+    }
   });
 
   it("localizes descriptive example fields without translating syntax or identifiers", () => {

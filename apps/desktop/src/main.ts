@@ -21,6 +21,7 @@ import {
   desktopIpcChannels,
   previewIpcChannels,
   isDesktopDocumentState,
+  isDesktopCreateProjectRequest,
   isDesktopOpenPreviewRequest,
   isDesktopPngExportRequest,
   isDesktopSvgExportRequest,
@@ -86,6 +87,7 @@ import {
   DesktopPreviewProjectionSequence,
   normalizePreviewWindowBounds,
 } from "./preview-window.js";
+import { createDesktopProject, ProjectCreationError } from "./project-creation.js";
 import { desktopSmokeSourceForTypedInput } from "./smoke-source.js";
 
 const applicationId = "org.c4ml.desktop";
@@ -391,6 +393,7 @@ function registerDesktopIpc(): void {
   ipcMain.removeHandler(desktopIpcChannels.exportSvg);
   ipcMain.removeHandler(desktopIpcChannels.openDocument);
   ipcMain.removeHandler(desktopIpcChannels.openProject);
+  ipcMain.removeHandler(desktopIpcChannels.createProject);
   ipcMain.removeHandler(desktopIpcChannels.openPreviewWindow);
   ipcMain.removeHandler(desktopIpcChannels.previewWindowState);
   ipcMain.removeHandler(previewIpcChannels.projection);
@@ -671,107 +674,26 @@ function registerDesktopIpc(): void {
       if (selection.canceled || path === undefined) {
         return { status: "canceled" };
       }
-      const loaded = await loadArchitectureProject(path);
-      if (!loaded.valid) {
-        return {
-          status: "failed",
-          code: "C4ML-DESKTOP-FILE-001",
-          message: `${loaded.code}: ${loaded.message}`,
-        };
+      return openDesktopProject(path);
+    },
+  );
+  ipcMain.handle(
+    desktopIpcChannels.createProject,
+    async (event, value: unknown): Promise<DesktopOpenProjectResult> => {
+      if (!isTrustedSender(event) || !isDesktopCreateProjectRequest(value)) return invalidIpcResult();
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const options = { title: desktopMessage(uiLanguage, "dialog.createProject"), properties: ["openDirectory" as const, "createDirectory" as const] };
+      try {
+        const selection = owner === null ? await dialog.showOpenDialog(options) : await dialog.showOpenDialog(owner, options);
+        const parent = selection.filePaths[0];
+        if (selection.canceled || parent === undefined) return { status: "canceled" };
+        const path = await createDesktopProject(parent, value.name);
+        return await openDesktopProject(path);
+      } catch (error) {
+        const exists = error instanceof ProjectCreationError && error.reason === "exists";
+        return { status: "failed", code: exists ? "C4ML-DESKTOP-PROJECT-001" : "C4ML-DESKTOP-PROJECT-002",
+          message: desktopMessage(uiLanguage, exists ? "error.projectExists" : "error.projectCreate") };
       }
-      if (
-        loaded.project.documents.some(
-          ({ text }) => Buffer.byteLength(text, "utf8") > maxDesktopSourceBytes,
-        ) ||
-        (loaded.project.policy !== undefined &&
-          Buffer.byteLength(loaded.project.policy.source, "utf8") >
-            maxDesktopSourceBytes) ||
-        (loaded.project.observations !== undefined &&
-          Buffer.byteLength(loaded.project.observations.source, "utf8") >
-            maxDesktopSourceBytes) ||
-        (loaded.project.glossary !== undefined &&
-          Buffer.byteLength(loaded.project.glossary.source, "utf8") >
-            maxDesktopSourceBytes) ||
-        (loaded.project.narratives ?? []).some((resource) =>
-          Buffer.byteLength(resource.source, "utf8") > maxDesktopSourceBytes
-        ) ||
-        (loaded.project.narratives ?? []).reduce(
-          (total, resource) => total + Buffer.byteLength(resource.source, "utf8"),
-          0,
-        ) > maxDesktopSourceBytes ||
-        (loaded.project.publication !== undefined &&
-          Buffer.byteLength(loaded.project.publication.source, "utf8") > maxDesktopSourceBytes) ||
-        (loaded.project.theme !== undefined &&
-          Buffer.byteLength(loaded.project.theme.source, "utf8") > maxDesktopSourceBytes) ||
-        (loaded.project.shapes !== undefined &&
-          Buffer.byteLength(loaded.project.shapes.source, "utf8") > maxDesktopSourceBytes) ||
-        (loaded.project.assets !== undefined &&
-          (Buffer.byteLength(loaded.project.assets.source, "utf8") +
-            loaded.project.assets.files.reduce((total, file) => total + Buffer.byteLength(file.content, "utf8"), 0)) > maxDesktopSourceBytes)
-      ) {
-        return {
-          status: "failed",
-          code: "C4ML-DESKTOP-FILE-001",
-          message: desktopMessage(uiLanguage, "error.projectUnreadable"),
-        };
-      }
-      const pathByUri = new Map(
-        loaded.documentPaths.map(({ uri, path: documentPath }) => [uri, documentPath]),
-      );
-      return {
-        status: "opened",
-        project: {
-          id: loaded.project.id,
-          ...(loaded.project.name === undefined
-            ? {}
-            : { name: loaded.project.name }),
-          ...(loaded.project.description === undefined
-            ? {}
-            : { description: loaded.project.description }),
-          ...(loaded.project.policy === undefined
-            ? {}
-            : {
-                policy: {
-                  uri: loaded.project.policy.uri,
-                  source: loaded.project.policy.source,
-                },
-              }),
-          ...(loaded.project.observations === undefined
-            ? {}
-            : {
-                observations: {
-                  uri: loaded.project.observations.uri,
-                  source: loaded.project.observations.source,
-                },
-              }),
-          ...(loaded.project.glossary === undefined
-            ? {}
-            : {
-                glossary: {
-                  uri: loaded.project.glossary.uri,
-                  source: loaded.project.glossary.source,
-                },
-              }),
-          ...(loaded.project.narratives === undefined
-            ? {}
-            : { narratives: loaded.project.narratives.map((resource) => ({ ...resource })) }),
-          ...(loaded.project.publication === undefined
-            ? {}
-            : { publication: { ...loaded.project.publication } }),
-          ...(loaded.project.theme === undefined ? {} : { theme: { ...loaded.project.theme } }),
-          ...(loaded.project.shapes === undefined ? {} : { shapes: { ...loaded.project.shapes } }),
-          ...(loaded.project.assets === undefined ? {} : { assets: { ...loaded.project.assets, files: loaded.project.assets.files.map((file) => ({ ...file })) } }),
-          documents: loaded.project.documents.map(({ uri, text }) => {
-            const documentPath = pathByUri.get(uri)!;
-            return {
-              handle: documents.register(documentPath),
-              uri,
-              displayName: basename(documentPath),
-              source: text,
-            };
-          }),
-        },
-      };
     },
   );
   ipcMain.handle(
@@ -1533,4 +1455,108 @@ async function waitForDetachedPreviewWindow(): Promise<BrowserWindow | undefined
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
   }
   return undefined;
+}
+
+async function openDesktopProject(path: string): Promise<DesktopOpenProjectResult> {
+  const loaded = await loadArchitectureProject(path);
+  if (!loaded.valid) {
+    return {
+      status: "failed",
+      code: "C4ML-DESKTOP-FILE-001",
+      message: `${loaded.code}: ${loaded.message}`,
+    };
+  }
+  if (
+    loaded.project.documents.some(
+      ({ text }) => Buffer.byteLength(text, "utf8") > maxDesktopSourceBytes,
+    ) ||
+    (loaded.project.policy !== undefined &&
+      Buffer.byteLength(loaded.project.policy.source, "utf8") >
+        maxDesktopSourceBytes) ||
+    (loaded.project.observations !== undefined &&
+      Buffer.byteLength(loaded.project.observations.source, "utf8") >
+        maxDesktopSourceBytes) ||
+    (loaded.project.glossary !== undefined &&
+      Buffer.byteLength(loaded.project.glossary.source, "utf8") >
+        maxDesktopSourceBytes) ||
+    (loaded.project.narratives ?? []).some((resource) =>
+      Buffer.byteLength(resource.source, "utf8") > maxDesktopSourceBytes
+    ) ||
+    (loaded.project.narratives ?? []).reduce(
+      (total, resource) => total + Buffer.byteLength(resource.source, "utf8"),
+      0,
+    ) > maxDesktopSourceBytes ||
+    (loaded.project.publication !== undefined &&
+      Buffer.byteLength(loaded.project.publication.source, "utf8") > maxDesktopSourceBytes) ||
+    (loaded.project.theme !== undefined &&
+      Buffer.byteLength(loaded.project.theme.source, "utf8") > maxDesktopSourceBytes) ||
+    (loaded.project.shapes !== undefined &&
+      Buffer.byteLength(loaded.project.shapes.source, "utf8") > maxDesktopSourceBytes) ||
+    (loaded.project.assets !== undefined &&
+      (Buffer.byteLength(loaded.project.assets.source, "utf8") +
+        loaded.project.assets.files.reduce((total, file) => total + Buffer.byteLength(file.content, "utf8"), 0)) > maxDesktopSourceBytes)
+  ) {
+    return {
+      status: "failed",
+      code: "C4ML-DESKTOP-FILE-001",
+      message: desktopMessage(uiLanguage, "error.projectUnreadable"),
+    };
+  }
+  const pathByUri = new Map(
+    loaded.documentPaths.map(({ uri, path: documentPath }) => [uri, documentPath]),
+  );
+  return {
+    status: "opened",
+    project: {
+      id: loaded.project.id,
+      ...(loaded.project.name === undefined
+        ? {}
+        : { name: loaded.project.name }),
+      ...(loaded.project.description === undefined
+        ? {}
+        : { description: loaded.project.description }),
+      ...(loaded.project.policy === undefined
+        ? {}
+        : {
+            policy: {
+              uri: loaded.project.policy.uri,
+              source: loaded.project.policy.source,
+            },
+          }),
+      ...(loaded.project.observations === undefined
+        ? {}
+        : {
+            observations: {
+              uri: loaded.project.observations.uri,
+              source: loaded.project.observations.source,
+            },
+          }),
+      ...(loaded.project.glossary === undefined
+        ? {}
+        : {
+            glossary: {
+              uri: loaded.project.glossary.uri,
+              source: loaded.project.glossary.source,
+            },
+          }),
+      ...(loaded.project.narratives === undefined
+        ? {}
+        : { narratives: loaded.project.narratives.map((resource) => ({ ...resource })) }),
+      ...(loaded.project.publication === undefined
+        ? {}
+        : { publication: { ...loaded.project.publication } }),
+      ...(loaded.project.theme === undefined ? {} : { theme: { ...loaded.project.theme } }),
+      ...(loaded.project.shapes === undefined ? {} : { shapes: { ...loaded.project.shapes } }),
+      ...(loaded.project.assets === undefined ? {} : { assets: { ...loaded.project.assets, files: loaded.project.assets.files.map((file) => ({ ...file })) } }),
+      documents: loaded.project.documents.map(({ uri, text }) => {
+        const documentPath = pathByUri.get(uri)!;
+        return {
+          handle: documents.register(documentPath),
+          uri,
+          displayName: basename(documentPath),
+          source: text,
+        };
+      }),
+    },
+  };
 }

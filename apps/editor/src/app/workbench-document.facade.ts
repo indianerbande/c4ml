@@ -3,6 +3,7 @@ import { Injectable, computed, effect, inject, signal } from "@angular/core";
 import type {
   DesktopCommand,
   DesktopOpenResult,
+  DesktopCreateProjectRequest,
 } from "@c4ml/desktop-contract";
 
 import { resolveC4mlDesktopApi } from "./desktop-bridge.js";
@@ -318,14 +319,14 @@ export class WorkbenchDocumentFacade {
     }
   }
 
-  async openProject(): Promise<boolean> {
+  async openProject(create?: DesktopCreateProjectRequest): Promise<boolean> {
     const desktop = this.#desktop;
     if (desktop === undefined || !this.#confirmDiscard()) {
       return false;
     }
     this.fileOperationLabel.set(this.#i18n.t("operation.openingProject"));
     try {
-      const result = await desktop.openProject();
+      const result = create === undefined ? await desktop.openProject() : await desktop.createProject(create);
       if (result.status === "opened") {
         this.#replaceProject({
           id: result.project.id,

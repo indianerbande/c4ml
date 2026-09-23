@@ -17,6 +17,7 @@ describe("editor desktop bridge", () => {
       claimPendingDocument: async () => undefined,
       openDocument: async () => ({ status: "canceled" as const }),
       openProject: async () => ({ status: "canceled" as const }),
+      createProject: async () => ({ status: "canceled" as const }),
       openPreviewWindow: async () => ({ status: "opened" as const }),
       getPreviewWindowState: async () => ({ open: false, bounds: undefined }),
       closePreviewWindow: () => undefined,

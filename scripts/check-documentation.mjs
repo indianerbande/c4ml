@@ -15,6 +15,8 @@ const ignoredDirectories = new Set([
   "node_modules",
 ]);
 const languagePairs = [
+  ["docs/en/releases/0.1.0-beta.7.md", "docs/de/releases/0.1.0-beta.7.md"],
+  ["docs/en/releases/0.1.0-beta.8.md", "docs/de/releases/0.1.0-beta.8.md"],
   ["README.md", "README.de.md"],
   ["CONTRIBUTING.md", "CONTRIBUTING.de.md"],
   ["SECURITY.md", "SECURITY.de.md"],

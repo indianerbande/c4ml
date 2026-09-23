@@ -14,8 +14,8 @@ C4ML.
   ownership remains mandatory.
 - [Project status](project-status.md) — what the current beta means, what is
   implemented, and what remains provisional.
-- [Projects](projects.md) — single-file and multifile projects plus typed
-  project resources.
+- [From project to finished output](projects.md#from-project-to-finished-output)
+  — what the files do, how Views relate, and what you can export.
 - [Build from source](build-from-source.md) — clone, validate, run, and package
   C4thedral.
 
@@ -24,7 +24,7 @@ C4ML.
 - [Linux installation](install-linux.md)
 - [Windows installation](install-windows.md)
 - [Native platform matrix](platforms.md)
-- [Release notes for 0.1.0-beta.7](releases/0.1.0-beta.7.md)
+- [Release notes for 0.1.0-beta.8](releases/0.1.0-beta.8.md)
 
 ## Project participation
 

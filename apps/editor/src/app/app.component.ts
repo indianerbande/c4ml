@@ -20,7 +20,7 @@ import type {
   CompilerWorkerSource,
 } from "./compiler-worker.protocol.js";
 import type { AnalysisFinding } from "@c4ml/compiler-core";
-import type { C4mlHelpTopicId } from "@c4ml/language-c4ml";
+import type { HelpTopicId } from "./help-content.js";
 import { CompilerWorkerClient } from "./compiler-worker-client.service.js";
 import { WizardSourceSession } from "./editor-session.js";
 import {
@@ -37,6 +37,7 @@ import type {
   SourceEditorHighlightProvider,
 } from "./source-editor.contract.js";
 import { SystemContextWizardComponent } from "./system-context-wizard.component.js";
+import { NewProjectComponent } from "./new-project.component.js";
 import {
   PlacementEditorComponent,
 } from "./placement-editor.component.js";
@@ -77,6 +78,7 @@ import { WorkbenchAuthoringHistoryService } from "./workbench-authoring-history.
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.css",
   imports: [
+    NewProjectComponent,
     ModalInteractionDirective,
     C4mlMonacoSourceEditorComponent,
     DiagramContextMenuComponent,
@@ -152,6 +154,7 @@ export class AppComponent {
   readonly provideHighlights: SourceEditorHighlightProvider = (source) =>
     this.compiler.highlight(source);
   readonly wizardOpen = signal(false);
+  readonly newProjectOpen = signal(false);
   readonly wizardUndoConfirmationOpen = signal(false);
   readonly settingsOpen = signal(false);
   readonly diagramContextMenu = signal<{
@@ -457,13 +460,16 @@ export class AppComponent {
 
   async openProject(): Promise<void> {
     if (await this.documents.openProject()) {
-      this.#afterDocumentSetChanged();
-      this.#compileCurrentProject(undefined);
-      this.#refreshHelpContext(this.source());
-      if (this.activeActivity() === "source-control") {
-        void this.sourceControl.refresh();
-      }
+      this.projectOpened();
     }
+  }
+
+  projectOpened(): void {
+    this.newProjectOpen.set(false);
+    this.#afterDocumentSetChanged();
+    this.#compileCurrentProject(undefined);
+    this.#refreshHelpContext(this.source());
+    if (this.activeActivity() === "source-control") void this.sourceControl.refresh();
   }
 
   closeWorkspace(): void {
@@ -835,7 +841,7 @@ export class AppComponent {
     }
   }
 
-  openHelpTopic(topicId: C4mlHelpTopicId): void {
+  openHelpTopic(topicId: HelpTopicId): void {
     this.help.openTopic(topicId);
   }
 

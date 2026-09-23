@@ -62,6 +62,9 @@ importers:
       '@c4ml/font-ibm-plex':
         specifier: workspace:*
         version: link:../../packages/font-ibm-plex
+      '@c4ml/language-c4ml':
+        specifier: workspace:*
+        version: link:../../packages/language-c4ml
       '@c4ml/project-node':
         specifier: workspace:*
         version: link:../../packages/project-node
