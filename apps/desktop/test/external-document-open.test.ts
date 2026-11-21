@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,20 +9,23 @@ import {
 
 describe("installed-app external document opening", () => {
   it("accepts native paths and file URLs for C4ML source only", () => {
+    const workingDirectory = resolve("work");
+    const absoluteDocument = resolve("tmp", "Garden Plan.C4ML");
+
     expect(
       externalC4mlDocumentPaths(
         [
           "/Applications/C4thedral.app/Contents/MacOS/C4thedral",
           "architecture.c4ml",
-          "file:///tmp/Garden%20Plan.C4ML",
+          pathToFileURL(absoluteDocument).href,
           "--inspect=unsafe.c4ml",
           "notes.txt",
         ],
-        "/work",
+        workingDirectory,
       ),
     ).toEqual([
-      "/work/architecture.c4ml",
-      "/tmp/Garden Plan.C4ML",
+      resolve(workingDirectory, "architecture.c4ml"),
+      absoluteDocument,
     ]);
   });
 

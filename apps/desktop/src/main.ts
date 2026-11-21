@@ -1181,6 +1181,16 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
     `new Promise((resolve) => {
       const deadline = Date.now() + 20000;
       document.querySelector('button[data-activity="export"]')?.click();
+      let fontsReady = false;
+      // Smoke may reuse a profile whose editor font is not the default.
+      // Load both packaged faces explicitly and require real loaded faces.
+      Promise.all([
+        document.fonts.load('14px "IBM Plex Sans"'),
+        document.fonts.load('14px "IBM Plex Mono"'),
+      ]).then((faces) => {
+        fontsReady = faces.every((group) =>
+          group.length > 0 && group.every((face) => face.status === 'loaded'));
+      }).catch(() => {});
       const check = () => {
         const bridgeReady = window.c4mlDesktop?.protocolVersion === ${desktopBridgeProtocolVersion} &&
           typeof window.c4mlDesktop?.exportPng === 'function' &&
@@ -1202,8 +1212,6 @@ async function runDesktopSmoke(window: BrowserWindow): Promise<void> {
           document.querySelector('button[data-activity="export"]')?.click();
         }
         const compilerReady = document.querySelector('.compiler-status[data-phase="valid"]') !== null;
-        const fontsReady = document.fonts.check('14px "IBM Plex Sans"') &&
-          document.fonts.check('14px "IBM Plex Mono"');
         const language = document.documentElement.lang;
         const languageReady = language === 'en' || language === 'de';
         const detachButtonReady = document.querySelector('button[data-preview-action="detach"]') !== null;
