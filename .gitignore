@@ -4,6 +4,7 @@ dist/
 build/
 coverage/
 .angular/
+/.idea/
 .DS_Store
 *.tsbuildinfo
 .env

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const acceptedMonacoVersion = "0.56.0";
-const acceptedDomPurifyVersion = "3.4.13";
+const acceptedDomPurifyVersion = "3.4.17";
 const acceptedElkVersion = "0.12.0";
 const acceptedPlexVersion = "0.0.0";
 const acceptedEditorMonoVersion = "0.0.0";
@@ -71,7 +71,7 @@ if (!lockfile.includes(`dompurify@${acceptedDomPurifyVersion}:`)) {
     `pnpm-lock.yaml must resolve DOMPurify ${acceptedDomPurifyVersion}.`,
   );
 }
-if (/dompurify@3\.4\.(?:[0-9]|1[0-2]):/u.test(lockfile)) {
+if (/dompurify@3\.4\.(?:[0-9]|1[0-6]):/u.test(lockfile)) {
   throw new Error("pnpm-lock.yaml contains a reviewed-vulnerable DOMPurify version.");
 }
 if (!workspaceConfiguration.includes("qs: '6.16.0'")) {
