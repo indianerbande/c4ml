@@ -57,7 +57,7 @@ packages are listed under `allowedCommonJsDependencies` in `apps/editor/angular.
 together with ELK's API entry so the accepted state stops producing warnings
 on every build; the note here is the record of why they are accepted.
 
-`langium-cli` 4.3.0 is a build-time MIT-licensed companion used only to generate
+`langium-cli` 4.4.0 is a build-time MIT-licensed companion used only to generate
 the disposable probe artifacts.
 
 ### ELK.js 0.12.0
@@ -229,10 +229,10 @@ and the [official Material Design Icons repository](https://github.com/google/ma
 ## Accepted desktop editor libraries
 
 The editor pins `@angular/core`, `@angular/common`, and
-`@angular/platform-browser` 22.1.4. AOT development uses `@angular/compiler`
-and `@angular/compiler-cli` 22.1.4 plus `@angular/build` and `@angular/cli`
-22.1.6. The patch difference avoids a resolved transitive peer mismatch while
-remaining inside Angular Build's declared Angular 22 peer range.
+`@angular/platform-browser` at 22.1.7. AOT development uses `@angular/compiler`
+and `@angular/compiler-cli` at the same patch version to satisfy their exact
+peer requirements. `@angular/build` remains at 22.1.6 and `@angular/cli` uses
+22.1.8.
 
 - **Capability:** structured sandboxed desktop-renderer composition, dependency
   injection, reactive UI state, routing, and testable editor-shell components.
@@ -528,7 +528,7 @@ remains a Node frontend responsibility and does not enter the compiler core.
 | pnpm | 11.24.0 | MIT | pinned workspace package manager |
 | TypeScript | 6.0.3 | Apache-2.0 | strict type checking and ESM build; compatible with the Angular 22 editor baseline |
 | Vitest | 5.0.0 | MIT | unit, adapter-contract, and Angular integration tests |
-| happy-dom | 20.14.0 | MIT | editor-only DOM host for Angular integration tests |
+| happy-dom | 21.0.4 | MIT | editor-only DOM host for Angular integration tests |
 | `@types/node` | 24.13.3 | MIT | Node.js 24 LTS type surface |
 | esbuild | 0.28.2 | MIT | in-memory renderer Web Worker bundle compatibility check |
 
