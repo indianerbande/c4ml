@@ -10,9 +10,9 @@
     "test": "tsc -p tsconfig.test.json --noEmit && vitest run --exclude 'build/**'"
   },
   "dependencies": {
-    "@angular/common": "22.1.4",
-    "@angular/core": "22.1.4",
-    "@angular/platform-browser": "22.1.4",
+    "@angular/common": "22.1.7",
+    "@angular/core": "22.1.7",
+    "@angular/platform-browser": "22.1.7",
     "@c4ml/compiler-core": "workspace:*",
     "@c4ml/desktop-contract": "workspace:*",
     "@c4ml/font-editor-mono": "workspace:*",
@@ -26,9 +26,9 @@
   },
   "devDependencies": {
     "@angular/build": "22.1.6",
-    "@angular/cli": "22.1.7",
-    "@angular/compiler": "22.1.4",
-    "@angular/compiler-cli": "22.1.4",
-    "happy-dom": "20.14.0"
+    "@angular/cli": "22.1.8",
+    "@angular/compiler": "22.1.7",
+    "@angular/compiler-cli": "22.1.7",
+    "happy-dom": "21.0.4"
   }
 }
