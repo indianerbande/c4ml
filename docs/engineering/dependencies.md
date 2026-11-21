@@ -284,10 +284,10 @@ validated for the desktop editor.**
   architecture compiler.
 - **License:** Monaco is MIT and carries `LICENSE` and
   `ThirdPartyNotices.txt`. Its installed runtime dependencies are Marked 14.0.0
-  under MIT and DOMPurify 3.4.13 under `MPL-2.0 OR Apache-2.0`. Monaco 0.56.0
+  under MIT and DOMPurify 3.4.17 under `MPL-2.0 OR Apache-2.0`. Monaco 0.56.0
   declares DOMPurify 3.4.8 exactly; the workspace overrides it to the compatible
-  patched 3.4.13 after registry advisories reported two low and two moderate
-  sanitizer defects through 3.4.12. Release
+  patched 3.4.17 after the production audit reported five sanitizer advisories
+  on the former 3.4.13 pin. Release
   packaging must preserve the applicable licenses and notices.
 - **Impact:** the Monaco package-store entry is approximately 98 MB; Marked and
   DOMPurify entries were approximately 952 KB and 756 KB at the original
