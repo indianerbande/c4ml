@@ -28,7 +28,7 @@
     "@angular/build": "22.1.6",
     "@angular/cli": "22.1.8",
     "@angular/compiler": "22.1.7",
-    "@angular/compiler-cli": "22.1.7",
+    "@angular/compiler-cli": "22.3.0",
     "happy-dom": "21.0.4"
   }
 }
